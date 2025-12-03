@@ -1,0 +1,48 @@
+#navbarName{
+    color: var(--bs-navbar-brand-hover-color);
+}
+
+#eventList input[type=text], #eventList input[type=date], #eventNew input[type=text], #eventNew input[type=date]{
+    width: 100%;
+}
+
+.bgRed {
+  background-color: rgb(100, 0, 0) !important;
+}
+
+.navTab{
+  background-color: rgb(221, 212, 212) !important;
+  border-bottom: 0px !important;
+}
+
+.navTab.active, .navTab.active:link,.navTab.active:visited, .navRow, .accordion-button:not(.collapsed){
+  background-color: rgb(100, 0, 0) !important;
+  color: #b98c8c;
+}
+
+.navbar-brand img{
+  width: 10em;
+}
+
+#offcanvasButton{
+  position: fixed;
+  left: 0px;
+}
+
+.spec-group{
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.spec-group .input-group-text{
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 0.15rem 0.5rem !important;
+}
+
+.spec-group .btn{
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 0.15rem 0.5rem !important;
+}

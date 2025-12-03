@@ -1,0 +1,202 @@
+body{
+  box-sizing:border-box;
+  background-image: url(../img/paper.png);
+  font-size: 1.3vw;
+  color:rgb(140, 120, 100);
+  font-family: 'Crimson Text', serif;
+}
+
+.titlebar{
+  padding: 1vw;
+  text-transform: uppercase;
+  font-size: 4em;
+  margin: 3vw 0 0.5vw 0;
+}
+
+.titlebar img{
+  height: 5vw;
+  vertical-align:sub;
+}
+
+.databox{
+  background-image: url(../img/paperDark.png);
+  padding:0.5vw 3vw;
+}
+
+.kop1{
+  text-transform: uppercase;
+  text-align: right;
+  font-size: 1.8em;
+  display: block;
+  border-bottom: 0.1vw rgb(140, 120, 100) solid;
+  margin-bottom:2vw;  
+}
+
+.kop2{
+    text-transform: uppercase;
+    text-align: left;
+    font-size: 1.2em;
+    display: block;
+    color: rgb(140, 120, 100);
+    margin-bottom: 0.5vw;
+}
+.datadisplay{
+  background-image: url(../img/paper.png);
+}
+.inputErr{
+    margin-bottom: 1vw;
+    font-size: 0.8em;
+}
+.form-control{
+    background-color: rgba(255, 255, 255, 0.2);
+    height:2em;
+    font-size: 1em;
+    color:rgb(138, 123, 108);
+}
+
+.buttonbar{
+    text-align: center;
+    padding-top: 1vw;
+}
+
+.listbox{
+    border-top: 0.1vw rgb(140, 120, 100) solid;
+    padding-top: 0.5vw;
+    margin-top: 0.5vw;
+}
+
+.buttonbar .button{
+    background: rgb(140, 120, 100);
+    font-family: 'Crimson Text', serif;
+    color: rgb(211, 190, 163);
+    text-transform: uppercase;
+}
+.buttonbar .button:hover{
+    background: rgb(147, 131, 115);
+}
+
+.pad1vw{
+  padding: 1vw;
+}
+
+.mar1vw{
+  margin: 1vw;
+}
+
+.marBovOnd1vw{
+  margin: 1vw 0vw;
+}
+
+.borderLeft{
+    border-left: 0.1vw rgb(140, 120, 100) solid;
+}
+
+.borderTop{
+    border-top: 0.1vw rgb(140, 120, 100) solid;
+}
+
+.clearFloat{
+  clear:both;
+}
+
+.pencilborder{
+  border: 0.15vw solid transparent;
+
+  -webkit-border-image: url(../img/borderPencil.png) 30 round; /* Safari 3.1-5 */
+  -o-border-image: url(img/borderPencil.png) 30 round; /* Opera 11-12.1 */
+  border-image: url(../img/borderPencil.png) 30 round;
+}
+
+.pencilvictorian{
+  border: 10vw solid transparent;
+  -webkit-border-image: url(../img/borderVictorian.png) 110 round; /* Safari 3.1-5 */
+  -o-border-image: url(img/borderVictorian.png) 120 round; /* Opera 11-12.1 */
+  border-image: url(../img/borderVictorian.png) 299 round;
+}
+
+.fysiek{
+  background-image: url(../img/fysiek.png);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20vw;
+  position: relative;
+  padding-top: 15vw;
+  cursor: pointer;
+}
+.fysiek:hover{
+  background-image: url(../img/fysiekGloed.png);
+}
+
+.defaultBeeld{
+    background-image: url(../img/schedel.png);
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-position: center; 
+}
+.fysiekBeeld{
+    background-image: url(../img/fysiek.png);
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-position: center; 
+}
+.mentaalBeeld{
+    background-image: url(../img/mentaal.png);
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-position: center; 
+}
+
+.mentaal{
+  background-image: url(../img/mentaal.png);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 21vw;
+  position: relative;
+  padding-top: 15vw;
+  cursor: pointer;
+}
+
+.mentaal:hover{
+  background-image: url(../img/mentaalGloed.png);
+}
+.geschreven{
+    /*font-family: 'Euphoria Script', cursive*/
+    font-family: 'Nanum Pen Script', cursive;
+    text-decoration: underline;
+}
+.selectieLink{
+    font-weight: bold;
+    
+}
+.selectieLinkPassive{
+    font-weight: bold;
+    color: rgb(190,163,136);
+    cursor: pointer;
+}
+.selectieLinkPassive i, .selectieLink i{
+    font-size:0.7em;
+}
+.selectieLinkPassive:hover{
+    font-weight: bold;
+    color: rgb(140, 120, 100);
+    cursor: pointer;
+}
+.link{
+    cursor: pointer;
+}
+@media (max-width: 768px) {
+    body{
+      font-size: 2.5vw;
+    }
+    .titlebar{
+      padding: 1vw;
+      text-transform: uppercase;
+      font-size: 2.8em;
+      margin: 0vw 0 0.5vw 0;
+    }
+    .titlebar img{
+      height: 8vw;
+      vertical-align:sub;
+    }
+    
+}
