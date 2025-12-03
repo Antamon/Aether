@@ -1,0 +1,23 @@
+# VS Code
+.vscode/
+
+# Logs & secrets
+error_log
+*.log
+.env
+
+# Node
+node_modules/
+dist/
+*.map
+
+# OS rommel
+.DS_Store
+Thumbs.db
+
+# Inactive folders
+economie/
+healthapp/
+
+# Secure files
+db.php
