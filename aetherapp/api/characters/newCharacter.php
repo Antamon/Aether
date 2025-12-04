@@ -16,6 +16,11 @@ if (!isset($_SESSION['user']['id'])) {
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
 
+// Fallback: form-encoded POST (apiFetchJson stuurt dit standaard)
+if (empty($postData) || !is_array($postData)) {
+    $postData = $_POST ?? [];
+}
+
 if (empty($postData) || !is_array($postData)) {
     http_response_code(400);
     echo json_encode(['error' => 'Geen geldige character data ontvangen.']);
@@ -45,6 +50,11 @@ try {
         $postData['state'] = 'draft';
     }
 
+    // birthDate placeholder (vermijd '0000-00-00' in strict mode)
+    if (empty($postData['birthDate'])) {
+        $postData['birthDate'] = '1900-01-01';
+    }
+
     // (optioneel) minimale sanity check op class / firstName / lastName
     // Dit is vooral server-side safety; frontend valideert al.
     if (
@@ -65,7 +75,9 @@ try {
         exit;
     }
 
-    $columnList = implode(', ', $columns);
+    $columnList = implode(', ', array_map(static function ($col) {
+        return '`' . str_replace('`', '', $col) . '`';
+    }, $columns));
     $placeholders = ':' . implode(', :', $columns);
 
     $sql = "INSERT INTO tblCharacter ($columnList) VALUES ($placeholders)";

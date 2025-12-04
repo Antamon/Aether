@@ -1,4 +1,4 @@
-let currentUser = null;
+﻿let currentUser = null;
 let currentCharacter = null;
 let originalCharacterFormHtml = null;
 
@@ -71,37 +71,7 @@ async function initCharacterPage() {
 }
 
 function setupCharacterFormListeners() {
-    const btnCreate = document.getElementById("createNewCharacter");
-    const btnCancel = document.getElementById("cancelNewCharacter");
-    const btnStartNew = document.getElementById("startNewCharacter");
-
-    // Nieuw personage aanmaken
-    if (btnCreate) {
-        btnCreate.addEventListener("click", handleCreateNewCharacter);
-    }
-
-    // Nieuw personage annuleren
-    if (btnCancel) {
-        btnCancel.addEventListener("click", () => {
-            clearCharacterFields();
-            document.getElementById("characterForm").classList.add("d-none");
-            document.getElementById("skills").classList.add("d-none");
-            document.getElementById("idCharacter").value = "";
-        });
-    }
-
-    // “Nieuw personage” uit de offcanvas
-    if (btnStartNew) {
-        btnStartNew.addEventListener("click", () => {
-            clearCharacterFields();
-            document.getElementById("characterForm").classList.remove("d-none");
-            document.getElementById("groupNewCharacter").classList.remove("d-none");
-            document.getElementById("skills").classList.add("d-none");
-            document.getElementById("idCharacter").value = "";
-        });
-    }
-
-    // Autosave op alle relevante velden
+    // Alleen autosave; de nieuwe create-flow listeners worden elders gekoppeld (aetherSetupNewCharacterUI)
     const velden = [
         "firstName",
         "lastName",
@@ -185,7 +155,7 @@ function renderCharacterNav(isAdminView) {
 async function handleAutoSaveField(e) {
     const idCharacter = document.getElementById("idCharacter").value;
     if (!idCharacter) {
-        // Nog geen personage-id → nieuwe personages worden via de Aanmaken-knop gemaakt
+        // Nog geen personage-id â†’ nieuwe personages worden via de Aanmaken-knop gemaakt
         return;
     }
 
@@ -411,7 +381,7 @@ function pageNav(userRole, character) {
             } else if (typeof character.maxExperience === "number") {
                 maxExperience = character.maxExperience;
             } else if (!character.idUser || character.idUser === 0) {
-                // géén deelnemer gekoppeld → standaard 15 EP
+                // gÃ©Ã©n deelnemer gekoppeld â†’ standaard 15 EP
                 maxExperience = 15;
             } else {
                 // safety fallback
@@ -448,7 +418,7 @@ async function getCharacter(id, openCollapseId = null) {
         console.log("Character from API:", data);
         console.log("Skills from API:", data.skills);
 
-        // Gebruikte XP één keer berekenen
+        // Gebruikte XP Ã©Ã©n keer berekenen
         const usedExperience = calculateExperience(data);
 
         // Navigatie bovenaan
@@ -752,7 +722,7 @@ function renderSkillsReadOnly(container, skills) {
 }
 
 function applyCharacterEditability(character, canEdit) {
-    // 🔹 1. Characterformulier: inputs wel/niet bewerkbaar
+    // ðŸ”¹ 1. Characterformulier: inputs wel/niet bewerkbaar
     const formFields = [
         "firstName",
         "lastName",
@@ -778,12 +748,12 @@ function applyCharacterEditability(character, canEdit) {
             el.classList.remove("form-control-plaintext");
         } else {
             el.setAttribute("disabled", "disabled");
-            // optioneel: visueel meer “tekstachtig” maken
+            // optioneel: visueel meer â€œtekstachtigâ€ maken
             // el.classList.add("form-control-plaintext");
         }
     });
 
-    // 🔹 2. Nieuwe skill toevoegen (dropdown + plusknop)
+    // ðŸ”¹ 2. Nieuwe skill toevoegen (dropdown + plusknop)
     const idNewSkill = document.getElementById("idNewSkill");
     const btnAddSkill = document.getElementById("addNewSkill");
 
@@ -805,13 +775,13 @@ function applyCharacterEditability(character, canEdit) {
         }
     }
 
-    // 🔹 3. Alle skill-knoppen (Learn/Unlearn/Delete + specialisaties) blokkeren
+    // ðŸ”¹ 3. Alle skill-knoppen (Learn/Unlearn/Delete + specialisaties) blokkeren
     const accordion = document.getElementById("accordionSkills");
     if (accordion) {
         const buttons = accordion.querySelectorAll("button[data-action]");
         buttons.forEach((btn) => {
             if (canEdit) {
-                // NIET actief her-enable-en → XP-logica mag z’n werk blijven doen.
+                // NIET actief her-enable-en â†’ XP-logica mag zâ€™n werk blijven doen.
                 return;
             }
             btn.setAttribute("disabled", "disabled");
@@ -917,7 +887,7 @@ async function getNewSkills(idCharacter) {
                     const newSkillId = result.id;
 
                     // Volledig personage opnieuw ophalen zodat currentCharacter.skills
-                    // de nieuwe skill mét types bevat, en meteen de nieuwe skill openklappen
+                    // de nieuwe skill mÃ©t types bevat, en meteen de nieuwe skill openklappen
                     const openCollapseId = "collapse" + newSkillId;
                     getCharacter(idChar, openCollapseId);
 
@@ -1169,7 +1139,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
         }
     }
 
-    // “+” knop om specialisatie toe te voegen
+    // â€œ+â€ knop om specialisatie toe te voegen
     const addSpecBtn = document.createElement("button");
     addSpecBtn.type = "button";
     addSpecBtn.classList.add("btn", "btn-primary", "btn-sm", "mb-2");
@@ -1556,14 +1526,14 @@ function openDisciplineModal(idSkill, idCharacter, skill) {
             console.error("Fout bij ophalen discipline-lijst:", err);
         });
 
-    // Modal instantie maken (éénmalig)
+    // Modal instantie maken (Ã©Ã©nmalig)
     if (!disciplineModalInstance) {
         disciplineModalInstance = new bootstrap.Modal(modalEl);
     }
     disciplineModalInstance.show();
 }
 
-// Cancel knop: gewoon modal sluiten, géén skill-level wijzigen
+// Cancel knop: gewoon modal sluiten, gÃ©Ã©n skill-level wijzigen
 document.getElementById("disciplineCancelBtn")?.addEventListener("click", () => {
     if (disciplineModalInstance) {
         disciplineModalInstance.hide();
@@ -1607,13 +1577,13 @@ async function aetherFetchCurrentUser() {
 }
 
 /**
- * Vul de deelnemers‐dropdown (alleen voor director/administrator)
+ * Vul de deelnemersâ€dropdown (alleen voor director/administrator)
  */
 async function aetherPopulateParticipantSelect() {
     const host = document.getElementById('listParticipant');
     if (!host) return;
 
-    host.innerHTML = '<div class="form-text">Laden…</div>';
+    host.innerHTML = '<div class="form-text">Ladenâ€¦</div>';
 
     try {
         const response = await fetch('api/users/getUserList.php', {
@@ -1635,7 +1605,7 @@ async function aetherPopulateParticipantSelect() {
         // Optie: voorlopig geen deelnemer koppelen
         const optEmpty = document.createElement('option');
         optEmpty.value = '';
-        optEmpty.textContent = '— Nog geen deelnemer koppelen —';
+        optEmpty.textContent = 'â€” Nog geen deelnemer koppelen â€”';
         select.appendChild(optEmpty);
 
         users.forEach(u => {
@@ -1670,7 +1640,7 @@ async function aetherRenderHeaderForNewCharacter(user) {
         if (tpl) {
             pageNav.appendChild(tpl.content.cloneNode(true));
         }
-        // Deelnemers‐dropdown opbouwen
+        // Deelnemersâ€dropdown opbouwen
         await aetherPopulateParticipantSelect();
 
         // Status altijd als label "Draft" tonen (geen dropdown)
@@ -1690,7 +1660,7 @@ async function aetherRenderHeaderForNewCharacter(user) {
             }
         }
 
-        // XP voorlopig op "0 (...)" zetten – echte berekening gebeurt na aanmaken
+        // XP voorlopig op "0 (...)" zetten â€“ echte berekening gebeurt na aanmaken
         const xpLabel = document.getElementById('lblExperiance');
         if (xpLabel) {
             xpLabel.textContent = '0 (nog te berekenen na creatie)';
@@ -1770,10 +1740,9 @@ function aetherPrepareCharacterFormForCreation() {
     const skillsDiv = document.getElementById('skills');
     if (skillsDiv) {
         skillsDiv.classList.remove('d-none');
-        skillsDiv.innerHTML = `
-            <h4>Vaardigheden</h4>
+        skillsDiv.innerHTML = `
             <div class="alert alert-info mt-2">
-                Character creation — vaardigheden kunnen pas worden toegevoegd nadat het personage is aangemaakt.
+                Character creation â€” vaardigheden kunnen pas worden toegevoegd nadat het personage is aangemaakt.
             </div>
         `;
     }
@@ -1901,7 +1870,7 @@ async function aetherCreateNewCharacter() {
     const lastVal = lastName.value.trim();
 
     if (firstVal.length < 2 || lastVal.length < 2 || !classVal) {
-        alert('Kies een klasse en geef minstens 2 letters voor voornaam én familienaam.');
+        alert('Kies een klasse en geef minstens 2 letters voor voornaam Acn familienaam.');
         return;
     }
 
@@ -1933,7 +1902,7 @@ async function aetherCreateNewCharacter() {
         lastName: lastVal,
         class: classVal,
         // Verplichte velden uit de DB met "lege" standaardwaarden:
-        birthDate: '0000-00-00',
+        birthDate: '1900-01-01',
         birthPlace: '',
         nationality: '',
         stateRegisterNumber: '',
@@ -1950,40 +1919,40 @@ async function aetherCreateNewCharacter() {
     };
 
     try {
-        const response = await fetch('api/characters/newCharacter.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const result = await apiFetchJson("api/characters/newCharacter.php", {
+            method: "POST",
+            body: payload
         });
 
-        if (!response.ok) {
-            throw new Error('Serverfout bij het aanmaken van het personage.');
+        let newId = null;
+        if (result && typeof result === "object" && "id" in result) {
+            newId = result.id;
+        } else if (typeof result === "number" || typeof result === "string") {
+            newId = result;
         }
 
-        // newCharacter.php geeft gewoon het ID terug (bv: 42)
-        const newId = await response.json();
+        if (!newId) {
+            throw new Error("Geen geldig ID teruggekregen.");
+        }
 
         // We verlaten de create-modus en laden direct het nieuwe personage
         aetherIsCreatingCharacter = false;
 
-        // 👉 BELANGRIJK:
-        // Gebruik hier dezelfde functie die je nu al gebruikt
-        // wanneer je op een naam in de lijst klikt.
-        // Ik ga er van uit dat die functie loadCharacter(id) heet:
-        if (typeof loadCharacter === 'function') {
+        // Lijst verversen zodat het nieuwe personage ook in de lijst staat
+        await characterList();
+
+        // Laad het nieuwe personage in de standaard edit-view
+        if (typeof loadCharacter === "function") {
             await loadCharacter(newId);
         } else {
-            // Fallback: toon even een melding met het ID
-            alert('Nieuw personage aangemaakt met ID ' + newId + '. (Roep hier je eigen loadCharacter-functie aan.)');
+            await getCharacter(newId);
         }
 
     } catch (err) {
         console.error(err);
         alert('Het aanmaken van het personage is mislukt.');
     }
-}
-
-/**
+}/**
  * Event listeners koppelen (wordt op DOMContentLoaded opgeroepen)
  */
 function aetherSetupNewCharacterUI() {
@@ -1997,7 +1966,8 @@ function aetherSetupNewCharacterUI() {
 
     const createBtn = document.getElementById('createNewCharacter');
     if (createBtn) {
-        createBtn.addEventListener('click', function () {
+        createBtn.addEventListener('click', function (e) {
+            e.preventDefault();
             aetherCreateNewCharacter();
         });
     }
@@ -2012,3 +1982,8 @@ function aetherSetupNewCharacterUI() {
 
 // Deze listener stoort je bestaande listeners NIET; je mag er meerdere hebben.
 document.addEventListener('DOMContentLoaded', aetherSetupNewCharacterUI);
+
+
+
+
+
