@@ -33,14 +33,6 @@
         </div>
     </nav>
 
-    <!-- Offcanvas button -->
-    <div class="container mb-4" id="offcanvasButton">
-        <button class="p-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling" style="corner-shape: bevel; border: solid black 1px;">
-            <i class="fa-solid fa-user-gear"></i>
-            <i class="fa-solid fa-caret-right"></i>
-        </button>
-    </div>
-
     <!-- Offcanvas search box -->
     <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
         <div class="offcanvas-header">
@@ -64,6 +56,13 @@
 
         </div>
     </div>  
+    <!-- Offcanvas tab toggle -->
+    <div class="offcanvas-tab" id="offcanvasTabToggle">
+        <button class="btn btn-primary tab-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
+            <i class="fa-solid fa-user-gear"></i>
+            <i class="fa-solid fa-caret-right"></i>
+        </button>
+    </div>
 
     <!-- Character form -->
     <input type="hidden" id="idCharacter">
@@ -99,10 +98,12 @@
                 <label class="col-sm-3 col-form-label">Status</label>
                 <div class="col-sm-9">
                     <select class="form-select" id="state" name="state">
-                        <option value="active">Actief</option>
-                        <option value="inactive">Inactief</option>
-                        <option value="deceased">Overleden</option>
-                        <option value="other">Speciaal</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="deceased">Deceased</option>
+                        <option value="other">Other</option>
+                        <option value="draft">Draft</option>
+                        <option value="approve">Approve</option>
                     </select>
                 </div>
             </div>
@@ -250,48 +251,6 @@
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="skills">
                     <h4>Vaardigheden</h4>
-                    <!--
-                    <div class="accordion mb-3" id="accordionSkillsTest">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true">Academicus - Meester</button></h2>
-                            <div class="accordion-collapse collapse show" id="collapse1" data-bs-parent="#accordionSkills" style="">
-                                <div class="accordion-body">
-                                    <ul>
-                                        <li>Academic</li>
-                                    </ul>
-                                    <div class="d-flex justify-content-start align-items-center">
-                                        <div class="me-2 fw-bold">Specialisations: </div>
-                                        <div class="spec-group me-2">
-                                            <div class="input-group-text btn-outline-secondary">Historian</div>
-                                            <button type="button" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
-                                        </div> 
-                                        <div class="spec-group me-2">
-                                            <div class="input-group-text btn-outline-secondary">Antropology</div>
-                                            <button type="button" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
-                                        </div>
-                                        <button type="button" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
-                                    </div>
-                                    <p>Deze academische vaardigheid is een verzameling  van een reeks humane wetenschappen gebaseerd rond  geschiedenis, aardrijkskunde en de menselijke samenleving. Per niveau in Academicus mag je 1 extra taal  kiezen die je machtig bent.</p>
-                                    <ol>
-                                        <li class="">Je hebt de gemiddelde algemene kennis van  iemand die naar school geweest is.</li>
-                                        <li class="">Je bent een bolleboos die overal kan over  meepraten.</li>
-                                        <li class="">Je bent een zeer geleerd iemand.</li>
-                                    </ol>
-      
-                                    
-                                    <div class="btn-group mt-3" role="group">
-                                    <button data-action="up" data-skill="1" class="btn btn-primary">
-                                        <i class="fa-solid fa-caret-up" aria-hidden="true"></i> Learn
-                                    </button>
-                                    <button data-action="down" data-skill="1" class="btn btn-primary">
-                                        <i class="fa-solid fa-caret-down" aria-hidden="true"></i> Unlearn
-                                    </button>
-                                    <button data-action="delete" data-skill="1" class="btn btn-danger">
-                                        <i class="fa-solid fa-trash" aria-hidden="true"></i> Delete
-                                    </button>
-                                </div>
-    </div></div></div>
-                    </div>-->
                     <div class="accordion mb-3" id="accordionSkills"></div>
                     <div class="input-group mb-3">
                         <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
@@ -484,6 +443,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
     <script src="js/mainFunctions.js"></script>
+    <script src="js/characterState.js"></script>
+    <script src="js/characterUtils.js"></script>
     <script src="js/createCharacter.js"></script>
     <script src="js/characterFunctions.js"></script>
     <script src="js/navCharacter.js"></script>

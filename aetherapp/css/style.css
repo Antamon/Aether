@@ -2,6 +2,32 @@
     color: var(--bs-navbar-brand-hover-color);
 }
 
+#offcanvasScrolling {
+  --offcanvas-width: 320px;
+  width: var(--offcanvas-width);
+}
+
+.offcanvas-tab {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translate(-85%, -50%);
+  z-index: 1051; /* above offcanvas */
+  transition: transform 0.3s ease;
+}
+
+.offcanvas-tab .tab-button {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.75rem 0.5rem;
+}
+
+/* Tab schuift mee met open offcanvas */
+#offcanvasScrolling.show + .offcanvas-tab {
+  transform: translate(calc(var(--offcanvas-width) - 12px), -50%);
+}
+
 #eventList input[type=text], #eventList input[type=date], #eventNew input[type=text], #eventNew input[type=date]{
     width: 100%;
 }
@@ -22,11 +48,6 @@
 
 .navbar-brand img{
   width: 10em;
-}
-
-#offcanvasButton{
-  position: fixed;
-  left: 0px;
 }
 
 .spec-group{
