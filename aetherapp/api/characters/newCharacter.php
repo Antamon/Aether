@@ -1,9 +1,17 @@
 <?php
 declare(strict_types=1);
 
+session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+
+// 1. Moet ingelogd zijn
+if (!isset($_SESSION['user']['id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Not authenticated']);
+    exit;
+}
 
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
@@ -15,8 +23,48 @@ if (empty($postData) || !is_array($postData)) {
 }
 
 try {
-    // Dynamische INSERT op basis van de keys in $postData
+    // 2. Bepaal creator
+    $creatorId = (int) $_SESSION['user']['id'];
+
+    // 3. Standaardwaarden afdwingen
+
+    // createdBy: altijd huidige user, tenzij je expliciet iets anders wil toelaten
+    if (empty($postData['createdBy'])) {
+        $postData['createdBy'] = $creatorId;
+    }
+
+    // createdAt: huidige timestamp als er niets wordt meegestuurd
+    if (empty($postData['createdAt'])) {
+        // eventueel expliciet timezone zetten als nodig
+        // date_default_timezone_set('Europe/Brussels');
+        $postData['createdAt'] = date('Y-m-d H:i:s');
+    }
+
+    // state: bij creatie altijd 'draft', tenzij je bewust een andere state toelaat
+    if (empty($postData['state'])) {
+        $postData['state'] = 'draft';
+    }
+
+    // (optioneel) minimale sanity check op class / firstName / lastName
+    // Dit is vooral server-side safety; frontend valideert al.
+    if (
+        empty($postData['class']) ||
+        empty($postData['firstName']) ||
+        empty($postData['lastName'])
+    ) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Klasse, voornaam en familienaam zijn verplicht.']);
+        exit;
+    }
+
+    // 4. Dynamische INSERT op basis van de keys in $postData
     $columns = array_keys($postData);
+    if (empty($columns)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Geen velden om op te slaan.']);
+        exit;
+    }
+
     $columnList = implode(', ', $columns);
     $placeholders = ':' . implode(', :', $columns);
 
@@ -24,10 +72,13 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($postData);
 
-    // Zelfde gedrag als vroeger: gewoon het nieuwe ID teruggeven (nummer = geldige JSON)
+    // Zelfde gedrag als vroeger: enkel het nieuwe ID teruggeven
     echo $pdo->lastInsertId();
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Kon character niet aanmaken.']);
+    echo json_encode([
+        'error' => 'Kon character niet aanmaken.',
+        // 'details' => $e->getMessage(), // eventueel tijdelijk aanzetten voor debugging
+    ]);
 }
