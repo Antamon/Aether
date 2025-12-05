@@ -19,13 +19,12 @@
 }
 
 .offcanvas-tab .tab-button {
-  background-color: #640000;
-  color:rgba(255, 255, 255, 0.55);
+background-color: #640000;
+  color: rgba(255, 255, 255, 0.55);
   pointer-events: auto;
   border-radius: 0 0.5rem 0.5rem 0;
-  padding: 0.75rem 0.5rem;
-  min-height: 80px;
-  min-width: 80px;
+  padding: 0.75rem 0.5rem 0.75rem 1rem;
+  font-size: 1.5rem;
 }
 
 

@@ -67,10 +67,14 @@ async function getCharacter(id, openCollapseId = null) {
         console.log("isAdmin:", isAdmin, "isOwnerPlayer:", isOwnerPlayer, "canEdit:", canEdit);
 
         // Algemene zichtbaarheid
-        document.getElementById("groupNewCharacter").classList.add("d-none");
-        document.getElementById("characterForm").classList.remove("d-none");
-        document.getElementById("skills").classList.remove("d-none");
-        document.getElementById("idCharacter").value = data["id"];
+        const grpNew = document.getElementById("groupNewCharacter");
+        if (grpNew) grpNew.classList.add("d-none");
+        const formEl = document.getElementById("characterForm");
+        if (formEl) formEl.classList.remove("d-none");
+        const skillsEl = document.getElementById("skills");
+        if (skillsEl) skillsEl.classList.remove("d-none");
+        const idInput = document.getElementById("idCharacter");
+        if (idInput) idInput.value = data["id"];
 
         const formContainer = document.getElementById("characterForm");
         const accordionSkills = document.getElementById("accordionSkills");

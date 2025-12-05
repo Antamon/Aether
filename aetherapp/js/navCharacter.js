@@ -206,6 +206,8 @@ function setupNavTabHandlers(character) {
             closeOffcanvasIfOpen();
             if (targetTab === "background") {
                 showBackgroundTab(currentCharacter || character);
+            } else if (targetTab === "personality") {
+                showPersonalityTab(currentCharacter || character);
             } else {
                 // default terug naar sheet
                 showSheetTab();

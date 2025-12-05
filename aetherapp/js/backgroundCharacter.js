@@ -11,6 +11,26 @@ const AETHER_BACKGROUND_SECTIONS = {
     }
 };
 
+const AETHER_PERSONALITY_SECTIONS = {
+    nature: {
+        title: "Nature",
+        maxLength: 1000
+    },
+    demeanour: {
+        title: "Demeanour",
+        maxLength: 1000
+    }
+};
+
+const AETHER_TIE_TYPES = [
+    { value: "superior", label: "Superior" },
+    { value: "dependent", label: "Dependent" },
+    { value: "spouse", label: "Spouse" },
+    { value: "ally", label: "Ally" },
+    { value: "adversary", label: "Adversary" },
+    { value: "person_of_interest", label: "Person of interest" }
+];
+
 function canEditCharacterContent(character) {
     if (!currentUser || !character) return false;
     const role = currentUser.role;
@@ -28,6 +48,26 @@ async function fetchCharacterSections(idCharacter) {
     });
 }
 
+async function fetchCharacterTies(idCharacter) {
+    return apiFetchJson("api/characters/getCharacterTies.php", {
+        method: "POST",
+        body: { idCharacter }
+    });
+}
+
+async function fetchTieOptions() {
+    return apiFetchJson("api/characters/getCharacterTieOptions.php", {
+        method: "GET"
+    });
+}
+
+async function saveCharacterTie(payload) {
+    return apiFetchJson("api/characters/saveCharacterTie.php", {
+        method: "POST",
+        body: payload
+    });
+}
+
 async function saveCharacterSection(idCharacter, section, content) {
     return apiFetchJson("api/characters/saveCharacterSection.php", {
         method: "POST",
@@ -40,6 +80,8 @@ function showSheetTab() {
     if (sheetRow) sheetRow.classList.remove("d-none");
     const bgTab = document.getElementById("backgroundTab");
     if (bgTab) bgTab.classList.add("d-none");
+    const persTab = document.getElementById("personalityTab");
+    if (persTab) persTab.classList.add("d-none");
     const characterForm = document.getElementById("characterForm");
     if (characterForm) characterForm.classList.remove("d-none");
     const skills = document.getElementById("skills");
@@ -56,6 +98,10 @@ async function showBackgroundTab(character) {
     if (characterForm) characterForm.classList.add("d-none");
     const skills = document.getElementById("skills");
     if (skills) skills.classList.add("d-none");
+
+    // Andere tab verbergen
+    const persTabHide = document.getElementById("personalityTab");
+    if (persTabHide) persTabHide.classList.add("d-none");
 
     const bgTab = document.getElementById("backgroundTab");
     if (!bgTab) return;
@@ -82,33 +128,82 @@ async function showBackgroundTab(character) {
     container.style.height = "auto";
 
     container.innerHTML = `<div class="text-muted">Loading background...</div>`;
+    await loadAndRenderSections(container, character, AETHER_BACKGROUND_SECTIONS, "background");
+}
+
+async function showPersonalityTab(character) {
+    const sheetRow = document.querySelector("#sheetBody .row");
+    if (sheetRow) sheetRow.classList.remove("d-none");
+    const sheetBody = document.getElementById("sheetBody");
+    if (sheetBody) sheetBody.classList.remove("d-none");
+    const characterForm = document.getElementById("characterForm");
+    if (characterForm) characterForm.classList.add("d-none");
+    const skills = document.getElementById("skills");
+    if (skills) skills.classList.add("d-none");
+
+    // Andere tab verbergen
+    const bgTabHide = document.getElementById("backgroundTab");
+    if (bgTabHide) bgTabHide.classList.add("d-none");
+
+    const persTab = document.getElementById("personalityTab");
+    if (!persTab) return;
+    persTab.classList.remove("d-none");
+    persTab.style.display = "block";
+    persTab.hidden = false;
+    persTab.classList.add("p-3");
+    persTab.style.backgroundColor = "#fff";
+    persTab.style.minHeight = "300px";
+    persTab.style.position = "relative";
+    persTab.style.zIndex = "1";
+    persTab.style.clear = "both";
+
+    const container = document.getElementById("personalityContent");
+    if (!container) return;
+    container.classList.remove("d-none");
+    container.style.display = "block";
+    container.hidden = false;
+    container.style.minHeight = "400px";
+    container.style.border = "1px dashed #ccc";
+    container.style.visibility = "visible";
+    container.style.overflow = "visible";
+    container.style.padding = "0";
+    container.style.height = "auto";
+
+    container.innerHTML = `<div class="text-muted">Loading personality...</div>`;
+    await loadAndRenderSections(container, character, AETHER_PERSONALITY_SECTIONS, "personality");
+}
+
+async function loadAndRenderSections(container, character, metaMap, tabName) {
     try {
         const data = await fetchCharacterSections(character.id);
-        console.log("Background sections:", data);
-        renderBackgroundSections(container, character, data || {});
-        bgTab.scrollIntoView({ behavior: "smooth", block: "start" });
+        console.log(`${tabName === "background" ? "Background" : "Personality"} sections:`, data);
+        renderSections(container, character, data || {}, metaMap, tabName);
+        container.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Enkel bij background: ties laden en renderen
+        if (tabName === "background") {
+            await renderTies(container, character);
+        }
     } catch (err) {
-        console.error("Fout bij laden background:", err);
-        container.innerHTML = `<div class="text-danger">Kon background niet laden.</div>`;
-        // Toon lege secties als fallback
-        renderBackgroundSections(container, character, {});
+        console.error(`Fout bij laden ${tabName}:`, err);
+        container.innerHTML = `<div class="text-danger">Kon ${tabName} niet laden.</div>`;
+        renderSections(container, character, {}, metaMap, tabName);
     }
 }
 
-function renderBackgroundSections(container, character, sections) {
+function renderSections(container, character, sections, metaMap, tabName) {
     container.style.display = "block";
     container.hidden = false;
     container.innerHTML = "";
     const canEdit = canEditCharacterContent(character);
 
-    Object.entries(AETHER_BACKGROUND_SECTIONS).forEach(([key, meta]) => {
-        const block = renderBackgroundBlock(character, key, meta.title, sections[key] || "", canEdit);
+    Object.entries(metaMap).forEach(([key, meta]) => {
+        const block = renderSectionBlock(character, key, meta.title, sections[key] || "", canEdit);
         container.appendChild(block);
     });
 
     console.log("Background blocks rendered:", container.children.length);
     console.log("Background container height:", container.clientHeight);
-    const csTab = getComputedStyle(document.getElementById("backgroundTab"));
+    const csTab = getComputedStyle(tabName === "background" ? document.getElementById("backgroundTab") : document.getElementById("personalityTab"));
     const csCont = getComputedStyle(container);
     console.log("backgroundTab style:", { display: csTab.display, height: csTab.height });
     console.log("backgroundContent style:", { display: csCont.display, height: csCont.height });
@@ -116,13 +211,13 @@ function renderBackgroundSections(container, character, sections) {
 
     // Force height based on content in case parent collapse
     container.style.height = container.scrollHeight + "px";
-    const bgTab = document.getElementById("backgroundTab");
+    const bgTab = tabName === "background" ? document.getElementById("backgroundTab") : document.getElementById("personalityTab");
     if (bgTab) {
         bgTab.style.height = "auto";
     }
 
     setTimeout(() => {
-        const csTab2 = getComputedStyle(document.getElementById("backgroundTab"));
+        const csTab2 = getComputedStyle(tabName === "background" ? document.getElementById("backgroundTab") : document.getElementById("personalityTab"));
         const csCont2 = getComputedStyle(container);
         console.log("backgroundTab style (after timeout):", { display: csTab2.display, height: csTab2.height });
         console.log("backgroundContent style (after timeout):", { display: csCont2.display, height: csCont2.height });
@@ -145,7 +240,7 @@ function renderBackgroundSections(container, character, sections) {
     }, 200);
 }
 
-function renderBackgroundBlock(character, sectionKey, title, content, canEdit) {
+function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     const wrapper = document.createElement("div");
     wrapper.className = "mb-4 border rounded p-3 bg-white background-section";
 
@@ -306,4 +401,199 @@ function renderBackgroundBlock(character, sectionKey, title, content, canEdit) {
     }
 
     return wrapper;
+}
+
+// -------- Ties ----------
+async function renderTies(container, character) {
+    const canEdit = canEditCharacterContent(character);
+    let ties = [];
+    let options = [];
+    try {
+        ties = await fetchCharacterTies(character.id) || [];
+    } catch (err) {
+        console.error("Fout bij ophalen ties:", err);
+    }
+    try {
+        options = await fetchTieOptions() || [];
+    } catch (err) {
+        console.error("Fout bij ophalen tie opties:", err);
+    }
+
+    const block = document.createElement("div");
+    block.className = "mb-4 border rounded p-3 bg-white background-section";
+
+    const header = document.createElement("div");
+    header.className = "d-flex align-items-center mb-2";
+
+    const h4 = document.createElement("h4");
+    h4.className = "mb-0";
+    h4.textContent = "Ties";
+    header.appendChild(h4);
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "btn btn-sm btn-primary ms-2";
+    addBtn.textContent = "Add tie";
+    if (canEdit) {
+        header.appendChild(addBtn);
+    }
+
+    block.appendChild(header);
+
+    // Editor row
+    const editorRow = document.createElement("div");
+    editorRow.className = "row g-2 align-items-center mb-3 d-none";
+
+    const selCharCol = document.createElement("div");
+    selCharCol.className = "col-lg-4 col-12";
+    const selChar = document.createElement("select");
+    selChar.className = "form-select form-select-sm";
+    selCharCol.appendChild(selChar);
+
+    const selTypeCol = document.createElement("div");
+    selTypeCol.className = "col-lg-3 col-6";
+    const selType = document.createElement("select");
+    selType.className = "form-select form-select-sm";
+    AETHER_TIE_TYPES.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.value;
+        opt.textContent = t.label;
+        selType.appendChild(opt);
+    });
+    selTypeCol.appendChild(selType);
+
+    const descCol = document.createElement("div");
+    descCol.className = "col-lg-5 col-12";
+    const descInput = document.createElement("input");
+    descInput.type = "text";
+    descInput.maxLength = 255;
+    descInput.className = "form-control form-control-sm";
+    descInput.placeholder = "Description";
+    descCol.appendChild(descInput);
+
+    editorRow.appendChild(selCharCol);
+    editorRow.appendChild(selTypeCol);
+    editorRow.appendChild(descCol);
+
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "d-flex gap-2 mb-3 d-none";
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn btn-sm btn-primary";
+    saveBtn.textContent = "Save";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn btn-sm btn-outline-secondary";
+    cancelBtn.textContent = "Cancel";
+    actionsRow.appendChild(saveBtn);
+    actionsRow.appendChild(cancelBtn);
+
+    block.appendChild(editorRow);
+    block.appendChild(actionsRow);
+
+    // List
+    const list = document.createElement("div");
+    block.appendChild(list);
+
+    // Populate options
+    const fillOptions = () => {
+        selChar.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select character";
+        selChar.appendChild(placeholder);
+        options.forEach(opt => {
+            const o = document.createElement("option");
+            o.value = opt.id;
+            o.textContent = opt.displayName;
+            selChar.appendChild(o);
+        });
+    };
+    fillOptions();
+
+    let editTieId = null;
+
+    function hideEditor() {
+        editTieId = null;
+        editorRow.classList.add("d-none");
+        actionsRow.classList.add("d-none");
+        selChar.value = "";
+        selType.value = AETHER_TIE_TYPES[0].value;
+        descInput.value = "";
+    }
+
+    function showEditor(tie) {
+        if (!canEdit) return;
+        editorRow.classList.remove("d-none");
+        actionsRow.classList.remove("d-none");
+        editTieId = tie ? tie.id : null;
+        selChar.value = tie ? tie.idOtherCharacter : "";
+        selType.value = tie ? tie.relationType : AETHER_TIE_TYPES[0].value;
+        descInput.value = tie ? (tie.description || "") : "";
+    }
+
+    function renderList() {
+        list.innerHTML = "";
+        if (!ties || ties.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "text-muted";
+            empty.textContent = "No ties yet.";
+            list.appendChild(empty);
+            return;
+        }
+        ties.forEach(t => {
+            const row = document.createElement("div");
+            row.className = "mb-2";
+
+            if (canEdit) {
+                const editBtn = document.createElement("button");
+                editBtn.type = "button";
+                editBtn.className = "btn btn-link p-0 me-1";
+                editBtn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
+                editBtn.addEventListener("click", () => showEditor(t));
+                row.appendChild(editBtn);
+            }
+
+            const name = document.createElement("strong");
+            name.textContent = t.otherName || "Onbekend";
+            row.appendChild(name);
+
+            const typeSpan = document.createElement("span");
+            typeSpan.className = "text-muted ms-1";
+            typeSpan.textContent = `(${t.relationTypeLabel || t.relationType || ""})`;
+            row.appendChild(typeSpan);
+
+            const descSpan = document.createElement("span");
+            descSpan.className = "ms-1";
+            descSpan.textContent = `- ${t.description || ""}`;
+            row.appendChild(descSpan);
+
+            list.appendChild(row);
+        });
+    }
+
+    renderList();
+
+    if (canEdit) {
+        addBtn.addEventListener("click", () => showEditor(null));
+        cancelBtn.addEventListener("click", () => hideEditor());
+        saveBtn.addEventListener("click", async () => {
+            const payload = {
+                idCharacter: character.id,
+                idTie: editTieId,
+                idOtherCharacter: selChar.value ? Number(selChar.value) : 0,
+                relationType: selType.value,
+                description: descInput.value.trim()
+            };
+            try {
+                const result = await saveCharacterTie(payload);
+                ties = result && result.ties ? result.ties : await fetchCharacterTies(character.id);
+                renderList();
+                hideEditor();
+            } catch (err) {
+                console.error("Fout bij opslaan tie:", err);
+                alert("Opslaan van tie mislukt.");
+            }
+        });
+    }
+
+    container.appendChild(block);
 }

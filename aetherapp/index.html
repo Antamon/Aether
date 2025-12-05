@@ -114,9 +114,10 @@
 
     <template id="tplNavSheetParticipant">
         <ul class="nav nav-tabs" id="navSheet">
-            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#">Personagekaart</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Achtergrond</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Dagboek</a></li>
+            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#">Character sheet</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Background</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
         </ul>
         <div class="row py-2 navRow" id="adminSheetHead">
             <div class="col-lg-6 col-12 row">
@@ -265,6 +266,10 @@
         <!-- Background tab content -->
         <div class="d-none w-100" id="backgroundTab">
             <div id="backgroundContent" class="mt-3"></div>
+        </div>
+        <!-- Personality tab content -->
+        <div class="d-none w-100" id="personalityTab">
+            <div id="personalityContent" class="mt-3"></div>
         </div>
     </div>
     </div>
