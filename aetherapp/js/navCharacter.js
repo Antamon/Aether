@@ -197,14 +197,18 @@ function setActiveNavTab(tabName) {
 }
 
 function setupNavTabHandlers(character) {
+    if (window.AETHER_NAV_HANDLERS_BOUND) return;
+    window.AETHER_NAV_HANDLERS_BOUND = true;
+
     const tabs = document.querySelectorAll("#navSheet .navTab");
     tabs.forEach(tab => {
         tab.addEventListener("click", (e) => {
             e.preventDefault();
             const targetTab = tab.dataset.tab || "sheet";
             setActiveNavTab(targetTab);
+            closeOffcanvasIfOpen();
             if (targetTab === "background") {
-                showBackgroundTab(character);
+                showBackgroundTab(currentCharacter || character);
             } else {
                 // default terug naar sheet
                 showSheetTab();
@@ -213,18 +217,11 @@ function setupNavTabHandlers(character) {
     });
 }
 
-// Fallback: globale delegatie zodat clicks blijven werken na rerender
-document.addEventListener("click", (e) => {
-    const tab = e.target.closest("#navSheet .navTab");
-    if (!tab) return;
-    e.preventDefault();
-    const targetTab = tab.dataset.tab || "sheet";
-    setActiveNavTab(targetTab);
-    if (targetTab === "background") {
-        if (typeof currentCharacter !== "undefined" && currentCharacter) {
-            showBackgroundTab(currentCharacter);
-        }
-    } else {
-        showSheetTab();
+function closeOffcanvasIfOpen() {
+    const offcanvasEl = document.getElementById("offcanvasScrolling");
+    if (!offcanvasEl) return;
+    const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+    if (offcanvasInstance) {
+        offcanvasInstance.hide();
     }
-});
+}

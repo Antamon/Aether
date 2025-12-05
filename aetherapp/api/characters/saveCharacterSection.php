@@ -44,7 +44,13 @@ try {
     }
 
     $userId = (int) $_SESSION['user']['id'];
-    $role   = $_SESSION['user']['role'] ?? '';
+    // Rol uit DB ophalen (zelfde bron als getCurrentUser) zodat permissies kloppen
+    $stmtUser = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
+    $stmtUser->execute([':id' => $userId]);
+    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+    $roleFromDb = $userRow['role'] ?? null;
+    $role   = $roleFromDb ?: ($_SESSION['user']['role'] ?? 'participant');
 
     $isAdmin = ($role === 'administrator' || $role === 'director');
     $isOwnerPlayer = (

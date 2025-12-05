@@ -47,8 +47,11 @@ function showSheetTab() {
 }
 
 async function showBackgroundTab(character) {
+    // Laat de hoofd-row zichtbaar; we verbergen alleen de inhoud (form/skills).
     const sheetRow = document.querySelector("#sheetBody .row");
-    if (sheetRow) sheetRow.classList.add("d-none");
+    if (sheetRow) sheetRow.classList.remove("d-none");
+    const sheetBody = document.getElementById("sheetBody");
+    if (sheetBody) sheetBody.classList.remove("d-none");
     const characterForm = document.getElementById("characterForm");
     if (characterForm) characterForm.classList.add("d-none");
     const skills = document.getElementById("skills");
@@ -57,9 +60,26 @@ async function showBackgroundTab(character) {
     const bgTab = document.getElementById("backgroundTab");
     if (!bgTab) return;
     bgTab.classList.remove("d-none");
+    bgTab.style.display = "block";
+    bgTab.hidden = false;
+    bgTab.classList.add("p-3");
+    bgTab.style.backgroundColor = "#fff";
+    bgTab.style.minHeight = "300px";
+    bgTab.style.position = "relative";
+    bgTab.style.zIndex = "1";
+    bgTab.style.clear = "both";
 
     const container = document.getElementById("backgroundContent");
     if (!container) return;
+    container.classList.remove("d-none");
+    container.style.display = "block";
+    container.hidden = false;
+    container.style.minHeight = "400px";
+    container.style.border = "1px dashed #ccc";
+    container.style.visibility = "visible";
+    container.style.overflow = "visible";
+    container.style.padding = "0";
+    container.style.height = "auto";
 
     container.innerHTML = `<div class="text-muted">Loading background...</div>`;
     try {
@@ -76,6 +96,8 @@ async function showBackgroundTab(character) {
 }
 
 function renderBackgroundSections(container, character, sections) {
+    container.style.display = "block";
+    container.hidden = false;
     container.innerHTML = "";
     const canEdit = canEditCharacterContent(character);
 
@@ -83,11 +105,49 @@ function renderBackgroundSections(container, character, sections) {
         const block = renderBackgroundBlock(character, key, meta.title, sections[key] || "", canEdit);
         container.appendChild(block);
     });
+
+    console.log("Background blocks rendered:", container.children.length);
+    console.log("Background container height:", container.clientHeight);
+    const csTab = getComputedStyle(document.getElementById("backgroundTab"));
+    const csCont = getComputedStyle(container);
+    console.log("backgroundTab style:", { display: csTab.display, height: csTab.height });
+    console.log("backgroundContent style:", { display: csCont.display, height: csCont.height });
+    console.log("backgroundContent innerHTML:", container.innerHTML);
+
+    // Force height based on content in case parent collapse
+    container.style.height = container.scrollHeight + "px";
+    const bgTab = document.getElementById("backgroundTab");
+    if (bgTab) {
+        bgTab.style.height = "auto";
+    }
+
+    setTimeout(() => {
+        const csTab2 = getComputedStyle(document.getElementById("backgroundTab"));
+        const csCont2 = getComputedStyle(container);
+        console.log("backgroundTab style (after timeout):", { display: csTab2.display, height: csTab2.height });
+        console.log("backgroundContent style (after timeout):", { display: csCont2.display, height: csCont2.height });
+        // Log parent chain for visibility/debug
+        let p = container;
+        const chain = [];
+        while (p) {
+            const cs = getComputedStyle(p);
+            chain.push({
+                node: p.id || p.className || p.nodeName,
+                display: cs.display,
+                visibility: cs.visibility,
+                height: cs.height,
+                clientHeight: p.clientHeight
+            });
+            p = p.parentElement;
+            if (p && p.id === "sheetBody") break;
+        }
+        console.log("backgroundContent parent chain:", chain);
+    }, 200);
 }
 
 function renderBackgroundBlock(character, sectionKey, title, content, canEdit) {
     const wrapper = document.createElement("div");
-    wrapper.className = "mb-4";
+    wrapper.className = "mb-4 border rounded p-3 bg-white background-section";
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-center mb-2";
