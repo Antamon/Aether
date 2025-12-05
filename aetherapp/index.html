@@ -58,7 +58,7 @@
     </div>  
     <!-- Offcanvas tab toggle -->
     <div class="offcanvas-tab" id="offcanvasTabToggle">
-        <button class="btn btn-primary tab-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
+        <button class="btn tab-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
             <i class="fa-solid fa-user-gear"></i>
             <i class="fa-solid fa-caret-right"></i>
         </button>
@@ -71,8 +71,10 @@
     <template id="tplNavSheetAdmin">
         <ul class="nav nav-tabs" id="navSheet">
             <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#">Personagekaart</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Achtergrond</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Dagboek</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#">Background</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#">Diary</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#">Personality</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#">Economy</a></li>
         </ul>
         <div class="row py-2 navRow">
             <div class="col-lg-6 col-12 row">
@@ -445,6 +447,8 @@
     <script src="js/mainFunctions.js"></script>
     <script src="js/characterState.js"></script>
     <script src="js/characterUtils.js"></script>
+    <script src="js/apiCharacter.js"></script>
+    <script src="js/formCharacter.js"></script>
     <script src="js/createCharacter.js"></script>
     <script src="js/characterFunctions.js"></script>
     <script src="js/navCharacter.js"></script>

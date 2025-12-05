@@ -11,21 +11,28 @@
   position: fixed;
   top: 50%;
   left: 0;
-  transform: translate(-85%, -50%);
-  z-index: 1051; /* above offcanvas */
+  /* iets buiten beeld, maar nog zichtbaar */
+  transform: translate(-20%, -50%);
+  z-index: 1061; /* above offcanvas/backdrop */
   transition: transform 0.3s ease;
+  pointer-events: none; /* enkel knop klikbaar */
 }
 
 .offcanvas-tab .tab-button {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  background-color: #640000;
+  color:rgba(255, 255, 255, 0.55);
+  pointer-events: auto;
   border-radius: 0 0.5rem 0.5rem 0;
   padding: 0.75rem 0.5rem;
+  min-height: 80px;
+  min-width: 80px;
 }
+
 
 /* Tab schuift mee met open offcanvas */
 #offcanvasScrolling.show + .offcanvas-tab {
-  transform: translate(calc(var(--offcanvas-width) - 12px), -50%);
+  left: var(--offcanvas-width);
+  transform: translate(-100%, -50%);
 }
 
 #eventList input[type=text], #eventList input[type=date], #eventNew input[type=text], #eventNew input[type=date]{
