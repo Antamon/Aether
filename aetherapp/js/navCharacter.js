@@ -197,9 +197,6 @@ function setActiveNavTab(tabName) {
 }
 
 function setupNavTabHandlers(character) {
-    if (window.AETHER_NAV_HANDLERS_BOUND) return;
-    window.AETHER_NAV_HANDLERS_BOUND = true;
-
     const tabs = document.querySelectorAll("#navSheet .navTab");
     tabs.forEach(tab => {
         tab.addEventListener("click", (e) => {

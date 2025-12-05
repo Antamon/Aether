@@ -167,7 +167,7 @@ function renderBackgroundBlock(character, sectionKey, title, content, canEdit) {
     }
 
     const viewDiv = document.createElement("div");
-    viewDiv.className = "border rounded p-3 bg-light";
+    viewDiv.className = "p-3";
     viewDiv.innerHTML = content || `<span class="text-muted">Geen tekst beschikbaar.</span>`;
 
     // Editor
