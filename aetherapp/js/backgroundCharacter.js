@@ -175,12 +175,18 @@ function renderBackgroundBlock(character, sectionKey, title, content, canEdit) {
     editorWrap.className = "d-none";
 
     const toolbar = document.createElement("div");
-    toolbar.className = "btn-group mb-2";
+    toolbar.className = "btn-group mb-2 flex-wrap";
     toolbar.innerHTML = `
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold"><i class="fa-solid fa-bold"></i></button>
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic"><i class="fa-solid fa-italic"></i></button>
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertUnorderedList"><i class="fa-solid fa-list-ul"></i></button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertOrderedList"><i class="fa-solid fa-list-ol"></i></button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h2">H2</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h3">H3</button>
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h4">H4</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h5">H5</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="p">P</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat"><i class="fa-solid fa-eraser"></i></button>
     `;
 
     const editor = document.createElement("div");
@@ -189,13 +195,62 @@ function renderBackgroundBlock(character, sectionKey, title, content, canEdit) {
     editor.style.minHeight = "180px";
     editor.innerHTML = content || "";
 
+    const refreshToolbarState = () => {
+        const sel = document.getSelection();
+        let inEditor = false;
+        if (sel && sel.anchorNode) {
+            let node = sel.anchorNode;
+            while (node) {
+                if (node === editor) {
+                    inEditor = true;
+                    break;
+                }
+                node = node.parentNode;
+            }
+        }
+        toolbar.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
+        if (!inEditor) return;
+
+        const boldActive = document.queryCommandState("bold");
+        const italicActive = document.queryCommandState("italic");
+        const listActive = document.queryCommandState("insertUnorderedList");
+        const olistActive = document.queryCommandState("insertOrderedList");
+        if (boldActive) toolbar.querySelector('[data-cmd="bold"]')?.classList.add("active");
+        if (italicActive) toolbar.querySelector('[data-cmd="italic"]')?.classList.add("active");
+        if (listActive) toolbar.querySelector('[data-cmd="insertUnorderedList"]')?.classList.add("active");
+        if (olistActive) toolbar.querySelector('[data-cmd="insertOrderedList"]')?.classList.add("active");
+
+        const blockTag = (() => {
+            const sel = document.getSelection();
+            if (!sel || !sel.anchorNode) return null;
+            let n = sel.anchorNode;
+            while (n && n !== editor) {
+                if (n.nodeType === 1) {
+                    const tag = n.nodeName.toLowerCase();
+                    if (["h2", "h3", "h4", "h5", "p", "div"].includes(tag)) return tag;
+                }
+                n = n.parentNode;
+            }
+            return null;
+        })();
+        if (blockTag) {
+            const btn = toolbar.querySelector(`[data-cmd="formatBlock"][data-value="${blockTag}"]`);
+            if (btn) btn.classList.add("active");
+        }
+    };
+
     toolbar.querySelectorAll("button").forEach(btn => {
         btn.addEventListener("click", () => {
             const cmd = btn.dataset.cmd;
             const val = btn.dataset.value || null;
             editor.focus();
             document.execCommand(cmd, false, val);
+            refreshToolbarState();
         });
+    });
+
+    ["keyup", "mouseup", "focus"].forEach(evt => {
+        editor.addEventListener(evt, refreshToolbarState);
     });
 
     const actions = document.createElement("div");
