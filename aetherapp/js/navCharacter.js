@@ -172,4 +172,34 @@ function pageNav(userRole, character) {
             lblExp.innerHTML = `${usedExperience} (${expertise})`;
         }
     }
+
+    setupNavTabHandlers(character);
+}
+
+function setActiveNavTab(tabName) {
+    const tabs = document.querySelectorAll("#navSheet .navTab");
+    tabs.forEach(tab => tab.classList.remove("active"));
+    tabs.forEach(tab => {
+        const t = tab.dataset.tab || "sheet";
+        if (t === tabName || (!tab.dataset.tab && tabName === "sheet")) {
+            tab.classList.add("active");
+        }
+    });
+}
+
+function setupNavTabHandlers(character) {
+    const tabs = document.querySelectorAll("#navSheet .navTab");
+    tabs.forEach(tab => {
+        tab.addEventListener("click", (e) => {
+            e.preventDefault();
+            const targetTab = tab.dataset.tab || "sheet";
+            setActiveNavTab(targetTab);
+            if (targetTab === "background") {
+                showBackgroundTab(character);
+            } else {
+                // default terug naar sheet
+                showSheetTab();
+            }
+        });
+    });
 }

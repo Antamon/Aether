@@ -70,11 +70,11 @@
     <!-- Character nav templates -->
     <template id="tplNavSheetAdmin">
         <ul class="nav nav-tabs" id="navSheet">
-            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#">Personagekaart</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Background</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Diary</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Personality</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Economy</a></li>
+            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#" data-tab="character_sheet">Character sheet</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Background</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy">Economy</a></li>
         </ul>
         <div class="row py-2 navRow">
             <div class="col-lg-6 col-12 row">
@@ -115,8 +115,8 @@
     <template id="tplNavSheetParticipant">
         <ul class="nav nav-tabs" id="navSheet">
             <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#">Personagekaart</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Achtergrond</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#">Dagboek</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Achtergrond</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Dagboek</a></li>
         </ul>
         <div class="row py-2 navRow" id="adminSheetHead">
             <div class="col-lg-6 col-12 row">
@@ -253,15 +253,20 @@
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="skills">
                     <h4>Vaardigheden</h4>
-                    <div class="accordion mb-3" id="accordionSkills"></div>
-                    <div class="input-group mb-3">
-                        <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
-                        <select class="form-select" id="idNewSkill"></select>
-                        <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
-                    </div>
+                <div class="accordion mb-3" id="accordionSkills"></div>
+                <div class="input-group mb-3">
+                    <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
+                    <select class="form-select" id="idNewSkill"></select>
+                    <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
                 </div>
             </div>     
         </div>
+
+        <!-- Background tab content -->
+        <div class="d-none" id="backgroundTab">
+            <div id="backgroundContent" class="mt-3"></div>
+        </div>
+    </div>
     </div>
 
     
@@ -449,6 +454,7 @@
     <script src="js/characterUtils.js"></script>
     <script src="js/apiCharacter.js"></script>
     <script src="js/formCharacter.js"></script>
+    <script src="js/backgroundCharacter.js"></script>
     <script src="js/createCharacter.js"></script>
     <script src="js/characterFunctions.js"></script>
     <script src="js/navCharacter.js"></script>

@@ -48,6 +48,8 @@ async function getCharacter(id, openCollapseId = null) {
 
         // Navigatie bovenaan
         pageNav(currentUser.role, data);
+        setActiveNavTab("sheet");
+        showSheetTab();
 
         // Bepalen of dit personage bewerkbaar is voor de huidige user
         const role = currentUser?.role || "";
