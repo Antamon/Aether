@@ -40,11 +40,20 @@ function showSheetTab() {
     if (sheetRow) sheetRow.classList.remove("d-none");
     const bgTab = document.getElementById("backgroundTab");
     if (bgTab) bgTab.classList.add("d-none");
+    const characterForm = document.getElementById("characterForm");
+    if (characterForm) characterForm.classList.remove("d-none");
+    const skills = document.getElementById("skills");
+    if (skills) skills.classList.remove("d-none");
 }
 
 async function showBackgroundTab(character) {
     const sheetRow = document.querySelector("#sheetBody .row");
     if (sheetRow) sheetRow.classList.add("d-none");
+    const characterForm = document.getElementById("characterForm");
+    if (characterForm) characterForm.classList.add("d-none");
+    const skills = document.getElementById("skills");
+    if (skills) skills.classList.add("d-none");
+
     const bgTab = document.getElementById("backgroundTab");
     if (!bgTab) return;
     bgTab.classList.remove("d-none");
@@ -55,10 +64,14 @@ async function showBackgroundTab(character) {
     container.innerHTML = `<div class="text-muted">Loading background...</div>`;
     try {
         const data = await fetchCharacterSections(character.id);
+        console.log("Background sections:", data);
         renderBackgroundSections(container, character, data || {});
+        bgTab.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
         console.error("Fout bij laden background:", err);
         container.innerHTML = `<div class="text-danger">Kon background niet laden.</div>`;
+        // Toon lege secties als fallback
+        renderBackgroundSections(container, character, {});
     }
 }
 

@@ -174,17 +174,26 @@ function pageNav(userRole, character) {
     }
 
     setupNavTabHandlers(character);
+    setActiveNavTab("sheet");
 }
 
 function setActiveNavTab(tabName) {
     const tabs = document.querySelectorAll("#navSheet .navTab");
     tabs.forEach(tab => tab.classList.remove("active"));
+
+    let matched = false;
     tabs.forEach(tab => {
         const t = tab.dataset.tab || "sheet";
         if (t === tabName || (!tab.dataset.tab && tabName === "sheet")) {
             tab.classList.add("active");
+            matched = true;
         }
     });
+
+    // Fallback: als niets matcht, activeer de eerste tab
+    if (!matched && tabs.length > 0) {
+        tabs[0].classList.add("active");
+    }
 }
 
 function setupNavTabHandlers(character) {
@@ -203,3 +212,19 @@ function setupNavTabHandlers(character) {
         });
     });
 }
+
+// Fallback: globale delegatie zodat clicks blijven werken na rerender
+document.addEventListener("click", (e) => {
+    const tab = e.target.closest("#navSheet .navTab");
+    if (!tab) return;
+    e.preventDefault();
+    const targetTab = tab.dataset.tab || "sheet";
+    setActiveNavTab(targetTab);
+    if (targetTab === "background") {
+        if (typeof currentCharacter !== "undefined" && currentCharacter) {
+            showBackgroundTab(currentCharacter);
+        }
+    } else {
+        showSheetTab();
+    }
+});
