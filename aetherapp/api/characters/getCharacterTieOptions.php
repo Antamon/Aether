@@ -13,11 +13,15 @@ if (!isset($_SESSION['user']['id'])) {
 }
 
 $userId = (int) $_SESSION['user']['id'];
-$role = $_SESSION['user']['role'] ?? 'participant';
+// Rol ophalen uit DB zodat we niet afhankelijk zijn van sessie-rol
+$stmtRole = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
+$stmtRole->execute([':id' => $userId]);
+$roleRow = $stmtRole->fetch(PDO::FETCH_ASSOC);
+$role = $roleRow['role'] ?? ($_SESSION['user']['role'] ?? 'participant');
 
 try {
     if ($role === 'administrator' || $role === 'director') {
-        // Alle personages
+        // Alle personages (ook inactive/extra)
         $sql = "
             SELECT id, firstName, lastName, title, class
             FROM tblCharacter

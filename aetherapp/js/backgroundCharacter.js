@@ -80,6 +80,8 @@ function showSheetTab() {
     if (sheetRow) sheetRow.classList.remove("d-none");
     const bgTab = document.getElementById("backgroundTab");
     if (bgTab) bgTab.classList.add("d-none");
+    const diaryTab = document.getElementById("diaryTab");
+    if (diaryTab) diaryTab.classList.add("d-none");
     const persTab = document.getElementById("personalityTab");
     if (persTab) persTab.classList.add("d-none");
     const characterForm = document.getElementById("characterForm");
@@ -100,6 +102,8 @@ async function showBackgroundTab(character) {
     if (skills) skills.classList.add("d-none");
 
     // Andere tab verbergen
+    const diaryTabHide = document.getElementById("diaryTab");
+    if (diaryTabHide) diaryTabHide.classList.add("d-none");
     const persTabHide = document.getElementById("personalityTab");
     if (persTabHide) persTabHide.classList.add("d-none");
 
@@ -144,6 +148,8 @@ async function showPersonalityTab(character) {
     // Andere tab verbergen
     const bgTabHide = document.getElementById("backgroundTab");
     if (bgTabHide) bgTabHide.classList.add("d-none");
+    const diaryTabHide = document.getElementById("diaryTab");
+    if (diaryTabHide) diaryTabHide.classList.add("d-none");
 
     const persTab = document.getElementById("personalityTab");
     if (!persTab) return;
