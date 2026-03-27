@@ -1,10 +1,10 @@
 // Skills-related logic (fetch new skills, render accordion, modals, skill level updates)
 
 function setupSkillListeners() {
-    const accordion = document.getElementById("accordionSkills");
-    if (!accordion) return;
+    const skillsContainer = document.getElementById("skills");
+    if (!skillsContainer) return;
 
-    accordion.addEventListener("click", function (e) {
+    skillsContainer.addEventListener("click", function (e) {
         const btn = e.target.closest("button");
         if (!btn) return;
 
@@ -311,7 +311,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     let canAddSpec = true;
 
     if (character && character.type === "player") {
-        const maxXP = Number(character.experience) || 0;
+        const maxXP = getExperienceBudget(character);
         const costSpec = 2; // elke niet-discipline specialisatie kost 2 EP
 
         if (maxXP > 0 && (usedExperience + costSpec) > maxXP) {
@@ -536,7 +536,16 @@ function initTooltips() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]')
     );
     tooltipTriggerList.forEach(el => {
+        bootstrap.Tooltip.getInstance(el)?.dispose();
         new bootstrap.Tooltip(el);
+    });
+
+    const popoverTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="popover"]')
+    );
+    popoverTriggerList.forEach(el => {
+        bootstrap.Popover.getInstance(el)?.dispose();
+        new bootstrap.Popover(el);
     });
 }
 

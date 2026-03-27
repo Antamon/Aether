@@ -92,11 +92,20 @@
             </div>
         </div>
         <div class="row pb-2 border-bottom mb-4 navRow">
-            <div class="col-lg-6 col-12 row">
-                <div class="col-sm-3 col-form-label">Ervaringspunten</div>
-                <div class="col-sm-9 col-form-label" id="lblExperiance"></div>
+            <div class="col-lg-3 col-12 navInfoCell">
+                <span class="col-form-label mb-0">Ervaringspunten</span>
+                <span class="col-form-label mb-0" id="lblExperiance"></span>
             </div>
-            <div class="col-lg-6 col-12 row">
+            <div class="col-lg-3 col-12 navInfoCell">
+                <span class="col-form-label mb-0">Statuspunten</span>
+                <span class="col-form-label mb-0" id="lblStatusPoints"></span>
+                <div class="btn-group btn-group-sm d-none" id="statusPointControls" role="group" aria-label="Statuspunten aanpassen">
+                    <button type="button" class="btn btn-outline-light" id="btnStatusPointMinus">-</button>
+                    <button type="button" class="btn btn-outline-light" id="btnStatusPointPlus">+</button>
+                </div>
+                <button type="button" class="btn btn-link p-0 navInfoHelp d-none" id="statusPointInfo" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Info statuspunten">?</button>
+            </div>
+            <div class="col-lg-6 col-12 row align-items-center">
                 <label class="col-sm-3 col-form-label">Status</label>
                 <div class="col-sm-9">
                     <select class="form-select" id="state" name="state">
@@ -130,11 +139,20 @@
             </div>
         </div>
         <div class="row pb-2 border-bottom mb-4 navRow" id="sheetHead">
-            <div class="col-lg-6 col-12 row">
-                <div class="col-sm-3 col-form-label">Ervaringspunten</div>
-                <div class="col-sm-9 col-form-label" id="lblExperiance"></div>
+            <div class="col-lg-3 col-12 navInfoCell">
+                <span class="col-form-label mb-0">Ervaringspunten</span>
+                <span class="col-form-label mb-0" id="lblExperiance"></span>
             </div>
-            <div class="col-lg-6 col-12 row">
+            <div class="col-lg-3 col-12 navInfoCell">
+                <span class="col-form-label mb-0">Statuspunten</span>
+                <span class="col-form-label mb-0" id="lblStatusPoints"></span>
+                <div class="btn-group btn-group-sm d-none" id="statusPointControls" role="group" aria-label="Statuspunten aanpassen">
+                    <button type="button" class="btn btn-outline-light" id="btnStatusPointMinus">-</button>
+                    <button type="button" class="btn btn-outline-light" id="btnStatusPointPlus">+</button>
+                </div>
+                <button type="button" class="btn btn-link p-0 navInfoHelp d-none" id="statusPointInfo" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Info statuspunten">?</button>
+            </div>
+            <div class="col-lg-6 col-12 row align-items-center">
                 <label class="col-sm-3 col-form-label">Status</label>
                 <div class="col-sm-9 col-form-label" id="state"></div>
             </div>
@@ -150,7 +168,7 @@
             <!-- Start character form -->
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="characterForm">
-                    <div class="mb-3 row">
+                    <div class="mb-3 row" id="classRow">
                         <label class="col-sm-4 col-form-label">Klasse</label>
                         <div class="col-sm-8">
                             <select class="form-select" id="class" name="class">
@@ -212,7 +230,7 @@
                             <input type="text" class="form-control" id="nationality" name="nationality">
                         </div>
                     </div>
-                    <div class="mb-3 row">
+                    <div class="mb-3 row" id="birthRow">
                         <label class="col-sm-4 col-form-label">Geboren te / op</label>
                         <div class="col-sm-4">
                             <input type="text" class="form-control" id="birthPlace" name="birthPlace">
@@ -221,12 +239,7 @@
                             <input type="date" class="form-control" id="birthDate" name="birthDate">
                         </div>
                     </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Beroep</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="profession" name="profession">
-                        </div>
-                    </div>
+                    <div class="d-none" id="leftTraitModuleHost"></div>
                     <div class="mb-3 row">
                         <label class="col-sm-4 col-form-label">Rijksregisternummer</label>
                         <div class="col-sm-8">
@@ -254,11 +267,16 @@
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="skills">
                     <h4>Vaardigheden</h4>
-                <div class="accordion mb-3" id="accordionSkills"></div>
-                <div class="input-group mb-3">
-                    <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
-                    <select class="form-select" id="idNewSkill"></select>
-                    <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
+                    <div class="accordion mb-3" id="accordionSkills"></div>
+                    <div class="input-group mb-4">
+                        <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
+                        <select class="form-select" id="idNewSkill"></select>
+                        <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div id="traitsSection">
+                        <h4>Statuseigenschappen</h4>
+                        <div id="traitsContent"></div>
+                    </div>
                 </div>
             </div>     
         </div>
@@ -469,4 +487,5 @@
     <script src="js/characterFunctions.js"></script>
     <script src="js/navCharacter.js"></script>
     <script src="js/skillsCharacter.js"></script>
+    <script src="js/traitsCharacter.js"></script>
 </body>

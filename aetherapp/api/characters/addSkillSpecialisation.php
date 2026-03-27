@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once '../../db.php';
+require_once __DIR__ . '/characterPointUtils.php';
 header('Content-Type: application/json; charset=utf-8');
 
 /**
@@ -55,7 +56,7 @@ try {
 
     // --- Character ophalen: type + idUser ---
     $stmt = $pdo->prepare("
-        SELECT type, idUser
+        SELECT type, idUser, experienceToTrait
         FROM tblCharacter
         WHERE id = ?
     ");
@@ -66,24 +67,9 @@ try {
         throw new RuntimeException("Personage niet gevonden.");
     }
 
-    $isPlayer = ($character['type'] === 'player');
-    $idUser = (int) $character['idUser'];
-
-    // --- Max EP enkel voor spelerspersonages ---
-    $maxXP = null;
-    if ($isPlayer) {
-        $stmt = $pdo->prepare("
-            SELECT COALESCE(SUM(e.ep),0) AS total
-            FROM tblLinkEventUser leu
-            JOIN tblEvent e ON leu.idEvent = e.id
-            WHERE leu.idUser = ?
-        ");
-        $stmt->execute([$idUser]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $totalFromEvents = (int) ($row['total'] ?? 0);
-
-        $maxXP = $totalFromEvents + 15; // zelfde logica als elders
-    }
+    $pointSummary = getCharacterPointSummary($pdo, $character);
+    $isPlayer = $pointSummary['isPlayer'];
+    $maxXP = $pointSummary['experienceBudget'];
 
     // 1) Bestaande specialisatie uit dropdown
     if ($idSpec > 0) {

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/characterPointUtils.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -56,7 +57,7 @@ try {
 
     // --- 3. Character ophalen: type + idUser (voor EP-berekening) ---
     $stmt = $pdo->prepare(
-        'SELECT type, idUser 
+        'SELECT type, idUser, experienceToTrait
          FROM tblCharacter 
          WHERE id = ?'
     );
@@ -68,25 +69,9 @@ try {
         exit;
     }
 
-    $isPlayer = ($character['type'] === 'player');
-    $idUser = (int) $character['idUser'];
-
-    // --- 4. Max beschikbare EP alleen voor spelerspersonages ---
-    $maxXP = null;
-    if ($isPlayer) {
-        $stmt = $pdo->prepare(
-            'SELECT COALESCE(SUM(e.ep),0) AS total
-             FROM tblLinkEventUser leu
-             JOIN tblEvent e ON leu.idEvent = e.id
-             WHERE leu.idUser = ?'
-        );
-        $stmt->execute([$idUser]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $totalFromEvents = (int) ($row['total'] ?? 0);
-
-        // Basis 15 EP zoals in getCharacter.php
-        $maxXP = $totalFromEvents + 15;
-    }
+    $pointSummary = getCharacterPointSummary($pdo, $character);
+    $isPlayer = $pointSummary['isPlayer'];
+    $maxXP = $pointSummary['experienceBudget'];
 
     // --- 5. Huidig gebruikte EP berekenen ---
     $stmt = $pdo->prepare(

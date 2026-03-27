@@ -31,6 +31,10 @@ foreach ($dateFields as $field) {
     }
 }
 
+if (array_key_exists('experienceToTrait', $postData)) {
+    $postData['experienceToTrait'] = max(0, min(6, (int) $postData['experienceToTrait']));
+}
+
 // 3. Na filtering moeten er nog velden overblijven
 if (empty($postData)) {
     http_response_code(400);
@@ -39,6 +43,27 @@ if (empty($postData)) {
 }
 
 try {
+    $pdo = getPDO();
+
+    $shouldPruneClassTraits = false;
+    if (array_key_exists('class', $postData)) {
+        $currentCharacter = dbOne(
+            $pdo,
+            'SELECT `class` FROM tblCharacter WHERE id = :id',
+            ['id' => $id]
+        );
+
+        if (!$currentCharacter) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Personage niet gevonden.']);
+            exit;
+        }
+
+        $shouldPruneClassTraits = (string) ($currentCharacter['class'] ?? '') !== (string) $postData['class'];
+    }
+
+    $pdo->beginTransaction();
+
     // 4. Dynamische SET-lijst opbouwen
     $columns = array_keys($postData);
     $setParts = [];
@@ -58,10 +83,28 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 
+    if ($shouldPruneClassTraits) {
+        $deleteTraitLinksStmt = $pdo->prepare(
+            "DELETE lct
+             FROM tblLinkCharacterTrait AS lct
+             JOIN tblTrait AS t
+               ON t.id = lct.idTrait
+             WHERE lct.idCharacter = :idCharacter
+               AND t.`class` <> 'all'"
+        );
+        $deleteTraitLinksStmt->execute(['idCharacter' => $id]);
+    }
+
+    $pdo->commit();
+
     // 6. Zelfde gedrag als vroeger: aantal gewijzigde rijen teruggeven
     echo $stmt->rowCount();
 
 } catch (Throwable $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
     http_response_code(500);
     echo json_encode([
         'error' => 'Kon character niet bijwerken.'

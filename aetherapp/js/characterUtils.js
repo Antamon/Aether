@@ -21,6 +21,61 @@ function calculateExperience(character) {
     return experience;
 }
 
+function getMaxExperience(character) {
+    if (!character || character.type !== "player") return 0;
+
+    if (typeof character.maxExperience === "number") {
+        return character.maxExperience;
+    }
+
+    if (typeof character.experience === "number") {
+        return character.experience;
+    }
+
+    return (!character.idUser || Number(character.idUser) === 0) ? 15 : 15;
+}
+
+function getExperienceBudget(character) {
+    if (!character || character.type !== "player") return 0;
+
+    if (typeof character.experience === "number") {
+        return character.experience;
+    }
+
+    return getMaxExperience(character);
+}
+
+function getRemainingExperience(character) {
+    if (!character || character.type !== "player") return 0;
+    return Math.max(0, getExperienceBudget(character) - calculateExperience(character));
+}
+
+function getMaxStatusPoints(character) {
+    if (!character || character.type !== "player") return 0;
+
+    if (typeof character.maxStatusPoints === "number") {
+        return character.maxStatusPoints;
+    }
+
+    const convertedExperience = Number(character.experienceToTrait) || 0;
+    return 8 + (convertedExperience * 2);
+}
+
+function getUsedStatusPoints(character) {
+    if (!character || character.type !== "player") return 0;
+    return Number(character.usedStatusPoints) || 0;
+}
+
+function getAvailableStatusPoints(character) {
+    if (!character || character.type !== "player") return 0;
+
+    if (typeof character.availableStatusPoints === "number") {
+        return character.availableStatusPoints;
+    }
+
+    return Math.max(0, getMaxStatusPoints(character) - getUsedStatusPoints(character));
+}
+
 function expertiseExtra(experience) {
     if (experience <= 20) return "Average person";
     else if (experience <= 30) return "Professional";

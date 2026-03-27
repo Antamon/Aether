@@ -182,6 +182,12 @@ function aetherPrepareCharacterFormForCreation() {
         }
     });
 
+    const leftTraitModuleHost = document.getElementById('leftTraitModuleHost');
+    if (leftTraitModuleHost) {
+        leftTraitModuleHost.classList.add('d-none');
+        leftTraitModuleHost.innerHTML = '';
+    }
+
     // Buttons: new vs edit
     const groupNew = document.getElementById('groupNewCharacter');
     const groupEdit = document.getElementById('groupEditCharacter');
@@ -363,8 +369,7 @@ async function aetherCreateNewCharacter() {
         municipality: '',
         postalCode: '',
         title: '',
-        maritalStatus: '',
-        profession: ''
+        maritalStatus: ''
         // Als je kolommen createdAt / createdBy hebt toegevoegd:
         // createdBy: user.id
         // createdAt: (laat je best door de DB op CURRENT_TIMESTAMP zetten)

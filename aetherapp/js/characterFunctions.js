@@ -2,6 +2,7 @@
 window.addEventListener("load", () => {
     initCharacterPage();
     setupSkillListeners();
+    setupTraitListeners();
 });
 
 async function initCharacterPage() {
@@ -20,6 +21,11 @@ async function initCharacterPage() {
         const formContainer = document.getElementById("characterForm");
         if (formContainer && originalCharacterFormHtml === null) {
             originalCharacterFormHtml = formContainer.innerHTML;
+        }
+
+        const skillsContainer = document.getElementById("skills");
+        if (skillsContainer && getOriginalSkillsHtml() === null) {
+            setOriginalSkillsHtml(skillsContainer.innerHTML);
         }
 
     } catch (err) {
@@ -77,7 +83,8 @@ async function getCharacter(id, openCollapseId = null) {
         if (idInput) idInput.value = data["id"];
 
         const formContainer = document.getElementById("characterForm");
-        const accordionSkills = document.getElementById("accordionSkills");
+        let accordionSkills = document.getElementById("accordionSkills");
+        let traitsContent = document.getElementById("traitsContent");
 
         // --- EDITABLE MODE (admin of owner-player) ---
         if (canEdit) {
@@ -87,6 +94,13 @@ async function getCharacter(id, openCollapseId = null) {
                 // Events opnieuw koppelen aan inputs
                 setupCharacterFormListeners();
             }
+
+            if (skillsEl && getOriginalSkillsHtml() !== null) {
+                skillsEl.innerHTML = getOriginalSkillsHtml();
+            }
+
+            accordionSkills = document.getElementById("accordionSkills");
+            traitsContent = document.getElementById("traitsContent");
 
             // Velden invullen
             const velden = [
@@ -102,8 +116,7 @@ async function getCharacter(id, openCollapseId = null) {
                 "municipality",
                 "postalCode",
                 "title",
-                "maritalStatus",
-                "profession"
+                "maritalStatus"
             ];
 
             velden.forEach((veld) => {
@@ -123,6 +136,11 @@ async function getCharacter(id, openCollapseId = null) {
                 });
             }
 
+            const mainTraitGroups = getMainTraitGroups(data, data.traitGroups || []);
+
+            renderLeftTraitModule(data, true);
+            renderTraitGroups(traitsContent, mainTraitGroups, true);
+
             // Nieuwe skills mogen toegevoegd worden
             const selNew = document.getElementById("idNewSkill");
             const btnAdd = document.getElementById("addNewSkill");
@@ -136,6 +154,12 @@ async function getCharacter(id, openCollapseId = null) {
 
         // --- READ-ONLY MODE (participant die naar extra / andere speler kijkt) ---
         } else {
+            if (skillsEl && getOriginalSkillsHtml() !== null) {
+                skillsEl.innerHTML = getOriginalSkillsHtml();
+            }
+
+            accordionSkills = document.getElementById("accordionSkills");
+            traitsContent = document.getElementById("traitsContent");
 
             // Karaktergegevens in tekst-layout weergeven
             renderCharacterDetailsReadOnly(data);
@@ -144,6 +168,11 @@ async function getCharacter(id, openCollapseId = null) {
             if (accordionSkills) {
             renderSkillsReadOnly(accordionSkills, data.skills || []);
             }
+
+            const mainTraitGroups = getMainTraitGroups(data, data.traitGroups || []);
+
+            renderLeftTraitModule(data, false);
+            renderTraitGroups(traitsContent, mainTraitGroups, false);
 
             // Nieuwe skills niet toe te voegen
             const selNew = document.getElementById("idNewSkill");

@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/characterPointUtils.php';
+require_once __DIR__ . '/traitUtils.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -139,23 +141,29 @@ try {
         $character['nameParticipant'] = null;
     }
 
-    // --- 7. Ervaringspunten voor spelerspersonages ---
-    if ($character['type'] === 'player' && !empty($character['idUser'])) {
-        $sqlXP = "
-            SELECT SUM(e.ep) AS total
-            FROM tblLinkEventUser AS leu
-            JOIN tblEvent AS e
-                  ON leu.idEvent = e.id
-            WHERE leu.idUser = ?
-        ";
-        $stmt = $pdo->prepare($sqlXP);
-        $stmt->execute([(int) $character['idUser']]);
-        $rowXP = $stmt->fetch(PDO::FETCH_ASSOC);
+    // --- 7. Traits per group voor deze character class ---
+    $character['traitGroups'] = buildCharacterTraitGroups(
+        $pdo,
+        $idCharacter,
+        (string) ($character['class'] ?? ''),
+        ['status', 'quality']
+    );
+    $character['professionGroups'] = buildCharacterTraitGroups(
+        $pdo,
+        $idCharacter,
+        (string) ($character['class'] ?? ''),
+        ['profession']
+    );
 
-        $totalXP = (int) ($rowXP['total'] ?? 0);
-        // +15 basis XP zoals vroeger
-        $character['experience'] = $totalXP + 15;
-    }
+    // --- 8. Puntentotalen voor skills en traits ---
+    $pointSummary = getCharacterPointSummary($pdo, $character);
+    $character['experience'] = $pointSummary['experienceBudget'];
+    $character['maxExperience'] = $pointSummary['totalExperience'];
+    $character['experienceToTrait'] = $pointSummary['experienceToTrait'];
+    $character['baseStatusPoints'] = $pointSummary['baseStatusPoints'];
+    $character['usedStatusPoints'] = $pointSummary['usedStatusPoints'];
+    $character['maxStatusPoints'] = $pointSummary['maxStatusPoints'];
+    $character['availableStatusPoints'] = $pointSummary['availableStatusPoints'];
 
     echo json_encode($character);
 

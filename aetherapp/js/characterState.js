@@ -2,6 +2,7 @@
 let currentUser = null;
 let currentCharacter = null;
 let originalCharacterFormHtml = null;
+let originalSkillsHtml = null;
 
 function setCurrentUser(user) {
     currentUser = user;
@@ -26,4 +27,12 @@ function setOriginalCharacterFormHtml(html) {
 
 function getOriginalCharacterFormHtml() {
     return originalCharacterFormHtml;
+}
+
+function setOriginalSkillsHtml(html) {
+    originalSkillsHtml = html;
+}
+
+function getOriginalSkillsHtml() {
+    return originalSkillsHtml;
 }

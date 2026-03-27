@@ -1,5 +1,51 @@
 // Navigation/header rendering for the character sheet
 
+function canEditCharacterNav(character) {
+    if (!currentUser || !character) return false;
+
+    const role = currentUser.role;
+    if (role === "administrator" || role === "director") {
+        return true;
+    }
+
+    return role === "participant"
+        && character.type === "player"
+        && Number(character.idUser) === Number(currentUser.id);
+}
+
+async function updateExperienceToTrait(character, delta) {
+    if (!character || character.type !== "player") return;
+
+    const currentValue = Number(character.experienceToTrait) || 0;
+    const nextValue = Math.max(0, Math.min(6, currentValue + delta));
+
+    if (nextValue === currentValue) return;
+
+    const openCollapse = document.querySelector("#accordionSkills .accordion-collapse.show");
+    const openCollapseId = openCollapse ? openCollapse.id : null;
+
+    try {
+        await apiFetchJson("api/characters/updateCharacter.php", {
+            method: "POST",
+            body: {
+                id: character.id,
+                experienceToTrait: nextValue
+            }
+        });
+
+        getCharacter(character.id, openCollapseId);
+    } catch (err) {
+        console.error("Fout bij omzetten van ervaringspunten naar statuspunten:", err);
+    }
+}
+
+function statusLabelFromPoints(statusPoints) {
+    if (statusPoints <= 14) return "Average person";
+    if (statusPoints < 25) return "Influential";
+    if (statusPoints < 35) return "Elite";
+    return "Secret master";
+}
+
 function renderCharacterNav(isAdminView) {
     const container = document.getElementById("pageNav");
     if (!container) return;
@@ -18,17 +64,24 @@ function renderCharacterNav(isAdminView) {
 }
 
 function pageNav(userRole, character) {
-    const pageNavContainer = document.getElementById("pageNav");
     const usedExperience = calculateExperience(character);
+    const remainingExperience = getRemainingExperience(character);
+    const maxExperience = getMaxExperience(character);
+    const availableStatusPoints = getAvailableStatusPoints(character);
+    const maxStatusPoints = getMaxStatusPoints(character);
+    const convertedExperience = Number(character.experienceToTrait) || 0;
+    const statusLabel = statusLabelFromPoints(availableStatusPoints);
     const expertise = expertiseExtra(usedExperience);
+    const canEditNav = canEditCharacterNav(character);
+    const canConvertToStatus = canEditNav
+        && character.type === "player"
+        && character.state === "draft";
 
     const isAdmin = userRole === "administrator" || userRole === "director";
 
     if (isAdmin) {
-        // Admin-template
         renderCharacterNav(true);
 
-        // Deelnemer-koppeling (DropdownInput)
         function getUserList() {
             apiFetchJson("api/users/getUserList.php")
                 .then((data) => {
@@ -48,7 +101,6 @@ function pageNav(userRole, character) {
                         async (selectedId) => {
                             let newIdUser;
 
-                            // null vanuit reset-knop = loskoppelen
                             if (selectedId === null || selectedId === undefined || selectedId === "") {
                                 newIdUser = 0;
                             } else {
@@ -59,17 +111,15 @@ function pageNav(userRole, character) {
                                 return;
                             }
 
-                            const payload = {
-                                id: character.id,
-                                idUser: newIdUser
-                            };
-
                             try {
                                 await apiFetchJson("api/characters/updateCharacter.php", {
                                     method: "POST",
-                                    body: payload
+                                    body: {
+                                        id: character.id,
+                                        idUser: newIdUser
+                                    }
                                 });
-                                character.idUser = newIdUser;
+                                getCharacter(character.id);
                             } catch (err) {
                                 console.error("Fout bij koppelen/loskoppelen deelnemer:", err);
                             }
@@ -82,10 +132,9 @@ function pageNav(userRole, character) {
                 });
         }
 
-        activateSelectOption("type", character["type"]);
-        activateSelectOption("state", character["state"]);
+        activateSelectOption("type", character.type);
+        activateSelectOption("state", character.state);
 
-        // Autosave voor type & state
         const selType = document.getElementById("type");
         const selState = document.getElementById("state");
 
@@ -95,22 +144,19 @@ function pageNav(userRole, character) {
                 if (!idCharacter) return;
 
                 const newType = e.target.value;
-                const payload = {
-                    id: idCharacter,
-                    type: newType
-                };
                 try {
                     await apiFetchJson("api/characters/updateCharacter.php", {
                         method: "POST",
-                        body: payload
+                        body: {
+                            id: idCharacter,
+                            type: newType
+                        }
                     });
 
-                    // Frontend state mee aanpassen
                     if (currentCharacter) {
                         currentCharacter.type = newType;
                         pageNav(currentUser.role, currentCharacter);
                     }
-
                 } catch (err) {
                     console.error("Fout bij opslaan type:", err);
                 }
@@ -122,15 +168,20 @@ function pageNav(userRole, character) {
                 const idCharacter = document.getElementById("idCharacter").value;
                 if (!idCharacter) return;
 
-                const payload = {
-                    id: idCharacter,
-                    state: e.target.value
-                };
+                const newState = e.target.value;
                 try {
                     await apiFetchJson("api/characters/updateCharacter.php", {
                         method: "POST",
-                        body: payload
+                        body: {
+                            id: idCharacter,
+                            state: newState
+                        }
                     });
+
+                    if (currentCharacter) {
+                        currentCharacter.state = newState;
+                        pageNav(currentUser.role, currentCharacter);
+                    }
                 } catch (err) {
                     console.error("Fout bij opslaan status:", err);
                 }
@@ -139,38 +190,68 @@ function pageNav(userRole, character) {
 
         getUserList();
     } else {
-        // Participant-template
         renderCharacterNav(false);
         document.getElementById("nameParticipant").innerHTML = character.nameParticipant;
         document.getElementById("type").innerHTML = character.type;
         document.getElementById("state").innerHTML = character.state;
     }
 
-    // Experience-label
     const lblExp = document.getElementById("lblExperiance");
     if (lblExp) {
         if (character.type === "player") {
-            // max EP bepalen
-            let maxExperience;
-
-            if (typeof character.experience === "number") {
-                // normale situatie: backend stuurde experience/maxExperience mee
-                maxExperience = character.experience;
-            } else if (typeof character.maxExperience === "number") {
-                maxExperience = character.maxExperience;
-            } else if (!character.idUser || character.idUser === 0) {
-                // geen deelnemer gekoppeld ⇒ standaard 15 EP
-                maxExperience = 15;
-            } else {
-                // safety fallback
-                maxExperience = 15;
-            }
-
-            lblExp.innerHTML = `${usedExperience} / ${maxExperience}`;
+            lblExp.innerHTML = `${remainingExperience} / ${maxExperience}`;
         } else {
-            // figurant / NPC
             lblExp.innerHTML = `${usedExperience} (${expertise})`;
         }
+    }
+
+    const lblStatus = document.getElementById("lblStatusPoints");
+    if (lblStatus) {
+        if (character.type === "player") {
+            if (character.state === "draft") {
+                lblStatus.textContent = `${availableStatusPoints} / ${maxStatusPoints}`;
+            } else {
+                lblStatus.textContent = `${availableStatusPoints} (${statusLabel})`;
+            }
+        } else {
+            lblStatus.textContent = `${availableStatusPoints} (${statusLabel})`;
+        }
+    }
+
+    const statusPointInfo = document.getElementById("statusPointInfo");
+    if (statusPointInfo) {
+        if (canConvertToStatus) {
+            const tooltipText = `Omgezet uit EP: ${convertedExperience} / 6`;
+            statusPointInfo.setAttribute("title", tooltipText);
+            statusPointInfo.setAttribute("data-bs-original-title", tooltipText);
+            statusPointInfo.classList.remove("d-none");
+        } else {
+            statusPointInfo.removeAttribute("title");
+            statusPointInfo.removeAttribute("data-bs-original-title");
+            statusPointInfo.classList.add("d-none");
+        }
+    }
+
+    const statusPointControls = document.getElementById("statusPointControls");
+    const btnStatusPointMinus = document.getElementById("btnStatusPointMinus");
+    const btnStatusPointPlus = document.getElementById("btnStatusPointPlus");
+
+    if (statusPointControls && btnStatusPointMinus && btnStatusPointPlus) {
+        statusPointControls.classList.toggle("d-none", !canConvertToStatus);
+
+        if (canConvertToStatus) {
+            btnStatusPointMinus.disabled = convertedExperience <= 0;
+            btnStatusPointPlus.disabled = convertedExperience >= 6 || remainingExperience <= 0;
+            btnStatusPointMinus.onclick = () => updateExperienceToTrait(character, -1);
+            btnStatusPointPlus.onclick = () => updateExperienceToTrait(character, 1);
+        } else {
+            btnStatusPointMinus.onclick = null;
+            btnStatusPointPlus.onclick = null;
+        }
+    }
+
+    if (typeof initTooltips === "function") {
+        initTooltips();
     }
 
     setupNavTabHandlers(character);
@@ -190,7 +271,6 @@ function setActiveNavTab(tabName) {
         }
     });
 
-    // Fallback: als niets matcht, activeer de eerste tab
     if (!matched && tabs.length > 0) {
         tabs[0].classList.add("active");
     }
@@ -211,7 +291,6 @@ function setupNavTabHandlers(character) {
             } else if (targetTab === "personality") {
                 showPersonalityTab(currentCharacter || character);
             } else {
-                // default terug naar sheet
                 showSheetTab();
             }
         });

@@ -15,8 +15,7 @@ function setupCharacterFormListeners() {
         "municipality",
         "postalCode",
         "title",
-        "maritalStatus",
-        "profession"
+        "maritalStatus"
     ];
 
     velden.forEach((veld) => {
@@ -47,6 +46,14 @@ async function handleAutoSaveField(e) {
             method: "POST",
             body: dataObject
         });
+
+        if (currentCharacter) {
+            currentCharacter[field] = value;
+        }
+
+        if (field === "class") {
+            getCharacter(idCharacter);
+        }
     } catch (err) {
         console.error("Fout bij autosave van veld", field, err);
     }
@@ -66,7 +73,7 @@ function renderCharacterDetailsReadOnly(character) {
     const birthLine = [character.birthPlace, birthDate].filter(Boolean).join(" / ");
 
     container.innerHTML = `
-        <div class="mb-3 row">
+        <div class="mb-3 row" id="classRow">
             <div class="col-sm-4">Klasse</div>
             <div class="col-sm-8">${character.class || ""}</div>
         </div>
@@ -98,14 +105,13 @@ function renderCharacterDetailsReadOnly(character) {
             <div class="col-sm-4">Nationaliteit</div>
             <div class="col-sm-6">${character.nationality || ""}</div>
         </div>
-        <div class="mb-3 row">
+        <div class="mb-3 row" id="birthRow">
             <div class="col-sm-4">Geboren te / op</div>
             <div class="col-sm-6">${birthLine}</div>
         </div>
-        <div class="mb-3 row">
-            <div class="col-sm-4">Beroep</div>
-            <div class="col-sm-6">${character.profession || ""}</div>
-        </div>
+        ${(character.class === "upper class" || character.class === "middle class" || character.class === "lower class") ? `
+        <div id="leftTraitModuleHost"></div>
+        ` : ""}
         <div class="mb-3 row">
             <div class="col-sm-4">Rijksregisternummer</div>
             <div class="col-sm-6">${character.stateRegisterNumber || ""}</div>
@@ -128,8 +134,7 @@ function applyCharacterEditability(character, canEdit) {
         "municipality",
         "postalCode",
         "title",
-        "maritalStatus",
-        "profession"
+        "maritalStatus"
     ];
 
     formFields.forEach((id) => {
