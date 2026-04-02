@@ -57,7 +57,7 @@ try {
 
     // --- 3. Character ophalen: type + idUser (voor EP-berekening) ---
     $stmt = $pdo->prepare(
-        'SELECT type, idUser, experienceToTrait
+        'SELECT id, type, idUser, experienceToTrait, physicalHealth, mentalHealth
          FROM tblCharacter 
          WHERE id = ?'
     );

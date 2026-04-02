@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/traitUtils.php';
+require_once __DIR__ . '/economyUtils.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -18,6 +19,7 @@ try {
     }
 
     $pdo = getPDO();
+    $currentUserRole = getCurrentUserRole($pdo);
 
     // --- 1. Basisgegevens van het personage ---
     $stmt = $pdo->prepare('SELECT * FROM tblCharacter WHERE id = ?');
@@ -163,7 +165,21 @@ try {
     $character['baseStatusPoints'] = $pointSummary['baseStatusPoints'];
     $character['usedStatusPoints'] = $pointSummary['usedStatusPoints'];
     $character['maxStatusPoints'] = $pointSummary['maxStatusPoints'];
-    $character['availableStatusPoints'] = $pointSummary['availableStatusPoints'];
+    $character['availableStatusPoints'] = getVisibleAvailableStatusPoints($pointSummary, $currentUserRole);
+    $currentUserId = getCurrentUserId();
+    $character['canEditBankAccount'] = canEditCharacterBankAccount($character, $currentUserRole);
+    $character['canTransferMoney'] = canTransferFromCharacter($character, $currentUserRole);
+    $character['canDeleteBankTransactions'] = isPrivilegedUserRole($currentUserRole);
+    $character['defaultBankTransferDate'] = getDefaultBankTransferDate();
+    $character['bankTransferTargets'] = $character['canTransferMoney']
+        ? getBankTransferTargets($pdo, $idCharacter)
+        : [];
+    $character['bankTransactions'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
+        ? getCharacterBankTransactions($pdo, $idCharacter)
+        : [];
+    $character['companyShares'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
+        ? getCharacterCompanyShares($pdo, $character, $currentUserRole, $currentUserId)
+        : [];
 
     echo json_encode($character);
 

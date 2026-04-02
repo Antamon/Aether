@@ -205,6 +205,54 @@ function aetherPrepareCharacterFormForCreation() {
         `;
     }
 
+    const healthSection = document.getElementById('healthSectionContent');
+    if (healthSection) {
+        healthSection.innerHTML = `
+            <div class="mb-3">
+                <span>Fysieke gezondheid</span>
+                <span class="ms-2 d-inline-flex align-items-center gap-1">
+                    <img src="img/heart-red.png" alt="Fysieke gezondheid" width="20" height="20">
+                    <img src="img/heart-red.png" alt="Fysieke gezondheid" width="20" height="20">
+                    <img src="img/heart-green.png" alt="Fysieke gezondheid" width="20" height="20">
+                    <img src="img/heart-green.png" alt="Fysieke gezondheid" width="20" height="20">
+                </span>
+            </div>
+            <div class="mb-3">
+                <span>Mentale gezondheid</span>
+                <span class="ms-2 d-inline-flex align-items-center gap-1">
+                    <img src="img/eye-yellow.png" alt="Mentale gezondheid" width="20" height="20">
+                    <img src="img/eye-yellow.png" alt="Mentale gezondheid" width="20" height="20">
+                    <img src="img/eye-white.png" alt="Mentale gezondheid" width="20" height="20">
+                    <img src="img/eye-white.png" alt="Mentale gezondheid" width="20" height="20">
+                </span>
+            </div>
+        `;
+    }
+
+    const wealthSection = document.getElementById('wealthSectionContent');
+    if (wealthSection) {
+        wealthSection.innerHTML = `
+            <div class="d-flex flex-wrap align-items-center gap-4">
+                <span>Inkomsten: 0,00 Fr</span>
+                <span>Spaarboekje</span>
+            </div>
+        `;
+    }
+
+    const staffSection = document.getElementById('staffSectionContent');
+    if (staffSection) {
+        staffSection.innerHTML = `
+            <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
+                <span>Personeelsvoorwaarde: 0</span>
+                <span>Voldaan: 0</span>
+            </div>
+            <h5>Eigenschappen met personeelsvoorwaarden</h5>
+            <p class="text-muted mb-3">Geen traits met personeelsvoorwaarde.</p>
+            <h5>Gevolg</h5>
+            <p class="text-muted mb-0">Geen dependent of spouse ties.</p>
+        `;
+    }
+
     // Klasse, voornaam en familienaam leeg/standaard zetten
     const classSelect = document.getElementById('class');
     if (classSelect) {
@@ -369,7 +417,11 @@ async function aetherCreateNewCharacter() {
         municipality: '',
         postalCode: '',
         title: '',
-        maritalStatus: ''
+        maritalStatus: '',
+        physicalHealth: 0,
+        mentalHealth: 0,
+        physicalHealthFree: 0,
+        mentalHealthFree: 0
         // Als je kolommen createdAt / createdBy hebt toegevoegd:
         // createdBy: user.id
         // createdAt: (laat je best door de DB op CURRENT_TIMESTAMP zetten)

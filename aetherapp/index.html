@@ -27,6 +27,9 @@
                     <li class="nav-item mr-2">
                         <a class="nav-link" id="eventParticipation" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Deelnames</a>
                     </li>
+                    <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
+                        <a class="nav-link" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
+                    </li>
                 </ul>
                 <div id="navbarName"></div>
             </div>
@@ -127,6 +130,7 @@
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Background</a></li>
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy">Economy</a></li>
         </ul>
         <div class="row py-2 navRow" id="adminSheetHead">
             <div class="col-lg-6 col-12 row">
@@ -246,6 +250,16 @@
                             <input type="text" class="form-control" id="stateRegisterNumber" name="stateRegisterNumber">
                         </div>
                     </div>
+                    <div id="leftInfoSections">
+                        <h4>Gezondheid</h4>
+                        <div class="mb-4" id="healthSectionContent"></div>
+                        <h4>Rijkdom</h4>
+                        <div class="mb-4" id="wealthSectionContent"></div>
+                        <h4>Personeel</h4>
+                        <div class="mb-4" id="staffSectionContent"></div>
+                        <h4>Talen</h4>
+                        <div class="mb-4" id="languagesSectionContent"></div>
+                    </div>
                     <!-- Buttons new character -->
                     <div class="d-flex justify-content-center d-none" id="groupNewCharacter">
                         <div class="btn-group" role="group">
@@ -292,6 +306,10 @@
         <!-- Personality tab content -->
         <div class="d-none w-100" id="personalityTab">
             <div id="personalityContent" class="mt-3"></div>
+        </div>
+        <!-- Economy tab content -->
+        <div class="d-none w-100" id="economyTab">
+            <div id="economyTabContent" class="mt-3"></div>
         </div>
     </div>
     </div>
@@ -481,6 +499,7 @@
     <script src="js/characterUtils.js"></script>
     <script src="js/apiCharacter.js"></script>
     <script src="js/formCharacter.js"></script>
+    <script src="js/economyCharacter.js"></script>
     <script src="js/diaryCharacter.js"></script>
     <script src="js/backgroundCharacter.js"></script>
     <script src="js/createCharacter.js"></script>

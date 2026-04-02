@@ -1,5 +1,32 @@
 // Utility-functies voor character berekeningen
 
+const CHARACTER_BASE_HEALTH = 4;
+const CHARACTER_HEALTH_STEP_COST = 3;
+
+function getCharacterIntValue(character, field) {
+    const value = Number(character?.[field] ?? 0);
+    return Number.isFinite(value) ? value : 0;
+}
+
+function getPhysicalHealthValue(character) {
+    return CHARACTER_BASE_HEALTH
+        + getCharacterIntValue(character, "physicalHealth")
+        + getCharacterIntValue(character, "physicalHealthFree");
+}
+
+function getMentalHealthValue(character) {
+    return CHARACTER_BASE_HEALTH
+        + getCharacterIntValue(character, "mentalHealth")
+        + getCharacterIntValue(character, "mentalHealthFree");
+}
+
+function getHealthExperienceCost(character) {
+    return (
+        getCharacterIntValue(character, "physicalHealth")
+        + getCharacterIntValue(character, "mentalHealth")
+    ) * CHARACTER_HEALTH_STEP_COST;
+}
+
 function calculateExperience(character) {
     let experience = 0;
 
@@ -42,7 +69,8 @@ function getExperienceBudget(character) {
         return character.experience;
     }
 
-    return getMaxExperience(character);
+    const convertedExperience = Math.max(0, Math.min(6, getCharacterIntValue(character, "experienceToTrait")));
+    return Math.max(0, getMaxExperience(character) - convertedExperience - getHealthExperienceCost(character));
 }
 
 function getRemainingExperience(character) {

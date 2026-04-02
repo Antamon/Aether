@@ -84,6 +84,8 @@ function showSheetTab() {
     if (diaryTab) diaryTab.classList.add("d-none");
     const persTab = document.getElementById("personalityTab");
     if (persTab) persTab.classList.add("d-none");
+    const economyTab = document.getElementById("economyTab");
+    if (economyTab) economyTab.classList.add("d-none");
     const characterForm = document.getElementById("characterForm");
     if (characterForm) characterForm.classList.remove("d-none");
     const skills = document.getElementById("skills");
@@ -106,6 +108,8 @@ async function showBackgroundTab(character) {
     if (diaryTabHide) diaryTabHide.classList.add("d-none");
     const persTabHide = document.getElementById("personalityTab");
     if (persTabHide) persTabHide.classList.add("d-none");
+    const economyTabHide = document.getElementById("economyTab");
+    if (economyTabHide) economyTabHide.classList.add("d-none");
 
     const bgTab = document.getElementById("backgroundTab");
     if (!bgTab) return;
@@ -150,6 +154,8 @@ async function showPersonalityTab(character) {
     if (bgTabHide) bgTabHide.classList.add("d-none");
     const diaryTabHide = document.getElementById("diaryTab");
     if (diaryTabHide) diaryTabHide.classList.add("d-none");
+    const economyTabHide = document.getElementById("economyTab");
+    if (economyTabHide) economyTabHide.classList.add("d-none");
 
     const persTab = document.getElementById("personalityTab");
     if (!persTab) return;

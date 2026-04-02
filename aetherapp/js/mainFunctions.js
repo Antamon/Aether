@@ -44,6 +44,18 @@ async function apiFetchJson(endpoint, options = {}) {
 // Globale plaats om basis-userinfo op te slaan (optioneel bruikbaar in andere files)
 window.AETHER_CURRENT_USER = null;
 
+function userHasPrivilegedRole(user) {
+    const role = user?.role || "";
+    return role === "administrator" || role === "director";
+}
+
+function syncPrivilegedNavbar(user) {
+    const companiesNavItem = document.getElementById("navbarCompaniesItem");
+    if (companiesNavItem) {
+        companiesNavItem.classList.toggle("d-none", !userHasPrivilegedRole(user));
+    }
+}
+
 // Login-check bij laden van de pagina
 async function checkLoginOnLoad() {
     try {
@@ -61,6 +73,8 @@ async function checkLoginOnLoad() {
         if (navbarName) {
             navbarName.textContent = "Welkom " + data.user.displayName;
         }
+
+        syncPrivilegedNavbar(data.user);
     } catch (error) {
         console.error("Fout bij sessiecontrole:", error);
         window.location.href = "../../../index.php";

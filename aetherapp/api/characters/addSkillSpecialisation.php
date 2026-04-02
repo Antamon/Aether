@@ -56,7 +56,7 @@ try {
 
     // --- Character ophalen: type + idUser ---
     $stmt = $pdo->prepare("
-        SELECT type, idUser, experienceToTrait
+        SELECT id, type, idUser, experienceToTrait, physicalHealth, mentalHealth
         FROM tblCharacter
         WHERE id = ?
     ");

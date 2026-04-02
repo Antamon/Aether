@@ -36,7 +36,7 @@ async function initCharacterPage() {
 //  Character ophalen
 // -----------------------
 
-async function getCharacter(id, openCollapseId = null) {
+async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
     try {
         const data = await fetchCharacter(id);
 
@@ -53,9 +53,7 @@ async function getCharacter(id, openCollapseId = null) {
         const usedExperience = calculateExperience(data);
 
         // Navigatie bovenaan
-        pageNav(currentUser.role, data);
-        setActiveNavTab("sheet");
-        showSheetTab();
+        pageNav(currentUser.role, data, activeTab);
 
         // Bepalen of dit personage bewerkbaar is voor de huidige user
         const role = currentUser?.role || "";
@@ -67,6 +65,9 @@ async function getCharacter(id, openCollapseId = null) {
             Number(data.idUser) === Number(currentUser.id);
 
         const canEdit = isAdmin || isOwnerPlayer;
+        const canEditTraits = typeof canEditTraitsForCharacter === "function"
+            ? canEditTraitsForCharacter(data)
+            : false;
 
         console.log("currentUser:", currentUser);
         console.log("character type:", data.type, "idUser:", data.idUser);
@@ -126,6 +127,8 @@ async function getCharacter(id, openCollapseId = null) {
                 }
             });
 
+            syncClassFieldPresentation(data);
+
             // Skills: normale accordion met knoppen
             if (accordionSkills) {
                 accordionSkills.innerHTML = "";
@@ -138,12 +141,18 @@ async function getCharacter(id, openCollapseId = null) {
 
             const mainTraitGroups = getMainTraitGroups(data, data.traitGroups || []);
 
-            renderLeftTraitModule(data, true);
-            renderTraitGroups(traitsContent, mainTraitGroups, true);
+            renderLeftTraitModule(data, canEditTraits);
+            renderTraitGroups(traitsContent, mainTraitGroups, canEditTraits);
+            renderCharacterHealthSection(data);
+            renderCharacterWealthSection(data);
+            await renderCharacterStaffSection(data);
+            renderCharacterEconomyTab(data);
 
             // Nieuwe skills mogen toegevoegd worden
             const selNew = document.getElementById("idNewSkill");
             const btnAdd = document.getElementById("addNewSkill");
+            const skillAddGroup = selNew?.closest(".input-group");
+            if (skillAddGroup) skillAddGroup.classList.remove("d-none");
             if (selNew) selNew.disabled = false;
             if (btnAdd) btnAdd.disabled = false;
 
@@ -171,12 +180,18 @@ async function getCharacter(id, openCollapseId = null) {
 
             const mainTraitGroups = getMainTraitGroups(data, data.traitGroups || []);
 
-            renderLeftTraitModule(data, false);
-            renderTraitGroups(traitsContent, mainTraitGroups, false);
+            renderLeftTraitModule(data, canEditTraits);
+            renderTraitGroups(traitsContent, mainTraitGroups, canEditTraits);
+            renderCharacterHealthSection(data);
+            renderCharacterWealthSection(data);
+            await renderCharacterStaffSection(data);
+            renderCharacterEconomyTab(data);
 
             // Nieuwe skills niet toe te voegen
             const selNew = document.getElementById("idNewSkill");
             const btnAdd = document.getElementById("addNewSkill");
+            const skillAddGroup = selNew?.closest(".input-group");
+            if (skillAddGroup) skillAddGroup.classList.add("d-none");
             if (selNew) selNew.disabled = true;
             if (btnAdd) {
                 btnAdd.disabled = true;
@@ -188,6 +203,7 @@ async function getCharacter(id, openCollapseId = null) {
         getNewSkills(data["id"]);
 
         initTooltips();
+        showCharacterTab(activeTab, data);
 
         // Na hertekenen: dezelfde collapse weer openklappen (enkel zinvol in editable mode)
         if (canEdit && openCollapseId) {

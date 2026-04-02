@@ -9,6 +9,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     $pdo = getPDO();
+    $currentUserRole = getCurrentUserRole($pdo);
+    $canOverspendStatusPoints = isPrivilegedUserRole($currentUserRole);
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
     $action = (string) ($input['action'] ?? '');
@@ -24,13 +26,27 @@ try {
 
     $character = dbOne(
         $pdo,
-        'SELECT id, type, class, idUser, experienceToTrait FROM tblCharacter WHERE id = :id',
+        'SELECT id, type, class, state, idUser, experienceToTrait FROM tblCharacter WHERE id = :id',
         ['id' => $idCharacter]
     );
 
     if (!$character) {
         http_response_code(404);
         echo json_encode(['error' => 'Personage niet gevonden.']);
+        exit;
+    }
+
+    $currentUserId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
+    $canEditTraits = $canOverspendStatusPoints || (
+        $currentUserRole === 'participant' &&
+        (string) ($character['type'] ?? '') === 'player' &&
+        (string) ($character['state'] ?? '') === 'draft' &&
+        (int) ($character['idUser'] ?? 0) === $currentUserId
+    );
+
+    if (!$canEditTraits) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Je hebt geen rechten om traits van dit personage aan te passen.']);
         exit;
     }
 
@@ -44,6 +60,7 @@ try {
             isUnique,
             rankType,
             traitGroup,
+            grouped,
             cost,
             income,
             evolution,
@@ -91,6 +108,7 @@ try {
                     isUnique,
                     rankType,
                     traitGroup,
+                    grouped,
                     cost,
                     income,
                     evolution,
@@ -130,6 +148,29 @@ try {
             exit;
         }
 
+        if (isGroupedTrait($trait)) {
+            $existingGroupTrait = dbOne(
+                $pdo,
+                "SELECT lct.id
+                 FROM tblLinkCharacterTrait AS lct
+                 JOIN tblTrait AS t
+                   ON t.id = lct.idTrait
+                 WHERE lct.idCharacter = :idCharacter
+                   AND t.traitGroup = :traitGroup
+                   AND t.`type` = :type",
+                [
+                    'idCharacter' => $idCharacter,
+                    'traitGroup' => (string) $trait['traitGroup'],
+                    'type' => (string) $trait['type'],
+                ]
+            );
+
+            if ($existingGroupTrait) {
+                echo json_encode(['error' => 'Je kan maar 1 trait kiezen binnen deze categorie.']);
+                exit;
+            }
+        }
+
         if ((int) $trait['isUnique'] === 1) {
             if ((string) $trait['type'] === 'profession') {
                 $existingProfession = dbOne(
@@ -150,9 +191,11 @@ try {
             }
         }
 
-        $newRank = ($rankType === 'singular') ? 1 : 1;
+        $newRank = isCompanyShareTrait($trait)
+            ? 10
+            : 1;
         $deltaCost = calculateTraitPointCost($trait, $newRank);
-        if ($deltaCost > $pointSummary['availableStatusPoints']) {
+        if (!$canOverspendStatusPoints && $deltaCost > $pointSummary['availableStatusPoints']) {
             echo json_encode(['error' => 'Onvoldoende statuspunten.']);
             exit;
         }
@@ -176,8 +219,8 @@ try {
             exit;
         }
 
-        if ((int) $currentTrait['isUnique'] !== 1 || (int) $trait['isUnique'] !== 1) {
-            echo json_encode(['error' => 'Alleen unieke traits kunnen gewisseld worden.']);
+        if (!isGroupedTrait($currentTrait) || !isGroupedTrait($trait)) {
+            echo json_encode(['error' => 'Alleen gegroepeerde traits kunnen gewisseld worden.']);
             exit;
         }
 
@@ -196,7 +239,7 @@ try {
         $newCost = calculateTraitPointCost($trait, $currentRank);
         $deltaCost = $newCost - $currentCost;
 
-        if ($deltaCost > $pointSummary['availableStatusPoints']) {
+        if (!$canOverspendStatusPoints && $deltaCost > $pointSummary['availableStatusPoints']) {
             echo json_encode(['error' => 'Onvoldoende statuspunten voor deze wijziging.']);
             exit;
         }
@@ -227,22 +270,86 @@ try {
             exit;
         }
 
+        if (isCompanyShareTrait($trait) && (string) ($character['state'] ?? '') !== 'draft') {
+            echo json_encode(['error' => 'Aandelen verhoog je na draft via de economie-tab.']);
+            exit;
+        }
+
+        $rankStep = isCompanyShareTrait($trait) ? 10 : 1;
+
         if ($action === 'rank_up') {
-            $newRank = $currentRank + 1;
+            $newRank = $currentRank + $rankStep;
         } else {
-            if ($rankType === 'range_positive' && $currentRank <= 1) {
-                echo json_encode(['error' => 'De rang kan niet lager dan 1.']);
+            $minimumRank = isCompanyShareTrait($trait) ? 10 : 1;
+            if ($rankType === 'range_positive' && $currentRank <= $minimumRank) {
+                $minimumRankLabel = isCompanyShareTrait($trait) ? '10%.' : '1.';
+                echo json_encode(['error' => 'De rang kan niet lager dan ' . $minimumRankLabel]);
                 exit;
             }
-            $newRank = $currentRank - 1;
+            $newRank = $currentRank - $rankStep;
         }
 
         $newCost = calculateTraitPointCost($trait, $newRank);
         $deltaCost = $newCost - $currentCost;
 
-        if ($deltaCost > $pointSummary['availableStatusPoints']) {
+        if (!$canOverspendStatusPoints && $deltaCost > $pointSummary['availableStatusPoints']) {
             echo json_encode(['error' => 'Onvoldoende statuspunten.']);
             exit;
+        }
+
+        if (isCompanyShareTrait($trait) && $action === 'rank_up') {
+            try {
+                $shareLink = dbOne(
+                    $pdo,
+                    'SELECT idCompany, COALESCE(extraPercentage, 0) AS extraPercentage
+                     FROM tblLinkCharacterTraitCompany
+                     WHERE idLinkCharacterTrait = :idLinkCharacterTrait',
+                    ['idLinkCharacterTrait' => (int) $linkedTrait['id']]
+                );
+
+                $idCompany = (int) ($shareLink['idCompany'] ?? 0);
+                if ($idCompany > 0) {
+                    $rows = dbAll(
+                        $pdo,
+                        'SELECT
+                            lct.id,
+                            lct.rankValue,
+                            COALESCE(lctc.extraPercentage, 0) AS extraPercentage,
+                            t.name
+                         FROM tblLinkCharacterTraitCompany AS lctc
+                         JOIN tblLinkCharacterTrait AS lct
+                           ON lct.id = lctc.idLinkCharacterTrait
+                         JOIN tblTrait AS t
+                           ON t.id = lct.idTrait
+                         WHERE lctc.idCompany = :idCompany',
+                        ['idCompany' => $idCompany]
+                    );
+
+                    $allocatedOtherPercentage = 0;
+                    foreach ($rows as $row) {
+                        if (!isCompanyShareTrait(['name' => (string) ($row['name'] ?? '')])) {
+                            continue;
+                        }
+
+                        if ((int) ($row['id'] ?? 0) === (int) $linkedTrait['id']) {
+                            continue;
+                        }
+
+                        $allocatedOtherPercentage += max(
+                            0,
+                            (int) ($row['rankValue'] ?? 0) + (int) ($row['extraPercentage'] ?? 0)
+                        );
+                    }
+
+                    $nextPercentage = $newRank + (int) ($shareLink['extraPercentage'] ?? 0);
+                    if ($allocatedOtherPercentage + $nextPercentage > 100) {
+                        echo json_encode(['error' => 'Dit bedrijf heeft niet genoeg vrije aandelen voor deze verhoging.']);
+                        exit;
+                    }
+                }
+            } catch (Throwable $shareCapacityException) {
+                // Ignore missing share-link storage until the migration is applied.
+            }
         }
 
         $stmt = $pdo->prepare(

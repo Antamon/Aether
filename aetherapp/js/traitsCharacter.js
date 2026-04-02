@@ -33,13 +33,163 @@ function getOpenSkillCollapseId() {
     return openCollapse ? openCollapse.id : null;
 }
 
-function isUniqueTraitGroup(group) {
+function isGroupedTraitGroup(group) {
+    return Boolean(group?.grouped);
+}
+
+function canEditTraitsForCharacter(character) {
+    if (!currentUser || !character) return false;
+
+    const role = currentUser.role;
+    if (role === "administrator" || role === "director") {
+        return true;
+    }
+
+    return role === "participant"
+        && character.type === "player"
+        && character.state === "draft"
+        && Number(character.idUser) === Number(currentUser.id);
+}
+
+function formatTraitCurrency(amount) {
+    return `${Number(amount || 0).toLocaleString("nl-BE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })} Fr`;
+}
+
+function isCompanyShareTraitClient(trait) {
+    return Boolean(trait?.isCompanyShare);
+}
+
+function formatTraitRankLabel(trait) {
+    const rank = Number(trait?.rank ?? 0);
+    if (isCompanyShareTraitClient(trait)) {
+        return `${rank}%`;
+    }
+
+    return `Rang ${rank}`;
+}
+
+function canEditTraitRankInTraitList(link) {
+    if (!isCompanyShareTraitClient(link)) {
+        return true;
+    }
+
+    return currentCharacter?.state === "draft";
+}
+
+function calculateTraitIncomeAtRank(trait) {
+    if (trait?.income === null || trait?.income === undefined || trait?.income === "") {
+        return null;
+    }
+
+    const baseIncome = Number(trait.income);
+    if (!Number.isFinite(baseIncome)) {
+        return null;
+    }
+
+    const rankType = String(trait?.rankType || "singular");
+    const rank = Number(trait?.rank ?? 1);
+    const evolution = Number(trait?.evolution);
+    const hasEvolution = Number.isFinite(evolution) && evolution !== 0;
+
+    if (rankType === "singular") {
+        return baseIncome;
+    }
+
+    if (!hasEvolution) {
+        return baseIncome * Math.max(1, Math.abs(rank || 1));
+    }
+
+    if (rank >= 1) {
+        return baseIncome * Math.pow(1 + evolution, Math.max(0, rank - 1));
+    }
+
+    return baseIncome * Math.pow(1 - evolution, Math.abs(rank));
+}
+
+function createTraitMetaLine(trait) {
+    const parts = [];
+    const groupName = String(trait?.traitGroup || "").trim();
+    const income = calculateTraitIncomeAtRank(trait);
+    const staffRequirements = Number(trait?.staffRequirements ?? 0);
+
+    if (groupName) {
+        parts.push(groupName);
+    }
+
+    if (income !== null) {
+        parts.push(formatTraitCurrency(income));
+    }
+
+    if (staffRequirements > 0) {
+        parts.push(`Personeel: ${staffRequirements}`);
+    }
+
+    return parts.join(" | ");
+}
+
+function isCompactReadOnlyTraitGroup(group) {
+    if (!group) return false;
+
+    if (group.name === "Adeldom" || group.name === "Adellijke titel") {
+        return true;
+    }
+
     const items = [
-        ...(Array.isArray(group?.options) ? group.options : []),
-        ...(Array.isArray(group?.linkedTraits) ? group.linkedTraits : [])
+        ...(Array.isArray(group.options) ? group.options : []),
+        ...(Array.isArray(group.linkedTraits) ? group.linkedTraits : [])
     ];
 
-    return items.length > 0 && items.every((item) => Boolean(item?.isUnique));
+    return items.some((item) => item?.type === "profession");
+}
+
+function createReadOnlyTraitBlock(link, options = {}) {
+    const { compact = false } = options;
+
+    if (compact) {
+        const label = link.rankType !== "singular"
+            ? `${link.name || ""} (${formatTraitRankLabel(link)})`
+            : (link.name || "");
+        const wrapper = document.createElement("div");
+        wrapper.textContent = label;
+        return wrapper;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "trait-readonly mb-3";
+
+    const title = document.createElement("h5");
+    title.className = "mb-1";
+    title.textContent = link.name || "";
+
+    if (link.rankType !== "singular") {
+        const rank = document.createElement("span");
+        rank.className = "badge text-bg-secondary ms-2";
+        rank.textContent = formatTraitRankLabel(link);
+        title.appendChild(rank);
+    }
+
+    wrapper.appendChild(title);
+
+    const metaText = createTraitMetaLine(link);
+    if (metaText) {
+        const meta = document.createElement("p");
+        meta.className = "mb-1 text-muted trait-readonly-meta";
+        meta.textContent = metaText;
+        wrapper.appendChild(meta);
+    }
+
+    const description = String(link.description || "").trim();
+    if (description) {
+        const body = document.createElement("p");
+        body.className = "mb-0";
+        body.textContent = description;
+        wrapper.appendChild(body);
+    }
+
+    return wrapper;
 }
 
 function setupTraitListeners() {
@@ -97,7 +247,7 @@ function setupTraitListeners() {
                 delete professionSectorSelectionByCharacter[idCharacter];
             }
 
-            renderLeftTraitModule(currentCharacter, canEditCharacterNav(currentCharacter));
+            renderLeftTraitModule(currentCharacter, canEditTraitsForCharacter(currentCharacter));
             return;
         }
 
@@ -106,7 +256,7 @@ function setupTraitListeners() {
         const row = select.closest(".trait-row");
         if (!row) return;
 
-        if (row.dataset.groupMode === "unique" && row.dataset.linked === "true") {
+        if (row.dataset.grouped === "true" && row.dataset.linked === "true") {
             const idCharacter = Number(document.getElementById("idCharacter")?.value || 0);
             const idCurrentTrait = Number(row.dataset.idTrait || 0);
             const idTrait = Number(select.value || 0);
@@ -124,7 +274,7 @@ function setupTraitListeners() {
                     openCollapseId: getOpenSkillCollapseId()
                 });
             } catch (err) {
-                console.error("Fout bij wisselen van unieke trait:", err);
+                console.error("Fout bij wisselen van grouped trait:", err);
             }
             return;
         }
@@ -201,6 +351,14 @@ function renderProfessionOptions(container, group, canEdit) {
     if (!container || !group) return;
 
     const linkedTraits = Array.isArray(group.linkedTraits) ? group.linkedTraits : [];
+    if (!canEdit) {
+        const compact = isCompactReadOnlyTraitGroup(group);
+        linkedTraits.forEach((link) => {
+            container.appendChild(createReadOnlyTraitBlock(link, { compact }));
+        });
+        return;
+    }
+
     linkedTraits.forEach((link) => {
         container.appendChild(createLinkedTraitRow(link, group, canEdit));
     });
@@ -215,6 +373,14 @@ function renderTraitGroupItems(container, group, canEdit) {
     if (!container || !group) return false;
 
     const linkedTraits = Array.isArray(group.linkedTraits) ? group.linkedTraits : [];
+    if (!canEdit) {
+        const compact = isCompactReadOnlyTraitGroup(group);
+        linkedTraits.forEach((link) => {
+            container.appendChild(createReadOnlyTraitBlock(link, { compact }));
+        });
+        return container.childElementCount > 0;
+    }
+
     linkedTraits.forEach((link) => {
         container.appendChild(createLinkedTraitRow(link, group, canEdit));
     });
@@ -399,10 +565,12 @@ function createTraitBookButton(description) {
     return btn;
 }
 
-function createTraitRankBadge(rank) {
+function createTraitRankBadge(trait) {
     const badge = document.createElement("span");
     badge.className = "input-group-text trait-rank";
-    badge.textContent = rank;
+    badge.textContent = isCompanyShareTraitClient(trait)
+        ? `${Number(trait?.rank ?? 0)}%`
+        : String(trait?.rank ?? 0);
     return badge;
 }
 
@@ -447,16 +615,16 @@ function createLinkedTraitRow(link, group, canEdit) {
     row.dataset.idTrait = link.idTrait;
     row.dataset.linked = "true";
 
-    const uniqueGroup = isUniqueTraitGroup(group);
-    row.dataset.groupMode = uniqueGroup ? "unique" : "multiple";
+    const groupedTraitGroup = isGroupedTraitGroup(group);
+    row.dataset.grouped = groupedTraitGroup ? "true" : "false";
 
     row.appendChild(createTraitBookButton(link.description));
 
     if (link.rankType !== "singular") {
-        row.appendChild(createTraitRankBadge(link.rank));
+        row.appendChild(createTraitRankBadge(link));
     }
 
-    const selectOptions = uniqueGroup
+    const selectOptions = groupedTraitGroup
         ? sortTraitOptions(
             (group.options || []).filter((option) =>
                 Number(option.id) === Number(link.idTrait) ||
@@ -464,16 +632,16 @@ function createLinkedTraitRow(link, group, canEdit) {
             )
         )
         : [link];
-    const select = createTraitSelect(selectOptions, link.idTrait, !canEdit || !uniqueGroup);
+    const select = createTraitSelect(selectOptions, link.idTrait, !canEdit || !groupedTraitGroup);
     row.appendChild(select);
 
-    if (canEdit && link.rankType !== "singular") {
+    if (canEdit && link.rankType !== "singular" && canEditTraitRankInTraitList(link)) {
         const btnDown = document.createElement("button");
         btnDown.type = "button";
         btnDown.className = "btn btn-outline-secondary";
         btnDown.dataset.action = "trait-rank-down";
         btnDown.innerHTML = `<i class="fa-solid fa-minus"></i>`;
-        if (link.rankType === "range_positive" && Number(link.rank) <= 1) {
+        if (link.rankType === "range_positive" && Number(link.rank) <= (isCompanyShareTraitClient(link) ? 10 : 1)) {
             btnDown.disabled = true;
         }
         row.appendChild(btnDown);
@@ -503,6 +671,10 @@ function createPendingTraitRow(group, canEdit) {
         return null;
     }
 
+    if (isGroupedTraitGroup(group) && (group.linkedTraits || []).length > 0) {
+        return null;
+    }
+
     const linkedIds = new Set((group.linkedTraits || []).map((trait) => Number(trait.idTrait)));
     const availableOptions = sortTraitOptions(
         (group.options || []).filter((option) => !linkedIds.has(Number(option.id)))
@@ -516,7 +688,7 @@ function createPendingTraitRow(group, canEdit) {
     row.className = "input-group mb-2 trait-row";
     row.dataset.idTrait = availableOptions[0].id;
     row.dataset.linked = "false";
-    row.dataset.groupMode = isUniqueTraitGroup(group) ? "unique" : "multiple";
+    row.dataset.grouped = isGroupedTraitGroup(group) ? "true" : "false";
 
     row.appendChild(createTraitBookButton(availableOptions[0].description));
 
@@ -541,6 +713,21 @@ function renderTraitGroups(container, traitGroups, canEdit, emptyMessage = "Geen
     const groups = Array.isArray(traitGroups) ? traitGroups : [];
     if (groups.length === 0) {
         if (emptyMessage) {
+            container.innerHTML = `<p class="text-muted">${emptyMessage}</p>`;
+        }
+        return;
+    }
+
+    if (!canEdit) {
+        groups.forEach((group) => {
+            const linkedTraits = Array.isArray(group.linkedTraits) ? group.linkedTraits : [];
+            const compact = isCompactReadOnlyTraitGroup(group);
+            linkedTraits.forEach((link) => {
+                container.appendChild(createReadOnlyTraitBlock(link, { compact }));
+            });
+        });
+
+        if (container.childElementCount === 0 && emptyMessage) {
             container.innerHTML = `<p class="text-muted">${emptyMessage}</p>`;
         }
         return;

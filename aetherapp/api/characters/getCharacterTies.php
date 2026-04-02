@@ -40,7 +40,21 @@ try {
             c.firstName,
             c.lastName,
             c.title,
-            c.class
+            c.class,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'superior'
+            ) AS hasReverseSuperior,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'spouse'
+            ) AS hasReverseSpouse
         FROM tblCharacterTie t
         JOIN tblCharacter c ON c.id = t.idCharacterTarget
         WHERE t.idCharacter = :idCharacter
@@ -65,6 +79,10 @@ try {
             'relationTypeLabel' => $tieLabels[$row['relationType']] ?? $row['relationType'],
             'description' => $row['description'],
             'otherName' => $displayName,
+            'firstName' => $row['firstName'],
+            'lastName' => $row['lastName'],
+            'hasReverseSuperior' => (bool) $row['hasReverseSuperior'],
+            'hasReverseSpouse' => (bool) $row['hasReverseSpouse'],
         ];
     }
 

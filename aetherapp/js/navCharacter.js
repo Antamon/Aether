@@ -63,7 +63,40 @@ function renderCharacterNav(isAdminView) {
     container.classList.remove("d-none");
 }
 
-function pageNav(userRole, character) {
+function getActiveNavTabName() {
+    const activeTab = document.querySelector("#navSheet .navTab.active");
+    if (!activeTab) {
+        return "sheet";
+    }
+
+    return activeTab.dataset.tab || "sheet";
+}
+
+function showCharacterTab(targetTab, character) {
+    if (targetTab === "background") {
+        showBackgroundTab(currentCharacter || character);
+        return;
+    }
+
+    if (targetTab === "diary") {
+        showDiaryTab(currentCharacter || character);
+        return;
+    }
+
+    if (targetTab === "personality") {
+        showPersonalityTab(currentCharacter || character);
+        return;
+    }
+
+    if (targetTab === "economy") {
+        showEconomyTab(currentCharacter || character);
+        return;
+    }
+
+    showSheetTab();
+}
+
+function pageNav(userRole, character, activeTab = "sheet") {
     const usedExperience = calculateExperience(character);
     const remainingExperience = getRemainingExperience(character);
     const maxExperience = getMaxExperience(character);
@@ -119,7 +152,7 @@ function pageNav(userRole, character) {
                                         idUser: newIdUser
                                     }
                                 });
-                                getCharacter(character.id);
+                                getCharacter(character.id, null, getActiveNavTabName());
                             } catch (err) {
                                 console.error("Fout bij koppelen/loskoppelen deelnemer:", err);
                             }
@@ -152,11 +185,7 @@ function pageNav(userRole, character) {
                             type: newType
                         }
                     });
-
-                    if (currentCharacter) {
-                        currentCharacter.type = newType;
-                        pageNav(currentUser.role, currentCharacter);
-                    }
+                    await getCharacter(idCharacter, null, getActiveNavTabName());
                 } catch (err) {
                     console.error("Fout bij opslaan type:", err);
                 }
@@ -177,11 +206,7 @@ function pageNav(userRole, character) {
                             state: newState
                         }
                     });
-
-                    if (currentCharacter) {
-                        currentCharacter.state = newState;
-                        pageNav(currentUser.role, currentCharacter);
-                    }
+                    await getCharacter(idCharacter, null, getActiveNavTabName());
                 } catch (err) {
                     console.error("Fout bij opslaan status:", err);
                 }
@@ -255,7 +280,7 @@ function pageNav(userRole, character) {
     }
 
     setupNavTabHandlers(character);
-    setActiveNavTab("sheet");
+    setActiveNavTab(activeTab);
 }
 
 function setActiveNavTab(tabName) {
@@ -284,15 +309,7 @@ function setupNavTabHandlers(character) {
             const targetTab = tab.dataset.tab || "sheet";
             setActiveNavTab(targetTab);
             closeOffcanvasIfOpen();
-            if (targetTab === "background") {
-                showBackgroundTab(currentCharacter || character);
-            } else if (targetTab === "diary") {
-                showDiaryTab(currentCharacter || character);
-            } else if (targetTab === "personality") {
-                showPersonalityTab(currentCharacter || character);
-            } else {
-                showSheetTab();
-            }
+            showCharacterTab(targetTab, character);
         });
     });
 }
