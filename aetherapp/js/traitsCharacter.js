@@ -1,6 +1,5 @@
 // Traits-related logic (render grouped traits, tooltips and link/rank updates)
 
-const upperClassLeftTraitGroups = new Set(["Adeldom", "Adellijke titel"]);
 const professionSectorSelectionByCharacter = {};
 
 async function submitTraitAction({ action, idCharacter, idTrait, idCurrentTrait = 0, openCollapseId = null }) {
@@ -35,6 +34,33 @@ function getOpenSkillCollapseId() {
 
 function isGroupedTraitGroup(group) {
     return Boolean(group?.grouped);
+}
+
+function getTraitGroupKey(group) {
+    return String(group?.groupKey || "");
+}
+
+function getTraitGroupName(group) {
+    return String(group?.name || group?.traitGroup || "").trim();
+}
+
+function getTraitGroupSheetZone(group) {
+    return String(group?.sheetZone || "main");
+}
+
+function getTraitGroupLeftModuleLabel(group) {
+    const label = String(group?.leftModuleLabel || "").trim();
+    return label || getTraitGroupName(group);
+}
+
+function traitHasFlagClient(trait, flagKey) {
+    const flags = trait?.traitFlags;
+    if (flags && typeof flags === "object" && flags[flagKey]) {
+        return true;
+    }
+
+    const keys = Array.isArray(trait?.traitFlagKeys) ? trait.traitFlagKeys : [];
+    return keys.includes(flagKey);
 }
 
 function canEditTraitsForCharacter(character) {
@@ -133,7 +159,7 @@ function createTraitMetaLine(trait) {
 function isCompactReadOnlyTraitGroup(group) {
     if (!group) return false;
 
-    if (group.name === "Adeldom" || group.name === "Adellijke titel") {
+    if (group.compactReadOnly) {
         return true;
     }
 
@@ -289,7 +315,7 @@ function getUpperClassLeftTraitGroups(character, traitGroups) {
         return [];
     }
 
-    return groups.filter((group) => upperClassLeftTraitGroups.has(group.name));
+    return groups.filter((group) => getTraitGroupSheetZone(group) === "left");
 }
 
 function getMainTraitGroups(character, traitGroups) {
@@ -298,7 +324,7 @@ function getMainTraitGroups(character, traitGroups) {
         return groups;
     }
 
-    return groups.filter((group) => !upperClassLeftTraitGroups.has(group.name));
+    return groups.filter((group) => getTraitGroupSheetZone(group) !== "left");
 }
 
 function getProfessionGroups(character) {
@@ -311,15 +337,15 @@ function getLinkedProfessionGroup(character) {
 
 function sortProfessionGroups(groups) {
     return [...(Array.isArray(groups) ? groups : [])].sort((a, b) =>
-        String(a?.name || "").localeCompare(String(b?.name || ""))
+        getTraitGroupName(a).localeCompare(getTraitGroupName(b))
     );
 }
 
 function getSelectedProfessionGroup(character) {
     const idCharacter = Number(character?.id || 0);
-    const selectedName = professionSectorSelectionByCharacter[idCharacter] || "";
+    const selectedGroupKey = professionSectorSelectionByCharacter[idCharacter] || "";
     const groups = getProfessionGroups(character);
-    return groups.find((group) => group.name === selectedName) || null;
+    return groups.find((group) => getTraitGroupKey(group) === selectedGroupKey) || null;
 }
 
 function createProfessionSectorSelector(character, canEdit) {
@@ -329,14 +355,15 @@ function createProfessionSectorSelector(character, canEdit) {
     }
 
     const idCharacter = Number(character?.id || 0);
-    const selectedName = professionSectorSelectionByCharacter[idCharacter] || "";
+    const selectedGroupKey = professionSectorSelectionByCharacter[idCharacter] || "";
     const disabledAttr = canEdit ? "" : " disabled";
 
     const options = [
         `<option value="">Kies sector</option>`,
         ...groups.map((group) => {
-            const selectedAttr = group.name === selectedName ? " selected" : "";
-            return `<option value="${group.name}"${selectedAttr}>${group.name}</option>`;
+            const groupKey = getTraitGroupKey(group);
+            const selectedAttr = groupKey === selectedGroupKey ? " selected" : "";
+            return `<option value="${groupKey}"${selectedAttr}>${getTraitGroupName(group)}</option>`;
         })
     ].join("");
 
@@ -431,14 +458,6 @@ function createLeftTraitModuleRow(labelText) {
     return { row, contentCol };
 }
 
-function getUpperClassLeftTraitGroupLabel(groupName) {
-    if (groupName === "Adellijke titel") {
-        return "Titel";
-    }
-
-    return groupName;
-}
-
 function renderUpperClassLeftTraitModule(host, character, canEdit) {
     if (!host) return;
 
@@ -446,7 +465,7 @@ function renderUpperClassLeftTraitModule(host, character, canEdit) {
     host.innerHTML = "";
 
     leftTraitGroups.forEach((group) => {
-        const { row, contentCol } = createLeftTraitModuleRow(getUpperClassLeftTraitGroupLabel(group.name));
+        const { row, contentCol } = createLeftTraitModuleRow(getTraitGroupLeftModuleLabel(group));
         contentCol.classList.add("upper-class-traits");
 
         if (!renderTraitGroupItems(contentCol, group, canEdit)) {
@@ -745,7 +764,7 @@ function renderTraitGroups(container, traitGroups, canEdit, emptyMessage = "Geen
         wrapper.className = "trait-group";
 
         const title = document.createElement("h5");
-        title.textContent = group.name;
+        title.textContent = getTraitGroupName(group);
         wrapper.appendChild(title);
 
         linkedTraits.forEach((link) => {

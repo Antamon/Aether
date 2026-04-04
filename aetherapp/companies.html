@@ -107,13 +107,14 @@
                                     <div class="company-type-card d-none" id="companyTypeCard">
                                         <div class="company-type-card-label">Type bedrijf</div>
                                         <h3 class="h5 mb-2" id="companyTypeLabel"></h3>
+                                        <p class="company-type-card-range mb-2" id="companyTypeRange"></p>
                                         <p class="mb-0" id="companyTypeDescription"></p>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="row g-3 mt-1">
-                                <div class="col-12">
+                                <div class="col-12 col-lg-6">
                                     <div class="company-slider-card">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
                                             <label class="form-label mb-0" for="companyStability">Stabiliteit</label>
@@ -122,9 +123,33 @@
                                         <input type="range" class="form-range" id="companyStability" min="-7" max="7" step="1" value="0">
                                         <p class="company-slider-help mb-0" id="companyStabilityHelp"></p>
                                     </div>
+
+                                    <div class="company-shareholders-card d-none mt-3" id="companyShareholdersCard">
+                                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                                            <div class="company-shareholders-card-label mb-0">Aandeelhouders</div>
+                                            <div class="company-shareholders-available" id="companyShareholdersAvailable">0% beschikbaar</div>
+                                        </div>
+                                        <div id="companyShareholdersGroups"></div>
+                                    </div>
+
+                                    <div class="company-snapshots-card d-none mt-3" id="companySnapshotsCard">
+                                        <div class="company-shareholders-card-label">Snapshots</div>
+                                        <div class="company-snapshots-create row g-2 mb-3">
+                                            <div class="col-12 col-md-8">
+                                                <select class="form-select" id="companySnapshotEventSelect">
+                                                    <option value="0">Kies een event</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-4 d-grid">
+                                                <button type="button" class="btn btn-outline-primary" id="createCompanySnapshotButton">Snapshot maken</button>
+                                            </div>
+                                        </div>
+                                        <div class="company-snapshots-list" id="companySnapshotsList"></div>
+                                        <p class="company-snapshots-empty text-muted mb-0 d-none" id="companySnapshotsEmpty">Nog geen snapshots beschikbaar.</p>
+                                    </div>
                                 </div>
 
-                                <div class="col-12">
+                                <div class="col-12 col-lg-6">
                                     <div class="company-slider-card">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
                                             <label class="form-label mb-0" for="companyProfitability">Rendabiliteit</label>
@@ -133,11 +158,60 @@
                                         <input type="range" class="form-range" id="companyProfitability" min="-7" max="7" step="1" value="0">
                                         <p class="company-slider-help mb-0" id="companyProfitabilityHelp"></p>
                                     </div>
+
+                                    <div class="company-personnel-card d-none mt-3" id="companyPersonnelCard">
+                                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                                            <div>
+                                                <div class="company-personnel-card-label">Personeel</div>
+                                                <p class="company-personnel-card-help mb-0">Voeg personeelsleden toe aan het bedrijf. Stel minimumvaardigheden in voor de functie. Het wel of niet halen van die vereisten, zal een positieve of negatieve invloed hebben op de bedrijfswinsten. Belangrijke personeelsleden hebben meer inpact dat onbelangrijke personeelsleden</p>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="addCompanyPersonnelButton" data-action="add-company-personnel">Personeelslid toevoegen</button>
+                                        </div>
+
+                                        <div class="company-personnel-list" id="companyPersonnelList"></div>
+                                        <p class="company-personnel-empty text-muted mb-0 d-none" id="companyPersonnelEmpty">Nog geen personeelsleden gekoppeld.</p>
+                                    </div>
                                 </div>
                             </div>
 
                         </form>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="companyPersonnelSpecialisationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-3">Add specialisation</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="companyPersonnelSpecTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="company-personnel-spec-existing-tab" data-bs-toggle="tab" data-bs-target="#company-personnel-spec-existing-pane" type="button" role="tab" aria-selected="true" data-tab="existing">Existing</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="company-personnel-spec-new-tab" data-bs-toggle="tab" data-bs-target="#company-personnel-spec-new-pane" type="button" role="tab" aria-selected="false" data-tab="new">New</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="company-personnel-spec-existing-pane" role="tabpanel" aria-labelledby="company-personnel-spec-existing-tab">
+                            <label class="form-label" for="companyPersonnelSpecSelect">Existing specialisation</label>
+                            <select class="form-select" id="companyPersonnelSpecSelect"></select>
+                        </div>
+                        <div class="tab-pane fade" id="company-personnel-spec-new-pane" role="tabpanel" aria-labelledby="company-personnel-spec-new-tab">
+                            <label class="form-label" for="companyPersonnelSpecCustom">New specialisation</label>
+                            <input type="text" class="form-control" id="companyPersonnelSpecCustom">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="companyPersonnelSpecSaveBtn">Safe</button>
                 </div>
             </div>
         </div>

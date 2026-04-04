@@ -19,7 +19,6 @@ function getCompanyShareLinkRecord(PDO $pdo, int $idLinkCharacterTrait): ?array
             lct.idCharacter,
             lct.rankValue,
             t.id AS idTrait,
-            t.name,
             c.id AS characterId,
             c.type AS characterType,
             c.state AS characterState,
@@ -49,21 +48,20 @@ function getAllocatedCompanySharePercentage(PDO $pdo, int $idCompany, int $exclu
         $pdo,
         'SELECT
             lct.id,
+            lct.idTrait,
             lct.rankValue,
-            COALESCE(lctc.extraPercentage, 0) AS extraPercentage,
-            t.name
+            COALESCE(lctc.extraPercentage, 0) AS extraPercentage
          FROM tblLinkCharacterTraitCompany AS lctc
          JOIN tblLinkCharacterTrait AS lct
            ON lct.id = lctc.idLinkCharacterTrait
-         JOIN tblTrait AS t
-           ON t.id = lct.idTrait
          WHERE lctc.idCompany = :idCompany',
         ['idCompany' => $idCompany]
     );
 
     $allocatedPercentage = 0;
     foreach ($rows as $row) {
-        if (!isCompanyShareTrait(['name' => (string) ($row['name'] ?? '')])) {
+        $trait = getTraitDefinition($pdo, (int) ($row['idTrait'] ?? 0));
+        if (!$trait || !isCompanyShareTrait($trait)) {
             continue;
         }
 
@@ -136,14 +134,14 @@ try {
         exit;
     }
 
-    $trait = [
-        'name' => (string) ($shareLink['name'] ?? ''),
-        'rank' => (int) ($shareLink['rankValue'] ?? 0),
-        'baseRank' => (int) ($shareLink['rankValue'] ?? 0),
-        'shareExtraRank' => (int) ($shareLink['extraPercentage'] ?? 0),
-    ];
+    $trait = getTraitDefinition($pdo, (int) ($shareLink['idTrait'] ?? 0));
+    if ($trait !== null) {
+        $trait['rank'] = (int) ($shareLink['rankValue'] ?? 0);
+        $trait['baseRank'] = (int) ($shareLink['rankValue'] ?? 0);
+        $trait['shareExtraRank'] = (int) ($shareLink['extraPercentage'] ?? 0);
+    }
 
-    if (!isCompanyShareTrait($trait)) {
+    if (!$trait || !isCompanyShareTrait($trait)) {
         http_response_code(400);
         echo json_encode(['error' => 'Deze trait is geen aandelen-trait.']);
         exit;
@@ -197,8 +195,7 @@ try {
         }
 
         $company = enrichCompanyWithType($company);
-        $shareMetadata = getCompanyShareTraitMetadata($trait);
-        if (($shareMetadata['companyTypeKey'] ?? '') !== ($company['companyTypeKey'] ?? '')) {
+        if (!companyMatchesShareTrait($trait, $company)) {
             http_response_code(400);
             echo json_encode(['error' => 'Dit bedrijf past niet bij het gekozen aandeeltype.']);
             exit;
@@ -252,8 +249,7 @@ try {
         }
 
         $company = enrichCompanyWithType($company);
-        $shareMetadata = getCompanyShareTraitMetadata($trait);
-        if (($shareMetadata['companyTypeKey'] ?? '') !== ($company['companyTypeKey'] ?? '')) {
+        if (!companyMatchesShareTrait($trait, $company)) {
             http_response_code(400);
             echo json_encode(['error' => 'Het gekoppelde bedrijf past niet langer bij dit aandeeltype.']);
             exit;
@@ -291,12 +287,13 @@ try {
 
         $stmt = $pdo->prepare(
             'UPDATE tblCharacter
-             SET bankaccount = ROUND(COALESCE(bankaccount, 0) - :amount, 2)
+             SET bankaccount = ROUND(COALESCE(bankaccount, 0) - :amountSubtract, 2)
              WHERE id = :idCharacter
-               AND COALESCE(bankaccount, 0) >= :amount'
+               AND COALESCE(bankaccount, 0) >= :amountCheck'
         );
         $stmt->execute([
-            'amount' => $nextPercentageCost,
+            'amountSubtract' => $nextPercentageCost,
+            'amountCheck' => $nextPercentageCost,
             'idCharacter' => (int) $character['id'],
         ]);
 
@@ -313,8 +310,122 @@ try {
         exit;
     }
 
+    if ($action === 'decrease_rank') {
+        if (!canDecreaseCompanyShareRank($character, $currentUserRole, $currentUserId)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Je hebt geen rechten om dit aandeel te verlagen.']);
+            exit;
+        }
+
+        $currentCompanyId = (int) ($shareLink['idCompany'] ?? 0);
+        if ($currentCompanyId <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Koppel eerst een bedrijf aan dit aandeel.']);
+            exit;
+        }
+
+        $company = dbOne(
+            $pdo,
+            'SELECT id, companyName, companyValue
+             FROM tblCompany
+             WHERE id = :id',
+            ['id' => $currentCompanyId]
+        );
+
+        if (!$company) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Het gekoppelde bedrijf bestaat niet meer.']);
+            exit;
+        }
+
+        $currentPercentage = getCompanyShareTotalRank($trait);
+        if ($currentPercentage <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Dit aandeel heeft geen percentage meer om te verkopen.']);
+            exit;
+        }
+
+        $saleValue = round(normalizeCompanyValue($company['companyValue'] ?? 0) / 100, 2);
+        if ($saleValue <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'De bedrijfswaarde is ongeldig voor een aandelenverkoop.']);
+            exit;
+        }
+
+        $currentBaseRank = getCompanyShareBaseRank($trait);
+        $currentExtraRank = getCompanyShareExtraRank($trait);
+        $newBaseRank = $currentBaseRank;
+        $newExtraRank = $currentExtraRank;
+
+        if ($currentExtraRank > 0) {
+            $newExtraRank -= 1;
+        } else {
+            $newBaseRank = max(0, $currentBaseRank - 1);
+        }
+
+        $pdo->beginTransaction();
+
+        if ($newBaseRank <= 0 && $newExtraRank <= 0) {
+            $stmt = $pdo->prepare('DELETE FROM tblLinkCharacterTraitCompany WHERE idLinkCharacterTrait = :idLinkCharacterTrait');
+            $stmt->execute(['idLinkCharacterTrait' => $idLinkCharacterTrait]);
+
+            $stmt = $pdo->prepare('DELETE FROM tblLinkCharacterTrait WHERE id = :idLinkCharacterTrait');
+            $stmt->execute(['idLinkCharacterTrait' => $idLinkCharacterTrait]);
+        } else {
+            if ($newBaseRank !== $currentBaseRank) {
+                $stmt = $pdo->prepare(
+                    'UPDATE tblLinkCharacterTrait
+                     SET rankValue = :rankValue
+                     WHERE id = :idLinkCharacterTrait'
+                );
+                $stmt->execute([
+                    'rankValue' => $newBaseRank,
+                    'idLinkCharacterTrait' => $idLinkCharacterTrait,
+                ]);
+            }
+
+            upsertCompanyShareLink(
+                $pdo,
+                $idLinkCharacterTrait,
+                $currentCompanyId,
+                $newExtraRank
+            );
+        }
+
+        $stmt = $pdo->prepare(
+            'UPDATE tblCharacter
+             SET bankaccount = ROUND(COALESCE(bankaccount, 0) + :saleAmount, 2)
+             WHERE id = :idCharacter'
+        );
+        $stmt->execute([
+            'saleAmount' => $saleValue,
+            'idCharacter' => (int) $character['id'],
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new RuntimeException('Kon de opbrengst van het verkochte aandeel niet op de bankrekening zetten.');
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'saleValue' => $saleValue,
+        ]);
+        exit;
+    }
+
     http_response_code(400);
     echo json_encode(['error' => 'Onbekende actie.']);
+} catch (RuntimeException $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
+    http_response_code(400);
+    echo json_encode([
+        'error' => $e->getMessage() !== '' ? $e->getMessage() : 'Kon aandelen niet bewaren.',
+    ]);
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
         $pdo->rollBack();

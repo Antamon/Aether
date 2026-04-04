@@ -235,6 +235,115 @@ background-color: #640000;
   white-space: nowrap;
 }
 
+#economyTab .economy-share-card .card-body {
+  padding: 1.25rem;
+}
+
+#economyTab .economy-share-card .card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+#economyTab .economy-share-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+#economyTab .economy-share-header {
+  margin-bottom: 0 !important;
+}
+
+#economyTab .economy-share-subtitle {
+  font-size: 0.92rem;
+}
+
+#economyTab .economy-share-badge {
+  min-width: 4.25rem;
+  padding: 0.45rem 0.7rem;
+  text-align: center;
+}
+
+#economyTab .economy-share-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+#economyTab .economy-share-metrics > .d-flex {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 0.2rem !important;
+  margin-bottom: 0 !important;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(100, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  background-color: rgba(100, 0, 0, 0.03);
+}
+
+#economyTab .economy-share-metrics > .d-flex .text-muted {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#economyTab .economy-share-pricing {
+  grid-template-columns: minmax(12rem, 18rem);
+}
+
+#economyTab .economy-share-description {
+  padding: 1rem;
+  border: 1px solid rgba(100, 0, 0, 0.1);
+  border-radius: 0.85rem;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+#economyTab .economy-share-section-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#economyTab .economy-share-description-body {
+  flex-wrap: nowrap !important;
+}
+
+#economyTab .economy-share-logo {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  background-color: rgba(100, 0, 0, 0.03) !important;
+}
+
+#economyTab .economy-share-description-text {
+  min-width: 0;
+  line-height: 1.55;
+  color: #3b2c2c;
+}
+
+#economyTab .economy-share-actions {
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(100, 0, 0, 0.08);
+}
+
+#economyTab .economy-share-help {
+  max-width: 28rem;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+#economyTab .economy-share-button-group {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+#economyTab .economy-share-button-group .btn {
+  min-width: 10.5rem;
+}
+
 .company-page .card {
   border: 1px solid rgba(100, 0, 0, 0.12);
 }
@@ -353,6 +462,12 @@ background-color: #640000;
   color: var(--bs-secondary-color);
 }
 
+.company-type-card-range {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+
 .company-slider-card {
   padding: 1rem;
   border: 1px solid rgba(100, 0, 0, 0.12);
@@ -370,7 +485,296 @@ background-color: #640000;
   color: var(--bs-secondary-color);
 }
 
+.company-shareholders-card {
+  padding: 1rem 1.125rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 0.75rem;
+  background-color: rgba(100, 0, 0, 0.03);
+}
+
+.company-shareholders-card-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.company-shareholders-available {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 999px;
+  background-color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.company-shareholders-group + .company-shareholders-group {
+  margin-top: 1rem;
+}
+
+.company-shareholders-group-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.company-shareholders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.company-shareholders-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(100, 0, 0, 0.08);
+  border-radius: 0.6rem;
+  background-color: #fff;
+}
+
+.company-shareholders-name {
+  min-width: 0;
+}
+
+.company-shareholders-percentage {
+  flex: 0 0 auto;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.company-shareholders-empty {
+  color: var(--bs-secondary-color);
+}
+
+.company-snapshots-card {
+  padding: 1rem 1.125rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 0.75rem;
+  background-color: rgba(100, 0, 0, 0.03);
+}
+
+.company-snapshots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.company-snapshot-item {
+  padding: 0.95rem;
+  border: 1px solid rgba(100, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  background-color: #fff;
+}
+
+.company-snapshot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.company-snapshot-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.company-snapshot-subtitle {
+  margin: 0;
+  color: var(--bs-secondary-color);
+}
+
+.company-snapshot-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.company-snapshot-inline-field .form-label {
+  flex: 0 0 6rem;
+}
+
+.company-snapshot-inline-field .form-control {
+  flex: 1 1 auto;
+}
+
+.company-snapshot-profit {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(100, 0, 0, 0.08);
+}
+
+.company-snapshot-profit-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.company-snapshot-profit-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.company-snapshot-profit-meta {
+  margin-top: 0.2rem;
+  color: var(--bs-secondary-color);
+}
+
+.company-personnel-card {
+  padding: 1rem 1.125rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 0.75rem;
+  background-color: rgba(100, 0, 0, 0.03);
+}
+
+.company-personnel-card-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.company-personnel-card-help {
+  color: var(--bs-secondary-color);
+}
+
+.company-personnel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.company-personnel-entry {
+  padding: 1rem;
+  border: 1px solid rgba(100, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  background-color: #fff;
+}
+
+.company-personnel-entry-header,
+.company-personnel-skills-header,
+.company-personnel-skill-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.company-personnel-entry-title,
+.company-personnel-skills-title,
+.company-personnel-skill-card-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.company-personnel-entry-subtitle {
+  margin: 0.2rem 0 0;
+  color: var(--bs-secondary-color);
+}
+
+.company-personnel-skills-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(100, 0, 0, 0.1);
+}
+
+.company-personnel-skills-title {
+  font-size: 1rem;
+}
+
+.company-personnel-skill-empty {
+  margin: 0.75rem 0 0;
+  color: var(--bs-secondary-color);
+}
+
+.company-personnel-skill-card {
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(100, 0, 0, 0.08);
+  border-radius: 0.7rem;
+  background-color: rgba(100, 0, 0, 0.02);
+}
+
+.company-personnel-skill-card-title {
+  font-size: 0.98rem;
+}
+
+.company-personnel-specialisations {
+  margin-top: 0.9rem;
+}
+
+.company-personnel-specialisations-label {
+  margin-bottom: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.company-personnel-specialisations-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.company-personnel-specialisation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(100, 0, 0, 0.14);
+  border-radius: 999px;
+  background-color: #fff;
+}
+
+.company-personnel-specialisation-chip .btn {
+  padding: 0;
+  min-width: auto;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.company-personnel-specialisation-empty {
+  color: var(--bs-secondary-color);
+}
+
 @media (max-width: 991.98px) {
+  #economyTab .economy-share-description-body {
+    flex-wrap: wrap !important;
+  }
+
+  #economyTab .economy-share-actions {
+    align-items: stretch !important;
+  }
+
+  #economyTab .economy-share-help,
+  #economyTab .economy-share-button-group {
+    width: 100%;
+    max-width: none;
+  }
+
+  #economyTab .economy-share-button-group {
+    justify-content: stretch;
+  }
+
+  #economyTab .economy-share-button-group .btn {
+    flex: 1 1 100%;
+  }
+
   .company-logo-panel,
   .company-primary-fields {
     flex: 0 0 100%;

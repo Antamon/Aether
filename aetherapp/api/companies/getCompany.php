@@ -19,25 +19,12 @@ try {
     $pdo = getPDO();
     requirePrivilegedCompanyAccess($pdo);
 
-    $company = dbOne(
-        $pdo,
-        'SELECT id, companyName, description, foundationDate, companyValue, stability, profitability
-           FROM tblCompany
-          WHERE id = :id',
-        ['id' => $id]
-    );
-
+    $company = getCompanyDetailData($pdo, $id);
     if ($company === null) {
         http_response_code(404);
         echo json_encode(['error' => 'Bedrijf niet gevonden.']);
         exit;
     }
-
-    $company['companyValue'] = round((float) ($company['companyValue'] ?? 0), 2);
-    $company['stability'] = normalizeCompanySliderValue($company['stability'] ?? 0);
-    $company['profitability'] = normalizeCompanySliderValue($company['profitability'] ?? 0);
-    $company = enrichCompanyWithType($company);
-    $company['logoUrl'] = getCompanyLogoUrl((int) $company['id']);
 
     echo json_encode($company);
 } catch (Throwable $e) {

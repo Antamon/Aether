@@ -84,17 +84,29 @@ function formatCharacterCurrency(amount) {
     })} Fr`;
 }
 
+function traitHasCharacterFlag(trait, flagKey) {
+    const flags = trait?.traitFlags;
+    if (flags && typeof flags === "object" && flags[flagKey]) {
+        return true;
+    }
+
+    const keys = Array.isArray(trait?.traitFlagKeys) ? trait.traitFlagKeys : [];
+    return keys.includes(flagKey);
+}
+
 function getUpperClassNobilityIncomeMultiplier(character) {
     if (character?.class !== "upper class") {
         return 1;
     }
 
     const traitGroups = Array.isArray(character?.traitGroups) ? character.traitGroups : [];
-    const titleGroup = traitGroups.find((group) => group?.name === "Adellijke titel");
+    const titleGroup = traitGroups.find((group) => (
+        String(group?.trackKey || "") === "upper_nobility_title"
+        || String(group?.traitGroup || "") === "Adellijke titel"
+    ));
     const linkedTitle = Array.isArray(titleGroup?.linkedTraits) ? titleGroup.linkedTraits[0] : null;
-    const linkedTitleName = String(linkedTitle?.name || "").trim().toLowerCase();
 
-    if (linkedTitleName === "familiehoofd") {
+    if (traitHasCharacterFlag(linkedTitle, "family_head_title") || String(linkedTitle?.name || "").trim().toLowerCase() === "familiehoofd") {
         return 2;
     }
 
@@ -130,7 +142,11 @@ function getCharacterTraitIncomeTotal(character) {
                 : Number(trait?.income || 0);
 
             if (income !== null && Number.isFinite(Number(income))) {
-                const adjustedIncome = group?.name === "Adeldom"
+                const adjustedIncome = (
+                    String(group?.trackKey || "") === "upper_nobility_lineage"
+                    || linkedTraits.some((linkedTrait) => traitHasCharacterFlag(linkedTrait, "nobility_income_scaled"))
+                    || String(group?.traitGroup || "") === "Adeldom"
+                )
                     ? Number(income) * nobilityIncomeMultiplier
                     : Number(income);
                 total += adjustedIncome;

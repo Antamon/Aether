@@ -180,6 +180,9 @@ try {
     $character['companyShares'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
         ? getCharacterCompanyShares($pdo, $character, $currentUserRole, $currentUserId)
         : [];
+    $character['companySharePurchaseOptions'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
+        ? getCharacterCompanySharePurchaseOptions($pdo, $character, $currentUserRole, $currentUserId)
+        : [];
 
     echo json_encode($character);
 

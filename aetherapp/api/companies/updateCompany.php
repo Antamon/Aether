@@ -4,6 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/companyUtils.php';
+require_once __DIR__ . '/../characters/companyShareUtils.php';
 
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
@@ -29,7 +30,7 @@ try {
 
     $currentCompany = dbOne(
         $pdo,
-        'SELECT id
+        'SELECT id, companyValue
            FROM tblCompany
           WHERE id = :id',
         ['id' => $id]
@@ -115,11 +116,41 @@ try {
 
     $updateData['id'] = $id;
 
+    $previousCompanyTypeKey = getCompanyTypeByValue($currentCompany['companyValue'] ?? 0)['key'] ?? null;
+    $nextCompanyValue = array_key_exists('companyValue', $updateData)
+        ? $updateData['companyValue']
+        : ($currentCompany['companyValue'] ?? 0);
+    $nextCompanyTypeKey = getCompanyTypeByValue($nextCompanyValue)['key'] ?? null;
+
+    $pdo->beginTransaction();
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute($updateData);
 
-    echo json_encode(['status' => 'ok']);
+    $updatedShareTraitCount = 0;
+    if (
+        array_key_exists('companyValue', $updateData)
+        && $previousCompanyTypeKey !== null
+        && $nextCompanyTypeKey !== null
+        && $previousCompanyTypeKey !== $nextCompanyTypeKey
+    ) {
+        $updatedShareTraitCount = remapCompanyShareTraitsForCompany($pdo, $id, $nextCompanyTypeKey);
+    }
+
+    $pdo->commit();
+
+    echo json_encode([
+        'status' => 'ok',
+        'updatedShareTraitCount' => $updatedShareTraitCount,
+    ]);
 } catch (Throwable $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
     http_response_code(500);
-    echo json_encode(['error' => 'Kon bedrijf niet bewaren.']);
+    echo json_encode([
+        'error' => 'Kon bedrijf niet bewaren.',
+        'details' => $e->getMessage(),
+    ]);
 }

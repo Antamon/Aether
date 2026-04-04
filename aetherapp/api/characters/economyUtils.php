@@ -83,7 +83,10 @@ function getEconomyUpperClassNobilityIncomeMultiplier(array $traitLinks, array $
 
     $linkedTitle = null;
     foreach ($traitLinks as $trait) {
-        if ((string) ($trait['traitGroup'] ?? '') === 'Adellijke titel') {
+        if (
+            (string) ($trait['trackKey'] ?? '') === 'upper_nobility_title'
+            || (string) ($trait['traitGroup'] ?? '') === 'Adellijke titel'
+        ) {
             $linkedTitle = $trait;
             break;
         }
@@ -93,24 +96,32 @@ function getEconomyUpperClassNobilityIncomeMultiplier(array $traitLinks, array $
         return 1.0;
     }
 
-    $linkedTitleName = mb_strtolower(trim((string) ($linkedTitle['name'] ?? '')));
-    if ($linkedTitleName === 'familiehoofd') {
+    if (
+        traitHasFlag($linkedTitle, 'family_head_title')
+        || mb_strtolower(trim((string) ($linkedTitle['name'] ?? ''))) === 'familiehoofd'
+    ) {
         return 2.0;
     }
 
     return 1.5;
 }
 
-function characterHasTraitByName(PDO $pdo, int $idCharacter, string $traitName): bool
+function characterHasTraitFlag(PDO $pdo, int $idCharacter, string $flagKey, ?string $legacyTraitName = null): bool
 {
-    $searchName = mb_strtolower(trim($traitName));
-    if ($idCharacter <= 0 || $searchName === '') {
+    $normalizedLegacyTraitName = $legacyTraitName !== null
+        ? mb_strtolower(trim($legacyTraitName))
+        : '';
+    if ($idCharacter <= 0 || ($flagKey === '' && $normalizedLegacyTraitName === '')) {
         return false;
     }
 
     $traitLinks = getCharacterTraitLinks($pdo, $idCharacter);
     foreach ($traitLinks as $trait) {
-        if (mb_strtolower(trim((string) ($trait['name'] ?? ''))) === $searchName) {
+        if ($flagKey !== '' && traitHasFlag($trait, $flagKey)) {
+            return true;
+        }
+
+        if ($normalizedLegacyTraitName !== '' && mb_strtolower(trim((string) ($trait['name'] ?? ''))) === $normalizedLegacyTraitName) {
             return true;
         }
     }
@@ -145,14 +156,18 @@ function getDraftBankAccountAmountForCharacter(PDO $pdo, array $character): floa
             continue;
         }
 
-        if ((string) ($trait['traitGroup'] ?? '') === 'Adeldom') {
+        if (
+            traitHasFlag($trait, 'nobility_income_scaled')
+            || (string) ($trait['trackKey'] ?? '') === 'upper_nobility_lineage'
+            || (string) ($trait['traitGroup'] ?? '') === 'Adeldom'
+        ) {
             $income *= $nobilityIncomeMultiplier;
         }
 
         $totalIncome += $income;
     }
 
-    $multiplier = characterHasTraitByName($pdo, $idCharacter, 'Spaarder') ? 15.0 : 10.0;
+    $multiplier = characterHasTraitFlag($pdo, $idCharacter, 'savings_bank_multiplier', 'Spaarder') ? 15.0 : 10.0;
 
     return round($totalIncome * $multiplier, 2);
 }
@@ -238,13 +253,64 @@ function getCharacterBankTransactions(PDO $pdo, int $idCharacter): array
 
         $transactions[] = [
             'id' => (int) $row['id'],
+            'type' => 'bank_transfer',
             'direction' => $isOutgoing ? 'outgoing' : 'incoming',
             'counterpartyName' => $nameCache[$counterpartyId],
             'amount' => round((float) $row['amount'], 2),
             'transactionDate' => (string) $row['transactionDate'],
             'description' => (string) ($row['description'] ?? ''),
+            'canDelete' => true,
         ];
     }
+
+    try {
+        $stmtPayouts = $pdo->prepare(
+            "SELECT
+                csp.id,
+                csp.amount,
+                csp.transactionDate,
+                csp.description,
+                co.companyName,
+                e.title AS eventTitle
+             FROM tblCompanySnapshotPayout AS csp
+             JOIN tblCompanySnapshot AS cs
+               ON cs.id = csp.idCompanySnapshot
+             JOIN tblCompany AS co
+               ON co.id = cs.idCompany
+             JOIN tblEvent AS e
+               ON e.id = cs.idEvent
+             WHERE csp.idCharacter = :idCharacter
+             ORDER BY csp.transactionDate DESC, csp.id DESC"
+        );
+        $stmtPayouts->execute(['idCharacter' => $idCharacter]);
+
+        foreach ($stmtPayouts->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $transactions[] = [
+                'id' => (int) ($row['id'] ?? 0),
+                'type' => 'company_snapshot_dividend',
+                'direction' => 'incoming',
+                'counterpartyName' => 'Divident ' . trim((string) ($row['companyName'] ?? 'Bedrijf')),
+                'amount' => round((float) ($row['amount'] ?? 0), 2),
+                'transactionDate' => (string) ($row['transactionDate'] ?? ''),
+                'description' => trim((string) ($row['description'] ?? '')) !== ''
+                    ? (string) $row['description']
+                    : ('Aether - ' . trim((string) ($row['eventTitle'] ?? ''))),
+                'canDelete' => false,
+            ];
+        }
+    } catch (Throwable $e) {
+        // Snapshot payouts are optional until the migration has run.
+    }
+
+    usort($transactions, static function (array $left, array $right): int {
+        $leftDate = (string) ($left['transactionDate'] ?? '');
+        $rightDate = (string) ($right['transactionDate'] ?? '');
+        if ($leftDate !== $rightDate) {
+            return strcmp($rightDate, $leftDate);
+        }
+
+        return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+    });
 
     return $transactions;
 }
@@ -280,7 +346,7 @@ function getCompaniesForShares(PDO $pdo): array
     try {
         $rows = dbAll(
             $pdo,
-            'SELECT id, companyName, companyValue
+            'SELECT id, companyName, description, companyValue
                FROM tblCompany
            ORDER BY companyName ASC, id ASC'
         );
@@ -292,10 +358,14 @@ function getCompaniesForShares(PDO $pdo): array
         $company = [
             'id' => (int) ($row['id'] ?? 0),
             'companyName' => (string) ($row['companyName'] ?? ''),
+            'description' => (string) ($row['description'] ?? ''),
             'companyValue' => round((float) ($row['companyValue'] ?? 0), 2),
         ];
 
-        return enrichCompanyWithType($company);
+        $company = enrichCompanyWithType($company);
+        $company['logoUrl'] = getCompanyLogoUrl((int) $company['id']);
+
+        return $company;
     }, $rows);
 }
 
@@ -306,16 +376,13 @@ function getCompanyShareAllocationByCompany(PDO $pdo): array
             $pdo,
             'SELECT
                 lctc.idCompany,
-                lct.id AS idLinkCharacterTrait,
                 lct.idTrait,
                 lct.rankValue,
                 lctc.extraPercentage,
-                t.name
+                lct.id AS idLinkCharacterTrait
              FROM tblLinkCharacterTraitCompany AS lctc
              JOIN tblLinkCharacterTrait AS lct
                ON lct.id = lctc.idLinkCharacterTrait
-             JOIN tblTrait AS t
-               ON t.id = lct.idTrait
              WHERE lctc.idCompany IS NOT NULL'
         );
     } catch (Throwable $e) {
@@ -329,7 +396,8 @@ function getCompanyShareAllocationByCompany(PDO $pdo): array
             continue;
         }
 
-        if (!isCompanyShareTrait(['name' => (string) ($row['name'] ?? '')])) {
+        $trait = getTraitDefinition($pdo, (int) ($row['idTrait'] ?? 0));
+        if (!$trait || !isCompanyShareTrait($trait)) {
             continue;
         }
 
@@ -351,7 +419,7 @@ function buildCompanyShareAvailabilityForTrait(array $shareTrait, array $compani
     $currentCompanyId = (int) ($shareTrait['companyId'] ?? 0);
 
     foreach ($companies as $company) {
-        if (($shareTrait['companyTypeKey'] ?? null) !== ($company['companyTypeKey'] ?? null)) {
+        if (!companyMatchesShareTrait($shareTrait, $company)) {
             continue;
         }
 
@@ -380,6 +448,101 @@ function buildCompanyShareAvailabilityForTrait(array $shareTrait, array $compani
     return $availableCompanies;
 }
 
+function getCharacterCompanySharePurchaseOptions(PDO $pdo, array $character, string $role, int $currentUserId): array
+{
+    $idCharacter = (int) ($character['id'] ?? 0);
+    if ($idCharacter <= 0) {
+        return [];
+    }
+
+    if (!canIncreaseCompanyShareRank($character, $role, $currentUserId)) {
+        return [];
+    }
+
+    $characterState = (string) ($character['state'] ?? '');
+    if ($characterState === 'draft') {
+        return [];
+    }
+
+    $characterClass = trim((string) ($character['class'] ?? ''));
+    if ($characterClass === '') {
+        return [];
+    }
+
+    $companies = getCompaniesForShares($pdo);
+    if (count($companies) === 0) {
+        return [];
+    }
+
+    $allocatedByCompany = getCompanyShareAllocationByCompany($pdo);
+    $currentBalance = getDisplayedCharacterBankAmount($pdo, $character);
+    if ($currentBalance <= 0) {
+        return [];
+    }
+
+    $linkedTraits = getCharacterTraitLinks($pdo, $idCharacter, ['status']);
+    $ownedTraitIds = [];
+    foreach ($linkedTraits as $linkedTrait) {
+        if (isCompanyShareTrait($linkedTrait)) {
+            $ownedTraitIds[(int) ($linkedTrait['idTrait'] ?? 0)] = true;
+        }
+    }
+
+    $options = [];
+    foreach ($companies as $company) {
+        $idCompany = (int) ($company['id'] ?? 0);
+        if ($idCompany <= 0) {
+            continue;
+        }
+
+        $unitPrice = round(((float) ($company['companyValue'] ?? 0)) / 100, 2);
+        if ($unitPrice <= 0 || $unitPrice > $currentBalance) {
+            continue;
+        }
+
+        $remainingSharePercentage = max(0, 100 - (int) ($allocatedByCompany[$idCompany] ?? 0));
+        if ($remainingSharePercentage < 1) {
+            continue;
+        }
+
+        foreach (['A', 'B'] as $shareClass) {
+            $idTrait = findCompanyShareTraitIdForCompanyType(
+                $pdo,
+                $characterClass,
+                $shareClass,
+                (string) ($company['companyTypeKey'] ?? '')
+            );
+
+            if ($idTrait === null || $idTrait <= 0 || isset($ownedTraitIds[$idTrait])) {
+                continue;
+            }
+
+            $options[] = [
+                'idCompany' => $idCompany,
+                'idTrait' => $idTrait,
+                'companyName' => (string) ($company['companyName'] ?? ''),
+                'companyValue' => round((float) ($company['companyValue'] ?? 0), 2),
+                'companyTypeKey' => $company['companyTypeKey'] ?? null,
+                'companyTypeLabel' => $company['companyTypeLabel'] ?? null,
+                'remainingSharePercentage' => $remainingSharePercentage,
+                'shareClass' => $shareClass,
+                'unitPrice' => $unitPrice,
+            ];
+        }
+    }
+
+    usort($options, static function (array $left, array $right): int {
+        $companyCompare = strcasecmp((string) ($left['companyName'] ?? ''), (string) ($right['companyName'] ?? ''));
+        if ($companyCompare !== 0) {
+            return $companyCompare;
+        }
+
+        return strcmp((string) ($left['shareClass'] ?? ''), (string) ($right['shareClass'] ?? ''));
+    });
+
+    return $options;
+}
+
 function getCharacterCompanyShares(PDO $pdo, array $character, string $role, int $currentUserId): array
 {
     $idCharacter = (int) ($character['id'] ?? 0);
@@ -398,9 +561,17 @@ function getCharacterCompanyShares(PDO $pdo, array $character, string $role, int
     $allocatedByCompany = getCompanyShareAllocationByCompany($pdo);
     $canManageAssignments = canManageCompanyShareAssignments($character, $role, $currentUserId);
     $canIncreaseRank = canIncreaseCompanyShareRank($character, $role, $currentUserId);
+    $canDecreaseRank = canDecreaseCompanyShareRank($character, $role, $currentUserId);
     $currentBalance = getDisplayedCharacterBankAmount($pdo, $character);
+    $companiesById = [];
+    foreach ($companies as $company) {
+        $companyId = (int) ($company['id'] ?? 0);
+        if ($companyId > 0) {
+            $companiesById[$companyId] = $company;
+        }
+    }
 
-    return array_map(static function (array $shareTrait) use ($companies, $allocatedByCompany, $canManageAssignments, $canIncreaseRank, $currentBalance): array {
+    return array_map(static function (array $shareTrait) use ($companies, $companiesById, $allocatedByCompany, $canManageAssignments, $canIncreaseRank, $canDecreaseRank, $currentBalance): array {
         $currentCompanyId = (int) ($shareTrait['companyId'] ?? 0);
         $allocatedPercentage = $currentCompanyId > 0
             ? (int) ($allocatedByCompany[$currentCompanyId] ?? 0)
@@ -411,9 +582,15 @@ function getCharacterCompanyShares(PDO $pdo, array $character, string $role, int
             : 0;
         $nextPercentageCost = null;
         $canAffordNextRank = false;
+        $currentCompany = $currentCompanyId > 0
+            ? ($companiesById[$currentCompanyId] ?? null)
+            : null;
 
         if ($currentCompanyId > 0 && isset($shareTrait['companyValue']) && $shareTrait['companyValue'] !== null) {
             $nextPercentageCost = round(((float) $shareTrait['companyValue']) / 100, 2);
+            $canAffordNextRank = $nextPercentageCost <= $currentBalance;
+        } elseif ($currentCompany !== null) {
+            $nextPercentageCost = round(((float) ($currentCompany['companyValue'] ?? 0)) / 100, 2);
             $canAffordNextRank = $nextPercentageCost <= $currentBalance;
         }
 
@@ -432,12 +609,18 @@ function getCharacterCompanyShares(PDO $pdo, array $character, string $role, int
             'companyName' => $shareTrait['companyName'] ?? null,
             'companyValue' => isset($shareTrait['companyValue']) && $shareTrait['companyValue'] !== null
                 ? round((float) $shareTrait['companyValue'], 2)
-                : null,
+                : ($currentCompany !== null ? round((float) ($currentCompany['companyValue'] ?? 0), 2) : null),
+            'companyDescription' => $currentCompany['description'] ?? null,
+            'companyLogoUrl' => $currentCompany['logoUrl'] ?? null,
+            'companyTypeLabelResolved' => $currentCompany['companyTypeLabel'] ?? ($shareTrait['companyTypeLabel'] ?? null),
+            'companyTypeDescriptionResolved' => $currentCompany['companyTypeDescription'] ?? ($shareTrait['companyTypeDescription'] ?? null),
             'remainingSharePercentage' => $remainingSharePercentage,
             'availableCompanies' => buildCompanyShareAvailabilityForTrait($shareTrait, $companies, $allocatedByCompany),
             'canManageAssignments' => $canManageAssignments,
             'canIncreaseRank' => $canIncreaseRank,
+            'canDecreaseRank' => $canDecreaseRank,
             'nextPercentageCost' => $nextPercentageCost,
+            'sellPercentageValue' => $nextPercentageCost,
             'canAffordNextRank' => $canAffordNextRank,
         ];
     }, $shareTraits);

@@ -50,26 +50,7 @@ try {
         exit;
     }
 
-    $trait = dbOne(
-        $pdo,
-        "SELECT
-            id,
-            name,
-            `class`,
-            `type`,
-            isUnique,
-            rankType,
-            traitGroup,
-            grouped,
-            cost,
-            income,
-            evolution,
-            staffRequirements,
-            description
-         FROM tblTrait
-         WHERE id = :id",
-        ['id' => $idTrait]
-    );
+    $trait = getTraitDefinition($pdo, $idTrait);
 
     if (!$trait) {
         http_response_code(404);
@@ -98,26 +79,7 @@ try {
         );
 
         if ($currentLinkedTrait) {
-            $currentTrait = dbOne(
-                $pdo,
-                "SELECT
-                    id,
-                    name,
-                    `class`,
-                    `type`,
-                    isUnique,
-                    rankType,
-                    traitGroup,
-                    grouped,
-                    cost,
-                    income,
-                    evolution,
-                    staffRequirements,
-                    description
-                 FROM tblTrait
-                 WHERE id = :id",
-                ['id' => $idCurrentTrait]
-            );
+            $currentTrait = getTraitDefinition($pdo, $idCurrentTrait);
         }
     }
 
@@ -132,6 +94,14 @@ try {
 
     $rankType = (string) $trait['rankType'];
     $currentRank = $linkedTrait ? (int) $linkedTrait['rankValue'] : 0;
+    if ($linkedTrait && isCompanyShareTrait($trait)) {
+        $currentRank = getCompanyShareBaseRank([
+            'name' => (string) ($trait['name'] ?? ''),
+            'baseRank' => $currentRank,
+            'isCompanyShare' => true,
+            'shareDraftStep' => $trait['shareDraftStep'] ?? null,
+        ]);
+    }
     $pointSummary = getCharacterPointSummary($pdo, [
         'id' => $character['id'],
         'type' => $character['type'],
@@ -149,21 +119,13 @@ try {
         }
 
         if (isGroupedTrait($trait)) {
-            $existingGroupTrait = dbOne(
-                $pdo,
-                "SELECT lct.id
-                 FROM tblLinkCharacterTrait AS lct
-                 JOIN tblTrait AS t
-                   ON t.id = lct.idTrait
-                 WHERE lct.idCharacter = :idCharacter
-                   AND t.traitGroup = :traitGroup
-                   AND t.`type` = :type",
-                [
-                    'idCharacter' => $idCharacter,
-                    'traitGroup' => (string) $trait['traitGroup'],
-                    'type' => (string) $trait['type'],
-                ]
-            );
+            $existingGroupTrait = null;
+            foreach (getCharacterTraitLinks($pdo, $idCharacter, [(string) ($trait['type'] ?? '')]) as $linkedGroupTrait) {
+                if (areTraitsInSameSelectionGroup($linkedGroupTrait, $trait)) {
+                    $existingGroupTrait = $linkedGroupTrait;
+                    break;
+                }
+            }
 
             if ($existingGroupTrait) {
                 echo json_encode(['error' => 'Je kan maar 1 trait kiezen binnen deze categorie.']);
@@ -192,7 +154,7 @@ try {
         }
 
         $newRank = isCompanyShareTrait($trait)
-            ? 10
+            ? getCompanyShareDraftStep($trait)
             : 1;
         $deltaCost = calculateTraitPointCost($trait, $newRank);
         if (!$canOverspendStatusPoints && $deltaCost > $pointSummary['availableStatusPoints']) {
@@ -224,7 +186,7 @@ try {
             exit;
         }
 
-        if ((string) $currentTrait['traitGroup'] !== (string) $trait['traitGroup']) {
+        if (!areTraitsInSameSelectionGroup($currentTrait, $trait)) {
             echo json_encode(['error' => 'Je kan alleen wisselen binnen dezelfde traitgroep.']);
             exit;
         }
@@ -235,6 +197,14 @@ try {
         }
 
         $currentRank = (int) $currentLinkedTrait['rankValue'];
+        if (isCompanyShareTrait($currentTrait)) {
+            $currentRank = getCompanyShareBaseRank([
+                'name' => (string) ($currentTrait['name'] ?? ''),
+                'baseRank' => $currentRank,
+                'isCompanyShare' => true,
+                'shareDraftStep' => $currentTrait['shareDraftStep'] ?? null,
+            ]);
+        }
         $currentCost = calculateTraitPointCost($currentTrait, $currentRank);
         $newCost = calculateTraitPointCost($trait, $currentRank);
         $deltaCost = $newCost - $currentCost;
@@ -275,14 +245,16 @@ try {
             exit;
         }
 
-        $rankStep = isCompanyShareTrait($trait) ? 10 : 1;
+        $rankStep = isCompanyShareTrait($trait) ? getCompanyShareDraftStep($trait) : 1;
 
         if ($action === 'rank_up') {
             $newRank = $currentRank + $rankStep;
         } else {
-            $minimumRank = isCompanyShareTrait($trait) ? 10 : 1;
+            $minimumRank = isCompanyShareTrait($trait) ? getCompanyShareDraftStep($trait) : 1;
             if ($rankType === 'range_positive' && $currentRank <= $minimumRank) {
-                $minimumRankLabel = isCompanyShareTrait($trait) ? '10%.' : '1.';
+                $minimumRankLabel = isCompanyShareTrait($trait)
+                    ? (string) $minimumRank . '%.'
+                    : '1.';
                 echo json_encode(['error' => 'De rang kan niet lager dan ' . $minimumRankLabel]);
                 exit;
             }
@@ -313,21 +285,20 @@ try {
                         $pdo,
                         'SELECT
                             lct.id,
+                            lct.idTrait,
                             lct.rankValue,
-                            COALESCE(lctc.extraPercentage, 0) AS extraPercentage,
-                            t.name
+                            COALESCE(lctc.extraPercentage, 0) AS extraPercentage
                          FROM tblLinkCharacterTraitCompany AS lctc
                          JOIN tblLinkCharacterTrait AS lct
                            ON lct.id = lctc.idLinkCharacterTrait
-                         JOIN tblTrait AS t
-                           ON t.id = lct.idTrait
                          WHERE lctc.idCompany = :idCompany',
                         ['idCompany' => $idCompany]
                     );
 
                     $allocatedOtherPercentage = 0;
                     foreach ($rows as $row) {
-                        if (!isCompanyShareTrait(['name' => (string) ($row['name'] ?? '')])) {
+                        $linkedCompanyTrait = getTraitDefinition($pdo, (int) ($row['idTrait'] ?? 0));
+                        if (!$linkedCompanyTrait || !isCompanyShareTrait($linkedCompanyTrait)) {
                             continue;
                         }
 
