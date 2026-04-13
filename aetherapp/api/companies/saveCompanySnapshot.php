@@ -278,11 +278,13 @@ try {
         }
 
         $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
+        $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
         $financials = calculateCompanySnapshotFinancials(
             (float) ($company['companyValue'] ?? 0),
             $stability,
             $profitability,
             (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+            $personnelSalaryIncreaseExpenseAmount,
             (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
             (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
         );
@@ -385,11 +387,13 @@ try {
 
             if ($action === 'update') {
                 $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
+                $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
                 $financials = calculateCompanySnapshotFinancials(
                     (float) ($snapshot['companyValue'] ?? 0),
                     $stability,
                     $profitability,
                     (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+                    $personnelSalaryIncreaseExpenseAmount,
                     (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
                     (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
                 );
@@ -397,11 +401,13 @@ try {
                 $resolvedStability = normalizeCompanySliderValue($snapshot['stability'] ?? 0);
                 $resolvedProfitability = normalizeCompanySliderValue($snapshot['profitability'] ?? 0);
                 $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $resolvedStability);
+                $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
                 $financials = calculateCompanySnapshotFinancials(
                     (float) ($snapshot['companyValue'] ?? 0),
                     $resolvedStability,
                     $resolvedProfitability,
                     (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+                    $personnelSalaryIncreaseExpenseAmount,
                     (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
                     (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
                 );

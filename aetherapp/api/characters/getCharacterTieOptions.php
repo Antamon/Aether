@@ -5,6 +5,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/economyUtils.php';
 
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
@@ -51,7 +52,16 @@ try {
         }
         $options[] = [
             'id' => (int)$row['id'],
-            'displayName' => $display
+            'displayName' => $display,
+            'class' => (string) ($row['class'] ?? ''),
+            'recurringIncomeTotal' => getCharacterRecurringIncomeTotal($pdo, [
+                'id' => (int) $row['id'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'canBeLandlord' => canCharacterBeLandlord($pdo, [
+                'id' => (int) $row['id'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
         ];
     }
 

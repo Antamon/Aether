@@ -160,6 +160,16 @@ function aetherPrepareCharacterFormForCreation() {
 
     formContainer.classList.remove('d-none');
 
+    if (typeof setupCharacterPortraitControls === 'function') {
+        setupCharacterPortraitControls();
+    }
+    if (typeof updateCharacterPortrait === 'function') {
+        updateCharacterPortrait(null, false);
+    }
+    if (typeof updateCharacterPortraitActions === 'function') {
+        updateCharacterPortraitActions(false, false);
+    }
+
     // Alle rijen uit #characterForm ophalen
     const rows = formContainer.querySelectorAll('.mb-3.row');
     rows.forEach(row => {
@@ -229,28 +239,37 @@ function aetherPrepareCharacterFormForCreation() {
         `;
     }
 
-    const wealthSection = document.getElementById('wealthSectionContent');
-    if (wealthSection) {
-        wealthSection.innerHTML = `
-            <div class="d-flex flex-wrap align-items-center gap-4">
-                <span>Inkomsten: 0,00 Fr</span>
-                <span>Spaarboekje</span>
-            </div>
-        `;
-    }
-
+    const livingStandardSection = document.getElementById('livingStandardSectionContent');
+    const livingStandardSectionTitle = document.getElementById('livingStandardSectionTitle');
     const staffSection = document.getElementById('staffSectionContent');
+    const staffSectionTitle = document.getElementById('staffSectionTitle');
+    const languagesSection = document.getElementById('languagesSectionContent');
+    const languagesSectionTitle = document.getElementById('languagesSectionTitle');
+    if (livingStandardSection) {
+        livingStandardSection.innerHTML = '';
+        livingStandardSection.classList.add('d-none');
+        livingStandardSection.classList.remove('mb-4');
+    }
+    if (livingStandardSectionTitle) {
+        livingStandardSectionTitle.classList.add('d-none');
+    }
     if (staffSection) {
-        staffSection.innerHTML = `
-            <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
-                <span>Personeelsvoorwaarde: 0</span>
-                <span>Voldaan: 0</span>
-            </div>
-            <h5>Eigenschappen met personeelsvoorwaarden</h5>
-            <p class="text-muted mb-3">Geen traits met personeelsvoorwaarde.</p>
-            <h5>Gevolg</h5>
-            <p class="text-muted mb-0">Geen dependent of spouse ties.</p>
-        `;
+        staffSection.innerHTML = '';
+        staffSection.classList.add('d-none');
+        staffSection.classList.remove('mb-4');
+    }
+    if (staffSectionTitle) {
+        staffSectionTitle.classList.add('d-none');
+    }
+    if (languagesSection) {
+        languagesSection.innerHTML = '';
+        languagesSection.classList.add('d-none');
+    }
+    if (languagesSectionTitle) {
+        languagesSectionTitle.classList.add('d-none');
+    }
+    if (typeof syncCharacterLeftInfoSectionsVisibility === 'function') {
+        syncCharacterLeftInfoSectionsVisibility();
     }
 
     // Klasse, voornaam en familienaam leeg/standaard zetten
@@ -263,6 +282,8 @@ function aetherPrepareCharacterFormForCreation() {
     const lastName = document.getElementById('lastName');
     if (firstName) firstName.value = '';
     if (lastName) lastName.value = '';
+
+    aetherBindCreationValidationInputs();
 }
 
 /**
@@ -285,6 +306,25 @@ function aetherUpdateCreateButtonState() {
     btn.disabled = !(classOk && firstOk && lastOk);
 }
 
+function aetherBindCreationValidationInputs() {
+    const classSelect = document.getElementById('class');
+    const firstName = document.getElementById('firstName');
+    const lastName = document.getElementById('lastName');
+
+    if (classSelect && !classSelect.dataset.aetherCreateValidationBound) {
+        classSelect.addEventListener('change', aetherUpdateCreateButtonState);
+        classSelect.dataset.aetherCreateValidationBound = 'true';
+    }
+    if (firstName && !firstName.dataset.aetherCreateValidationBound) {
+        firstName.addEventListener('input', aetherUpdateCreateButtonState);
+        firstName.dataset.aetherCreateValidationBound = 'true';
+    }
+    if (lastName && !lastName.dataset.aetherCreateValidationBound) {
+        lastName.addEventListener('input', aetherUpdateCreateButtonState);
+        lastName.dataset.aetherCreateValidationBound = 'true';
+    }
+}
+
 /**
  * Start create-modus wanneer de user klikt op "Nieuw personage"
  */
@@ -295,21 +335,6 @@ async function aetherStartNewCharacterFlow() {
 
         await aetherRenderHeaderForNewCharacter(user);
         aetherPrepareCharacterFormForCreation();
-
-        // Validatie events
-        const classSelect = document.getElementById('class');
-        const firstName = document.getElementById('firstName');
-        const lastName = document.getElementById('lastName');
-
-        if (classSelect) {
-            classSelect.addEventListener('change', aetherUpdateCreateButtonState);
-        }
-        if (firstName) {
-            firstName.addEventListener('input', aetherUpdateCreateButtonState);
-        }
-        if (lastName) {
-            lastName.addEventListener('input', aetherUpdateCreateButtonState);
-        }
 
         aetherUpdateCreateButtonState();
     } catch (err) {
@@ -376,7 +401,7 @@ async function aetherCreateNewCharacter() {
     const lastVal = lastName.value.trim();
 
     if (firstVal.length < 2 || lastVal.length < 2 || !classVal) {
-        alert('Kies een klasse en geef minstens 2 letters voor voornaam Acn familienaam.');
+        alert('Kies een klasse en geef minstens 2 letters voor voornaam en familienaam.');
         return;
     }
 
@@ -461,31 +486,37 @@ async function aetherCreateNewCharacter() {
         console.error(err);
         alert('Het aanmaken van het personage is mislukt.');
     }
-}/**
+}
+
+/**
  * Event listeners koppelen (wordt op DOMContentLoaded opgeroepen)
  */
 function aetherSetupNewCharacterUI() {
     const startNewCharacterLink = document.getElementById('startNewCharacter');
-    if (startNewCharacterLink) {
+    if (startNewCharacterLink && !startNewCharacterLink.dataset.aetherCreateBound) {
         startNewCharacterLink.addEventListener('click', function (e) {
             e.preventDefault();
             aetherStartNewCharacterFlow();
         });
+        startNewCharacterLink.dataset.aetherCreateBound = 'true';
     }
 
-    const createBtn = document.getElementById('createNewCharacter');
-    if (createBtn) {
-        createBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            aetherCreateNewCharacter();
-        });
-    }
+    if (!document.body.dataset.aetherCreateDelegationBound) {
+        document.body.addEventListener('click', function (e) {
+            const createBtn = e.target.closest('#createNewCharacter');
+            if (createBtn) {
+                e.preventDefault();
+                aetherCreateNewCharacter();
+                return;
+            }
 
-    const cancelBtn = document.getElementById('cancelNewCharacter');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function () {
-            aetherCancelNewCharacter();
+            const cancelBtn = e.target.closest('#cancelNewCharacter');
+            if (cancelBtn) {
+                e.preventDefault();
+                aetherCancelNewCharacter();
+            }
         });
+        document.body.dataset.aetherCreateDelegationBound = 'true';
     }
 }
 

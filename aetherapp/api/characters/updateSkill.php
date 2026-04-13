@@ -74,19 +74,7 @@ try {
     $maxXP = $pointSummary['experienceBudget'];
 
     // --- 5. Huidig gebruikte EP berekenen ---
-    $stmt = $pdo->prepare(
-        'SELECT COALESCE(SUM(
-             CASE level
-                 WHEN 1 THEN 1
-                 WHEN 2 THEN 3
-                 WHEN 3 THEN 6
-             END
-         ),0) AS usedXP
-         FROM tblLinkCharacterSkill 
-         WHERE idCharacter = ?'
-    );
-    $stmt->execute([$idCharacter]);
-    $usedXP = (int) $stmt->fetchColumn();
+    $usedXP = getCharacterSkillExperienceCost($pdo, $idCharacter);
 
     // --- 6. Actie verwerken ---
     if ($action === 'up') {
@@ -174,19 +162,7 @@ try {
     $skills = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Used XP opnieuw berekenen
-    $stmt = $pdo->prepare(
-        'SELECT COALESCE(SUM(
-             CASE level
-                 WHEN 1 THEN 1
-                 WHEN 2 THEN 3
-                 WHEN 3 THEN 6
-             END
-         ),0) AS usedXP
-         FROM tblLinkCharacterSkill 
-         WHERE idCharacter = ?'
-    );
-    $stmt->execute([$idCharacter]);
-    $usedXP = (int) $stmt->fetchColumn();
+    $usedXP = getCharacterSkillExperienceCost($pdo, $idCharacter);
 
     echo json_encode([
         'skills' => $skills,

@@ -5,6 +5,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/economyUtils.php';
 
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
@@ -23,6 +25,8 @@ $description = $input['description'] ?? '';
 $allowedTypes = [
     'superior',
     'dependent',
+    'landlord',
+    'household_staff',
     'spouse',
     'ally',
     'adversary',
@@ -37,7 +41,7 @@ if ($idCharacter <= 0 || $idOtherCharacter <= 0 || !in_array($relationType, $all
 
 try {
     // Character info ophalen voor rechten
-    $stmtChar = $pdo->prepare("SELECT idUser, type FROM tblCharacter WHERE id = :id");
+    $stmtChar = $pdo->prepare("SELECT idUser, type, `class` FROM tblCharacter WHERE id = :id");
     $stmtChar->execute([':id' => $idCharacter]);
     $character = $stmtChar->fetch(PDO::FETCH_ASSOC);
 
@@ -63,6 +67,43 @@ try {
     if (!$isAdmin && !$isOwnerPlayer) {
         http_response_code(403);
         echo json_encode(['error' => 'Geen rechten om deze tie te wijzigen.']);
+        exit;
+    }
+
+    if ($idCharacter === $idOtherCharacter) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Een tie met hetzelfde personage is niet toegelaten.']);
+        exit;
+    }
+
+    $stmtTarget = $pdo->prepare("SELECT `class` FROM tblCharacter WHERE id = :id");
+    $stmtTarget->execute([':id' => $idOtherCharacter]);
+    $targetCharacter = $stmtTarget->fetch(PDO::FETCH_ASSOC);
+
+    if (!$targetCharacter) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Doelpersonage niet gevonden.']);
+        exit;
+    }
+
+    $ownerCharacterData = [
+        'id' => $idCharacter,
+        'class' => (string) ($character['class'] ?? ''),
+    ];
+    $targetCharacterData = [
+        'id' => $idOtherCharacter,
+        'class' => (string) ($targetCharacter['class'] ?? ''),
+    ];
+
+    if ($relationType === 'household_staff' && !canCharacterBeLandlord($pdo, $ownerCharacterData)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Dit personage kan geen household staff kiezen.']);
+        exit;
+    }
+
+    if ($relationType === 'landlord' && !canCharacterBeLandlord($pdo, $targetCharacterData)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Het gekozen personage kan niet als landlord aangeduid worden.']);
         exit;
     }
 
@@ -108,6 +149,8 @@ try {
     $tieLabels = [
         'superior' => 'Superior',
         'dependent' => 'Dependent',
+        'landlord' => 'Landlord',
+        'household_staff' => 'Household staff',
         'spouse' => 'Spouse',
         'ally' => 'Ally',
         'adversary' => 'Adversary',
@@ -123,7 +166,35 @@ try {
             c.firstName,
             c.lastName,
             c.title,
-            c.class
+            c.class,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'superior'
+            ) AS hasReverseSuperior,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'landlord'
+            ) AS hasReverseLandlord,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'household_staff'
+            ) AS hasReverseHouseholdStaff,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'spouse'
+            ) AS hasReverseSpouse
         FROM tblCharacterTie t
         JOIN tblCharacter c ON c.id = t.idCharacterTarget
         WHERE t.idCharacter = :idCharacter
@@ -147,6 +218,26 @@ try {
             'relationTypeLabel' => $tieLabels[$row['relationType']] ?? $row['relationType'],
             'description' => $row['description'],
             'otherName' => $displayName,
+            'firstName' => $row['firstName'],
+            'lastName' => $row['lastName'],
+            'otherClass' => (string) ($row['class'] ?? ''),
+            'otherRecurringIncomeTotal' => getCharacterRecurringIncomeTotal($pdo, [
+                'id' => (int) $row['idCharacterTarget'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'otherMiddleClassLivingStandardIncome' => getCharacterMiddleClassLivingStandardIncome($pdo, [
+                'id' => (int) $row['idCharacterTarget'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'otherUpperClassLivingStandardTier' => getCharacterUpperClassLivingStandardTier($pdo, [
+                'id' => (int) $row['idCharacterTarget'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'portraitUrl' => getCharacterPortraitUrl((int) $row['idCharacterTarget']),
+            'hasReverseSuperior' => (bool) $row['hasReverseSuperior'],
+            'hasReverseLandlord' => (bool) $row['hasReverseLandlord'],
+            'hasReverseHouseholdStaff' => (bool) $row['hasReverseHouseholdStaff'],
+            'hasReverseSpouse' => (bool) $row['hasReverseSpouse'],
         ];
     }
 

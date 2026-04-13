@@ -5,8 +5,13 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require 'db.php';
+require_once 'sessionUserBootstrap.php';
 
 // Check of er een ingelogde gebruiker is
+if (!isset($_SESSION['user']['id'])) {
+    aetherHydrateSessionUserFromWordPress();
+}
+
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
     echo json_encode(['status' => 'redirect']);

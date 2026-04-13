@@ -5,6 +5,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/economyUtils.php';
 
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
@@ -24,6 +26,8 @@ if ($idCharacter <= 0) {
 $tieLabels = [
     'superior' => 'Superior',
     'dependent' => 'Dependent',
+    'landlord' => 'Landlord',
+    'household_staff' => 'Household staff',
     'spouse' => 'Spouse',
     'ally' => 'Ally',
     'adversary' => 'Adversary',
@@ -48,6 +52,20 @@ try {
                   AND reverseTie.idCharacterTarget = t.idCharacter
                   AND reverseTie.relationType = 'superior'
             ) AS hasReverseSuperior,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'landlord'
+            ) AS hasReverseLandlord,
+            EXISTS(
+                SELECT 1
+                FROM tblCharacterTie AS reverseTie
+                WHERE reverseTie.idCharacter = t.idCharacterTarget
+                  AND reverseTie.idCharacterTarget = t.idCharacter
+                  AND reverseTie.relationType = 'household_staff'
+            ) AS hasReverseHouseholdStaff,
             EXISTS(
                 SELECT 1
                 FROM tblCharacterTie AS reverseTie
@@ -81,7 +99,23 @@ try {
             'otherName' => $displayName,
             'firstName' => $row['firstName'],
             'lastName' => $row['lastName'],
+            'otherClass' => (string) ($row['class'] ?? ''),
+            'otherRecurringIncomeTotal' => getCharacterRecurringIncomeTotal($pdo, [
+                'id' => (int) $row['idCharacterTarget'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'otherMiddleClassLivingStandardIncome' => getCharacterMiddleClassLivingStandardIncome($pdo, [
+                'id' => (int) $row['idCharacterTarget'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'otherUpperClassLivingStandardTier' => getCharacterUpperClassLivingStandardTier($pdo, [
+                'id' => (int) $row['idCharacterTarget'],
+                'class' => (string) ($row['class'] ?? ''),
+            ]),
+            'portraitUrl' => getCharacterPortraitUrl((int) $row['idCharacterTarget']),
             'hasReverseSuperior' => (bool) $row['hasReverseSuperior'],
+            'hasReverseLandlord' => (bool) $row['hasReverseLandlord'],
+            'hasReverseHouseholdStaff' => (bool) $row['hasReverseHouseholdStaff'],
             'hasReverseSpouse' => (bool) $row['hasReverseSpouse'],
         ];
     }

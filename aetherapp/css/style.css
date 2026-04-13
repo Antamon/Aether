@@ -7,6 +7,103 @@
   width: var(--offcanvas-width);
 }
 
+#characterNames {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.character-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.character-sheet-card {
+  border: 1px solid rgba(100, 0, 0, 0.12);
+}
+
+.character-sheet-card .card-body {
+  padding: 1.25rem;
+}
+
+.character-sheet-card-title {
+  margin-bottom: 1rem;
+}
+
+.character-portrait-panel {
+  flex: 0 0 35%;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.character-sheet-header-fields {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.character-portrait-frame {
+  width: 100%;
+  aspect-ratio: 35 / 45;
+  border: 1px solid rgba(111, 66, 66, 0.25);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f8f4f1 0%, #ede7e3 100%);
+}
+
+.character-portrait-image,
+.character-portrait-placeholder {
+  width: 100%;
+  height: 100%;
+}
+
+.character-portrait-image {
+  display: block;
+  object-fit: cover;
+}
+
+.character-portrait-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b6767;
+  font-weight: 600;
+  text-align: center;
+  padding: 1rem;
+}
+
+.character-portrait-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.character-portrait-actions .btn {
+  width: 100%;
+}
+
+.character-sidebar-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.character-sidebar-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.character-sidebar-delete {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+}
+
 .offcanvas-tab {
   position: fixed;
   top: 50%;
@@ -32,6 +129,17 @@ background-color: #640000;
 #offcanvasScrolling.show + .offcanvas-tab {
   left: var(--offcanvas-width);
   transform: translate(-100%, -50%);
+}
+
+@media (max-width: 767.98px) {
+  .character-sheet-header {
+    flex-direction: column;
+  }
+
+  .character-portrait-panel {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 #eventList input[type=text], #eventList input[type=date], #eventNew input[type=text], #eventNew input[type=date]{
@@ -154,8 +262,79 @@ background-color: #640000;
   visibility: visible;
 }
 
+.background-section {
+  border: 1px solid rgba(100, 0, 0, 0.12) !important;
+  border-style: solid !important;
+  border-radius: 0.75rem;
+}
+
 .background-section h4 {
   margin-bottom: 0.25rem;
+}
+
+.character-tie-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(100, 0, 0, 0.12);
+}
+
+.character-tie-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.character-tie-portrait-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.character-tie-portrait {
+  width: 48px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  background-color: #f4eeee;
+  flex: 0 0 auto;
+}
+
+.character-tie-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.character-tie-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.character-tie-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: 0.3rem;
+}
+
+.character-tie-actions .btn {
+  line-height: 1;
+}
+
+.character-tie-description {
+  margin-top: 0.2rem;
+}
+
+.tie-portrait-modal-image {
+  width: auto;
+  max-width: 100%;
+  max-height: 75vh;
+  border-radius: 0.75rem;
 }
 
 #economyTab {
@@ -173,6 +352,93 @@ background-color: #640000;
 
 #economyTab .economy-transactions-table {
   overflow-x: auto;
+}
+
+#economyTab .economy-subsection-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+}
+
+#economyTab .economy-income-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+#economyTab .economy-income-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+#economyTab .economy-income-row--total {
+  margin-top: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(100, 0, 0, 0.12);
+  font-weight: 700;
+}
+
+#economyTab .economy-income-label {
+  min-width: 0;
+}
+
+#economyTab .economy-income-value {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+#economyTab .economy-securities-action-block {
+  margin-top: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+#economyTab .economy-securities-settings {
+  margin-top: 1rem;
+}
+
+#economyTab .economy-securities-snapshot-meta {
+  line-height: 1.45;
+}
+
+#economyTab .economy-securities-snapshot-withdraw-input {
+  max-width: 11rem;
+}
+
+#passportTab .passport-section-option {
+  display: block;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+
+#passportTab .passport-section-option-main {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+#passportTab .passport-section-option-title,
+#passportTab .passport-section-fixed .passport-section-option-title {
+  font-weight: 700;
+}
+
+#passportTab .passport-section-option-meta,
+#passportTab .passport-section-fixed .passport-section-option-meta,
+#passportTab .passport-total-pages {
+  color: var(--bs-secondary-color);
+}
+
+#passportTab .passport-section-fixed {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.4rem 0;
 }
 
 #economyTab .economy-transactions-table-inner {
@@ -752,6 +1018,145 @@ background-color: #640000;
   color: var(--bs-secondary-color);
 }
 
+.admin-page .admin-card {
+  border: 1px solid rgba(100, 0, 0, 0.12);
+}
+
+.admin-toolbar {
+  align-items: end;
+}
+
+.admin-toolbar-label {
+  color: #e7cdcd;
+  font-weight: 600;
+}
+
+.admin-toolbar .btn-outline-light {
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.admin-category-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.admin-category-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 0.7rem;
+  background-color: rgba(100, 0, 0, 0.03);
+}
+
+.admin-category-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.admin-category-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.admin-category-name-input {
+  flex: 1 1 auto;
+  min-width: 12rem;
+}
+
+.admin-category-fixed-label {
+  color: #3b2c2c;
+  font-weight: 600;
+}
+
+.admin-category-item .btn {
+  flex: 0 0 auto;
+}
+
+.admin-specialisations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.admin-specialisations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-specialisation-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.admin-specialisation-row .form-control {
+  flex: 1 1 auto;
+}
+
+.admin-specialisation-meta {
+  flex: 0 0 auto;
+  min-width: 6.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(100, 0, 0, 0.12);
+  border-radius: 0.7rem;
+  background-color: rgba(100, 0, 0, 0.03);
+  color: var(--bs-secondary-color);
+  font-size: 0.9rem;
+}
+
+.admin-holders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-holder-group {
+  padding: 0.95rem;
+  border: 1px solid rgba(100, 0, 0, 0.08);
+  border-radius: 0.75rem;
+  background-color: rgba(100, 0, 0, 0.02);
+}
+
+.admin-holder-group-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.admin-holder-group-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.admin-holder-item {
+  color: #3b2c2c;
+}
+
+.admin-holder-item + .admin-holder-item {
+  margin-top: 0.4rem;
+}
+
+.admin-form-disabled-note {
+  color: var(--bs-secondary-color);
+  font-size: 0.92rem;
+}
+
+.character-sheet-info-text {
+  white-space: pre-line;
+}
+
 @media (max-width: 991.98px) {
   #economyTab .economy-share-description-body {
     flex-wrap: wrap !important;
@@ -779,5 +1184,23 @@ background-color: #640000;
   .company-primary-fields {
     flex: 0 0 100%;
     max-width: 100%;
+  }
+
+  .admin-specialisation-row {
+    flex-wrap: wrap;
+  }
+
+  .admin-specialisation-meta {
+    min-width: auto;
+  }
+
+  .admin-category-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .admin-category-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -5,6 +5,8 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/economyUtils.php';
+require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/characterLanguageUtils.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -166,21 +168,59 @@ try {
     $character['usedStatusPoints'] = $pointSummary['usedStatusPoints'];
     $character['maxStatusPoints'] = $pointSummary['maxStatusPoints'];
     $character['availableStatusPoints'] = getVisibleAvailableStatusPoints($pointSummary, $currentUserRole);
+    $languageSummary = getCharacterLanguageSummary($pdo, $character, $skills, $pointSummary);
+    $character['languages'] = $languageSummary['languages'];
+    $character['languageSummary'] = $languageSummary;
     $currentUserId = getCurrentUserId();
+    $canViewEconomy = canViewCharacterEconomy($character, $currentUserRole, $currentUserId);
+    $character['canManageLanguages'] = $languageSummary['isVisible']
+        && canCurrentUserManageCharacterLanguages($character, $currentUserRole, $currentUserId);
+    $character['portraitUrl'] = getCharacterPortraitUrl($idCharacter);
+    $character['canManagePortrait'] = canManageCharacterPortrait($character, $currentUserRole, $currentUserId);
     $character['canEditBankAccount'] = canEditCharacterBankAccount($character, $currentUserRole);
     $character['canTransferMoney'] = canTransferFromCharacter($character, $currentUserRole);
     $character['canDeleteBankTransactions'] = isPrivilegedUserRole($currentUserRole);
+    $character['canManageSecurities'] = canManageCharacterSecurities($character, $currentUserRole, $currentUserId);
+    $character['canApproveSecuritiesSnapshots'] = canApproveCharacterSecuritiesSnapshots($character, $currentUserRole, $currentUserId);
     $character['defaultBankTransferDate'] = getDefaultBankTransferDate();
     $character['bankTransferTargets'] = $character['canTransferMoney']
         ? getBankTransferTargets($pdo, $idCharacter)
         : [];
-    $character['bankTransactions'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
+    $recurringIncomeBreakdown = getCharacterRecurringIncomeBreakdown($pdo, $character);
+    $character['baseRecurringIncome'] = $recurringIncomeBreakdown['baseRecurringIncome'];
+    $character['salaryIncreaseBaseIncome'] = $recurringIncomeBreakdown['salaryIncreaseBaseIncome'];
+    $character['salaryIncreasePercentage'] = $recurringIncomeBreakdown['salaryIncreasePercentage'];
+    $character['salaryIncreaseAmount'] = $recurringIncomeBreakdown['salaryIncreaseAmount'];
+    $character['grossRecurringIncome'] = $recurringIncomeBreakdown['grossRecurringIncome'] ?? $character['baseRecurringIncome'];
+    $character['householdStaffExpenseAmount'] = $recurringIncomeBreakdown['householdStaffExpenseAmount'] ?? 0;
+    $character['recurringIncomeTotal'] = $recurringIncomeBreakdown['totalRecurringIncome'];
+    $character['middleClassLivingStandardIncome'] = getCharacterMiddleClassLivingStandardIncome($pdo, $character);
+    $character['virtualCompanyShareLivingStandardIncome'] = getCharacterVirtualCompanyShareLivingStandardIncome($pdo, $idCharacter);
+    $character['draftBankAccountAmount'] = getDraftBankAccountAmountForCharacter($pdo, $character);
+    $securitiesPortfolio = getCharacterSecuritiesPortfolio($pdo, $character);
+    $character['securitiesaccount'] = $securitiesPortfolio['balance'];
+    $character['securitiesManagerType'] = $securitiesPortfolio['managerType'];
+    $character['securitiesManagerCharacterId'] = $securitiesPortfolio['managerCharacterId'];
+    $character['securitiesRiskProfile'] = $securitiesPortfolio['riskProfile'];
+    $character['securitiesManagerSkillLevel'] = $securitiesPortfolio['managerSkillLevel'];
+    $character['securitiesRiskProfileOptions'] = getCharacterSecuritiesRiskProfileOptions();
+    $character['securitiesManagerOptions'] = $character['canManageSecurities']
+        ? getCharacterSecuritiesManagerOptions($pdo, $idCharacter)
+        : [];
+    $character['bankTransactions'] = $canViewEconomy
         ? getCharacterBankTransactions($pdo, $idCharacter)
         : [];
-    $character['companyShares'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
+    $character['canCreateEconomySnapshots'] = canManageCharacterEconomySnapshots($character, $currentUserRole, $currentUserId);
+    $character['economySnapshotEventOptions'] = $character['canCreateEconomySnapshots']
+        ? getCharacterEconomySnapshotEventOptions($pdo, $idCharacter)
+        : [];
+    $character['economySnapshots'] = $canViewEconomy
+        ? getCharacterEconomySnapshots($pdo, $idCharacter, $character['canApproveSecuritiesSnapshots'])
+        : [];
+    $character['companyShares'] = $canViewEconomy
         ? getCharacterCompanyShares($pdo, $character, $currentUserRole, $currentUserId)
         : [];
-    $character['companySharePurchaseOptions'] = canViewCharacterEconomy($character, $currentUserRole, $currentUserId)
+    $character['companySharePurchaseOptions'] = $canViewEconomy
         ? getCharacterCompanySharePurchaseOptions($pdo, $character, $currentUserRole, $currentUserId)
         : [];
 

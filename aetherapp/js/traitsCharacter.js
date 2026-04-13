@@ -63,6 +63,23 @@ function traitHasFlagClient(trait, flagKey) {
     return keys.includes(flagKey);
 }
 
+function isSecretTraitClient(trait) {
+    return traitHasFlagClient(trait, "secret");
+}
+
+function canManageTraitClient(trait) {
+    if (!trait) {
+        return false;
+    }
+
+    if (!isSecretTraitClient(trait)) {
+        return true;
+    }
+
+    const role = currentUser?.role || "";
+    return role === "administrator" || role === "director";
+}
+
 function canEditTraitsForCharacter(character) {
     if (!currentUser || !character) return false;
 
@@ -98,6 +115,10 @@ function formatTraitRankLabel(trait) {
 }
 
 function canEditTraitRankInTraitList(link) {
+    if (!canManageTraitClient(link)) {
+        return false;
+    }
+
     if (!isCompanyShareTraitClient(link)) {
         return true;
     }
@@ -635,6 +656,7 @@ function createLinkedTraitRow(link, group, canEdit) {
     row.dataset.linked = "true";
 
     const groupedTraitGroup = isGroupedTraitGroup(group);
+    const canManageThisTrait = canEdit && canManageTraitClient(link);
     row.dataset.grouped = groupedTraitGroup ? "true" : "false";
 
     row.appendChild(createTraitBookButton(link.description));
@@ -647,14 +669,17 @@ function createLinkedTraitRow(link, group, canEdit) {
         ? sortTraitOptions(
             (group.options || []).filter((option) =>
                 Number(option.id) === Number(link.idTrait) ||
-                !(group.linkedTraits || []).some((linkedTrait) => Number(linkedTrait.idTrait) === Number(option.id))
+                (
+                    canManageTraitClient(option) &&
+                    !(group.linkedTraits || []).some((linkedTrait) => Number(linkedTrait.idTrait) === Number(option.id))
+                )
             )
         )
         : [link];
-    const select = createTraitSelect(selectOptions, link.idTrait, !canEdit || !groupedTraitGroup);
+    const select = createTraitSelect(selectOptions, link.idTrait, !canManageThisTrait || !groupedTraitGroup);
     row.appendChild(select);
 
-    if (canEdit && link.rankType !== "singular" && canEditTraitRankInTraitList(link)) {
+    if (canManageThisTrait && link.rankType !== "singular" && canEditTraitRankInTraitList(link)) {
         const btnDown = document.createElement("button");
         btnDown.type = "button";
         btnDown.className = "btn btn-outline-secondary";
@@ -673,7 +698,7 @@ function createLinkedTraitRow(link, group, canEdit) {
         row.appendChild(btnUp);
     }
 
-    if (canEdit) {
+    if (canManageThisTrait) {
         const btnRemove = document.createElement("button");
         btnRemove.type = "button";
         btnRemove.className = "btn btn-danger";
@@ -696,7 +721,10 @@ function createPendingTraitRow(group, canEdit) {
 
     const linkedIds = new Set((group.linkedTraits || []).map((trait) => Number(trait.idTrait)));
     const availableOptions = sortTraitOptions(
-        (group.options || []).filter((option) => !linkedIds.has(Number(option.id)))
+        (group.options || []).filter((option) =>
+            !linkedIds.has(Number(option.id))
+            && canManageTraitClient(option)
+        )
     );
 
     if (availableOptions.length === 0) {

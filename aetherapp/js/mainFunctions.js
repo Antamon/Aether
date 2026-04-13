@@ -50,10 +50,15 @@ function userHasPrivilegedRole(user) {
 }
 
 function syncPrivilegedNavbar(user) {
-    const companiesNavItem = document.getElementById("navbarCompaniesItem");
-    if (companiesNavItem) {
-        companiesNavItem.classList.toggle("d-none", !userHasPrivilegedRole(user));
-    }
+    [
+        "navbarCompaniesItem",
+        "navbarAdminItem"
+    ].forEach((id) => {
+        const navItem = document.getElementById(id);
+        if (navItem) {
+            navItem.classList.toggle("d-none", !userHasPrivilegedRole(user));
+        }
+    });
 }
 
 // Login-check bij laden van de pagina

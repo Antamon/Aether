@@ -18,6 +18,13 @@ async function fetchCharacterList(role) {
     });
 }
 
+async function deleteCharacterById(id) {
+    return apiFetchJson("api/characters/deleteCharacter.php", {
+        method: "POST",
+        body: { id }
+    });
+}
+
 async function updateCharacter(payload) {
     return apiFetchJson("api/characters/updateCharacter.php", {
         method: "POST",

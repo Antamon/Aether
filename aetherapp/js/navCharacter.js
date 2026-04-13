@@ -93,6 +93,11 @@ function showCharacterTab(targetTab, character) {
         return;
     }
 
+    if (targetTab === "passport") {
+        showPassportTab(currentCharacter || character);
+        return;
+    }
+
     showSheetTab();
 }
 
@@ -100,10 +105,12 @@ function pageNav(userRole, character, activeTab = "sheet") {
     const usedExperience = calculateExperience(character);
     const remainingExperience = getRemainingExperience(character);
     const maxExperience = getMaxExperience(character);
+    const spentExperience = Math.max(0, maxExperience - remainingExperience);
     const availableStatusPoints = getAvailableStatusPoints(character);
     const maxStatusPoints = getMaxStatusPoints(character);
+    const usedStatusPoints = getUsedStatusPoints(character);
     const convertedExperience = Number(character.experienceToTrait) || 0;
-    const statusLabel = statusLabelFromPoints(availableStatusPoints);
+    const statusLabel = statusLabelFromPoints(usedStatusPoints);
     const expertise = expertiseExtra(usedExperience);
     const canEditNav = canEditCharacterNav(character);
     const canConvertToStatus = canEditNav
@@ -224,7 +231,7 @@ function pageNav(userRole, character, activeTab = "sheet") {
     const lblExp = document.getElementById("lblExperiance");
     if (lblExp) {
         if (character.type === "player") {
-            lblExp.innerHTML = `${remainingExperience} / ${maxExperience}`;
+            lblExp.innerHTML = `${spentExperience} / ${maxExperience}`;
         } else {
             lblExp.innerHTML = `${usedExperience} (${expertise})`;
         }
@@ -234,12 +241,12 @@ function pageNav(userRole, character, activeTab = "sheet") {
     if (lblStatus) {
         if (character.type === "player") {
             if (character.state === "draft") {
-                lblStatus.textContent = `${availableStatusPoints} / ${maxStatusPoints}`;
+                lblStatus.textContent = `${usedStatusPoints} / ${maxStatusPoints}`;
             } else {
-                lblStatus.textContent = `${availableStatusPoints} (${statusLabel})`;
+                lblStatus.textContent = `${usedStatusPoints} (${statusLabel})`;
             }
         } else {
-            lblStatus.textContent = `${availableStatusPoints} (${statusLabel})`;
+            lblStatus.textContent = `${usedStatusPoints} (${statusLabel})`;
         }
     }
 

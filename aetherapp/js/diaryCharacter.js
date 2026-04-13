@@ -57,6 +57,8 @@ function showDiaryTab(character) {
     if (persTabHide) persTabHide.classList.add("d-none");
     const economyTabHide = document.getElementById("economyTab");
     if (economyTabHide) economyTabHide.classList.add("d-none");
+    const passportTabHide = document.getElementById("passportTab");
+    if (passportTabHide) passportTabHide.classList.add("d-none");
 
     const diaryTab = document.getElementById("diaryTab");
     if (!diaryTab) return;

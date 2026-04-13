@@ -25,11 +25,15 @@ const AETHER_PERSONALITY_SECTIONS = {
 const AETHER_TIE_TYPES = [
     { value: "superior", label: "Superior" },
     { value: "dependent", label: "Dependent" },
+    { value: "landlord", label: "Landlord" },
+    { value: "household_staff", label: "Household staff" },
     { value: "spouse", label: "Spouse" },
     { value: "ally", label: "Ally" },
     { value: "adversary", label: "Adversary" },
     { value: "person_of_interest", label: "Person of interest" }
 ];
+
+let aetherTiePortraitModalInstance = null;
 
 function canEditCharacterContent(character) {
     if (!currentUser || !character) return false;
@@ -39,6 +43,64 @@ function canEditCharacterContent(character) {
         return character.type === "player" && Number(character.idUser) === Number(currentUser.id);
     }
     return false;
+}
+
+function canCharacterBeLandlordClient(character) {
+    const characterClass = String(character?.class || "").trim();
+    if (characterClass === "upper class") {
+        return true;
+    }
+
+    if (characterClass !== "middle class") {
+        return false;
+    }
+
+    return Number(getCharacterTraitIncomeTotal(character) || 0) >= 350;
+}
+
+function ensureTiePortraitModal() {
+    let modalEl = document.getElementById("tiePortraitModal");
+    if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.className = "modal fade";
+        modalEl.id = "tiePortraitModal";
+        modalEl.tabIndex = -1;
+        modalEl.setAttribute("aria-hidden", "true");
+        modalEl.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Portret</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="tiePortraitModalImage" class="tie-portrait-modal-image" src="" alt="">
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalEl);
+    }
+
+    if (!aetherTiePortraitModalInstance) {
+        aetherTiePortraitModalInstance = new bootstrap.Modal(modalEl);
+    }
+
+    return modalEl;
+}
+
+function openTiePortraitModal(src, label) {
+    if (!src) return;
+
+    const modalEl = ensureTiePortraitModal();
+    const image = modalEl.querySelector("#tiePortraitModalImage");
+    const title = modalEl.querySelector(".modal-title");
+    if (!image || !title) return;
+
+    image.src = src;
+    image.alt = label || "Portret";
+    title.textContent = label || "Portret";
+    aetherTiePortraitModalInstance.show();
 }
 
 async function fetchCharacterSections(idCharacter) {
@@ -68,6 +130,13 @@ async function saveCharacterTie(payload) {
     });
 }
 
+async function deleteCharacterTie(payload) {
+    return apiFetchJson("api/characters/deleteCharacterTie.php", {
+        method: "POST",
+        body: payload
+    });
+}
+
 async function saveCharacterSection(idCharacter, section, content) {
     return apiFetchJson("api/characters/saveCharacterSection.php", {
         method: "POST",
@@ -86,6 +155,8 @@ function showSheetTab() {
     if (persTab) persTab.classList.add("d-none");
     const economyTab = document.getElementById("economyTab");
     if (economyTab) economyTab.classList.add("d-none");
+    const passportTab = document.getElementById("passportTab");
+    if (passportTab) passportTab.classList.add("d-none");
     const characterForm = document.getElementById("characterForm");
     if (characterForm) characterForm.classList.remove("d-none");
     const skills = document.getElementById("skills");
@@ -110,6 +181,8 @@ async function showBackgroundTab(character) {
     if (persTabHide) persTabHide.classList.add("d-none");
     const economyTabHide = document.getElementById("economyTab");
     if (economyTabHide) economyTabHide.classList.add("d-none");
+    const passportTabHide = document.getElementById("passportTab");
+    if (passportTabHide) passportTabHide.classList.add("d-none");
 
     const bgTab = document.getElementById("backgroundTab");
     if (!bgTab) return;
@@ -129,7 +202,7 @@ async function showBackgroundTab(character) {
     container.style.display = "block";
     container.hidden = false;
     container.style.minHeight = "400px";
-    container.style.border = "1px dashed #ccc";
+    container.style.border = "0";
     container.style.visibility = "visible";
     container.style.overflow = "visible";
     container.style.padding = "0";
@@ -156,6 +229,8 @@ async function showPersonalityTab(character) {
     if (diaryTabHide) diaryTabHide.classList.add("d-none");
     const economyTabHide = document.getElementById("economyTab");
     if (economyTabHide) economyTabHide.classList.add("d-none");
+    const passportTabHide = document.getElementById("passportTab");
+    if (passportTabHide) passportTabHide.classList.add("d-none");
 
     const persTab = document.getElementById("personalityTab");
     if (!persTab) return;
@@ -175,7 +250,7 @@ async function showPersonalityTab(character) {
     container.style.display = "block";
     container.hidden = false;
     container.style.minHeight = "400px";
-    container.style.border = "1px dashed #ccc";
+    container.style.border = "0";
     container.style.visibility = "visible";
     container.style.overflow = "visible";
     container.style.padding = "0";
@@ -466,12 +541,6 @@ async function renderTies(container, character) {
     selTypeCol.className = "col-lg-3 col-6";
     const selType = document.createElement("select");
     selType.className = "form-select form-select-sm";
-    AETHER_TIE_TYPES.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.value;
-        opt.textContent = t.label;
-        selType.appendChild(opt);
-    });
     selTypeCol.appendChild(selType);
 
     const descCol = document.createElement("div");
@@ -506,19 +575,50 @@ async function renderTies(container, character) {
     block.appendChild(list);
 
     // Populate options
+    const fillTypeOptions = () => {
+        const currentValue = selType.value;
+        selType.innerHTML = "";
+
+        AETHER_TIE_TYPES
+            .filter((type) => type.value !== "household_staff" || canCharacterBeLandlordClient(character))
+            .forEach((type) => {
+                const option = document.createElement("option");
+                option.value = type.value;
+                option.textContent = type.label;
+                selType.appendChild(option);
+            });
+
+        if ([...selType.options].some((option) => option.value === currentValue)) {
+            selType.value = currentValue;
+        } else if (selType.options.length > 0) {
+            selType.value = selType.options[0].value;
+        }
+    };
+
     const fillOptions = () => {
+        const currentValue = selChar.value;
         selChar.innerHTML = "";
         const placeholder = document.createElement("option");
         placeholder.value = "";
         placeholder.textContent = "Select character";
         selChar.appendChild(placeholder);
-        options.forEach(opt => {
-            const o = document.createElement("option");
-            o.value = opt.id;
-            o.textContent = opt.displayName;
-            selChar.appendChild(o);
-        });
+
+        const selectedRelationType = selType.value;
+        options
+            .filter((option) => Number(option.id || 0) !== Number(character?.id || 0))
+            .filter((option) => selectedRelationType !== "landlord" || Boolean(option.canBeLandlord))
+            .forEach((opt) => {
+                const o = document.createElement("option");
+                o.value = opt.id;
+                o.textContent = opt.displayName;
+                selChar.appendChild(o);
+            });
+
+        if ([...selChar.options].some((option) => option.value === String(currentValue || ""))) {
+            selChar.value = currentValue;
+        }
     };
+    fillTypeOptions();
     fillOptions();
 
     let editTieId = null;
@@ -527,8 +627,9 @@ async function renderTies(container, character) {
         editTieId = null;
         editorRow.classList.add("d-none");
         actionsRow.classList.add("d-none");
+        fillTypeOptions();
+        fillOptions();
         selChar.value = "";
-        selType.value = AETHER_TIE_TYPES[0].value;
         descInput.value = "";
     }
 
@@ -537,10 +638,28 @@ async function renderTies(container, character) {
         editorRow.classList.remove("d-none");
         actionsRow.classList.remove("d-none");
         editTieId = tie ? tie.id : null;
+        fillTypeOptions();
+        if (tie && ![...selType.options].some((option) => option.value === tie.relationType)) {
+            const fallbackOption = document.createElement("option");
+            fallbackOption.value = tie.relationType;
+            fallbackOption.textContent = tie.relationTypeLabel || tie.relationType;
+            selType.appendChild(fallbackOption);
+        }
+        selType.value = tie ? tie.relationType : (selType.options[0]?.value || "");
+        fillOptions();
+        if (tie && ![...selChar.options].some((option) => option.value === String(tie.idOtherCharacter))) {
+            const fallbackCharacterOption = document.createElement("option");
+            fallbackCharacterOption.value = String(tie.idOtherCharacter);
+            fallbackCharacterOption.textContent = tie.otherName || `Personage #${tie.idOtherCharacter}`;
+            selChar.appendChild(fallbackCharacterOption);
+        }
         selChar.value = tie ? tie.idOtherCharacter : "";
-        selType.value = tie ? tie.relationType : AETHER_TIE_TYPES[0].value;
         descInput.value = tie ? (tie.description || "") : "";
     }
+
+    selType.addEventListener("change", () => {
+        fillOptions();
+    });
 
     function renderList() {
         list.innerHTML = "";
@@ -553,30 +672,88 @@ async function renderTies(container, character) {
         }
         ties.forEach(t => {
             const row = document.createElement("div");
-            row.className = "mb-2";
+            row.className = "character-tie-item";
+
+            if (t.portraitUrl) {
+                const portraitButton = document.createElement("button");
+                portraitButton.type = "button";
+                portraitButton.className = "character-tie-portrait-button";
+                portraitButton.setAttribute("aria-label", `Toon portret van ${t.otherName || "deze tie"}`);
+                portraitButton.addEventListener("click", () => openTiePortraitModal(t.portraitUrl, t.otherName || "Portret"));
+
+                const portrait = document.createElement("img");
+                portrait.className = "character-tie-portrait";
+                portrait.src = t.portraitUrl;
+                portrait.alt = t.otherName || "Tie portrait";
+                portraitButton.appendChild(portrait);
+                row.appendChild(portraitButton);
+            }
+
+            const content = document.createElement("div");
+            content.className = "character-tie-content";
+
+            const headerRow = document.createElement("div");
+            headerRow.className = "character-tie-header";
 
             if (canEdit) {
+                const actions = document.createElement("div");
+                actions.className = "character-tie-actions";
+
                 const editBtn = document.createElement("button");
                 editBtn.type = "button";
                 editBtn.className = "btn btn-link p-0 me-1";
                 editBtn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
                 editBtn.addEventListener("click", () => showEditor(t));
-                row.appendChild(editBtn);
+                actions.appendChild(editBtn);
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "btn btn-link text-danger p-0 me-2";
+                deleteBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+                deleteBtn.addEventListener("click", async () => {
+                    const confirmed = window.confirm("Weet u zeker dat u deze tie wilt verwijderen?");
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    try {
+                        const result = await deleteCharacterTie({
+                            idCharacter: character.id,
+                            idTie: t.id
+                        });
+                        ties = result && result.ties ? result.ties : await fetchCharacterTies(character.id);
+                        if (editTieId === t.id) {
+                            hideEditor();
+                        }
+                        renderList();
+                    } catch (err) {
+                        console.error("Fout bij verwijderen tie:", err);
+                        alert("Verwijderen van tie mislukt.");
+                    }
+                });
+                actions.appendChild(deleteBtn);
+                headerRow.appendChild(actions);
             }
 
             const name = document.createElement("strong");
             name.textContent = t.otherName || "Onbekend";
-            row.appendChild(name);
+            headerRow.appendChild(name);
 
             const typeSpan = document.createElement("span");
             typeSpan.className = "text-muted ms-1";
             typeSpan.textContent = `(${t.relationTypeLabel || t.relationType || ""})`;
-            row.appendChild(typeSpan);
+            headerRow.appendChild(typeSpan);
 
-            const descSpan = document.createElement("span");
-            descSpan.className = "ms-1";
-            descSpan.textContent = `- ${t.description || ""}`;
-            row.appendChild(descSpan);
+            content.appendChild(headerRow);
+
+            if (t.description) {
+                const descSpan = document.createElement("div");
+                descSpan.className = "character-tie-description";
+                descSpan.textContent = t.description;
+                content.appendChild(descSpan);
+            }
+
+            row.appendChild(content);
 
             list.appendChild(row);
         });

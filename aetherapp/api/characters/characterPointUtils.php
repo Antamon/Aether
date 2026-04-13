@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/traitUtils.php';
+require_once __DIR__ . '/characterLanguageUtils.php';
 
 function getCurrentUserRole(PDO $pdo): string
 {
@@ -85,7 +86,9 @@ function getCharacterSkillExperienceCost(PDO $pdo, int $idCharacter): int
     $stmt->execute([$idCharacter]);
     $nonDisciplineSpecialisations = (int) $stmt->fetchColumn();
 
-    return $usedSkillExperience + ($nonDisciplineSpecialisations * 2);
+    $languageExperience = getCharacterLanguageExperienceCost($pdo, ['id' => $idCharacter]);
+
+    return $usedSkillExperience + ($nonDisciplineSpecialisations * 2) + $languageExperience;
 }
 
 function getCharacterPointSummary(PDO $pdo, array $character): array

@@ -31,7 +31,7 @@ try {
     if ($userRole === 'director' || $userRole === 'administrator') {
         $characters = dbAll(
             $pdo,
-            'SELECT id, firstName, lastName
+            'SELECT id, idUser, firstName, lastName, type, state, class
                FROM tblCharacter
            ORDER BY firstName, lastName'
         );
@@ -39,7 +39,7 @@ try {
         // Gewone participant: enkel eigen personages
         $characters = dbAll(
             $pdo,
-            'SELECT id, firstName, lastName
+            'SELECT id, idUser, firstName, lastName, type, state, class
                FROM tblCharacter
               WHERE idUser = :uid
            ORDER BY firstName, lastName',

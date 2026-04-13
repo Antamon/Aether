@@ -34,6 +34,11 @@ function characterHasTraitFlagClient(character, flagKey, legacyTraitName = "") {
 }
 
 function getDraftBankAccountAmount(character) {
+    const backendAmount = Number(character?.draftBankAccountAmount);
+    if (Number.isFinite(backendAmount)) {
+        return backendAmount;
+    }
+
     const totalIncome = getCharacterTraitIncomeTotal(character);
     const multiplier = characterHasTraitFlagClient(character, "savings_bank_multiplier", "Spaarder") ? 15 : 10;
     return totalIncome * multiplier;
@@ -58,6 +63,359 @@ function getDefaultBankTransferDateClient() {
     const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
+}
+
+function getCharacterEconomySnapshots(character) {
+    return Array.isArray(character?.economySnapshots) ? character.economySnapshots : [];
+}
+
+function getCharacterEconomySnapshotEventOptions(character) {
+    return Array.isArray(character?.economySnapshotEventOptions)
+        ? character.economySnapshotEventOptions
+        : [];
+}
+
+function getDisplayedCharacterSecuritiesAmount(character) {
+    const storedAmount = Number(character?.securitiesaccount ?? 0);
+    return Number.isFinite(storedAmount) ? Math.max(0, storedAmount) : 0;
+}
+
+function getCharacterSecuritiesSnapshots(character) {
+    return (Array.isArray(character?.economySnapshots) ? character.economySnapshots : []).filter((snapshot) => (
+        Number(snapshot?.securitiesBalanceSnapshot || 0) > 0
+        || String(snapshot?.securitiesStatus || "none") !== "none"
+    ));
+}
+
+function formatEconomyPercentage(value) {
+    const numeric = Number(value ?? 0);
+    const resolved = Number.isFinite(numeric) ? numeric : 0;
+    return `${resolved.toLocaleString("nl-BE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    })}%`;
+}
+
+function getSecuritiesManagerTypeOptions() {
+    return [
+        { value: "self", label: "Eigen beheer" },
+        { value: "bank", label: "De bank" },
+        { value: "third", label: "Een derde" }
+    ];
+}
+
+function getSecuritiesManagerTypeLabel(value) {
+    const option = getSecuritiesManagerTypeOptions().find((entry) => entry.value === value);
+    return option?.label || "Eigen beheer";
+}
+
+function getSecuritiesRiskProfileLabel(character, riskProfile) {
+    const options = character?.securitiesRiskProfileOptions || {};
+    return options?.[riskProfile]?.label || `Profiel ${riskProfile}`;
+}
+
+function renderSecuritiesSettingsSection(host, character) {
+    const canManage = Boolean(character?.canManageSecurities);
+    const isDraft = String(character?.state || "") === "draft";
+    const settingsWrap = document.createElement("div");
+    settingsWrap.className = "economy-securities-settings";
+
+    if (isDraft) {
+        const help = document.createElement("p");
+        help.className = "text-muted mb-0";
+        help.textContent = "Effectenbeheer wordt pas beschikbaar zodra het personage niet meer in draft staat.";
+        settingsWrap.appendChild(help);
+        host.appendChild(settingsWrap);
+        return;
+    }
+
+    const managerRow = document.createElement("div");
+    managerRow.className = "mb-3";
+
+    const managerLabel = document.createElement("label");
+    managerLabel.className = "form-label";
+    managerLabel.textContent = "Beheerder";
+    managerRow.appendChild(managerLabel);
+
+    const managerSelect = document.createElement("select");
+    managerSelect.className = "form-select";
+    managerSelect.dataset.role = "securities-manager-type";
+    managerSelect.disabled = !canManage;
+    getSecuritiesManagerTypeOptions().forEach((option) => {
+        const optionEl = document.createElement("option");
+        optionEl.value = option.value;
+        optionEl.textContent = option.label;
+        optionEl.selected = option.value === String(character?.securitiesManagerType || "self");
+        managerSelect.appendChild(optionEl);
+    });
+    managerRow.appendChild(managerSelect);
+
+    const thirdManagerWrap = document.createElement("div");
+    thirdManagerWrap.className = "mt-3";
+    thirdManagerWrap.dataset.role = "securities-third-manager-wrap";
+    thirdManagerWrap.classList.toggle("d-none", String(character?.securitiesManagerType || "self") !== "third");
+
+    const thirdManagerLabel = document.createElement("label");
+    thirdManagerLabel.className = "form-label";
+    thirdManagerLabel.textContent = "Externe beheerder";
+    thirdManagerWrap.appendChild(thirdManagerLabel);
+
+    const thirdManagerSelect = document.createElement("select");
+    thirdManagerSelect.className = "form-select";
+    thirdManagerSelect.dataset.role = "securities-manager-character";
+    thirdManagerSelect.disabled = !canManage;
+
+    const emptyManagerOption = document.createElement("option");
+    emptyManagerOption.value = "";
+    emptyManagerOption.textContent = "Kies een actief personage";
+    thirdManagerSelect.appendChild(emptyManagerOption);
+
+    (Array.isArray(character?.securitiesManagerOptions) ? character.securitiesManagerOptions : []).forEach((option) => {
+        const optionEl = document.createElement("option");
+        optionEl.value = String(option.id || 0);
+        optionEl.textContent = option.displayName || `Personage #${option.id || 0}`;
+        optionEl.selected = Number(option.id || 0) === Number(character?.securitiesManagerCharacterId || 0);
+        thirdManagerSelect.appendChild(optionEl);
+    });
+
+    thirdManagerWrap.appendChild(thirdManagerSelect);
+    managerRow.appendChild(thirdManagerWrap);
+    settingsWrap.appendChild(managerRow);
+
+    const riskRow = document.createElement("div");
+    riskRow.className = "mb-3";
+
+    const riskLabel = document.createElement("label");
+    riskLabel.className = "form-label";
+    riskLabel.textContent = "Risicoprofiel";
+    riskRow.appendChild(riskLabel);
+
+    const riskSelect = document.createElement("select");
+    riskSelect.className = "form-select";
+    riskSelect.dataset.role = "securities-risk-profile";
+    riskSelect.disabled = !canManage;
+    [1, 2, 3, 4, 5].forEach((riskProfile) => {
+        const optionEl = document.createElement("option");
+        optionEl.value = String(riskProfile);
+        optionEl.textContent = getSecuritiesRiskProfileLabel(character, riskProfile);
+        optionEl.selected = Number(character?.securitiesRiskProfile || 3) === riskProfile;
+        riskSelect.appendChild(optionEl);
+    });
+    riskRow.appendChild(riskSelect);
+    settingsWrap.appendChild(riskRow);
+
+    const info = document.createElement("div");
+    info.className = "text-muted small";
+    info.textContent = `Huidig beleggingsniveau: ${Number(character?.securitiesManagerSkillLevel || 0)}.`;
+    settingsWrap.appendChild(info);
+
+    host.appendChild(settingsWrap);
+}
+
+function renderSecuritiesDepositActions(host, character) {
+    const canManage = Boolean(character?.canManageSecurities);
+    const isDraft = String(character?.state || "") === "draft";
+    if (isDraft) {
+        return;
+    }
+
+    const depositWrap = document.createElement("div");
+    depositWrap.className = "economy-securities-action-block";
+
+    const depositLabel = document.createElement("label");
+    depositLabel.className = "form-label";
+    depositLabel.textContent = "Bedrag storten";
+    depositWrap.appendChild(depositLabel);
+
+    const depositRow = document.createElement("div");
+    depositRow.className = "input-group mb-3";
+    const depositInput = document.createElement("input");
+    depositInput.type = "number";
+    depositInput.className = "form-control";
+    depositInput.step = "0.01";
+    depositInput.min = "0.01";
+    depositInput.dataset.role = "securities-deposit-amount";
+    depositInput.disabled = !canManage;
+    depositRow.appendChild(depositInput);
+
+    const depositButton = document.createElement("button");
+    depositButton.type = "button";
+    depositButton.className = "btn btn-primary";
+    depositButton.dataset.action = "deposit-securities-balance";
+    depositButton.disabled = !canManage;
+    depositButton.textContent = "Bedrag storten";
+    depositRow.appendChild(depositButton);
+    depositWrap.appendChild(depositRow);
+
+    const withdrawLabel = document.createElement("label");
+    withdrawLabel.className = "form-label";
+    withdrawLabel.textContent = "Bedrag opnemen buiten snapshot";
+    depositWrap.appendChild(withdrawLabel);
+
+    const withdrawRow = document.createElement("div");
+    withdrawRow.className = "input-group";
+    const withdrawInput = document.createElement("input");
+    withdrawInput.type = "number";
+    withdrawInput.className = "form-control";
+    withdrawInput.step = "0.01";
+    withdrawInput.min = "0.01";
+    withdrawInput.dataset.role = "securities-manual-withdraw-amount";
+    withdrawInput.disabled = !canManage;
+    withdrawRow.appendChild(withdrawInput);
+
+    const withdrawButton = document.createElement("button");
+    withdrawButton.type = "button";
+    withdrawButton.className = "btn btn-outline-warning";
+    withdrawButton.dataset.action = "withdraw-securities-balance";
+    withdrawButton.disabled = !canManage;
+    withdrawButton.textContent = "Naar bankrekening";
+    withdrawRow.appendChild(withdrawButton);
+    depositWrap.appendChild(withdrawRow);
+
+    const help = document.createElement("div");
+    help.className = "form-text";
+    help.textContent = "Een opname buiten snapshot om boekt slechts 75% van het gekozen bedrag naar de bankrekening.";
+    depositWrap.appendChild(help);
+
+    host.appendChild(depositWrap);
+}
+
+function renderSecuritiesSnapshotsSection(host, character) {
+    const snapshots = getCharacterSecuritiesSnapshots(character);
+
+    appendEconomySubsectionTitle(host, "Rendementen");
+
+    if (snapshots.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-0";
+        empty.textContent = "Nog geen rendementen beschikbaar.";
+        host.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "list-group list-group-flush";
+
+    snapshots.forEach((snapshot) => {
+        const item = document.createElement("div");
+        item.className = "list-group-item px-0";
+
+        const header = document.createElement("div");
+        header.className = "d-flex justify-content-between align-items-start gap-3 flex-wrap";
+
+        const titleWrap = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "fw-semibold";
+        title.textContent = String(snapshot?.eventTitle || "").trim() || `Event #${snapshot?.idEvent || 0}`;
+        titleWrap.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "text-muted small";
+        meta.textContent = [
+            formatEconomyDate(snapshot?.transactionDate),
+            `${getSecuritiesManagerTypeLabel(String(snapshot?.securitiesManagerType || "self"))}`,
+            `${getSecuritiesRiskProfileLabel(character, Number(snapshot?.securitiesRiskProfile || 3))}`,
+            `Skill ${Number(snapshot?.securitiesManagerSkillLevel || 0)}`
+        ].filter(Boolean).join(" - ");
+        titleWrap.appendChild(meta);
+        header.appendChild(titleWrap);
+
+        const amount = document.createElement("div");
+        const returnAmount = Number(snapshot?.securitiesReturnAmount || 0);
+        amount.className = `fw-semibold ${returnAmount < 0 ? "text-danger" : "text-success"}`;
+        amount.textContent = formatCharacterCurrency(returnAmount);
+        header.appendChild(amount);
+        item.appendChild(header);
+
+        const details = document.createElement("div");
+        details.className = "economy-securities-snapshot-meta text-muted small mt-2";
+        const status = String(snapshot?.securitiesStatus || "none");
+        const parts = [
+            `Basistarief ${formatEconomyPercentage(snapshot?.securitiesBasePercentage || 0)}`,
+            `Variatie ${formatEconomyPercentage(snapshot?.securitiesVariationPercentage || 0)}`,
+            `Totaal ${formatEconomyPercentage(snapshot?.securitiesReturnPercentage || 0)}`
+        ];
+        if (status === "pending") {
+            parts.push("Wacht op goedkeuring");
+        } else if (status === "approved") {
+            parts.push("Goedgekeurd");
+        }
+        details.textContent = parts.join(" - ");
+        item.appendChild(details);
+
+        const snapshotWithdrawalAmount = Number(snapshot?.securitiesSnapshotWithdrawalAmount || 0);
+        if (snapshotWithdrawalAmount > 0) {
+            const withdrawalInfo = document.createElement("div");
+            withdrawalInfo.className = "small mt-2";
+            withdrawalInfo.textContent = `Opname uit portefeuille: ${formatCharacterCurrency(snapshotWithdrawalAmount)}`;
+            item.appendChild(withdrawalInfo);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "d-flex align-items-center gap-2 flex-wrap mt-3";
+
+        if (status === "pending" && character?.canApproveSecuritiesSnapshots) {
+            const rerollButton = document.createElement("button");
+            rerollButton.type = "button";
+            rerollButton.className = "btn btn-sm btn-outline-secondary";
+            rerollButton.dataset.action = "reroll-securities-snapshot";
+            rerollButton.dataset.idSnapshot = String(snapshot?.id || 0);
+            rerollButton.textContent = "Opnieuw genereren";
+            actions.appendChild(rerollButton);
+
+            const approveButton = document.createElement("button");
+            approveButton.type = "button";
+            approveButton.className = "btn btn-sm btn-primary";
+            approveButton.dataset.action = "approve-securities-snapshot";
+            approveButton.dataset.idSnapshot = String(snapshot?.id || 0);
+            approveButton.textContent = "Goedkeuren";
+            actions.appendChild(approveButton);
+        }
+
+        const canWithdrawFromSnapshot = status === "approved"
+            && Boolean(character?.canManageSecurities)
+            && !Boolean(snapshot?.securitiesEventEnded)
+            && snapshotWithdrawalAmount <= 0;
+        if (canWithdrawFromSnapshot) {
+            const withdrawInput = document.createElement("input");
+            withdrawInput.type = "number";
+            withdrawInput.className = "form-control form-control-sm economy-securities-snapshot-withdraw-input";
+            withdrawInput.step = "0.01";
+            withdrawInput.min = "0.01";
+            withdrawInput.max = "30000";
+            withdrawInput.dataset.role = "securities-snapshot-withdraw-amount";
+            withdrawInput.dataset.idSnapshot = String(snapshot?.id || 0);
+            actions.appendChild(withdrawInput);
+
+            const withdrawButton = document.createElement("button");
+            withdrawButton.type = "button";
+            withdrawButton.className = "btn btn-sm btn-outline-primary";
+            withdrawButton.dataset.action = "withdraw-securities-snapshot";
+            withdrawButton.dataset.idSnapshot = String(snapshot?.id || 0);
+            withdrawButton.textContent = "Opnemen";
+            actions.appendChild(withdrawButton);
+        }
+
+        if (actions.childNodes.length > 0) {
+            item.appendChild(actions);
+        }
+
+        list.appendChild(item);
+    });
+
+    host.appendChild(list);
+}
+
+function renderCharacterSecuritiesSection(host, character) {
+    if (!host || !character) return;
+
+    const card = buildEconomyCard("Effectenportefeuille");
+    const balance = getDisplayedCharacterSecuritiesAmount(character);
+    addEconomyMetric(card.body, "Effectenportefeuille", formatCharacterCurrency(balance));
+    renderSecuritiesDepositActions(card.body, character);
+    renderSecuritiesSettingsSection(card.body, character);
+    renderSecuritiesSnapshotsSection(card.body, character);
+    host.appendChild(card.card);
 }
 
 function formatEconomyDate(dateValue) {
@@ -126,6 +484,156 @@ function buildEconomyCard(title) {
     body.appendChild(heading);
 
     return { card, body };
+}
+
+function appendEconomySubsectionTitle(host, title) {
+    const heading = document.createElement("h5");
+    heading.className = "economy-subsection-title";
+    heading.textContent = title;
+    host.appendChild(heading);
+}
+
+function getCharacterIncomeTraitEntries(character) {
+    const groups = [
+        ...(Array.isArray(character?.traitGroups) ? character.traitGroups : []),
+        ...(Array.isArray(character?.professionGroups) ? character.professionGroups : [])
+    ];
+    const seenTraitIds = new Set();
+    const nobilityIncomeMultiplier = typeof getUpperClassNobilityIncomeMultiplier === "function"
+        ? getUpperClassNobilityIncomeMultiplier(character)
+        : 1;
+    const entries = [];
+
+    groups.forEach((group) => {
+        const linkedTraits = Array.isArray(group?.linkedTraits) ? group.linkedTraits : [];
+        linkedTraits.forEach((trait) => {
+            const traitId = Number(trait?.idTrait || trait?.id || 0);
+            if (traitId > 0 && seenTraitIds.has(traitId)) {
+                return;
+            }
+
+            if (traitId > 0) {
+                seenTraitIds.add(traitId);
+            }
+
+            const income = typeof calculateTraitIncomeAtRank === "function"
+                ? calculateTraitIncomeAtRank(trait)
+                : Number(trait?.income || 0);
+            const normalizedIncome = Number(income);
+            if (!Number.isFinite(normalizedIncome) || normalizedIncome === 0) {
+                return;
+            }
+
+            const isScaledNobilityIncome = (
+                String(group?.trackKey || "") === "upper_nobility_lineage"
+                || linkedTraits.some((linkedTrait) => traitHasCharacterFlag(linkedTrait, "nobility_income_scaled"))
+                || String(group?.traitGroup || "") === "Adeldom"
+            );
+            const adjustedIncome = isScaledNobilityIncome
+                ? normalizedIncome * nobilityIncomeMultiplier
+                : normalizedIncome;
+
+            entries.push({
+                label: String(trait?.name || trait?.traitName || `Trait #${traitId || "?"}`),
+                amount: adjustedIncome
+            });
+        });
+    });
+
+    return entries;
+}
+
+function renderIncomeSection(host, character) {
+    const incomeCard = buildEconomyCard("Inkomsten");
+    const entries = getCharacterIncomeTraitEntries(character);
+    const salaryIncreaseAmount = Number(character?.salaryIncreaseAmount || 0);
+    const householdStaffExpenseAmount = Number(character?.householdStaffExpenseAmount || 0);
+    const totalIncome = getCharacterTraitIncomeTotal(character);
+
+    const list = document.createElement("div");
+    list.className = "economy-income-list";
+
+    if (entries.length === 0 && salaryIncreaseAmount <= 0 && householdStaffExpenseAmount <= 0) {
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-0";
+        empty.textContent = "Geen trait-inkomsten of -uitgaven.";
+        incomeCard.body.appendChild(empty);
+    } else {
+        entries.forEach((entry) => {
+            const row = document.createElement("div");
+            row.className = "economy-income-row";
+
+            const label = document.createElement("span");
+            label.className = "economy-income-label";
+            label.textContent = entry.label;
+            row.appendChild(label);
+
+            const value = document.createElement("span");
+            value.className = [
+                "economy-income-value",
+                entry.amount < 0 ? "text-danger" : "text-success"
+            ].join(" ");
+            value.textContent = formatCharacterCurrency(entry.amount);
+            row.appendChild(value);
+
+            list.appendChild(row);
+        });
+
+        if (salaryIncreaseAmount > 0) {
+            const salaryRow = document.createElement("div");
+            salaryRow.className = "economy-income-row";
+
+            const label = document.createElement("span");
+            label.className = "economy-income-label";
+            label.textContent = "Loonsverhoging gekoppeld bedrijf";
+            salaryRow.appendChild(label);
+
+            const value = document.createElement("span");
+            value.className = "economy-income-value text-success";
+            value.textContent = formatCharacterCurrency(salaryIncreaseAmount);
+            salaryRow.appendChild(value);
+
+            list.appendChild(salaryRow);
+        }
+
+        if (householdStaffExpenseAmount > 0) {
+            const expenseRow = document.createElement("div");
+            expenseRow.className = "economy-income-row";
+
+            const label = document.createElement("span");
+            label.className = "economy-income-label";
+            label.textContent = "Inwonend personeel";
+            expenseRow.appendChild(label);
+
+            const value = document.createElement("span");
+            value.className = "economy-income-value text-danger";
+            value.textContent = formatCharacterCurrency(-householdStaffExpenseAmount);
+            expenseRow.appendChild(value);
+
+            list.appendChild(expenseRow);
+        }
+
+        const totalRow = document.createElement("div");
+        totalRow.className = "economy-income-row economy-income-row--total";
+
+        const totalLabel = document.createElement("span");
+        totalLabel.className = "economy-income-label";
+        totalLabel.textContent = "Eindbedrag";
+        totalRow.appendChild(totalLabel);
+
+        const totalValue = document.createElement("span");
+        totalValue.className = [
+            "economy-income-value",
+            totalIncome < 0 ? "text-danger" : "text-success"
+        ].join(" ");
+        totalValue.textContent = formatCharacterCurrency(totalIncome);
+        totalRow.appendChild(totalValue);
+
+        list.appendChild(totalRow);
+        incomeCard.body.appendChild(list);
+    }
+
+    host.appendChild(incomeCard.card);
 }
 
 function getCharacterCompanyShares(character) {
@@ -203,14 +711,21 @@ function formatCompanySharePurchaseOptionLabel(option) {
     return `${name} - ${shareClass}-aandeel - ${formatCharacterCurrency(unitPrice)} per 1% - nog ${remainingSharePercentage}% beschikbaar`;
 }
 
+function formatCharacterEconomySnapshotEventLabel(eventOption) {
+    const title = String(eventOption?.title || "").trim() || `Event #${eventOption?.id || 0}`;
+    const dateLabel = formatEconomyDate(eventOption?.dateStart);
+    return dateLabel ? `${title} (${dateLabel})` : title;
+}
+
 function renderCompanySharesSection(host, character) {
     const companyShares = getCharacterCompanyShares(character)
         .filter((share) => canDisplayCompanyShareCard(character, share));
     const purchaseOptions = getCharacterCompanySharePurchaseOptions(character);
     const canShowPurchaseCard = character?.state !== "draft"
         && (currentUser?.role === "administrator" || currentUser?.role === "director" || character?.type === "player");
+    const canRenderPurchaseCard = canShowPurchaseCard && purchaseOptions.length > 0;
 
-    if (!host || (companyShares.length === 0 && !canShowPurchaseCard)) {
+    if (!host || (companyShares.length === 0 && !canRenderPurchaseCard)) {
         return;
     }
 
@@ -398,9 +913,7 @@ function renderCompanySharesSection(host, character) {
         host.appendChild(shareCard.card);
     });
 
-    const canBuyNewShares = character?.state !== "draft" && purchaseOptions.length > 0;
-
-    if (!canShowPurchaseCard) {
+    if (!canRenderPurchaseCard) {
         return;
     }
 
@@ -423,9 +936,7 @@ function renderCompanySharesSection(host, character) {
 
     const emptyOption = document.createElement("option");
     emptyOption.value = "";
-    emptyOption.textContent = purchaseOptions.length > 0
-        ? "Kies een bedrijf en aandelentype"
-        : "Geen betaalbare aandelen beschikbaar";
+    emptyOption.textContent = "Kies een bedrijf en aandelentype";
     select.appendChild(emptyOption);
 
     purchaseOptions.forEach((option) => {
@@ -435,14 +946,12 @@ function renderCompanySharesSection(host, character) {
         select.appendChild(optionEl);
     });
 
-    select.disabled = purchaseOptions.length === 0;
+    select.disabled = false;
     form.appendChild(select);
 
     const help = document.createElement("div");
     help.className = "form-text";
-    help.textContent = purchaseOptions.length > 0
-        ? "Koop 1% in een bedrijf. De passende statuseigenschap wordt automatisch aan het personage toegevoegd."
-        : "Er zijn momenteel geen bedrijven waarvoor dit personage genoeg saldo heeft om minstens 1% aandeel te kopen.";
+    help.textContent = "Koop 1% in een bedrijf. De passende statuseigenschap wordt automatisch aan het personage toegevoegd.";
     form.appendChild(help);
 
     const buttonRow = document.createElement("div");
@@ -452,7 +961,7 @@ function renderCompanySharesSection(host, character) {
     button.type = "button";
     button.className = "btn btn-primary";
     button.dataset.action = "buy-new-company-share";
-    button.disabled = !canBuyNewShares;
+    button.disabled = false;
     button.textContent = "Aandeel kopen";
     buttonRow.appendChild(button);
     form.appendChild(buttonRow);
@@ -476,6 +985,131 @@ function addEconomyMetric(host, label, value, valueClass = "") {
     row.appendChild(valueEl);
 
     host.appendChild(row);
+}
+
+function renderCharacterEconomySnapshotsSection(host, character) {
+    if (!host || !character) return;
+    const canCreateSnapshots = Boolean(character?.canCreateEconomySnapshots);
+    if (!canCreateSnapshots) {
+        return;
+    }
+
+    const snapshotCard = buildEconomyCard("Snapshots");
+    const snapshots = getCharacterEconomySnapshots(character);
+    const eventOptions = getCharacterEconomySnapshotEventOptions(character);
+
+    const help = document.createElement("p");
+    help.className = "text-muted mb-3";
+    help.textContent = "Maak per event een momentopname van de inkomsten van dit personage. Alle trait-inkomsten worden dan in een keer op de bankrekening gezet en een eventuele effectenportefeuille krijgt tegelijk een wachtend rendement.";
+    snapshotCard.body.appendChild(help);
+
+    const form = document.createElement("div");
+    form.className = "row g-3 align-items-end mb-3";
+    form.dataset.role = "character-economy-snapshot-form";
+
+    const selectCol = document.createElement("div");
+    selectCol.className = "col-12 col-md-8";
+
+    const selectLabel = document.createElement("label");
+    selectLabel.className = "form-label";
+    selectLabel.textContent = "Event";
+    selectLabel.setAttribute("for", "characterEconomySnapshotEventSelect");
+    selectCol.appendChild(selectLabel);
+
+    const select = document.createElement("select");
+    select.className = "form-select";
+    select.id = "characterEconomySnapshotEventSelect";
+    select.dataset.role = "character-economy-snapshot-event";
+
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = eventOptions.length > 0
+        ? "Kies een event"
+        : "Geen events meer beschikbaar";
+    select.appendChild(emptyOption);
+
+    eventOptions.forEach((eventOption) => {
+        const option = document.createElement("option");
+        option.value = String(eventOption.id || 0);
+        option.textContent = formatCharacterEconomySnapshotEventLabel(eventOption);
+        select.appendChild(option);
+    });
+
+    select.disabled = eventOptions.length === 0;
+    selectCol.appendChild(select);
+    form.appendChild(selectCol);
+
+    const actionCol = document.createElement("div");
+    actionCol.className = "col-12 col-md-4";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-primary w-100";
+    button.dataset.action = "create-character-economy-snapshot";
+    button.disabled = eventOptions.length === 0;
+    button.textContent = "Snapshot maken";
+    actionCol.appendChild(button);
+    form.appendChild(actionCol);
+
+    snapshotCard.body.appendChild(form);
+
+    if (snapshots.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-0";
+        empty.textContent = "Nog geen snapshots beschikbaar.";
+        snapshotCard.body.appendChild(empty);
+        host.appendChild(snapshotCard.card);
+        return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "list-group list-group-flush";
+
+    snapshots.forEach((snapshot) => {
+        const item = document.createElement("div");
+        item.className = "list-group-item px-0";
+
+        const header = document.createElement("div");
+        header.className = "d-flex justify-content-between align-items-start gap-3 flex-wrap";
+
+        const titleWrap = document.createElement("div");
+
+        const title = document.createElement("div");
+        title.className = "fw-semibold";
+        title.textContent = String(snapshot.eventTitle || "").trim() || `Event #${snapshot.idEvent || 0}`;
+        titleWrap.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "text-muted small";
+        meta.textContent = formatEconomyDate(snapshot.transactionDate);
+        titleWrap.appendChild(meta);
+
+        header.appendChild(titleWrap);
+
+        const amount = document.createElement("div");
+        amount.className = `fw-semibold ${Number(snapshot.amount || 0) < 0 ? "text-danger" : "text-success"}`;
+        amount.textContent = formatCharacterCurrency(snapshot.amount || 0);
+        header.appendChild(amount);
+
+        item.appendChild(header);
+
+        const actionRow = document.createElement("div");
+        actionRow.className = "mt-2";
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "btn btn-sm btn-outline-danger";
+        deleteButton.dataset.action = "delete-character-economy-snapshot";
+        deleteButton.dataset.idSnapshot = String(snapshot.id || 0);
+        deleteButton.textContent = "Verwijderen";
+        actionRow.appendChild(deleteButton);
+
+        item.appendChild(actionRow);
+        list.appendChild(item);
+    });
+
+    snapshotCard.body.appendChild(list);
+    host.appendChild(snapshotCard.card);
 }
 
 function renderBankAccountEditor(host, character, balance) {
@@ -512,25 +1146,33 @@ function renderBankAccountEditor(host, character, balance) {
     host.appendChild(fieldWrap);
 }
 
-function renderTransferSection(host, character) {
+function renderTransferSection(host, character, options = {}) {
     const canTransfer = canTransferMoneyForCharacter(character);
-    const transferCard = buildEconomyCard("Overschrijving");
+    const embedded = options.embedded === true;
+    const transferCard = embedded ? null : buildEconomyCard("Overschrijving");
+    const targetHost = embedded ? host : transferCard.body;
     const transferTargets = Array.isArray(character?.bankTransferTargets) ? character.bankTransferTargets : [];
+
+    if (embedded) {
+        appendEconomySubsectionTitle(targetHost, "Overschrijving");
+    }
 
     if (character.state === "draft") {
         const help = document.createElement("p");
         help.className = "text-muted mb-3";
         help.textContent = "Overschrijvingen zijn pas beschikbaar zodra het personage niet meer in draft staat.";
-        transferCard.body.appendChild(help);
+        targetHost.appendChild(help);
 
         const button = document.createElement("button");
         button.type = "button";
         button.className = "btn btn-outline-secondary";
         button.disabled = true;
         button.textContent = "Overschrijving";
-        transferCard.body.appendChild(button);
+        targetHost.appendChild(button);
 
-        host.appendChild(transferCard.card);
+        if (!embedded) {
+            host.appendChild(transferCard.card);
+        }
         return;
     }
 
@@ -538,8 +1180,10 @@ function renderTransferSection(host, character) {
         const help = document.createElement("p");
         help.className = "text-muted mb-0";
         help.textContent = "Alleen administrator- en director-gebruikers kunnen een overschrijving uitvoeren.";
-        transferCard.body.appendChild(help);
-        host.appendChild(transferCard.card);
+        targetHost.appendChild(help);
+        if (!embedded) {
+            host.appendChild(transferCard.card);
+        }
         return;
     }
 
@@ -547,8 +1191,10 @@ function renderTransferSection(host, character) {
         const help = document.createElement("p");
         help.className = "text-muted mb-0";
         help.textContent = "Er zijn geen actieve doelpersonages beschikbaar.";
-        transferCard.body.appendChild(help);
-        host.appendChild(transferCard.card);
+        targetHost.appendChild(help);
+        if (!embedded) {
+            host.appendChild(transferCard.card);
+        }
         return;
     }
 
@@ -573,8 +1219,11 @@ function renderTransferSection(host, character) {
     targetWrap.appendChild(targetSelect);
     form.appendChild(targetWrap);
 
+    const dateAmountRow = document.createElement("div");
+    dateAmountRow.className = "row g-3";
+
     const dateWrap = document.createElement("div");
-    dateWrap.className = "mb-3";
+    dateWrap.className = "col-12 col-md-6 mb-3";
     const dateLabel = document.createElement("label");
     dateLabel.className = "form-label";
     dateLabel.textContent = "Datum";
@@ -585,10 +1234,10 @@ function renderTransferSection(host, character) {
     dateInput.dataset.role = "bank-transfer-date";
     dateInput.value = character.defaultBankTransferDate || getDefaultBankTransferDateClient();
     dateWrap.appendChild(dateInput);
-    form.appendChild(dateWrap);
+    dateAmountRow.appendChild(dateWrap);
 
     const amountWrap = document.createElement("div");
-    amountWrap.className = "mb-3";
+    amountWrap.className = "col-12 col-md-6 mb-3";
     const amountLabel = document.createElement("label");
     amountLabel.className = "form-label";
     amountLabel.textContent = "Bedrag";
@@ -601,7 +1250,8 @@ function renderTransferSection(host, character) {
     amountInput.max = String(Math.max(0, bankAmountFromCharacter(character)).toFixed(2));
     amountInput.dataset.role = "bank-transfer-amount";
     amountWrap.appendChild(amountInput);
-    form.appendChild(amountWrap);
+    dateAmountRow.appendChild(amountWrap);
+    form.appendChild(dateAmountRow);
 
     const descriptionWrap = document.createElement("div");
     descriptionWrap.className = "mb-3";
@@ -624,22 +1274,32 @@ function renderTransferSection(host, character) {
     submitButton.textContent = "Overschrijving";
     form.appendChild(submitButton);
 
-    transferCard.body.appendChild(form);
-    host.appendChild(transferCard.card);
+    targetHost.appendChild(form);
+    if (!embedded) {
+        host.appendChild(transferCard.card);
+    }
 }
 
-function renderTransactionsSection(host, character) {
-    const transactionCard = buildEconomyCard("Verrichtingen");
+function renderTransactionsSection(host, character, options = {}) {
+    const embedded = options.embedded === true;
+    const transactionCard = embedded ? null : buildEconomyCard("Verrichtingen");
+    const targetHost = embedded ? host : transactionCard.body;
     const transactions = Array.isArray(character?.bankTransactions) ? character.bankTransactions : [];
     const canDeleteTransactions = Boolean(character?.canDeleteBankTransactions);
     const hasAnyDeletableTransaction = canDeleteTransactions && transactions.some((transaction) => Boolean(transaction?.canDelete));
+
+    if (embedded) {
+        appendEconomySubsectionTitle(targetHost, "Verrichtingen");
+    }
 
     if (transactions.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
         empty.textContent = "Nog geen verrichtingen beschikbaar.";
-        transactionCard.body.appendChild(empty);
-        host.appendChild(transactionCard.card);
+        targetHost.appendChild(empty);
+        if (!embedded) {
+            host.appendChild(transactionCard.card);
+        }
         return;
     }
 
@@ -729,8 +1389,10 @@ function renderTransactionsSection(host, character) {
     tableInner.appendChild(list);
     tableWrap.appendChild(tableInner);
 
-    transactionCard.body.appendChild(tableWrap);
-    host.appendChild(transactionCard.card);
+    targetHost.appendChild(tableWrap);
+    if (!embedded) {
+        host.appendChild(transactionCard.card);
+    }
 }
 
 function renderCharacterEconomyTab(character) {
@@ -738,8 +1400,6 @@ function renderCharacterEconomyTab(character) {
     if (!container || !character) return;
 
     const bankAmount = getDisplayedCharacterBankAccountAmount(character);
-    const totalIncome = getCharacterTraitIncomeTotal(character);
-
     container.innerHTML = "";
     container.classList.add("row", "g-4");
 
@@ -751,11 +1411,11 @@ function renderCharacterEconomyTab(character) {
     rightCol.className = "col-12 col-lg-6";
     rightCol.dataset.role = "economy-right-column";
 
+    renderIncomeSection(leftCol, character);
+
     const accountCard = buildEconomyCard("Bankrekening");
-    addEconomyMetric(accountCard.body, "Trait-inkomsten", formatCharacterCurrency(totalIncome));
     if (character.state === "draft") {
         const multiplierText = characterHasTraitFlagClient(character, "savings_bank_multiplier", "Spaarder") ? "15x inkomsten" : "10x inkomsten";
-        addEconomyMetric(accountCard.body, "Startsaldo", formatCharacterCurrency(bankAmount));
 
         const help = document.createElement("p");
         help.className = "text-muted small mb-3";
@@ -764,9 +1424,11 @@ function renderCharacterEconomyTab(character) {
     }
 
     renderBankAccountEditor(accountCard.body, character, bankAmount);
+    renderTransferSection(accountCard.body, character, { embedded: true });
+    renderTransactionsSection(accountCard.body, character, { embedded: true });
     leftCol.appendChild(accountCard.card);
-    renderTransferSection(leftCol, character);
-    renderTransactionsSection(leftCol, character);
+    renderCharacterSecuritiesSection(leftCol, character);
+    renderCharacterEconomySnapshotsSection(rightCol, character);
     renderCompanySharesSection(rightCol, character);
 
     container.appendChild(leftCol);
@@ -988,6 +1650,232 @@ async function deleteBankTransaction(idTransaction) {
     }
 }
 
+async function createCharacterEconomySnapshot(button) {
+    if (!button || !currentCharacter?.id) return;
+
+    const select = document.querySelector("[data-role='character-economy-snapshot-event']");
+    if (!select || select.disabled) return;
+
+    const idEvent = Number(select.value || 0);
+    if (idEvent <= 0) {
+        alert("Kies eerst een event.");
+        return;
+    }
+
+    button.disabled = true;
+    select.disabled = true;
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterEconomySnapshot.php", {
+            method: "POST",
+            body: {
+                idCharacter: currentCharacter.id,
+                idEvent
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij maken van economiesnapshot:", err);
+        alert(getApiErrorMessage(err, "Kon de economiesnapshot niet bewaren."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function deleteCharacterEconomySnapshot(idSnapshot) {
+    if (!currentCharacter?.id || idSnapshot <= 0) return;
+
+    const shouldDelete = window.confirm("Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?");
+    if (!shouldDelete) {
+        return;
+    }
+
+    try {
+        await apiFetchJson("api/characters/deleteCharacterEconomySnapshot.php", {
+            method: "POST",
+            body: { idSnapshot }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij verwijderen van economiesnapshot:", err);
+        alert(getApiErrorMessage(err, "Kon de economiesnapshot niet verwijderen."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function saveSecuritiesSettings() {
+    if (!currentCharacter?.id) return;
+
+    const managerTypeSelect = document.querySelector("[data-role='securities-manager-type']");
+    const riskProfileSelect = document.querySelector("[data-role='securities-risk-profile']");
+    const managerCharacterSelect = document.querySelector("[data-role='securities-manager-character']");
+
+    if (!managerTypeSelect || !riskProfileSelect) return;
+
+    const managerType = String(managerTypeSelect.value || "self");
+    const riskProfile = Number(riskProfileSelect.value || 3);
+    const managerCharacterId = managerType === "third"
+        ? Number(managerCharacterSelect?.value || 0)
+        : 0;
+
+    if (managerType === "third" && managerCharacterId <= 0) {
+        return;
+    }
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+            method: "POST",
+            body: {
+                action: "save_settings",
+                idCharacter: currentCharacter.id,
+                managerType,
+                riskProfile,
+                managerCharacterId: managerType === "third" ? managerCharacterId : null
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij bewaren van effecteninstellingen:", err);
+        alert(getApiErrorMessage(err, "Kon de effecteninstellingen niet bewaren."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function depositSecuritiesBalance() {
+    if (!currentCharacter?.id) return;
+
+    const input = document.querySelector("[data-role='securities-deposit-amount']");
+    if (!input) return;
+
+    const amount = parseBankAmount(input.value);
+    if (amount === null || amount <= 0) {
+        alert("Geef een geldig bedrag op om te storten.");
+        return;
+    }
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+            method: "POST",
+            body: {
+                action: "deposit",
+                idCharacter: currentCharacter.id,
+                amount
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij storten naar effectenportefeuille:", err);
+        alert(getApiErrorMessage(err, "Kon het bedrag niet naar de effectenportefeuille storten."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function withdrawSecuritiesBalance() {
+    if (!currentCharacter?.id) return;
+
+    const input = document.querySelector("[data-role='securities-manual-withdraw-amount']");
+    if (!input) return;
+
+    const amount = parseBankAmount(input.value);
+    if (amount === null || amount <= 0) {
+        alert("Geef een geldig bedrag op om op te nemen.");
+        return;
+    }
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+            method: "POST",
+            body: {
+                action: "manual_withdrawal",
+                idCharacter: currentCharacter.id,
+                amount
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij opname uit effectenportefeuille:", err);
+        alert(getApiErrorMessage(err, "Kon het bedrag niet uit de effectenportefeuille halen."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function rerollSecuritiesSnapshot(idSnapshot) {
+    if (!currentCharacter?.id || idSnapshot <= 0) return;
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+            method: "POST",
+            body: {
+                action: "reroll_snapshot",
+                idCharacter: currentCharacter.id,
+                idSnapshot
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij opnieuw genereren van rendement:", err);
+        alert(getApiErrorMessage(err, "Kon het rendement niet opnieuw genereren."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function approveSecuritiesSnapshot(idSnapshot) {
+    if (!currentCharacter?.id || idSnapshot <= 0) return;
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+            method: "POST",
+            body: {
+                action: "approve_snapshot",
+                idCharacter: currentCharacter.id,
+                idSnapshot
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij goedkeuren van rendement:", err);
+        alert(getApiErrorMessage(err, "Kon het rendement niet goedkeuren."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
+async function withdrawSecuritiesSnapshot(idSnapshot) {
+    if (!currentCharacter?.id || idSnapshot <= 0) return;
+
+    const input = document.querySelector(`[data-role='securities-snapshot-withdraw-amount'][data-id-snapshot='${idSnapshot}']`);
+    if (!input) return;
+
+    const amount = parseBankAmount(input.value);
+    if (amount === null || amount <= 0) {
+        alert("Geef een geldig bedrag op om uit de effectenportefeuille op te nemen.");
+        return;
+    }
+
+    try {
+        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+            method: "POST",
+            body: {
+                action: "withdraw_snapshot",
+                idCharacter: currentCharacter.id,
+                idSnapshot,
+                amount
+            }
+        });
+
+        await getCharacter(currentCharacter.id, null, "economy");
+    } catch (err) {
+        console.error("Fout bij snapshotopname uit effectenportefeuille:", err);
+        alert(getApiErrorMessage(err, "Kon het snapshotbedrag niet opnemen."));
+        await getCharacter(currentCharacter.id, null, "economy");
+    }
+}
+
 function setupEconomySectionListeners() {
     if (window.aetherEconomyListenersInitialized) return;
     window.aetherEconomyListenersInitialized = true;
@@ -1017,6 +1905,52 @@ function setupEconomySectionListeners() {
             return;
         }
 
+        const snapshotButton = e.target.closest("button[data-action='create-character-economy-snapshot']");
+        if (snapshotButton && !snapshotButton.disabled) {
+            await createCharacterEconomySnapshot(snapshotButton);
+            return;
+        }
+
+        const depositSecuritiesButton = e.target.closest("button[data-action='deposit-securities-balance']");
+        if (depositSecuritiesButton && !depositSecuritiesButton.disabled) {
+            await depositSecuritiesBalance();
+            return;
+        }
+
+        const withdrawSecuritiesButton = e.target.closest("button[data-action='withdraw-securities-balance']");
+        if (withdrawSecuritiesButton && !withdrawSecuritiesButton.disabled) {
+            await withdrawSecuritiesBalance();
+            return;
+        }
+
+        const rerollSecuritiesButton = e.target.closest("button[data-action='reroll-securities-snapshot']");
+        if (rerollSecuritiesButton && !rerollSecuritiesButton.disabled) {
+            const idSnapshot = Number(rerollSecuritiesButton.dataset.idSnapshot || 0);
+            await rerollSecuritiesSnapshot(idSnapshot);
+            return;
+        }
+
+        const approveSecuritiesButton = e.target.closest("button[data-action='approve-securities-snapshot']");
+        if (approveSecuritiesButton && !approveSecuritiesButton.disabled) {
+            const idSnapshot = Number(approveSecuritiesButton.dataset.idSnapshot || 0);
+            await approveSecuritiesSnapshot(idSnapshot);
+            return;
+        }
+
+        const withdrawSnapshotSecuritiesButton = e.target.closest("button[data-action='withdraw-securities-snapshot']");
+        if (withdrawSnapshotSecuritiesButton && !withdrawSnapshotSecuritiesButton.disabled) {
+            const idSnapshot = Number(withdrawSnapshotSecuritiesButton.dataset.idSnapshot || 0);
+            await withdrawSecuritiesSnapshot(idSnapshot);
+            return;
+        }
+
+        const deleteSnapshotButton = e.target.closest("button[data-action='delete-character-economy-snapshot']");
+        if (deleteSnapshotButton && !deleteSnapshotButton.disabled) {
+            const idSnapshot = Number(deleteSnapshotButton.dataset.idSnapshot || 0);
+            await deleteCharacterEconomySnapshot(idSnapshot);
+            return;
+        }
+
         const deleteButton = e.target.closest("button[data-action='delete-bank-transaction']");
         if (deleteButton && !deleteButton.disabled) {
             const idTransaction = Number(deleteButton.dataset.idTransaction || 0);
@@ -1028,6 +1962,31 @@ function setupEconomySectionListeners() {
         const shareCompanySelect = e.target.closest("select[data-role='company-share-company-select']");
         if (shareCompanySelect && !shareCompanySelect.disabled) {
             await saveCompanyShareAssignment(shareCompanySelect);
+            return;
+        }
+
+        const securitiesManagerTypeSelect = e.target.closest("select[data-role='securities-manager-type']");
+        if (securitiesManagerTypeSelect && !securitiesManagerTypeSelect.disabled) {
+            const thirdManagerWrap = document.querySelector("[data-role='securities-third-manager-wrap']");
+            if (thirdManagerWrap) {
+                thirdManagerWrap.classList.toggle("d-none", String(securitiesManagerTypeSelect.value || "self") !== "third");
+            }
+
+            if (String(securitiesManagerTypeSelect.value || "self") !== "third") {
+                await saveSecuritiesSettings();
+            }
+            return;
+        }
+
+        const securitiesManagerCharacterSelect = e.target.closest("select[data-role='securities-manager-character']");
+        if (securitiesManagerCharacterSelect && !securitiesManagerCharacterSelect.disabled) {
+            await saveSecuritiesSettings();
+            return;
+        }
+
+        const securitiesRiskProfileSelect = e.target.closest("select[data-role='securities-risk-profile']");
+        if (securitiesRiskProfileSelect && !securitiesRiskProfileSelect.disabled) {
+            await saveSecuritiesSettings();
             return;
         }
 
@@ -1055,6 +2014,8 @@ function showEconomyTab(character) {
     if (diaryTab) diaryTab.classList.add("d-none");
     const personalityTab = document.getElementById("personalityTab");
     if (personalityTab) personalityTab.classList.add("d-none");
+    const passportTab = document.getElementById("passportTab");
+    if (passportTab) passportTab.classList.add("d-none");
 
     const economyTab = document.getElementById("economyTab");
     if (!economyTab) return;

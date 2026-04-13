@@ -30,6 +30,9 @@
                     <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
                         <a class="nav-link" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
                     </li>
+                    <li class="nav-item mr-2 d-none" id="navbarAdminItem">
+                        <a class="nav-link" id="adminPage" aria-current="page" href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+                    </li>
                 </ul>
                 <div id="navbarName"></div>
             </div>
@@ -44,14 +47,25 @@
         </div>
         <div class="offcanvas-body">
             <p>Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.</p>
-            <select class="form-select">
-                <option selected>Bovenklasse</option>
-                <option value="1" selected>Middenklasse</option>
-                <option value="2">Onderklasse</option>
+            <select class="form-select mb-2" id="sidebarCharacterTypeFilter">
+                <option value="">Alle soorten</option>
+                <option value="player">Spelerspersonage</option>
+                <option value="extra">Figurantenrol</option>
             </select>
-            <select class="form-select">
-                <option selected >Personage</option>
-                <option value="1" >Deelnemer</option>
+            <select class="form-select mb-2" id="sidebarCharacterStatusFilter">
+                <option value="">Alle statussen</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="deceased">Deceased</option>
+                <option value="other">Other</option>
+                <option value="draft">Draft</option>
+                <option value="approve">Approve</option>
+            </select>
+            <select class="form-select mb-2" id="sidebarCharacterClassFilter">
+                <option value="">Alle klassen</option>
+                <option value="upper class">Bovenklasse</option>
+                <option value="middle class">Middenklasse</option>
+                <option value="lower class">Onderklasse</option>
             </select>
             <!-- List with character names -->
             <div id="characterNames" class="my-2"></div>
@@ -78,6 +92,7 @@
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy">Economy</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="passport">Paspoort</a></li>
         </ul>
         <div class="row py-2 navRow">
             <div class="col-lg-6 col-12 row">
@@ -131,6 +146,7 @@
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
             <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy">Economy</a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="passport">Paspoort</a></li>
         </ul>
         <div class="row py-2 navRow" id="adminSheetHead">
             <div class="col-lg-6 col-12 row">
@@ -172,93 +188,123 @@
             <!-- Start character form -->
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="characterForm">
-                    <div class="mb-3 row" id="classRow">
-                        <label class="col-sm-4 col-form-label">Klasse</label>
-                        <div class="col-sm-8">
-                            <select class="form-select" id="class" name="class">
-                                <option value="upper class" selected>Bovenklasse</option>
-                                <option value="middle class" selected>Middenklasse</option>
-                                <option value="lower class">Onderklasse</option>
-                            </select>
+                    <div class="card character-sheet-card mb-4">
+                        <div class="card-body">
+                            <div class="character-sheet-header mb-3">
+                                <div class="character-portrait-panel">
+                                    <div class="character-portrait-frame">
+                                        <img
+                                            id="characterPortraitImage"
+                                            class="character-portrait-image d-none"
+                                            src=""
+                                            alt="Portret personage"
+                                        >
+                                        <div id="characterPortraitPlaceholder" class="character-portrait-placeholder">Geen portret</div>
+                                    </div>
+                                    <div class="character-portrait-actions">
+                                        <input type="file" id="characterPortraitFileInput" class="d-none" accept="image/*">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="characterPortraitUploadButton">Portret opladen</button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" id="characterPortraitDeleteButton">Verwijderen</button>
+                                    </div>
+                                </div>
+                                <div class="character-sheet-header-fields">
+                                    <div class="mb-3 row" id="classRow">
+                                        <label class="col-sm-4 col-form-label">Klasse</label>
+                                        <div class="col-sm-8">
+                                            <select class="form-select" id="class" name="class">
+                                                <option value="upper class">Bovenklasse</option>
+                                                <option value="middle class" selected>Middenklasse</option>
+                                                <option value="lower class">Onderklasse</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <label class="col-sm-4 col-form-label">Aanspreking</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" class="form-control" id="title" name="title">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <label class="col-sm-4 col-form-label">Familienaam</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" class="form-control" id="lastName" name="lastName">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row">
+                                        <label class="col-sm-4 col-form-label">Voornaam</label>
+                                        <div class="col-sm-8">
+                                            <input type="text" class="form-control" id="firstName" name="firstName">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-4 col-form-label">Straat en nummer</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control" id="street" name="street">
+                                </div>
+                                <div class="col-sm-2">
+                                    <input type="text" class="form-control" id="houseNumber" name="houseNumber">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-4 col-form-label">Postcode en gemeente</label>
+                                <div class="col-sm-2">
+                                    <input type="text" class="form-control" id="postalCode" name="postalCode">
+                                </div>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control" id="municipality" name="municipality">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-4 col-form-label">Burgelijke staat</label>
+                                <div class="col-sm-8">
+                                    <select class="form-select" id="maritalStatus" name="maritalStatus">
+                                        <option value="Single" selected>Ongehuwd</option>
+                                        <option value="Married">Gehuwd</option>
+                                        <option value="Widowed">Weduwnaar/weduwe</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-4 col-form-label">Nationaliteit</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" id="nationality" name="nationality">
+                                </div>
+                            </div>
+                            <div class="mb-3 row" id="birthRow">
+                                <label class="col-sm-4 col-form-label">Geboren te / op</label>
+                                <div class="col-sm-4">
+                                    <input type="text" class="form-control" id="birthPlace" name="birthPlace">
+                                </div>
+                                <div class="col-sm-4">
+                                    <input type="date" class="form-control" id="birthDate" name="birthDate">
+                                </div>
+                            </div>
+                            <div class="d-none" id="leftTraitModuleHost"></div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-4 col-form-label">Rijksregisternummer</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" id="stateRegisterNumber" name="stateRegisterNumber">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Aanspreking</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="title" name="title">
+                    <div class="card character-sheet-card mb-4">
+                        <div class="card-body">
+                            <h4 class="character-sheet-card-title">Gezondheid</h4>
+                            <div id="healthSectionContent"></div>
                         </div>
                     </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Familienaam</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="lastName" name="lastName">
+                        <div class="card character-sheet-card mb-4" id="leftInfoSections">
+                        <div class="card-body">
+                            <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
+                            <div class="mb-4" id="livingStandardSectionContent"></div>
+                            <h4 class="character-sheet-card-title" id="staffSectionTitle">Personeel</h4>
+                            <div class="mb-4" id="staffSectionContent"></div>
+                            <h4 class="character-sheet-card-title" id="languagesSectionTitle">Talen</h4>
+                            <div id="languagesSectionContent"></div>
                         </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Voornaam</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="firstName" name="firstName">
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Straat en nummer</label>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" id="street" name="street">
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="text" class="form-control" id="houseNumber" name="houseNumber">
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Postcode en gemeente</label>
-                        <div class="col-sm-2">
-                            <input type="text" class="form-control" id="postalCode" name="postalCode">
-                        </div>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" id="municipality" name="municipality">
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Burgelijke staat</label>
-                        <div class="col-sm-8">
-                            <select class="form-select" id="maritalStatus" name="maritalStatus">
-                                <option value="Single" selected>Ongehuwd</option>
-                                <option value="Married">Gehuwd</option>
-                                <option value="Widowed">Weduwnaar/weduwe</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Nationaliteit</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="nationality" name="nationality">
-                        </div>
-                    </div>
-                    <div class="mb-3 row" id="birthRow">
-                        <label class="col-sm-4 col-form-label">Geboren te / op</label>
-                        <div class="col-sm-4">
-                            <input type="text" class="form-control" id="birthPlace" name="birthPlace">
-                        </div>
-                        <div class="col-sm-4">
-                            <input type="date" class="form-control" id="birthDate" name="birthDate">
-                        </div>
-                    </div>
-                    <div class="d-none" id="leftTraitModuleHost"></div>
-                    <div class="mb-3 row">
-                        <label class="col-sm-4 col-form-label">Rijksregisternummer</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="stateRegisterNumber" name="stateRegisterNumber">
-                        </div>
-                    </div>
-                    <div id="leftInfoSections">
-                        <h4>Gezondheid</h4>
-                        <div class="mb-4" id="healthSectionContent"></div>
-                        <h4>Rijkdom</h4>
-                        <div class="mb-4" id="wealthSectionContent"></div>
-                        <h4>Personeel</h4>
-                        <div class="mb-4" id="staffSectionContent"></div>
-                        <h4>Talen</h4>
-                        <div class="mb-4" id="languagesSectionContent"></div>
                     </div>
                     <!-- Buttons new character -->
                     <div class="d-flex justify-content-center d-none" id="groupNewCharacter">
@@ -280,16 +326,22 @@
 
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="skills">
-                    <h4>Vaardigheden</h4>
-                    <div class="accordion mb-3" id="accordionSkills"></div>
-                    <div class="input-group mb-4">
-                        <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
-                        <select class="form-select" id="idNewSkill"></select>
-                        <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
+                    <div class="card character-sheet-card mb-4">
+                        <div class="card-body">
+                            <h4 class="character-sheet-card-title">Vaardigheden</h4>
+                            <div class="accordion mb-3" id="accordionSkills"></div>
+                            <div class="input-group">
+                                <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
+                                <select class="form-select" id="idNewSkill"></select>
+                                <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
                     </div>
-                    <div id="traitsSection">
-                        <h4>Statuseigenschappen</h4>
-                        <div id="traitsContent"></div>
+                    <div class="card character-sheet-card" id="traitsSection">
+                        <div class="card-body">
+                            <h4 class="character-sheet-card-title">Statuseigenschappen</h4>
+                            <div id="traitsContent"></div>
+                        </div>
                     </div>
                 </div>
             </div>     
@@ -310,6 +362,10 @@
         <!-- Economy tab content -->
         <div class="d-none w-100" id="economyTab">
             <div id="economyTabContent" class="mt-3"></div>
+        </div>
+        <!-- Passport tab content -->
+        <div class="d-none w-100" id="passportTab">
+            <div id="passportTabContent" class="mt-3"></div>
         </div>
     </div>
     </div>
@@ -489,6 +545,74 @@
         </div>
     </div>
 
+    <div class="modal fade" id="languageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Taal kiezen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="languageTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active"
+                                    id="language-existing-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#language-existing-pane"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="language-existing-pane"
+                                    aria-selected="true"
+                                    data-tab="existing">
+                                Existing
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link"
+                                    id="language-new-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#language-new-pane"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="language-new-pane"
+                                    aria-selected="false"
+                                    data-tab="new">
+                                New
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active"
+                             id="language-existing-pane"
+                             role="tabpanel"
+                             aria-labelledby="language-existing-tab">
+                            <div class="mb-3">
+                                <label for="languageSelect" class="form-label">Bestaande taal</label>
+                                <select id="languageSelect" class="form-select"></select>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade"
+                             id="language-new-pane"
+                             role="tabpanel"
+                             aria-labelledby="language-new-tab">
+                            <div class="mb-3">
+                                <label for="languageCustom" class="form-label">Nieuwe taal</label>
+                                <input type="text"
+                                       id="languageCustom"
+                                       class="form-control"
+                                       placeholder="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="languageSaveBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 
 
@@ -499,7 +623,9 @@
     <script src="js/characterUtils.js"></script>
     <script src="js/apiCharacter.js"></script>
     <script src="js/formCharacter.js"></script>
+    <script src="js/languageCharacter.js"></script>
     <script src="js/economyCharacter.js"></script>
+    <script src="js/passportCharacter.js"></script>
     <script src="js/diaryCharacter.js"></script>
     <script src="js/backgroundCharacter.js"></script>
     <script src="js/createCharacter.js"></script>

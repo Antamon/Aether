@@ -7,6 +7,15 @@ require_once __DIR__ . '/traitUtils.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+function canCurrentUserManageTrait(array $trait, string $currentUserRole): bool
+{
+    if (isPrivilegedUserRole($currentUserRole)) {
+        return true;
+    }
+
+    return !traitHasFlag($trait, 'secret');
+}
+
 try {
     $pdo = getPDO();
     $currentUserRole = getCurrentUserRole($pdo);
@@ -58,6 +67,12 @@ try {
         exit;
     }
 
+    if (!canCurrentUserManageTrait($trait, $currentUserRole)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Je hebt geen rechten om deze trait aan te passen.']);
+        exit;
+    }
+
     $traitClass = (string) $trait['class'];
     $characterClass = (string) $character['class'];
     if ($traitClass !== 'all' && $traitClass !== $characterClass) {
@@ -80,6 +95,11 @@ try {
 
         if ($currentLinkedTrait) {
             $currentTrait = getTraitDefinition($pdo, $idCurrentTrait);
+            if ($currentTrait && !canCurrentUserManageTrait($currentTrait, $currentUserRole)) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Je hebt geen rechten om deze trait aan te passen.']);
+                exit;
+            }
         }
     }
 

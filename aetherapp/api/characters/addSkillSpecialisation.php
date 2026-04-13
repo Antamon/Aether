@@ -11,33 +11,7 @@ header('Content-Type: application/json; charset=utf-8');
  */
 function getUsedXP(PDO $pdo, int $idChar): int
 {
-    // 1) Skills
-    $stmt = $pdo->prepare("
-        SELECT COALESCE(SUM(
-            CASE level
-                WHEN 1 THEN 1
-                WHEN 2 THEN 3
-                WHEN 3 THEN 6
-            END
-        ),0) AS usedXP
-        FROM tblLinkCharacterSkill
-        WHERE idCharacter = ?
-    ");
-    $stmt->execute([$idChar]);
-    $usedSkillXP = (int) $stmt->fetchColumn();
-
-    // 2) Specialisaties (geen disciplines)
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) 
-        FROM tblCharacterSpecialisation cs
-        JOIN tblSkillSpecialisation ss ON ss.id = cs.idSkillSpecialisation
-        WHERE cs.idCharacter = ?
-          AND (ss.kind IS NULL OR ss.kind <> 'discipline')
-    ");
-    $stmt->execute([$idChar]);
-    $nonDiscCount = (int) $stmt->fetchColumn();
-
-    return $usedSkillXP + ($nonDiscCount * 2);
+    return getCharacterSkillExperienceCost($pdo, $idChar);
 }
 
 try {

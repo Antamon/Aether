@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../characters/characterPointUtils.php';
+require_once __DIR__ . '/../characters/economyUtils.php';
 
 function requirePrivilegedCompanyAccess(PDO $pdo): void
 {
@@ -604,6 +605,50 @@ function getCompanyPersonnelImpactSummary(PDO $pdo, int $idCompany, int $stabili
     ];
 }
 
+function getCompanyPersonnelSalaryIncreaseExpenseAmount(PDO $pdo, int $idCompany): float
+{
+    if ($idCompany <= 0) {
+        return 0.0;
+    }
+
+    try {
+        $rows = dbAll(
+            $pdo,
+            "SELECT
+                cp.idCharacter,
+                c.`class`,
+                cp.salaryIncreasePercentage
+             FROM tblCompanyPersonnel AS cp
+             JOIN tblCharacter AS c
+               ON c.id = cp.idCharacter
+             WHERE cp.idCompany = :idCompany
+               AND cp.salaryIncreasePercentage > 0",
+            ['idCompany' => $idCompany]
+        );
+    } catch (Throwable $e) {
+        return 0.0;
+    }
+
+    $monthlyExtraSalaryTotal = 0.0;
+    foreach ($rows as $row) {
+        $idCharacter = (int) ($row['idCharacter'] ?? 0);
+        if ($idCharacter <= 0) {
+            continue;
+        }
+
+        $monthlyExtraSalaryTotal += getCharacterCompanySalaryIncreaseAmount(
+            $pdo,
+            [
+                'id' => $idCharacter,
+                'class' => (string) ($row['class'] ?? ''),
+            ],
+            $idCompany
+        );
+    }
+
+    return round($monthlyExtraSalaryTotal * 12, 2);
+}
+
 function applyCompanyPersonnelImpactToSnapshotAdjustment(
     float $rawAdjustmentAmount,
     float $personnelImpactPercentage
@@ -636,6 +681,7 @@ function calculateCompanySnapshotFinancials(
     int $stability,
     int $profitability,
     float $personnelImpactPercentage = 0.0,
+    float $personnelSalaryIncreaseExpenseAmount = 0.0,
     ?float $lowerBoundPercentage = null,
     ?float $upperBoundPercentage = null
 ): array
@@ -649,7 +695,9 @@ function calculateCompanySnapshotFinancials(
     $resolvedLowerBoundPercentage = $lowerBoundPercentage ?? -$stabilityRangePercentage;
     $resolvedUpperBoundPercentage = $upperBoundPercentage ?? $stabilityRangePercentage;
 
-    $baseProfitAmount = round($normalizedCompanyValue * ($profitabilityPercentage / 100), 2);
+    $baseProfitAmountBeforePersonnel = round($normalizedCompanyValue * ($profitabilityPercentage / 100), 2);
+    $normalizedPersonnelSalaryIncreaseExpenseAmount = round(max(0.0, $personnelSalaryIncreaseExpenseAmount), 2);
+    $baseProfitAmount = round($baseProfitAmountBeforePersonnel - $normalizedPersonnelSalaryIncreaseExpenseAmount, 2);
     $rawStabilityAdjustmentAmount = generateRandomCompanySnapshotAdjustmentFromBounds(
         $normalizedCompanyValue,
         (float) $resolvedLowerBoundPercentage,
@@ -669,6 +717,8 @@ function calculateCompanySnapshotFinancials(
         'personnelImpactPercentage' => round($personnelImpactPercentage, 2),
         'stabilityLowerBoundPercentage' => round((float) $resolvedLowerBoundPercentage, 2),
         'stabilityUpperBoundPercentage' => round((float) $resolvedUpperBoundPercentage, 2),
+        'personnelSalaryIncreaseExpenseAmount' => $normalizedPersonnelSalaryIncreaseExpenseAmount,
+        'baseProfitAmountBeforePersonnel' => $baseProfitAmountBeforePersonnel,
         'baseProfitAmount' => $baseProfitAmount,
         'rawStabilityAdjustmentAmount' => $personnelAdjustedStability['rawAdjustmentAmount'],
         'personnelAdjustmentAmount' => $personnelAdjustedStability['personnelAdjustmentAmount'],
@@ -821,11 +871,13 @@ function refreshCompanySnapshotsForCurrentPersonnel(PDO $pdo, int $idCompany): v
         $stability = normalizeCompanySliderValue($snapshot['stability'] ?? 0);
         $profitability = normalizeCompanySliderValue($snapshot['profitability'] ?? 0);
         $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
+        $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
         $financials = calculateCompanySnapshotFinancials(
             (float) ($snapshot['companyValue'] ?? 0),
             $stability,
             $profitability,
             (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+            $personnelSalaryIncreaseExpenseAmount,
             (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
             (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
         );
