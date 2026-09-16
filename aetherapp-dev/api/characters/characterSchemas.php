@@ -10,6 +10,10 @@ function aetherCharacterRequestSchema(string $route, array $input = []): array
         'type' => 'string', 'required' => $required, 'trim' => true,
         'minLength' => $min, 'maxLength' => $max, 'html' => false,
     ];
+    $richText = static fn(bool $required, int $max): array => [
+        'type' => 'string', 'required' => $required, 'trim' => true,
+        'minLength' => 0, 'maxLength' => $max, 'html' => true,
+    ];
     $enum = static fn(bool $required, array $values): array => [
         'type' => 'enum', 'required' => $required, 'trim' => true, 'values' => $values,
     ];
@@ -80,13 +84,13 @@ function aetherCharacterRequestSchema(string $route, array $input = []): array
         ],
         'saveCharacterDiary' => [
             'idCharacter' => $id(), 'idDiary' => $optionalId(), 'idEvent' => $id(),
-            'goals' => $text(false, 16000), 'achievements' => $text(false, 16000),
+            'goals' => $richText(false, 16000), 'achievements' => $richText(false, 16000),
             'gossip1' => $text(false, 16000), 'gossip2' => $text(false, 16000), 'gossip3' => $text(false, 16000),
         ],
         'saveCharacterSection' => [
             'idCharacter' => $id(),
             'section' => $enum(true, ['personal_background', 'knowledge', 'nature', 'demeanour']),
-            'content' => $text(false, 16000),
+            'content' => $richText(false, 16000),
         ],
         'saveCharacterTie' => [
             'idCharacter' => $id(), 'idTie' => $optionalId(), 'idOtherCharacter' => $id(),

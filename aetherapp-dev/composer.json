@@ -1,0 +1,12 @@
+{
+    "name": "aether/app",
+    "description": "Server-side dependencies for the Aether application",
+    "type": "project",
+    "require": {
+        "ezyang/htmlpurifier": "4.19.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

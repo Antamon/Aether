@@ -8,7 +8,7 @@ Alle routes in `api/characters` die browserinvoer accepteren gebruiken nu het ge
 
 `newCharacter.php` en `updateCharacter.php` bouwen geen SQL-kolomnamen meer uit browserkeys. Aanmaken gebruikt een vaste `INSERT`; bijwerken gebruikt een vaste veld-naar-kolommapping. De eerder ingevoerde authenticatie-, rol-, eigenaarschaps- en CSRF-controles zijn behouden. Bevoegdheidsvelden (`idUser`, `type`, `state`) blijven door die controles beschermd; auditvelden (`createdBy`, `createdAt`) blijven bij updates expliciet geweigerd. Bij aanmaken bepaalt de server `createdBy`, `createdAt` en `state`, en voor participants ook `idUser`, `type` en de gratis gezondheidsvelden.
 
-Charactertekst wordt als platte tekst opgeslagen. Achtergrond en dagboek bieden daarom geen HTML-opmaakknoppen meer aan. Weergave van character-, taal-, skill-, trait-, tie-, achtergrond- en dagboektekst gebruikt `textContent` of bouwt tekstnodes. Er is geen HTML-sanitizer in het project aangetroffen en binnen de personagemodule is geen plaats vastgesteld waar uitvoerbare of opgemaakte HTML noodzakelijk is. Bestaande opgeslagen HTML wordt voortaan letterlijk als tekst getoond en niet uitgevoerd.
+**Latere aanvulling:** de bewust als rich text ontworpen velden `personal_background`, `knowledge`, `nature`, `demeanour`, `goals` en `achievements` gebruiken opnieuw gesaniteerde HTML. Alle overige charactervelden blijven gewone tekst. De actuele beveiliging en allowlist staan in `docs/rich-text-characters.md`; die documentatie vervangt voor deze zes velden de eerdere conclusie hieronder over uitsluitend platte tekst.
 
 ## Algemene veldregels
 
@@ -83,8 +83,8 @@ De update vereist naast `id` minimaal één werkelijk te wijzigen veld. Alle SQL
 
 | Route | Geaccepteerde velden | Regels |
 |---|---|---|
-| `saveCharacterSection.php` | `idCharacter`, `section`, `content` | ID verplicht; section = `personal_background`, `knowledge`, `nature`, `demeanour`; content optionele getrimde tekst max. 16.000, geen HTML |
-| `saveCharacterDiary.php` | `idCharacter`, `idDiary`, `idEvent`, `goals`, `achievements`, `gossip1`, `gossip2`, `gossip3` | character/event verplicht > 0; diary optioneel 0 of hoger; alle tekst optioneel, getrimd, max. 16.000 per veld, geen HTML |
+| `saveCharacterSection.php` | `idCharacter`, `section`, `content` | ID verplicht; section = `personal_background`, `knowledge`, `nature`, `demeanour`; content optionele getrimde rich text max. 16.000, daarna server-side gesanitized volgens `docs/rich-text-characters.md` |
+| `saveCharacterDiary.php` | `idCharacter`, `idDiary`, `idEvent`, `goals`, `achievements`, `gossip1`, `gossip2`, `gossip3` | character/event verplicht > 0; diary optioneel 0 of hoger; alle tekst optioneel, getrimd, max. 16.000 per veld; alleen goals en achievements zijn gesaniteerde rich text, gossip blijft gewone tekst zonder HTML |
 | `saveCharacterTie.php` | `idCharacter`, `idTie`, `idOtherCharacter`, `relationType`, `description` | character/other verplicht > 0; tie optioneel 0 of hoger; type = `superior`, `dependent`, `landlord`, `household_staff`, `spouse`, `ally`, `adversary`, `person_of_interest`; description max. 255, trim, geen HTML |
 | `addCharacterLanguage.php` | `idCharacter`, `idLanguage`, `name` | character verplicht > 0; language optioneel 0 of hoger; óf bestaand ID óf getrimde naam vereist; naam max. 120, geen HTML |
 
@@ -121,7 +121,7 @@ Action-specifieke effectenvelden:
 - `api/characters/characterRequestValidation.php`: gedeelde schema’s, type- en grensvalidatie, onbekende-veldencontrole en consistente 422-respons.
 - Alle requestroutes in `api/characters/*.php`: koppeling met het eigen expliciete schema; `newCharacter.php` en `updateCharacter.php` gebruiken vaste SQL-kolommen; portretupload valideert multipartvelden en grootte.
 - `js/apiCharacter.js`, `js/characterFunctions.js`, `js/skillsCharacter.js`: niet-vertrouwde browserrol uit list-requests verwijderd; skilltekst via `textContent`.
-- `js/backgroundCharacter.js`, `js/diaryCharacter.js`, `js/passportCharacter.js`: achtergrond- en dagboekinhoud als platte tekst bewerken, bewaren en tonen.
+- `js/backgroundCharacter.js`, `js/diaryCharacter.js`: de zes gedocumenteerde rich-textvelden gebruiken de gedeelde editor en gesaniteerde HTML-weergave; gossip blijft `textContent`. `js/passportCharacter.js` blijft gewone tekst gebruiken.
 - `js/formCharacter.js`, `js/languageCharacter.js`, `js/navCharacter.js`, `js/traitsCharacter.js`: databasewaarden via tekstnodes/`textContent` tonen.
 - `tests/character_input_validation_test.php`: gerichte validator-, route-, SQL-mapping- en veilige-weergavetests.
 
@@ -147,4 +147,4 @@ Action-specifieke effectenvelden:
 ## Beperkingen
 
 - Er is geen lokale browser-end-to-endomgeving met een gekoppelde WordPress-sessie en testdatabase gebruikt. Daardoor zijn de gewijzigde formulierflows en een daadwerkelijk in een browser geladen opgeslagen XSS-payload niet interactief getest. Er was lokaal ook geen Node.js-runtime beschikbaar voor een aanvullende JavaScript-syntaxcheck; de oplossing voegt geen Node.js-afhankelijkheid toe.
-- Bestaande historische achtergrond- en dagboekrecords bevatten HTML. Die data is niet gemigreerd; ze wordt veilig letterlijk als tekst weergegeven. Een latere, expliciet ontworpen datamigratie kan oude markup desgewenst naar leesbare platte tekst omzetten.
+- Bestaande historische achtergrond- en dagboekrecords bevatten HTML. Die data wordt niet massaal gemigreerd: leesroutes saniteren haar voor weergave en een gewijzigde rich-textwaarde wordt bij de eerstvolgende opslag genormaliseerd. Zie `docs/rich-text-characters.md`.

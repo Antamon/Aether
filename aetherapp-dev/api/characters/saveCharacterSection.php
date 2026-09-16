@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterRichText.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
@@ -33,6 +34,7 @@ if ($idCharacter <= 0 || !in_array($section, $allowedSections, true)) {
 try {
     aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
     $userId = (int) $currentUser['id'];
+    $content = aetherSanitizeCharacterRichText((string) $content);
 
     $sql = "
         INSERT INTO tblCharacterSection (idCharacter, section, content, updatedAt, updatedBy)
@@ -50,7 +52,7 @@ try {
         ':updatedBy' => $userId
     ]);
 
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'content' => $content]);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Kon sectie niet opslaan.']);

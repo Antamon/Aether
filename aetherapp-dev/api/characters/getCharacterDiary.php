@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterRichText.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 
@@ -52,7 +53,7 @@ try {
             $row['id'] = (int)$row['id'];
             $row['idCharacter'] = (int)$row['idCharacter'];
             $row['idEvent'] = (int)$row['idEvent'];
-            return $row;
+            return aetherSanitizeCharacterDiaryRow($row);
         }, $entries),
         'availableEvents' => array_map(function ($row) {
             $row['id'] = (int)$row['id'];

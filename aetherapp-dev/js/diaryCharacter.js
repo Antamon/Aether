@@ -1,15 +1,5 @@
 // Diary tab logic
 
-const AETHER_DIARY_TOOLBAR = `
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold"><i class="fa-solid fa-bold"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic"><i class="fa-solid fa-italic"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertUnorderedList"><i class="fa-solid fa-list-ul"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertOrderedList"><i class="fa-solid fa-list-ol"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="p">P</button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h4">H4</button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat"><i class="fa-solid fa-eraser"></i></button>
-`;
-
 function canEditDiary(character) {
     if (!currentUser || !character) return { all: false, achievementsOnly: false };
     const role = currentUser.role;
@@ -267,8 +257,8 @@ function renderDiaryEntry(entry, rights, character) {
     }
 
     btnCancel.addEventListener("click", () => {
-        goalsSection.edit.editor.value = entry.goals || "";
-        achievementsSection.edit.editor.value = entry.achievements || "";
+        goalsSection.edit.setHtml(entry.goals || "");
+        achievementsSection.edit.setHtml(entry.achievements || "");
         Object.entries(gossipInputs).forEach(([key, obj]) => {
             obj.input.value = entry[key] || "";
         });
@@ -280,8 +270,8 @@ function renderDiaryEntry(entry, rights, character) {
             idCharacter: character.id,
             idDiary: entry.id,
             idEvent: entry.idEvent,
-            goals: goalsSection.edit.editor.value,
-            achievements: achievementsSection.edit.editor.value,
+            goals: goalsSection.edit.getHtml(),
+            achievements: achievementsSection.edit.getHtml(),
             gossip1: gossipInputs.gossip1?.input.value || "",
             gossip2: gossipInputs.gossip2?.input.value || "",
             gossip3: gossipInputs.gossip3?.input.value || ""
@@ -297,18 +287,17 @@ function renderDiaryEntry(entry, rights, character) {
 
         try {
             const res = await saveCharacterDiary(payload);
-            const updated = res && res.entries ? res.entries.find(e => e.id === entry.id) : null;
-            if (updated) {
-                Object.assign(entry, updated);
-            } else {
-                entry.goals = payload.goals;
-                entry.achievements = payload.achievements;
-                entry.gossip1 = payload.gossip1;
-                entry.gossip2 = payload.gossip2;
-                entry.gossip3 = payload.gossip3;
+            const updated = Array.isArray(res?.entries)
+                ? res.entries.find(item => Number(item.id) === Number(entry.id))
+                : null;
+            if (!updated) {
+                throw new Error("De server gaf geen gesaniteerde diary terug.");
             }
-            setDiaryPlainText(goalsSection.view, entry.goals);
-            setDiaryPlainText(achievementsSection.view, entry.achievements);
+            Object.assign(entry, updated);
+            goalsSection.edit.setHtml(entry.goals);
+            achievementsSection.edit.setHtml(entry.achievements);
+            renderCharacterRichText(goalsSection.view, entry.goals);
+            renderCharacterRichText(achievementsSection.view, entry.achievements);
             gossipInputs.gossip1.view.textContent = entry.gossip1 || "";
             gossipInputs.gossip2.view.textContent = entry.gossip2 || "";
             gossipInputs.gossip3.view.textContent = entry.gossip3 || "";
@@ -325,14 +314,7 @@ function renderDiaryEntry(entry, rights, character) {
     return wrap;
 }
 
-function setDiaryPlainText(element, value) {
-    const text = String(value || "");
-    element.textContent = text || "Geen inhoud.";
-    element.classList.toggle("text-muted", text === "");
-    element.style.whiteSpace = "pre-wrap";
-}
-
-function createDiarySection(label, text) {
+function createDiarySection(label, html) {
     const wrap = document.createElement("div");
     wrap.className = "mb-3";
 
@@ -342,9 +324,10 @@ function createDiarySection(label, text) {
 
     const body = document.createElement("div");
     body.className = "border rounded p-2 bg-light diary-view-body";
-    setDiaryPlainText(body, text);
+    renderCharacterRichText(body, html);
 
-    const edit = createRichEditor(text);
+    const edit = createCharacterRichTextEditor(html, { minHeight: "140px" });
+    edit.wrapper.classList.add("mb-3", "d-none");
 
     wrap.appendChild(lbl);
     wrap.appendChild(body);
@@ -356,33 +339,4 @@ function createDiarySection(label, text) {
         view: body,
         edit
     };
-}
-
-function createRichEditor(initialText) {
-    const wrap = document.createElement("div");
-    wrap.className = "mb-3 d-none";
-
-    const toolbar = document.createElement("div");
-    toolbar.className = "btn-group mb-2 flex-wrap d-none";
-    toolbar.innerHTML = AETHER_DIARY_TOOLBAR;
-
-    const editor = document.createElement("textarea");
-    editor.className = "form-control";
-    editor.rows = 6;
-    editor.style.minHeight = "140px";
-    editor.value = initialText || "";
-
-    toolbar.querySelectorAll("button").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const cmd = btn.dataset.cmd;
-            const val = btn.dataset.value || null;
-            editor.focus();
-            document.execCommand(cmd, false, val);
-        });
-    });
-
-    wrap.appendChild(toolbar);
-    wrap.appendChild(editor);
-
-    return { wrapper: wrap, editor };
 }

@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterRichText.php';
 
 $input = aetherReadCharacterJsonRequest('getCharacterSections');
 
@@ -36,7 +37,10 @@ try {
     ];
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $sections[$row['section']] = $row['content'] ?? '';
+        $section = (string) ($row['section'] ?? '');
+        if (in_array($section, AETHER_CHARACTER_RICH_TEXT_SECTIONS, true)) {
+            $sections[$section] = aetherSanitizeCharacterRichText((string) ($row['content'] ?? ''));
+        }
     }
 
     echo json_encode($sections);

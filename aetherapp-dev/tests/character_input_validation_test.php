@@ -183,8 +183,9 @@ assertCharacterValidation(
 );
 
 $safeDisplayAssertions = [
-    'js/backgroundCharacter.js' => ['editor.value', 'viewDiv.textContent'],
-    'js/diaryCharacter.js' => ['setDiaryPlainText', 'editor.value'],
+    // Diary gossip stays plain text; the six documented rich-text fields have
+    // separate sanitizer and rendering coverage in character_rich_text_test.php.
+    'js/diaryCharacter.js' => ['gossipInputs.gossip1.view.textContent', 'view.textContent = entry[g.key]'],
     'js/navCharacter.js' => ['nameParticipant").textContent'],
     'js/skillsCharacter.js' => ['newOption.textContent', 'headerBtn.textContent'],
     'js/languageCharacter.js' => ['name.textContent = language.name'],
