@@ -7,6 +7,7 @@ require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 function fetchCharacterAddressForSync(PDO $pdo, int $idCharacter): ?array
 {
@@ -89,8 +90,7 @@ function landlordHasConfirmedHouseholdStaff(PDO $pdo, int $idLandlordCharacter):
     return (bool) $stmt->fetchColumn();
 }
 
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
+$postData = aetherReadCharacterJsonRequest('updateCharacter');
 
 // 1. Basisvalidatie: ID verplicht
 if (empty($postData['id'])) {
@@ -319,12 +319,39 @@ try {
 
     $pdo->beginTransaction();
 
-    // 4. Dynamische SET-lijst opbouwen
-    $columns = array_keys($postData);
+    // 4. Alleen vaste, server-side gedefinieerde kolomnamen gebruiken.
+    $columnMap = [
+        'idUser' => '`idUser`',
+        'type' => '`type`',
+        'state' => '`state`',
+        'firstName' => '`firstName`',
+        'lastName' => '`lastName`',
+        'class' => '`class`',
+        'birthDate' => '`birthDate`',
+        'birthPlace' => '`birthPlace`',
+        'nationality' => '`nationality`',
+        'stateRegisterNumber' => '`stateRegisterNumber`',
+        'street' => '`street`',
+        'houseNumber' => '`houseNumber`',
+        'municipality' => '`municipality`',
+        'postalCode' => '`postalCode`',
+        'title' => '`title`',
+        'maritalStatus' => '`maritalStatus`',
+        'experienceToTrait' => '`experienceToTrait`',
+        'physicalHealth' => '`physicalHealth`',
+        'mentalHealth' => '`mentalHealth`',
+        'physicalHealthFree' => '`physicalHealthFree`',
+        'mentalHealthFree' => '`mentalHealthFree`',
+        'bankaccount' => '`bankaccount`',
+        'securitiesaccount' => '`securitiesaccount`',
+    ];
     $setParts = [];
 
-    foreach ($columns as $col) {
-        $setParts[] = "$col = :$col";
+    foreach (array_keys($postData) as $field) {
+        if (!isset($columnMap[$field])) {
+            throw new LogicException("Geen vaste kolommapping voor {$field}.");
+        }
+        $setParts[] = $columnMap[$field] . " = :{$field}";
     }
 
     $setSql = implode(', ', $setParts);

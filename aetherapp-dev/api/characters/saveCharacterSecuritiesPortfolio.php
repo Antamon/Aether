@@ -8,8 +8,9 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = aetherReadCharacterJsonRequest('saveCharacterSecuritiesPortfolio');
 $action = trim((string) ($input['action'] ?? ''));
 $idCharacter = (int) ($input['idCharacter'] ?? 0);
 

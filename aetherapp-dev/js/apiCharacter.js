@@ -11,10 +11,10 @@ async function fetchCharacter(id) {
     });
 }
 
-async function fetchCharacterList(role) {
+async function fetchCharacterList() {
     return apiFetchJson("api/characters/getCharacterList.php", {
         method: "POST",
-        body: { role }
+        body: {}
     });
 }
 

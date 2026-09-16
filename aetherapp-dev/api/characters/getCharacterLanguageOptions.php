@@ -8,10 +8,11 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 
-$input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
+$input = aetherReadCharacterJsonRequest('getCharacterLanguageOptions');
 $idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
 
 if ($idCharacter <= 0) {

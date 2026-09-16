@@ -8,11 +8,12 @@ require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterMediaUtils.php';
 require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
 
-$input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
+$input = aetherReadCharacterJsonRequest('deleteCharacterTie');
 
 $idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
 $idTie = isset($input['idTie']) ? (int) $input['idTie'] : 0;

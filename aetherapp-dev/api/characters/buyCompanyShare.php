@@ -10,8 +10,9 @@ require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/companyShareUtils.php';
 require_once __DIR__ . '/../companies/companyUtils.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = aetherReadCharacterJsonRequest('buyCompanyShare');
 
 $idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
 $idCompany = isset($input['idCompany']) ? (int) $input['idCompany'] : 0;

@@ -5,8 +5,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/gossipKnowledgeUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = aetherReadCharacterJsonRequest('revealCharacterActionKnowledge');
 $idCharacter = (int) ($input['idCharacter'] ?? 0);
 $idEvent = (int) ($input['idEvent'] ?? 0);
 $idSourceCharacter = (int) ($input['idSourceCharacter'] ?? 0);

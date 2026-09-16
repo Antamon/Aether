@@ -10,6 +10,7 @@ require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/companyShareUtils.php';
 require_once __DIR__ . '/../companies/companyUtils.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 function getCompanyShareLinkRecord(PDO $pdo, int $idLinkCharacterTrait): ?array
 {
@@ -103,7 +104,7 @@ function upsertCompanyShareLink(PDO $pdo, int $idLinkCharacterTrait, ?int $idCom
     $stmt->execute($params);
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = aetherReadCharacterJsonRequest('saveCompanyShare');
 
 $action = trim((string) ($input['action'] ?? ''));
 $idLinkCharacterTrait = isset($input['idLinkCharacterTrait']) ? (int) $input['idLinkCharacterTrait'] : 0;

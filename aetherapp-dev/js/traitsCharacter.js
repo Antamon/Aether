@@ -372,27 +372,30 @@ function getSelectedProfessionGroup(character) {
 function createProfessionSectorSelector(character, canEdit) {
     const groups = sortProfessionGroups(getProfessionGroups(character));
     if (groups.length === 0) {
-        return `<p class="text-muted">Geen beroepssectoren beschikbaar.</p>`;
+        const empty = document.createElement("p");
+        empty.className = "text-muted";
+        empty.textContent = "Geen beroepssectoren beschikbaar.";
+        return empty;
     }
 
     const idCharacter = Number(character?.id || 0);
     const selectedGroupKey = professionSectorSelectionByCharacter[idCharacter] || "";
-    const disabledAttr = canEdit ? "" : " disabled";
-
-    const options = [
-        `<option value="">Kies sector</option>`,
-        ...groups.map((group) => {
-            const groupKey = getTraitGroupKey(group);
-            const selectedAttr = groupKey === selectedGroupKey ? " selected" : "";
-            return `<option value="${groupKey}"${selectedAttr}>${getTraitGroupName(group)}</option>`;
-        })
-    ].join("");
-
-    return `
-        <select class="form-select mb-2"${disabledAttr} data-role="profession-group-select">
-            ${options}
-        </select>
-    `;
+    const select = document.createElement("select");
+    select.className = "form-select mb-2";
+    select.disabled = !canEdit;
+    select.dataset.role = "profession-group-select";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Kies sector";
+    select.appendChild(placeholder);
+    groups.forEach((group) => {
+        const option = document.createElement("option");
+        option.value = getTraitGroupKey(group);
+        option.textContent = getTraitGroupName(group);
+        option.selected = option.value === selectedGroupKey;
+        select.appendChild(option);
+    });
+    return select;
 }
 
 function renderProfessionOptions(container, group, canEdit) {
@@ -453,9 +456,12 @@ function renderProfessionTraitModule(container, character, canEdit) {
     } else if (selectedGroup) {
         renderProfessionOptions(container, selectedGroup, canEdit);
     } else if (!canEdit) {
-        container.insertAdjacentHTML("beforeend", `<p class="text-muted mb-0">Geen beroep gekozen.</p>`);
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-0";
+        empty.textContent = "Geen beroep gekozen.";
+        container.appendChild(empty);
     } else {
-        container.insertAdjacentHTML("beforeend", createProfessionSectorSelector(character, canEdit));
+        container.appendChild(createProfessionSectorSelector(character, canEdit));
     }
 
     if (typeof initTooltips === "function") {

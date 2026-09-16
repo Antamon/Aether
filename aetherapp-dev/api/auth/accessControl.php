@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../sessionUserBootstrap.php';
+require_once __DIR__ . '/../shared/response.php';
 
 const AETHER_ROLE_PARTICIPANT = 'participant';
 const AETHER_ROLE_DIRECTOR = 'director';
@@ -12,13 +13,6 @@ function aetherStartSession(): void
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
-}
-
-function aetherJsonError(int $status, string $message): never
-{
-    http_response_code($status);
-    echo json_encode(['error' => $message]);
-    exit;
 }
 
 function aetherIsKnownRole(string $role): bool

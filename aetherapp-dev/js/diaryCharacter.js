@@ -267,8 +267,8 @@ function renderDiaryEntry(entry, rights, character) {
     }
 
     btnCancel.addEventListener("click", () => {
-        goalsSection.edit.editor.innerHTML = entry.goals || "";
-        achievementsSection.edit.editor.innerHTML = entry.achievements || "";
+        goalsSection.edit.editor.value = entry.goals || "";
+        achievementsSection.edit.editor.value = entry.achievements || "";
         Object.entries(gossipInputs).forEach(([key, obj]) => {
             obj.input.value = entry[key] || "";
         });
@@ -280,8 +280,8 @@ function renderDiaryEntry(entry, rights, character) {
             idCharacter: character.id,
             idDiary: entry.id,
             idEvent: entry.idEvent,
-            goals: goalsSection.edit.editor.innerHTML,
-            achievements: achievementsSection.edit.editor.innerHTML,
+            goals: goalsSection.edit.editor.value,
+            achievements: achievementsSection.edit.editor.value,
             gossip1: gossipInputs.gossip1?.input.value || "",
             gossip2: gossipInputs.gossip2?.input.value || "",
             gossip3: gossipInputs.gossip3?.input.value || ""
@@ -307,8 +307,8 @@ function renderDiaryEntry(entry, rights, character) {
                 entry.gossip2 = payload.gossip2;
                 entry.gossip3 = payload.gossip3;
             }
-            goalsSection.view.innerHTML = entry.goals || `<span class="text-muted">Geen inhoud.</span>`;
-            achievementsSection.view.innerHTML = entry.achievements || `<span class="text-muted">Geen inhoud.</span>`;
+            setDiaryPlainText(goalsSection.view, entry.goals);
+            setDiaryPlainText(achievementsSection.view, entry.achievements);
             gossipInputs.gossip1.view.textContent = entry.gossip1 || "";
             gossipInputs.gossip2.view.textContent = entry.gossip2 || "";
             gossipInputs.gossip3.view.textContent = entry.gossip3 || "";
@@ -325,7 +325,14 @@ function renderDiaryEntry(entry, rights, character) {
     return wrap;
 }
 
-function createDiarySection(label, html) {
+function setDiaryPlainText(element, value) {
+    const text = String(value || "");
+    element.textContent = text || "Geen inhoud.";
+    element.classList.toggle("text-muted", text === "");
+    element.style.whiteSpace = "pre-wrap";
+}
+
+function createDiarySection(label, text) {
     const wrap = document.createElement("div");
     wrap.className = "mb-3";
 
@@ -335,9 +342,9 @@ function createDiarySection(label, html) {
 
     const body = document.createElement("div");
     body.className = "border rounded p-2 bg-light diary-view-body";
-    body.innerHTML = html || `<span class="text-muted">Geen inhoud.</span>`;
+    setDiaryPlainText(body, text);
 
-    const edit = createRichEditor(html);
+    const edit = createRichEditor(text);
 
     wrap.appendChild(lbl);
     wrap.appendChild(body);
@@ -351,19 +358,19 @@ function createDiarySection(label, html) {
     };
 }
 
-function createRichEditor(initialHtml) {
+function createRichEditor(initialText) {
     const wrap = document.createElement("div");
     wrap.className = "mb-3 d-none";
 
     const toolbar = document.createElement("div");
-    toolbar.className = "btn-group mb-2 flex-wrap";
+    toolbar.className = "btn-group mb-2 flex-wrap d-none";
     toolbar.innerHTML = AETHER_DIARY_TOOLBAR;
 
-    const editor = document.createElement("div");
+    const editor = document.createElement("textarea");
     editor.className = "form-control";
-    editor.contentEditable = "true";
+    editor.rows = 6;
     editor.style.minHeight = "140px";
-    editor.innerHTML = initialHtml || "";
+    editor.value = initialText || "";
 
     toolbar.querySelectorAll("button").forEach(btn => {
         btn.addEventListener("click", () => {

@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 function tableExists(PDO $pdo, string $tableName): bool
 {
@@ -82,8 +83,7 @@ function deleteCharacterLanguageLinks(PDO $pdo, int $idCharacter): void
     $stmt->execute(['idCharacter' => $idCharacter]);
 }
 
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
+$postData = aetherReadCharacterJsonRequest('deleteCharacter');
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();

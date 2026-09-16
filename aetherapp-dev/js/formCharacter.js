@@ -579,44 +579,65 @@ async function renderCharacterStaffSection(character) {
         return;
     }
 
-    const traitList = staffRequirementTraits.length > 0
-        ? `<ul class="list-unstyled mb-3">${staffRequirementTraits
-            .map((trait) => `
-                <li class="d-flex justify-content-between align-items-center gap-3 mb-2">
-                    <span>${trait.name || ""}</span>
-                    <span class="badge text-bg-secondary">${Number(trait.staffRequirements || 0)}</span>
-                </li>
-            `)
-            .join("")}</ul>`
-        : `<p class="text-muted mb-3">Geen traits met personeelsvoorwaarde.</p>`;
-
-    const dependentList = staffTies.length > 0
-        ? `<ul class="list-unstyled mb-0">${staffTies
-            .map((tie) => {
-                const label = [tie.lastName, tie.firstName].filter(Boolean).join(" ").trim() || tie.otherName || "";
-                const isConfirmed = isStaffTieConfirmed(tie);
-                const badgeClass = isConfirmed ? "text-bg-success" : "text-bg-danger";
-                const badgeText = isConfirmed ? "Bevestigd" : "Onbevestigd";
-                return `
-                    <li class="d-flex justify-content-between align-items-center gap-3 mb-2">
-                        <span>${label}</span>
-                        <span class="badge ${badgeClass}">${badgeText}</span>
-                    </li>
-                `;
-            })
-            .join("")}</ul>`
-        : `<p class="text-muted mb-0">Geen dependent, household staff of spouse ties.</p>`;
-
     container.innerHTML = `
         <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
-            <span>Personeelsvoorwaarde: ${requiredStaff}</span>
-            <span>Voldaan: ${confirmedStaffTies.length}</span>
+            <span data-role="staff-required"></span>
+            <span data-role="staff-confirmed"></span>
         </div>
         <h5>Eigenschappen met personeelsvoorwaarden</h5>
-        ${traitList}
+        <div data-role="staff-traits"></div>
         <h5>Gevolg</h5>
-        ${dependentList}
+        <div data-role="staff-ties"></div>
     `;
+    container.querySelector("[data-role='staff-required']").textContent = `Personeelsvoorwaarde: ${requiredStaff}`;
+    container.querySelector("[data-role='staff-confirmed']").textContent = `Voldaan: ${confirmedStaffTies.length}`;
+
+    const traitHost = container.querySelector("[data-role='staff-traits']");
+    if (staffRequirementTraits.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-3";
+        empty.textContent = "Geen traits met personeelsvoorwaarde.";
+        traitHost.appendChild(empty);
+    } else {
+        const list = document.createElement("ul");
+        list.className = "list-unstyled mb-3";
+        staffRequirementTraits.forEach((trait) => {
+            const item = document.createElement("li");
+            item.className = "d-flex justify-content-between align-items-center gap-3 mb-2";
+            const name = document.createElement("span");
+            name.textContent = trait.name || "";
+            const count = document.createElement("span");
+            count.className = "badge text-bg-secondary";
+            count.textContent = String(Number(trait.staffRequirements || 0));
+            item.append(name, count);
+            list.appendChild(item);
+        });
+        traitHost.appendChild(list);
+    }
+
+    const tieHost = container.querySelector("[data-role='staff-ties']");
+    if (staffTies.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-0";
+        empty.textContent = "Geen dependent, household staff of spouse ties.";
+        tieHost.appendChild(empty);
+    } else {
+        const list = document.createElement("ul");
+        list.className = "list-unstyled mb-0";
+        staffTies.forEach((tie) => {
+            const item = document.createElement("li");
+            item.className = "d-flex justify-content-between align-items-center gap-3 mb-2";
+            const name = document.createElement("span");
+            name.textContent = [tie.lastName, tie.firstName].filter(Boolean).join(" ").trim() || tie.otherName || "";
+            const badge = document.createElement("span");
+            const confirmed = isStaffTieConfirmed(tie);
+            badge.className = `badge ${confirmed ? "text-bg-success" : "text-bg-danger"}`;
+            badge.textContent = confirmed ? "Bevestigd" : "Onbevestigd";
+            item.append(name, badge);
+            list.appendChild(item);
+        });
+        tieHost.appendChild(list);
+    }
     syncCharacterLeftInfoSectionsVisibility();
 }
 
@@ -842,48 +863,48 @@ function renderCharacterDetailsReadOnly(character) {
                     <div class="character-sheet-header-fields">
                         <div class="mb-3 row" id="classRow">
                             <div class="col-sm-4">Klasse</div>
-                            <div class="col-sm-8">${character.class || ""}</div>
+                            <div class="col-sm-8" data-character-field="class"></div>
                         </div>
                         <div class="mb-3 row">
                             <div class="col-sm-4">Aanspreking</div>
-                            <div class="col-sm-8">${character.title || ""}</div>
+                            <div class="col-sm-8" data-character-field="title"></div>
                         </div>
                         <div class="mb-3 row">
                             <label class="col-sm-4">Familienaam</label>
-                            <div class="col-sm-8">${character.lastName || ""}</div>
+                            <div class="col-sm-8" data-character-field="lastName"></div>
                         </div>
                         <div class="mb-3 row">
                             <label class="col-sm-4">Voornaam</label>
-                            <div class="col-sm-8">${character.firstName || ""}</div>
+                            <div class="col-sm-8" data-character-field="firstName"></div>
                         </div>
                     </div>
                 </div>
                 <div class="mb-3 row">
                     <div class="col-sm-4">Straat en nummer</div>
-                    <div class="col-sm-6">${streetLine}</div>
+                    <div class="col-sm-6" data-character-field="streetLine"></div>
                 </div>
                 <div class="mb-3 row">
                     <div class="col-sm-4">Postcode en gemeente</div>
-                    <div class="col-sm-6">${cityLine}</div>
+                    <div class="col-sm-6" data-character-field="cityLine"></div>
                 </div>
                 <div class="mb-3 row">
                     <div class="col-sm-4">Burgelijke staat</div>
-                    <div class="col-sm-6">${character.maritalStatus || ""}</div>
+                    <div class="col-sm-6" data-character-field="maritalStatus"></div>
                 </div>
                 <div class="mb-3 row">
                     <div class="col-sm-4">Nationaliteit</div>
-                    <div class="col-sm-6">${character.nationality || ""}</div>
+                    <div class="col-sm-6" data-character-field="nationality"></div>
                 </div>
                 <div class="mb-3 row" id="birthRow">
                     <div class="col-sm-4">Geboren te / op</div>
-                    <div class="col-sm-6">${birthLine}</div>
+                    <div class="col-sm-6" data-character-field="birthLine"></div>
                 </div>
                 ${(character.class === "upper class" || character.class === "middle class" || character.class === "lower class") ? `
                 <div id="leftTraitModuleHost"></div>
                 ` : ""}
                 <div class="mb-3 row">
                     <div class="col-sm-4">Rijksregisternummer</div>
-                    <div class="col-sm-6">${character.stateRegisterNumber || ""}</div>
+                    <div class="col-sm-6" data-character-field="stateRegisterNumber"></div>
                 </div>
             </div>
         </div>
@@ -904,6 +925,23 @@ function renderCharacterDetailsReadOnly(character) {
             </div>
         </div>
     `;
+
+    const textFields = {
+        class: character.class || "",
+        title: character.title || "",
+        lastName: character.lastName || "",
+        firstName: character.firstName || "",
+        streetLine,
+        cityLine,
+        maritalStatus: character.maritalStatus || "",
+        nationality: character.nationality || "",
+        birthLine,
+        stateRegisterNumber: character.stateRegisterNumber || ""
+    };
+    Object.entries(textFields).forEach(([field, value]) => {
+        const element = container.querySelector(`[data-character-field="${field}"]`);
+        if (element) element.textContent = value;
+    });
 }
 
 function applyCharacterEditability(character, canEdit) {

@@ -5,10 +5,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
-// JSON-body inlezen
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
+$postData = aetherReadCharacterJsonRequest('getNewSkills');
 
 $characterId = isset($postData['id']) ? (int) $postData['id'] : 0;
 if ($characterId <= 0) {

@@ -6,29 +6,35 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
 
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
-
-// Fallback: form-encoded POST (apiFetchJson stuurt dit standaard)
-if (empty($postData) || !is_array($postData)) {
-    $postData = $_POST ?? [];
-}
-
-if (empty($postData) || !is_array($postData)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldige character data ontvangen.']);
-    exit;
-}
+$postData = aetherReadCharacterJsonRequest('newCharacter');
 
 try {
     // 2. Bepaal creator
     $creatorId = (int) $currentUser['id'];
 
-    // 3. Standaardwaarden afdwingen
+    // 3. Standaardwaarden en uitsluitend vaste databasevelden afdwingen.
+    $postData = array_merge([
+        'idUser' => 0,
+        'birthPlace' => '',
+        'nationality' => '',
+        'stateRegisterNumber' => '',
+        'street' => '',
+        'houseNumber' => '',
+        'municipality' => '',
+        'postalCode' => '',
+        'title' => '',
+        'maritalStatus' => '',
+        'experienceToTrait' => 0,
+        'physicalHealth' => 0,
+        'mentalHealth' => 0,
+        'physicalHealthFree' => 0,
+        'mentalHealthFree' => 0,
+    ], $postData);
 
     // Audit- en autoriteitsvelden worden uitsluitend server-side bepaald.
     $postData['createdBy'] = $creatorId;
@@ -46,37 +52,16 @@ try {
         $postData['mentalHealthFree'] = 0;
     }
 
-    // birthDate placeholder (vermijd '0000-00-00' in strict mode)
-    if (empty($postData['birthDate'])) {
-        $postData['birthDate'] = '1900-01-01';
-    }
-
-    // (optioneel) minimale sanity check op class / firstName / lastName
-    // Dit is vooral server-side safety; frontend valideert al.
-    if (
-        empty($postData['class']) ||
-        empty($postData['firstName']) ||
-        empty($postData['lastName'])
-    ) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Klasse, voornaam en familienaam zijn verplicht.']);
-        exit;
-    }
-
-    // 4. Dynamische INSERT op basis van de keys in $postData
-    $columns = array_keys($postData);
-    if (empty($columns)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Geen velden om op te slaan.']);
-        exit;
-    }
-
-    $columnList = implode(', ', array_map(static function ($col) {
-        return '`' . str_replace('`', '', $col) . '`';
-    }, $columns));
-    $placeholders = ':' . implode(', :', $columns);
-
-    $sql = "INSERT INTO tblCharacter ($columnList) VALUES ($placeholders)";
+    $sql = 'INSERT INTO tblCharacter
+        (idUser, createdAt, createdBy, type, state, firstName, lastName, `class`, birthDate,
+         birthPlace, nationality, stateRegisterNumber, street, houseNumber, municipality,
+         postalCode, title, maritalStatus, experienceToTrait, physicalHealth, mentalHealth,
+         physicalHealthFree, mentalHealthFree)
+        VALUES
+        (:idUser, :createdAt, :createdBy, :type, :state, :firstName, :lastName, :class, :birthDate,
+         :birthPlace, :nationality, :stateRegisterNumber, :street, :houseNumber, :municipality,
+         :postalCode, :title, :maritalStatus, :experienceToTrait, :physicalHealth, :mentalHealth,
+         :physicalHealthFree, :mentalHealthFree)';
     $stmt = $pdo->prepare($sql);
     $stmt->execute($postData);
 

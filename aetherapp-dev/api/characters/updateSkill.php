@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -15,9 +16,7 @@ try {
     exit;
 }
 
-// JSON body uitlezen
-$inputJson = file_get_contents('php://input');
-$input = json_decode($inputJson, true) ?? [];
+$input = aetherReadCharacterJsonRequest('updateSkill');
 
 $action = $input['action'] ?? null;
 $idSkill = isset($input['idSkill']) ? (int) $input['idSkill'] : 0;

@@ -6,12 +6,14 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/characterMediaUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
-$id = (int) ($_POST['id'] ?? 0);
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldig personage ID.']);
-    exit;
+$postData = aetherValidateCharacterRequestOrFail('uploadCharacterPortrait', $_POST);
+$id = (int) $postData['id'];
+
+$unexpectedFiles = array_diff(array_keys($_FILES), ['portrait']);
+if ($unexpectedFiles !== []) {
+    aetherCharacterValidationFailure(['Onverwacht uploadveld: ' . implode(', ', $unexpectedFiles) . '.']);
 }
 
 if (!isset($_FILES['portrait']) || !is_array($_FILES['portrait'])) {
@@ -25,6 +27,11 @@ if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
     http_response_code(400);
     echo json_encode(['error' => 'Het opladen van het portret is mislukt.']);
     exit;
+}
+
+$uploadSize = (int) ($upload['size'] ?? 0);
+if ($uploadSize <= 0 || $uploadSize > 10 * 1024 * 1024) {
+    aetherCharacterValidationFailure(['Portret moet groter dan 0 en maximaal 10 MB zijn.']);
 }
 
 try {

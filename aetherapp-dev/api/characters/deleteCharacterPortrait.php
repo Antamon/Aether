@@ -6,9 +6,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/characterMediaUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
+$postData = aetherReadCharacterJsonRequest('deleteCharacterPortrait');
 $id = (int) ($postData['id'] ?? 0);
 
 if ($id <= 0) {

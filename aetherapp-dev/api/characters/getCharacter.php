@@ -8,11 +8,12 @@ require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/characterMediaUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $input = aetherReadCharacterJsonRequest('getCharacter');
     $idCharacter = isset($input['id']) ? (int) $input['id'] : 0;
 
     if ($idCharacter <= 0) {

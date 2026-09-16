@@ -367,14 +367,16 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
 
     const viewDiv = document.createElement("div");
     viewDiv.className = "p-3";
-    viewDiv.innerHTML = content || `<span class="text-muted">Geen tekst beschikbaar.</span>`;
+    viewDiv.style.whiteSpace = "pre-wrap";
+    viewDiv.textContent = content || "Geen tekst beschikbaar.";
+    viewDiv.classList.toggle("text-muted", !content);
 
     // Editor
     const editorWrap = document.createElement("div");
     editorWrap.className = "d-none";
 
     const toolbar = document.createElement("div");
-    toolbar.className = "btn-group mb-2 flex-wrap";
+    toolbar.className = "btn-group mb-2 flex-wrap d-none";
     toolbar.innerHTML = `
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold"><i class="fa-solid fa-bold"></i></button>
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic"><i class="fa-solid fa-italic"></i></button>
@@ -388,11 +390,11 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
         <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat"><i class="fa-solid fa-eraser"></i></button>
     `;
 
-    const editor = document.createElement("div");
+    const editor = document.createElement("textarea");
     editor.className = "form-control";
-    editor.contentEditable = "true";
+    editor.rows = 8;
     editor.style.minHeight = "180px";
-    editor.innerHTML = content || "";
+    editor.value = content || "";
 
     const refreshToolbarState = () => {
         const sel = document.getSelection();
@@ -479,17 +481,18 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     }
 
     btnCancel.addEventListener("click", () => {
-        editor.innerHTML = content || "";
+        editor.value = content || "";
         editorWrap.classList.add("d-none");
         viewDiv.classList.remove("d-none");
     });
 
     btnSave.addEventListener("click", async () => {
-        const newContent = editor.innerHTML.trim();
+        const newContent = editor.value.trim();
         try {
             await saveCharacterSection(character.id, sectionKey, newContent);
             // update view
-            viewDiv.innerHTML = newContent || `<span class="text-muted">Geen tekst beschikbaar.</span>`;
+            viewDiv.textContent = newContent || "Geen tekst beschikbaar.";
+            viewDiv.classList.toggle("text-muted", !newContent);
             editorWrap.classList.add("d-none");
             viewDiv.classList.remove("d-none");
         } catch (err) {

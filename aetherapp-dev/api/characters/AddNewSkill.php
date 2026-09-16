@@ -5,8 +5,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
+require_once __DIR__ . '/characterRequestValidation.php';
+$postData = aetherReadCharacterJsonRequest('AddNewSkill');
 
 $idCharacter = isset($postData['idCharacter']) ? (int) $postData['idCharacter'] : 0;
 $idSkill = isset($postData['idSkill']) ? (int) $postData['idSkill'] : 0;

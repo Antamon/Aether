@@ -713,7 +713,7 @@ function renderCharacterSidebarList() {
 
 async function characterList() {
     try {
-        const data = await fetchCharacterList(currentUser["role"]);
+        const data = await fetchCharacterList();
 
         if (!data) return;
 

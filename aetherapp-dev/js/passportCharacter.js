@@ -87,12 +87,7 @@ function getPassportPageCharacterName(character) {
 }
 
 function getPassportTextContent(value) {
-    const text = String(value ?? "");
-    if (!text) return "";
-
-    const temp = document.createElement("div");
-    temp.innerHTML = text;
-    return temp.textContent || temp.innerText || "";
+    return String(value ?? "");
 }
 
 function normalizePassportPdfText(value) {
@@ -969,12 +964,21 @@ function renderPassportPreview(container, character) {
     footer.style.bottom = "4%";
     footer.style.fontSize = "0.48rem";
     footer.style.lineHeight = "1.15";
-    footer.innerHTML = `
-        <div style="font-weight:700;font-size:0.78rem;margin-bottom:0.15rem;">N° ${String(character?.stateRegisterNumber || "").trim() || "XXXX-XXXX"}</div>
-        <div>Op iedere vervalsing van dit paspoort staat correctionele straf.</div>
-        <div>Toute falsification de ce passeport est passible de sanctions correctionnelles.</div>
-        <div>Any falsification of this passport is subject to criminal penalties.</div>
-    `;
+    const passportNumber = document.createElement("div");
+    passportNumber.style.fontWeight = "700";
+    passportNumber.style.fontSize = "0.78rem";
+    passportNumber.style.marginBottom = "0.15rem";
+    passportNumber.textContent = `N° ${String(character?.stateRegisterNumber || "").trim() || "XXXX-XXXX"}`;
+    footer.appendChild(passportNumber);
+    [
+        "Op iedere vervalsing van dit paspoort staat correctionele straf.",
+        "Toute falsification de ce passeport est passible de sanctions correctionnelles.",
+        "Any falsification of this passport is subject to criminal penalties."
+    ].forEach((line) => {
+        const item = document.createElement("div");
+        item.textContent = line;
+        footer.appendChild(item);
+    });
     previewOuter.appendChild(footer);
 
     container.appendChild(previewOuter);

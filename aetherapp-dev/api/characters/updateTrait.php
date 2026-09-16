@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterRequestValidation.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -23,7 +24,7 @@ try {
     aetherRequireCsrfToken();
     $currentUserRole = $currentUser['role'];
     $canOverspendStatusPoints = isPrivilegedUserRole($currentUserRole);
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $input = aetherReadCharacterJsonRequest('updateTrait');
 
     $action = (string) ($input['action'] ?? '');
     $idCharacter = (int) ($input['idCharacter'] ?? 0);
