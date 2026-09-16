@@ -17,7 +17,7 @@ if ($companyName === '') {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo);
+    requirePrivilegedCompanyAccess($pdo, true);
 
     $foundationDate = getDefaultCompanyFoundationDate();
 

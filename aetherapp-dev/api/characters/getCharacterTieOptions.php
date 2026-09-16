@@ -6,19 +6,10 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/economyUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
-
-$userId = (int) $_SESSION['user']['id'];
-// Rol ophalen uit DB zodat we niet afhankelijk zijn van sessie-rol
-$stmtRole = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
-$stmtRole->execute([':id' => $userId]);
-$roleRow = $stmtRole->fetch(PDO::FETCH_ASSOC);
-$role = $roleRow['role'] ?? ($_SESSION['user']['role'] ?? 'participant');
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+$role = $currentUser['role'];
 
 try {
     if ($role === 'administrator' || $role === 'director') {

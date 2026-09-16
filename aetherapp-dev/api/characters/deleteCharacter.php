@@ -5,6 +5,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 function tableExists(PDO $pdo, string $tableName): bool
 {
@@ -84,11 +85,8 @@ function deleteCharacterLanguageLinks(PDO $pdo, int $idCharacter): void
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Niet ingelogd.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 $idCharacter = isset($postData['id']) ? (int) $postData['id'] : 0;
 if ($idCharacter <= 0) {
@@ -97,17 +95,10 @@ if ($idCharacter <= 0) {
     exit;
 }
 
-$sessionUserId = (int) $_SESSION['user']['id'];
-$stmtUser = $pdo->prepare('SELECT role FROM tblUser WHERE id = :id');
-$stmtUser->execute(['id' => $sessionUserId]);
-$userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
-$sessionRole = (string) ($userRow['role'] ?? ($_SESSION['user']['role'] ?? 'participant'));
-$isAdmin = $sessionRole === 'administrator' || $sessionRole === 'director';
-
 try {
     $character = dbOne(
         $pdo,
-        'SELECT id, idUser, firstName, lastName
+        'SELECT id, idUser, type, state, firstName, lastName
            FROM tblCharacter
           WHERE id = :id',
         ['id' => $idCharacter]
@@ -119,11 +110,7 @@ try {
         exit;
     }
 
-    $isOwnerPlayer = $sessionRole === 'participant'
-        && $character['type'] === 'player'
-        && (int) $character['idUser'] === $sessionUserId;
-
-    if (!$isAdmin && !$isOwnerPlayer) {
+    if (!aetherCanEditCharacter($currentUser, $character)) {
         http_response_code(403);
         echo json_encode(['error' => 'Geen toestemming om dit personage te verwijderen.']);
         exit;

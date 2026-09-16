@@ -5,12 +5,9 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
 $idCharacter = isset($input['idCharacter']) ? (int)$input['idCharacter'] : 0;
@@ -22,6 +19,8 @@ if ($idCharacter <= 0) {
 }
 
 try {
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'view');
+
     // Entries
     $sql = "
         SELECT d.*, e.title AS eventTitle, e.dateStart, e.dateEnd

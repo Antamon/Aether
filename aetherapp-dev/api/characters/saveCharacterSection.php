@@ -5,12 +5,10 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
 
@@ -32,38 +30,8 @@ if ($idCharacter <= 0 || !in_array($section, $allowedSections, true)) {
 }
 
 try {
-    // Character info ophalen
-    $stmtChar = $pdo->prepare("SELECT idUser, type FROM tblCharacter WHERE id = :id");
-    $stmtChar->execute([':id' => $idCharacter]);
-    $character = $stmtChar->fetch(PDO::FETCH_ASSOC);
-
-    if (!$character) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Character niet gevonden.']);
-        exit;
-    }
-
-    $userId = (int) $_SESSION['user']['id'];
-    // Rol uit DB ophalen (zelfde bron als getCurrentUser) zodat permissies kloppen
-    $stmtUser = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
-    $stmtUser->execute([':id' => $userId]);
-    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
-
-    $roleFromDb = $userRow['role'] ?? null;
-    $role   = $roleFromDb ?: ($_SESSION['user']['role'] ?? 'participant');
-
-    $isAdmin = ($role === 'administrator' || $role === 'director');
-    $isOwnerPlayer = (
-        $role === 'participant' &&
-        $character['type'] === 'player' &&
-        (int)$character['idUser'] === $userId
-    );
-
-    if (!$isAdmin && !$isOwnerPlayer) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen rechten om deze sectie te wijzigen.']);
-        exit;
-    }
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    $userId = (int) $currentUser['id'];
 
     $sql = "
         INSERT INTO tblCharacterSection (idCharacter, section, content, updatedAt, updatedBy)

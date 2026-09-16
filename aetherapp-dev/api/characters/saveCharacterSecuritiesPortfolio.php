@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/economyUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $action = trim((string) ($input['action'] ?? ''));
@@ -26,14 +27,10 @@ if (!in_array($action, ['save_settings', 'deposit', 'manual_withdrawal', 'reroll
 
 try {
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
-    $currentUserId = getCurrentUserId();
-
-    if ($currentUserId <= 0) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Not authenticated']);
-        exit;
-    }
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    $currentUserRole = $currentUser['role'];
+    $currentUserId = (int) $currentUser['id'];
 
     $character = dbOne(
         $pdo,

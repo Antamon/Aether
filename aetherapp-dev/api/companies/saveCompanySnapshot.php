@@ -222,7 +222,7 @@ if (!in_array($action, ['create', 'update', 'recalculate', 'apply', 'delete'], t
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo);
+    requirePrivilegedCompanyAccess($pdo, true);
 
     $company = dbOne(
         $pdo,

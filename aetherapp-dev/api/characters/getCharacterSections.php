@@ -5,6 +5,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
 
@@ -16,6 +17,9 @@ if ($idCharacter <= 0) {
 }
 
 try {
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'view');
+
     $stmt = $pdo->prepare("
         SELECT section, content
         FROM tblCharacterSection

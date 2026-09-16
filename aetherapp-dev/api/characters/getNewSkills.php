@@ -4,24 +4,24 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 // JSON-body inlezen
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
 
 $characterId = isset($postData['id']) ? (int) $postData['id'] : 0;
-$role = $postData['role'] ?? 'participant';   // nieuw
-
 if ($characterId <= 0) {
     http_response_code(400);
     echo json_encode(['error' => 'Ongeldig character ID.']);
     exit;
 }
 
-// Bepaal of deze request vanuit een admin/director komt
-$isAdmin = in_array($role, ['administrator', 'director'], true);
-
 try {
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCharacterAccess($pdo, $currentUser, $characterId, 'edit');
+    $isAdmin = aetherIsPrivilegedRole($currentUser['role']);
+
     // Basis-SELECT
     $sql = '
         SELECT id, name

@@ -17,7 +17,7 @@ if ($id <= 0) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo);
+    requirePrivilegedCompanyAccess($pdo, true);
 
     $company = dbOne(
         $pdo,

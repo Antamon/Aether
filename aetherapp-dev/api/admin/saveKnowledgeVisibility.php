@@ -18,7 +18,7 @@ if ($idEvent <= 0 || $idCharacter <= 0 || $isVisible === null) {
 
 try {
     $pdo = getPDO();
-    $user = requirePrivilegedAdminAccess($pdo);
+    $user = requirePrivilegedAdminAccess($pdo, true);
 
     setGossipVisibilityState($pdo, $idEvent, $idCharacter, $isVisible, (int) ($user['idUser'] ?? 0));
 

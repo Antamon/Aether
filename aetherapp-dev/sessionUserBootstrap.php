@@ -91,6 +91,7 @@ function aetherHydrateSessionUserFromWordPress(): bool
         $lastName = (string) $wpUser->last_name;
     }
 
+    session_regenerate_id(true);
     $_SESSION['user'] = [
         'id' => $wpUserId,
         'username' => (string) ($wpUser->user_login ?? ''),

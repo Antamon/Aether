@@ -5,13 +5,10 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-// 1. Moet ingelogd zijn
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
@@ -29,25 +26,24 @@ if (empty($postData) || !is_array($postData)) {
 
 try {
     // 2. Bepaal creator
-    $creatorId = (int) $_SESSION['user']['id'];
+    $creatorId = (int) $currentUser['id'];
 
     // 3. Standaardwaarden afdwingen
 
-    // createdBy: altijd huidige user, tenzij je expliciet iets anders wil toelaten
-    if (empty($postData['createdBy'])) {
-        $postData['createdBy'] = $creatorId;
-    }
+    // Audit- en autoriteitsvelden worden uitsluitend server-side bepaald.
+    $postData['createdBy'] = $creatorId;
 
     // createdAt: huidige timestamp als er niets wordt meegestuurd
-    if (empty($postData['createdAt'])) {
-        // eventueel expliciet timezone zetten als nodig
-        // date_default_timezone_set('Europe/Brussels');
-        $postData['createdAt'] = date('Y-m-d H:i:s');
-    }
+    $postData['createdAt'] = date('Y-m-d H:i:s');
 
     // state: bij creatie altijd 'draft', tenzij je bewust een andere state toelaat
-    if (empty($postData['state'])) {
-        $postData['state'] = 'draft';
+    $postData['state'] = 'draft';
+
+    if (!aetherIsPrivilegedRole($currentUser['role'])) {
+        $postData['idUser'] = $creatorId;
+        $postData['type'] = 'player';
+        $postData['physicalHealthFree'] = 0;
+        $postData['mentalHealthFree'] = 0;
     }
 
     // birthDate placeholder (vermijd '0000-00-00' in strict mode)

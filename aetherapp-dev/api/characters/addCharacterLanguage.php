@@ -7,12 +7,10 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
 $idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
@@ -48,8 +46,8 @@ try {
         exit;
     }
 
-    $currentUserId = (int) ($_SESSION['user']['id'] ?? 0);
-    $currentUserRole = getCurrentUserRole($pdo);
+    $currentUserId = (int) $currentUser['id'];
+    $currentUserRole = $currentUser['role'];
     if (!canCurrentUserManageCharacterLanguages($character, $currentUserRole, $currentUserId)) {
         http_response_code(403);
         echo json_encode(['error' => 'Geen rechten om talen te beheren.']);

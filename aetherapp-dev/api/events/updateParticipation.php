@@ -5,6 +5,10 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+
+$currentUser = aetherRequirePrivilegedUser($pdo);
+aetherRequireCsrfToken();
 
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
@@ -13,9 +17,9 @@ $idEvent = isset($postData['idEvent']) ? (int) $postData['idEvent'] : 0;
 $idUser = isset($postData['idUser']) ? (int) $postData['idUser'] : 0;
 $participation = $postData['participation'] ?? null;
 
-// Als idUser niet is opgegeven of 0 is, gebruik de huidige sessie-gebruiker
-if ($idUser <= 0 && isset($_SESSION['user']['id'])) {
-    $idUser = (int) $_SESSION['user']['id'];
+// Zonder expliciete keuze bewerkt een beheerder de eigen deelname.
+if ($idUser <= 0) {
+    $idUser = (int) $currentUser['id'];
 }
 
 if ($idEvent <= 0 || $idUser <= 0 || !is_bool($participation)) {

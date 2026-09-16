@@ -30,7 +30,7 @@ if ($name === '') {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo);
+    requirePrivilegedAdminAccess($pdo, true);
 
     $existingSkill = dbOne(
         $pdo,

@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/economyUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 function fetchCharacterAddressForSync(PDO $pdo, int $idCharacter): ?array
 {
@@ -135,6 +136,8 @@ if (empty($postData)) {
 
 try {
     $pdo = getPDO();
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
     $currentCharacter = dbOne(
         $pdo,
         'SELECT id, `class`, type, state, idUser, experienceToTrait, physicalHealth, mentalHealth, physicalHealthFree, mentalHealthFree, securitiesaccount
@@ -149,6 +152,24 @@ try {
         exit;
     }
 
+    if (!aetherCanEditCharacter($currentUser, $currentCharacter)) {
+        aetherJsonError(403, 'Je hebt geen rechten om dit personage te wijzigen.');
+    }
+
+    $authorityFields = ['idUser', 'type', 'state'];
+    foreach ($authorityFields as $authorityField) {
+        if (array_key_exists($authorityField, $postData)
+            && !aetherCanChangeCharacterAuthorityField($currentUser)) {
+            aetherJsonError(403, 'Je hebt geen rechten om eigenaar, type of status van dit personage te wijzigen.');
+        }
+    }
+
+    foreach (['createdBy', 'createdAt'] as $auditField) {
+        if (array_key_exists($auditField, $postData)) {
+            aetherJsonError(403, 'Auditvelden kunnen niet via deze API worden gewijzigd.');
+        }
+    }
+
     $shouldPruneClassTraits = false;
     if (array_key_exists('class', $postData)) {
         $shouldPruneClassTraits = (string) ($currentCharacter['class'] ?? '') !== (string) $postData['class'];
@@ -156,7 +177,7 @@ try {
 
     if (array_key_exists('class', $postData)) {
         $currentUserRole = getCurrentUserRole($pdo);
-        $currentUserId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
+        $currentUserId = (int) $currentUser['id'];
 
         $canEditClass = isPrivilegedUserRole($currentUserRole) || (
             $currentUserRole === 'participant'
@@ -215,7 +236,7 @@ try {
 
     if ($containsHealthUpdate) {
         $currentUserRole = getCurrentUserRole($pdo);
-        $currentUserId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
+        $currentUserId = (int) $currentUser['id'];
 
         $canEditPaidHealth = isPrivilegedUserRole($currentUserRole) || (
             $currentUserRole === 'participant'

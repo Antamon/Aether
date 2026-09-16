@@ -4,37 +4,17 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 function getCurrentUserRole(PDO $pdo): string
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    $sessionRole = $_SESSION['user']['role'] ?? 'participant';
-    $userId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
-
-    if ($userId <= 0) {
-        return $sessionRole;
-    }
-
-    try {
-        $stmt = $pdo->prepare('SELECT role FROM tblUser WHERE id = :id');
-        $stmt->execute(['id' => $userId]);
-        $roleFromDb = $stmt->fetchColumn();
-        if (is_string($roleFromDb) && $roleFromDb !== '') {
-            return $roleFromDb;
-        }
-    } catch (Throwable $e) {
-        // Fallback to session role below.
-    }
-
-    return $sessionRole;
+    $user = aetherLoadAuthenticatedUser($pdo);
+    return $user !== null ? $user['role'] : '';
 }
 
 function isPrivilegedUserRole(string $role): bool
 {
-    return $role === 'administrator' || $role === 'director';
+    return aetherIsPrivilegedRole($role);
 }
 
 function getVisibleAvailableStatusPoints(array $pointSummary, string $role): int

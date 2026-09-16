@@ -15,6 +15,10 @@ async function apiFetchJson(endpoint, options = {}) {
         }
     };
 
+    if (method.toUpperCase() !== "GET" && window.AETHER_CSRF_TOKEN) {
+        fetchOptions.headers["X-CSRF-Token"] = window.AETHER_CSRF_TOKEN;
+    }
+
     if (body !== null) {
         fetchOptions.headers["Content-Type"] = "application/json";
         fetchOptions.body = JSON.stringify(body);
@@ -35,7 +39,11 @@ async function apiFetchJson(endpoint, options = {}) {
 
     // Probeer JSON te parsen – als dat niet kan, geven we null terug
     try {
-        return await response.json();
+        const data = await response.json();
+        if (data && typeof data.csrfToken === "string") {
+            window.AETHER_CSRF_TOKEN = data.csrfToken;
+        }
+        return data;
     } catch (e) {
         return null;
     }
@@ -43,6 +51,7 @@ async function apiFetchJson(endpoint, options = {}) {
 
 // Globale plaats om basis-userinfo op te slaan (optioneel bruikbaar in andere files)
 window.AETHER_CURRENT_USER = null;
+window.AETHER_CSRF_TOKEN = null;
 
 function userHasPrivilegedRole(user) {
     const role = user?.role || "";
@@ -73,6 +82,9 @@ async function checkLoginOnLoad() {
         }
 
         window.AETHER_CURRENT_USER = data.user;
+        if (typeof data.csrfToken === "string") {
+            window.AETHER_CSRF_TOKEN = data.csrfToken;
+        }
 
         const navbarName = document.getElementById("navbarName");
         if (navbarName) {

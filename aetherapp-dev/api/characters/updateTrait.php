@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/traitUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -18,7 +19,9 @@ function canCurrentUserManageTrait(array $trait, string $currentUserRole): bool
 
 try {
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    $currentUserRole = $currentUser['role'];
     $canOverspendStatusPoints = isPrivilegedUserRole($currentUserRole);
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -45,13 +48,7 @@ try {
         exit;
     }
 
-    $currentUserId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
-    $canEditTraits = $canOverspendStatusPoints || (
-        $currentUserRole === 'participant' &&
-        (string) ($character['type'] ?? '') === 'player' &&
-        (string) ($character['state'] ?? '') === 'draft' &&
-        (int) ($character['idUser'] ?? 0) === $currentUserId
-    );
+    $canEditTraits = aetherCanEditDraftCharacter($currentUser, $character);
 
     if (!$canEditTraits) {
         http_response_code(403);

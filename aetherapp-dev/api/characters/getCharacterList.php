@@ -6,28 +6,17 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 // JSON-body inlezen (optioneel)
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
 
-// Rol bepalen:
-// - voorkeursbron = sessie (veilig)
-// - indien de frontend expliciet een rol doorstuurt, gebruiken we die als fallback
-$userRole = $postData['role'] ?? null;
-if (isset($_SESSION['user']['role']) && $_SESSION['user']['role'] !== '') {
-    $userRole = $_SESSION['user']['role'];
-}
-
-// Ingelogde gebruiker bepalen
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
-$idUser = (int) $_SESSION['user']['id'];
-
 try {
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    $userRole = $currentUser['role'];
+    $idUser = (int) $currentUser['id'];
+
     // Director / administrator ziet alle personages
     if ($userRole === 'director' || $userRole === 'administrator') {
         $characters = dbAll(

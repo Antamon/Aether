@@ -16,7 +16,7 @@ if ($idActionUse <= 0) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo);
+    requirePrivilegedAdminAccess($pdo, true);
 
     deleteAdminActionUse($pdo, $idActionUse);
 

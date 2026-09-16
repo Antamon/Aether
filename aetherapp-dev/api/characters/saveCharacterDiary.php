@@ -5,12 +5,10 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
 
@@ -41,26 +39,10 @@ try {
         exit;
     }
 
-    $userId = (int) $_SESSION['user']['id'];
-    $stmtUser = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
-    $stmtUser->execute([':id' => $userId]);
-    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
-    $role = $userRow['role'] ?? ($_SESSION['user']['role'] ?? 'participant');
-
-    $isAdmin = ($role === 'administrator' || $role === 'director');
-    $isOwnerPlayer = (
-        $role === 'participant' &&
-        $character['type'] === 'player' &&
-        (int)$character['idUser'] === $userId
-    );
-    $isOwnerExtra = (
-        $role === 'participant' &&
-        $character['type'] === 'extra' &&
-        (int)$character['idUser'] === $userId
-    );
-
-    $canEditAll = $isAdmin || $isOwnerPlayer;
-    $canEditAchievementsOnly = (!$canEditAll && $isOwnerExtra);
+    $userId = (int) $currentUser['id'];
+    $canEditAll = aetherCanEditCharacter($currentUser, $character);
+    $canEditAchievementsOnly = !$canEditAll
+        && aetherCanEditCharacterDiaryAchievements($currentUser, $character);
 
     if (!$canEditAll && !$canEditAchievementsOnly) {
         http_response_code(403);

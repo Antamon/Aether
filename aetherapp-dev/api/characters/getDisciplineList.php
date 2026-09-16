@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 header('Content-Type: application/json; charset=utf-8');
 
 try {
@@ -23,6 +24,10 @@ if ($idSkill <= 0 || $idCharacter <= 0) {
 }
 
 try {
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
+
     // Alle disciplines voor deze skill die de speler NOG NIET heeft
     $sql = "
         SELECT ss.id, ss.name

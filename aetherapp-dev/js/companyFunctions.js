@@ -710,6 +710,9 @@ async function uploadCompanyLogo(file) {
     try {
         const response = await fetch("api/companies/uploadCompanyLogo.php", {
             method: "POST",
+            headers: {
+                "X-CSRF-Token": window.AETHER_CSRF_TOKEN || ""
+            },
             body: formData
         });
 

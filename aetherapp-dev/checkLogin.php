@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require 'db.php';
 require_once 'sessionUserBootstrap.php';
+require_once __DIR__ . '/api/auth/accessControl.php';
 
 // 1. Is er een Aether-sessie? Zo niet, probeer rechtstreeks uit WordPress te hydrateren.
 if (!isset($_SESSION['user']['id'])) {
@@ -17,67 +18,40 @@ if (!isset($_SESSION['user']['id'])) {
     exit;
 }
 
-// 2. Basisgegevens uit de sessie ophalen
-$id = (int) ($_SESSION['user']['id'] ?? 0);
-$username = $_SESSION['user']['username'] ?? '';
-$firstName = $_SESSION['user']['firstName'] ?? '';
-$lastName = $_SESSION['user']['lastName'] ?? '';
-$role = 'participant'; // default als er nog geen record is in tblUser
-
-if ($id <= 0) {
-    echo json_encode(['status' => 'redirect']);
-    exit;
-}
-
 try {
-    // 3. Bestaat de gebruiker al in tblUser?
-    $existing = dbOne(
-        $pdo,
-        'SELECT role
-           FROM tblUser
-          WHERE id = :id',
-        ['id' => $id]
-    );
-
-    if ($existing === null) {
-        // 4a. Nieuwe gebruiker aanmaken
-        $sql = 'INSERT INTO tblUser (id, username, firstName, lastName, role)
-                VALUES (:id, :username, :firstName, :lastName, :role)';
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            'id' => $id,
-            'username' => $username,
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-            'role' => $role, // blijft "participant" tot je het aanpast in de DB
-        ]);
-    } else {
-        // 4b. Bestaande gebruiker bijwerken, maar rol behouden
-        $role = $existing['role'];
-
-        $sql = 'UPDATE tblUser
-                   SET username  = :username,
-                       firstName = :firstName,
-                       lastName  = :lastName
-                 WHERE id = :id';
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            'id' => $id,
-            'username' => $username,
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-        ]);
+    $user = aetherLoadAuthenticatedUser($pdo, true);
+    if ($user === null) {
+        echo json_encode(['status' => 'redirect']);
+        exit;
     }
+
+    // Houd profielgegevens gelijk met de vertrouwde WordPress-sessie; de databankrol blijft behouden.
+    $profile = [
+        'id' => $user['id'],
+        'username' => (string) ($_SESSION['user']['username'] ?? $user['username'] ?? ''),
+        'firstName' => (string) ($_SESSION['user']['firstName'] ?? $user['firstName'] ?? ''),
+        'lastName' => (string) ($_SESSION['user']['lastName'] ?? $user['lastName'] ?? ''),
+    ];
+    $stmt = $pdo->prepare(
+        'UPDATE tblUser
+            SET username = :username,
+                firstName = :firstName,
+                lastName = :lastName
+          WHERE id = :id'
+    );
+    $stmt->execute($profile);
+
+    $firstName = $profile['firstName'];
+    $lastName = $profile['lastName'];
 
     // 5. Beperkte data teruggeven aan de frontend
     echo json_encode([
         'status' => 'ok',
         'user' => [
             'displayName' => trim($firstName . ' ' . $lastName),
-            'role' => $role,
+            'role' => $user['role'],
         ],
+        'csrfToken' => aetherGetCsrfToken(),
     ]);
 
 } catch (Throwable $e) {

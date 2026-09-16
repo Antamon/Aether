@@ -27,7 +27,7 @@ if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo);
+    requirePrivilegedCompanyAccess($pdo, true);
 
     $company = dbOne(
         $pdo,

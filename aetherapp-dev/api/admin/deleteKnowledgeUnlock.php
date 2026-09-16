@@ -18,7 +18,7 @@ if ($idEvent <= 0 || $idSourceCharacter <= 0 || $idViewerCharacter <= 0) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo);
+    requirePrivilegedAdminAccess($pdo, true);
 
     $pdo->beginTransaction();
     deleteGossipUnlockState($pdo, $idViewerCharacter, $idEvent, $idSourceCharacter);

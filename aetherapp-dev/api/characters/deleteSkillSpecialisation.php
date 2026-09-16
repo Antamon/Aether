@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once "../../db.php";
+require_once __DIR__ . '/../auth/accessControl.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -15,6 +16,11 @@ try {
     if ($idSkill <= 0 || $idCharacter <= 0 || $idSpec <= 0) {
         throw new RuntimeException("Ongeldige parameters.");
     }
+
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
     $sqlDel = "
         DELETE FROM tblCharacterSpecialisation

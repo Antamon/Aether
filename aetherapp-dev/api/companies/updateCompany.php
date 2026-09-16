@@ -26,7 +26,7 @@ if (empty($postData)) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo);
+    requirePrivilegedCompanyAccess($pdo, true);
 
     $currentCompany = dbOne(
         $pdo,

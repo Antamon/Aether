@@ -4,25 +4,22 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../characters/characterPointUtils.php';
 require_once __DIR__ . '/../characters/economyUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-function requirePrivilegedCompanyAccess(PDO $pdo): void
+function requirePrivilegedCompanyAccess(PDO $pdo, bool $requireCsrf = false): array
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    if (!isset($_SESSION['user']['id'])) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Geen gebruiker in sessie.']);
-        exit;
-    }
-
-    $currentUserRole = getCurrentUserRole($pdo);
-    if (!isPrivilegedUserRole($currentUserRole)) {
+    $user = aetherRequireAuthenticatedUser($pdo);
+    if (!aetherIsPrivilegedRole($user['role'])) {
         http_response_code(403);
         echo json_encode(['error' => 'Je hebt geen rechten om bedrijven te beheren.']);
         exit;
     }
+
+    if ($requireCsrf) {
+        aetherRequireCsrfToken();
+    }
+
+    return $user;
 }
 
 function normalizeCompanySliderValue(mixed $value): int

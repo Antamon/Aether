@@ -87,7 +87,7 @@ if (!is_array($personnel)) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo);
+    requirePrivilegedCompanyAccess($pdo, true);
 
     $company = dbOne(
         $pdo,

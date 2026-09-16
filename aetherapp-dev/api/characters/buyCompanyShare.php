@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/economyUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/companyShareUtils.php';
 require_once __DIR__ . '/../companies/companyUtils.php';
 
@@ -24,14 +25,10 @@ if ($idCharacter <= 0 || $idCompany <= 0 || ($shareClass !== 'A' && $shareClass 
 
 try {
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
-    $currentUserId = getCurrentUserId();
-
-    if ($currentUserId <= 0) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Not authenticated']);
-        exit;
-    }
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    $currentUserRole = $currentUser['role'];
+    $currentUserId = (int) $currentUser['id'];
 
     $character = dbOne(
         $pdo,

@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require 'db.php';
 require_once 'sessionUserBootstrap.php';
+require_once __DIR__ . '/api/auth/accessControl.php';
 
 // Check of er een ingelogde gebruiker is
 if (!isset($_SESSION['user']['id'])) {
@@ -18,29 +19,21 @@ if (!isset($_SESSION['user']['id'])) {
     exit;
 }
 
-$userId = (int) $_SESSION['user']['id'];
-
 try {
-    // Haal de gebruiker op uit de Aether-databank
-    $user = dbOne(
-        $pdo,
-        'SELECT id, firstName, lastName, role
-           FROM tblUser
-          WHERE id = :id',
-        ['id' => $userId]
-    );
-
+    $user = aetherLoadAuthenticatedUser($pdo, true);
     if ($user === null) {
-        // Safety fallback: als de user (nog) niet in tblUser staat
-        $user = [
-            'id' => $userId,
-            'firstName' => $_SESSION['user']['firstName'] ?? '',
-            'lastName' => $_SESSION['user']['lastName'] ?? '',
-            'role' => $_SESSION['user']['role'] ?? 'participant', // veilig default
-        ];
+        http_response_code(401);
+        echo json_encode(['status' => 'redirect']);
+        exit;
     }
 
-    echo json_encode($user);
+    echo json_encode([
+        'id' => $user['id'],
+        'firstName' => $user['firstName'],
+        'lastName' => $user['lastName'],
+        'role' => $user['role'],
+        'csrfToken' => aetherGetCsrfToken(),
+    ]);
 
 } catch (Throwable $e) {
     http_response_code(500);

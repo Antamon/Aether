@@ -16,7 +16,7 @@ if ($idActionUse <= 0) {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo);
+    requirePrivilegedAdminAccess($pdo, true);
 
     $action = updateAdminActionUse($pdo, $idActionUse, $input);
     if ($action === null) {

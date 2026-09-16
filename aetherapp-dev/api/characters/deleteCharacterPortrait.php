@@ -5,6 +5,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
@@ -18,8 +19,10 @@ if ($id <= 0) {
 
 try {
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
-    $currentUserId = getCurrentUserId();
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    $currentUserRole = $currentUser['role'];
+    $currentUserId = (int) $currentUser['id'];
 
     $character = dbOne(
         $pdo,

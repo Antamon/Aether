@@ -4,6 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true) ?? [];
 
@@ -18,6 +19,11 @@ if ($idCharacter <= 0 || $idSkill <= 0) {
 }
 
 try {
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
+
     // 1. Link toevoegen in tblLinkCharacterSkill
     $sql = 'INSERT INTO tblLinkCharacterSkill (idCharacter, idSkill, level)
             VALUES (:idCharacter, :idSkill, :level)';

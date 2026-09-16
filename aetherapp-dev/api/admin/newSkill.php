@@ -16,7 +16,7 @@ if ($name === '') {
 
 try {
     $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo);
+    requirePrivilegedAdminAccess($pdo, true);
 
     $existing = dbOne(
         $pdo,

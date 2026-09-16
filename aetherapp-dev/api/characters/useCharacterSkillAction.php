@@ -4,6 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/characterSkillActionUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $idCharacter = (int) ($input['idCharacter'] ?? 0);
@@ -21,8 +22,10 @@ if ($idCharacter <= 0 || $idEvent <= 0 || $idSkill <= 0 || $actionCode === '') {
 
 try {
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
-    $currentUserId = getCurrentUserId();
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    $currentUserRole = $currentUser['role'];
+    $currentUserId = (int) $currentUser['id'];
 
     $character = dbOne($pdo, 'SELECT * FROM tblCharacter WHERE id = :idCharacter', ['idCharacter' => $idCharacter]);
     if ($character === null) {

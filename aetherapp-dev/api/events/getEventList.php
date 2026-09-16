@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 try {
     $pdo = getPDO();
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Databaseverbinding mislukt.']);
@@ -18,16 +20,15 @@ try {
 $inputJson = file_get_contents('php://input');
 $input = json_decode($inputJson, true) ?? [];
 
-$idUser = isset($input['idUser']) ? (int) $input['idUser'] : 0;
+$requestedUserId = isset($input['idUser']) ? (int) $input['idUser'] : 0;
+$idUser = (int) $currentUser['id'];
 
-// idUser = 0  => huidige ingelogde gebruiker uit de sessie
-if ($idUser === 0) {
-    if (!isset($_SESSION['user']['id'])) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Geen gebruiker in sessie.']);
-        exit;
+// Alleen beheerrollen mogen de deelname van een andere gebruiker bekijken.
+if ($requestedUserId > 0 && $requestedUserId !== $idUser) {
+    if (!aetherIsPrivilegedRole($currentUser['role'])) {
+        aetherJsonError(403, 'Je hebt geen rechten om deelnames van deze gebruiker te bekijken.');
     }
-    $idUser = (int) $_SESSION['user']['id'];
+    $idUser = $requestedUserId;
 }
 
 // Eén query die events + deelname ophaalt

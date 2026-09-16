@@ -120,6 +120,9 @@ async function uploadCharacterPortrait(file) {
     try {
         const response = await fetch("api/characters/uploadCharacterPortrait.php", {
             method: "POST",
+            headers: {
+                "X-CSRF-Token": window.AETHER_CSRF_TOKEN || ""
+            },
             body: formData
         });
 

@@ -7,6 +7,7 @@ require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/characterMediaUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -21,7 +22,8 @@ try {
     }
 
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    $currentUserRole = $currentUser['role'];
 
     // --- 1. Basisgegevens van het personage ---
     $stmt = $pdo->prepare('SELECT * FROM tblCharacter WHERE id = ?');
@@ -32,6 +34,10 @@ try {
         http_response_code(404);
         echo json_encode(['error' => 'Personage niet gevonden.']);
         exit;
+    }
+
+    if (!aetherCanViewCharacter($currentUser, $character)) {
+        aetherJsonError(403, 'Je hebt geen rechten om dit personage te bekijken.');
     }
 
     // --- 2. Skills (zonder types, die doen we apart) ---
@@ -48,10 +54,11 @@ try {
         JOIN tblSkill AS s
               ON s.id = lcs.idSkill
         WHERE lcs.idCharacter = ?
+          AND (s.visibility = 'public' OR ? = 1)
         ORDER BY s.name
     ";
     $stmt = $pdo->prepare($sqlSkills);
-    $stmt->execute([$idCharacter]);
+    $stmt->execute([$idCharacter, aetherIsPrivilegedRole($currentUserRole) ? 1 : 0]);
     $skills = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // --- 3. Specialisaties per skill voor dit personage ---

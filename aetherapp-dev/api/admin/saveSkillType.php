@@ -18,7 +18,7 @@ if (!in_array($action, ['create', 'update', 'delete'], true)) {
 
 try {
     $pdo = getPDO();
-    requireAdministratorAccess($pdo);
+    requireAdministratorAccess($pdo, true);
 
     if ($action === 'create') {
         if ($name === '') {

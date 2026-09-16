@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once '../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 header('Content-Type: application/json; charset=utf-8');
 
 /**
@@ -27,6 +28,11 @@ try {
     if ($idSkill <= 0 || $idChar <= 0) {
         throw new RuntimeException("Ongeldige parameters.");
     }
+
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    aetherRequireCharacterAccess($pdo, $currentUser, $idChar, 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
     // --- Character ophalen: type + idUser ---
     $stmt = $pdo->prepare("
@@ -119,7 +125,10 @@ try {
             $specKind = $row['kind'] ?: 'specialisation';
         } else {
             // Bestaat nog niet → nieuwe rij aanmaken
-            $specKind = ($kindFromClient === 'discipline') ? 'discipline' : 'specialisation';
+            // Alleen beheerrollen mogen via deze route een globale discipline-definitie maken.
+            $specKind = ($kindFromClient === 'discipline' && aetherIsPrivilegedRole($currentUser['role']))
+                ? 'discipline'
+                : 'specialisation';
 
             $stmt = $pdo->prepare("
                 INSERT INTO tblSkillSpecialisation (idSkill, name, kind)

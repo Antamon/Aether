@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/characterPointUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -29,6 +30,11 @@ if (!$action || !$idSkill || !$idCharacter) {
 }
 
 try {
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
+
     // --- 1. Bestaande skill-link ophalen (tblLinkCharacterSkill) ---
     $stmt = $pdo->prepare(
         'SELECT level 

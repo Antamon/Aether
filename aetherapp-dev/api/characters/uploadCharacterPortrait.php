@@ -5,6 +5,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
 $id = (int) ($_POST['id'] ?? 0);
 if ($id <= 0) {
@@ -28,8 +29,10 @@ if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
 
 try {
     $pdo = getPDO();
-    $currentUserRole = getCurrentUserRole($pdo);
-    $currentUserId = getCurrentUserId();
+    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    aetherRequireCsrfToken();
+    $currentUserRole = $currentUser['role'];
+    $currentUserId = (int) $currentUser['id'];
 
     $character = dbOne(
         $pdo,
