@@ -37,12 +37,43 @@ $validCharacter = aetherValidateCharacterRequest('newCharacter', [
 ]);
 assertCharacterValidation($validCharacter['idUser'] === 12, 'Integer-string wordt niet genormaliseerd.');
 assertCharacterValidation($validCharacter['firstName'] === 'Ada', 'Tekst wordt niet getrimd.');
+assertCharacterValidation(
+    is_subclass_of(CharacterRequestValidationException::class, AetherValidationException::class),
+    'De tijdelijke characterexception bouwt niet voort op de generieke validatie-exception.'
+);
+
+$_POST = [
+    'type' => 'player',
+    'firstName' => 'Grace',
+    'lastName' => 'Hopper',
+    'class' => 'middle class',
+];
+$legacyFormCharacter = aetherReadCharacterJsonRequest('newCharacter');
+assertCharacterValidation(
+    $legacyFormCharacter['firstName'] === 'Grace',
+    'De tijdelijke characterfacade behoudt de bestaande formulierfallback niet.'
+);
+$_POST = [];
 
 expectCharacterValidationError(
     fn() => aetherValidateCharacterRequest('newCharacter', [
         'type' => 'player', 'lastName' => 'Lovelace', 'class' => 'upper class',
     ]),
     'firstName is verplicht'
+);
+
+expectCharacterValidationError(
+    fn() => aetherValidateCharacterRequest('newCharacter', [
+        'type' => 'player', 'firstName' => 'A', 'lastName' => 'Lovelace', 'class' => 'upper class',
+    ]),
+    'firstName is te kort'
+);
+
+expectCharacterValidationError(
+    fn() => aetherValidateCharacterRequest('newCharacter', [
+        'type' => 'player', 'firstName' => 'Ada', 'lastName' => 'Lovelace', 'class' => 'aristocracy',
+    ]),
+    'class bevat geen toegestane waarde'
 );
 
 expectCharacterValidationError(
@@ -105,6 +136,10 @@ $routes = [
 
 $projectRoot = dirname(__DIR__);
 foreach ($routes as $route) {
+    assertCharacterValidation(
+        is_array(aetherCharacterRequestSchema($route)),
+        "Characterschema ontbreekt voor route: {$route}"
+    );
     $path = $projectRoot . '/api/characters/' . $route . '.php';
     $contents = file_get_contents($path);
     assertCharacterValidation($contents !== false, "Route kon niet gelezen worden: {$route}");
@@ -119,11 +154,19 @@ assertCharacterValidation(
     $upload !== false && str_contains($upload, "aetherValidateCharacterRequestOrFail('uploadCharacterPortrait'"),
     'Portretupload valideert de multipartvelden niet.'
 );
+assertCharacterValidation(
+    is_array(aetherCharacterRequestSchema('uploadCharacterPortrait')),
+    'Characterschema ontbreekt voor de portretupload.'
+);
 
 $tieOptions = file_get_contents($projectRoot . '/api/characters/getCharacterTieOptions.php');
 assertCharacterValidation(
     $tieOptions !== false && str_contains($tieOptions, "aetherValidateCharacterRequestOrFail('getCharacterTieOptions'"),
     'De parameterloze tie-optieroute wijst onverwachte parameters niet af.'
+);
+assertCharacterValidation(
+    aetherCharacterRequestSchema('getCharacterTieOptions') === [],
+    'Het lege schema voor characterrelatie-opties is niet behouden.'
 );
 
 $newCharacterRoute = file_get_contents($projectRoot . '/api/characters/newCharacter.php');
