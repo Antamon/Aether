@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>Aether update manager browser test</title>
+</head>
+<body>
+  <input id="dirty-input" type="text">
+  <output id="test-result">RUNNING</output>
+
+  <script>
+    window.__aetherBrowserTest = {
+      fetchCalls: 0,
+      intervalCalls: 0,
+      confirmCalls: 0,
+      versions: ['release-one', 'release-two']
+    };
+
+    window.fetch = async function () {
+      const state = window.__aetherBrowserTest;
+      const index = Math.min(state.fetchCalls, state.versions.length - 1);
+      const version = state.versions[index];
+      state.fetchCalls += 1;
+      return { ok: true, json: async function () { return { version: version }; } };
+    };
+
+    window.setInterval = function (callback) {
+      window.__aetherBrowserTest.intervalCalls += 1;
+      window.__aetherBrowserTest.intervalCallback = callback;
+      return 101;
+    };
+
+    window.confirm = function () {
+      window.__aetherBrowserTest.confirmCalls += 1;
+      return false;
+    };
+  </script>
+  <script src="../js/updateManager.js"></script>
+  <script>
+    function assertBrowserTest(condition, message) {
+      if (!condition) {
+        throw new Error(message);
+      }
+    }
+
+    function waitForBrowserTest(predicate, timeoutMilliseconds) {
+      const started = Date.now();
+      return new Promise(function (resolve, reject) {
+        function inspect() {
+          if (predicate()) {
+            resolve();
+            return;
+          }
+          if (Date.now() - started > timeoutMilliseconds) {
+            reject(new Error('Timeout tijdens browsertest.'));
+            return;
+          }
+          window.setTimeout(inspect, 5);
+        }
+        inspect();
+      });
+    }
+
+    window.addEventListener('load', async function () {
+      const result = document.getElementById('test-result');
+      try {
+        await waitForBrowserTest(function () {
+          return window.__aetherBrowserTest.fetchCalls === 1
+            && window.AetherUpdateManager.getTimerId() === 101;
+        }, 1000);
+
+        assertBrowserTest(window.__aetherBrowserTest.intervalCalls === 1, 'Er is meer dan één timer gestart.');
+        assertBrowserTest(
+          window.AetherUpdateManager.isNewVersion('release-one', 'release-two'),
+          'Een andere release wordt niet als update herkend.'
+        );
+        assertBrowserTest(
+          !window.AetherUpdateManager.isNewVersion('release-one', 'release-one'),
+          'Dezelfde release wordt ten onrechte als update herkend.'
+        );
+
+        await window.AetherUpdateManager.checkForUpdate();
+        assertBrowserTest(document.querySelectorAll('#aether-update-notice').length === 1, 'Updatemelding ontbreekt.');
+
+        await window.AetherUpdateManager.checkForUpdate();
+        assertBrowserTest(document.querySelectorAll('#aether-update-notice').length === 1, 'Updatemelding is dubbel toegevoegd.');
+
+        const dirtyInput = document.getElementById('dirty-input');
+        dirtyInput.value = 'niet opgeslagen';
+        dirtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+        document.querySelector('#aether-update-notice button').click();
+        assertBrowserTest(window.__aetherBrowserTest.confirmCalls === 1, 'Niet-opgeslagen invoer geeft geen bevestiging.');
+
+        window.fetch = async function () { throw new Error('gesimuleerde netwerkfout'); };
+        await window.AetherUpdateManager.checkForUpdate();
+
+        result.textContent = 'PASS';
+      } catch (error) {
+        result.textContent = 'FAIL: ' + error.message;
+      }
+    }, { once: true });
+  </script>
+</body>
+</html>

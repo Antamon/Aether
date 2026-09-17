@@ -2,7 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../sessionUserBootstrap.php';
+require_once __DIR__ . '/../shared/cache.php';
 require_once __DIR__ . '/../shared/response.php';
+
+// Authenticated API responses can contain user-bound data and must not be cached.
+aetherSendNoStoreHeaders(true);
 
 const AETHER_ROLE_PARTICIPANT = 'participant';
 const AETHER_ROLE_DIRECTOR = 'director';
