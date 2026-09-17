@@ -143,10 +143,19 @@ foreach ($routes as $route) {
     $path = $projectRoot . '/api/characters/' . $route . '.php';
     $contents = file_get_contents($path);
     assertCharacterValidation($contents !== false, "Route kon niet gelezen worden: {$route}");
-    assertCharacterValidation(
-        str_contains($contents, "aetherReadCharacterJsonRequest('{$route}')"),
-        "Route {$route} gebruikt het expliciete invoerschema niet."
-    );
+    if ($route === 'saveCharacterSection') {
+        assertCharacterValidation(
+            str_contains($contents, 'aetherReadJsonObject()')
+                && str_contains($contents, "aetherCharacterRequestSchema('saveCharacterSection'")
+                && str_contains($contents, 'aetherValidateInput('),
+            'Route saveCharacterSection gebruikt de expliciete JSON-lezer en het characterschema niet.'
+        );
+    } else {
+        assertCharacterValidation(
+            str_contains($contents, "aetherReadCharacterJsonRequest('{$route}')"),
+            "Route {$route} gebruikt het expliciete invoerschema niet."
+        );
+    }
 }
 
 $upload = file_get_contents($projectRoot . '/api/characters/uploadCharacterPortrait.php');

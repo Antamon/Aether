@@ -1,35 +1,33 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
 require_once __DIR__ . '/characterRichText.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
 
-$input = aetherReadCharacterJsonRequest('saveCharacterSection');
-
-$idCharacter = isset($input['idCharacter']) ? (int)$input['idCharacter'] : 0;
-$section     = $input['section'] ?? '';
-$content     = $input['content'] ?? '';
-
-$allowedSections = [
-    'personal_background',
-    'knowledge',
-    'nature',
-    'demeanour'
-];
-
-if ($idCharacter <= 0 || !in_array($section, $allowedSections, true)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige parameters.']);
-    exit;
+try {
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('saveCharacterSection', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 }
+
+$idCharacter = $input['idCharacter'];
+$section = $input['section'];
+$content = $input['content'] ?? '';
 
 try {
     aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
@@ -52,8 +50,7 @@ try {
         ':updatedBy' => $userId
     ]);
 
-    echo json_encode(['success' => true, 'content' => $content]);
+    aetherJsonResponse(['success' => true, 'content' => $content]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon sectie niet opslaan.']);
+    aetherJsonError(500, 'Kon sectie niet opslaan.');
 }

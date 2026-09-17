@@ -154,6 +154,70 @@ foreach (['idUser', 'type', 'state', 'createdBy', 'createdAt'] as $authorityFiel
 $eventList = routeContents($projectRoot, 'api/events/getEventList.php');
 assertRouteCoverage(str_contains($eventList, 'aetherIsPrivilegedRole'), 'Eventlijst beperkt een opgegeven gebruikers-ID niet op basis van de serverrol.');
 
+$genericAccessControl = routeContents($projectRoot, 'api/auth/accessControl.php');
+$characterAccess = routeContents($projectRoot, 'api/characters/characterAccess.php');
+$movedCharacterAccessFunctions = [
+    'aetherCanViewCharacter',
+    'aetherCanEditCharacter',
+    'aetherCanEditDraftCharacter',
+    'aetherCanEditCharacterDiaryAchievements',
+    'aetherFetchCharacterAccessRecord',
+    'aetherRequireCharacterAccess',
+    'aetherCanChangeCharacterAuthorityField',
+    'aetherCanManageSkill',
+    'aetherRequireSkillAccess',
+];
+foreach ($movedCharacterAccessFunctions as $functionName) {
+    $definition = "function {$functionName}(";
+    assertRouteCoverage(
+        !str_contains($genericAccessControl, $definition),
+        "Characterspecifieke functie staat nog in de generieke authlaag: {$functionName}"
+    );
+    assertRouteCoverage(
+        str_contains($characterAccess, $definition),
+        "Characterspecifieke functie ontbreekt in characterAccess.php: {$functionName}"
+    );
+}
+assertRouteCoverage(
+    str_contains($characterAccess, "require_once __DIR__ . '/../auth/accessControl.php'"),
+    'Characterbeleid laadt de generieke authlaag niet.'
+);
+assertRouteCoverage(
+    !str_contains($genericAccessControl, 'characterAccess.php'),
+    'De generieke authlaag is afhankelijk geworden van characterbeleid.'
+);
+assertRouteCoverage(
+    !str_contains($characterAccess, '$_POST') && !str_contains($characterAccess, '$_SESSION'),
+    'Characterbeleid leest identiteit of rechten rechtstreeks uit browser- of sessiewaarden.'
+);
+
+$routesUsingMovedCharacterAccess = [
+    'api/characters/AddNewSkill.php',
+    'api/characters/addSkillSpecialisation.php',
+    'api/characters/deleteCharacter.php',
+    'api/characters/deleteCharacterTie.php',
+    'api/characters/deleteSkillSpecialisation.php',
+    'api/characters/getCharacter.php',
+    'api/characters/getCharacterDiary.php',
+    'api/characters/getCharacterSections.php',
+    'api/characters/getCharacterTies.php',
+    'api/characters/getDisciplineList.php',
+    'api/characters/getNewSkills.php',
+    'api/characters/getSkillSpecialisations.php',
+    'api/characters/saveCharacterDiary.php',
+    'api/characters/saveCharacterSection.php',
+    'api/characters/saveCharacterTie.php',
+    'api/characters/updateCharacter.php',
+    'api/characters/updateSkill.php',
+    'api/characters/updateTrait.php',
+];
+foreach ($routesUsingMovedCharacterAccess as $route) {
+    assertRouteCoverage(
+        str_contains(routeContents($projectRoot, $route), "require_once __DIR__ . '/characterAccess.php'"),
+        "Characterroute laadt characterAccess.php niet rechtstreeks: {$route}"
+    );
+}
+
 $mainFunctions = routeContents($projectRoot, 'js/mainFunctions.js');
 $characterFunctions = routeContents($projectRoot, 'js/characterFunctions.js');
 $companyFunctions = routeContents($projectRoot, 'js/companyFunctions.js');

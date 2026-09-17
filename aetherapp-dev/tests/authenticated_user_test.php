@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../api/auth/accessControl.php';
+require_once __DIR__ . '/../api/characters/characterAccess.php';
 
 $failures = [];
 

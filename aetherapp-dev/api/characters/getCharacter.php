@@ -7,7 +7,7 @@ require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/characterMediaUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
-require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
 require_once __DIR__ . '/characterRequestValidation.php';
 
 header('Content-Type: application/json; charset=utf-8');

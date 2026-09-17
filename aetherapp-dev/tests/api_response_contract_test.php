@@ -75,6 +75,10 @@ if (($argv[1] ?? '') === '--fixture') {
             require_once $projectRoot . '/api/characters/characterRequestValidation.php';
             aetherCharacterValidationFailure(['Veld firstName is verplicht.']);
 
+        case 'shared_validation_error':
+            require_once $projectRoot . '/api/shared/response.php';
+            aetherJsonValidationError(['Veld section bevat geen toegestane waarde.']);
+
         case 'server_error':
             require_once $projectRoot . '/api/auth/accessControl.php';
             aetherStartSession();
@@ -183,6 +187,12 @@ assertApiResponseScenario(
     'validation_error',
     422,
     ['error' => 'Ongeldige invoer.', 'validationErrors' => ['Veld firstName is verplicht.']],
+    JSON_UNESCAPED_UNICODE
+);
+assertApiResponseScenario(
+    'shared_validation_error',
+    422,
+    ['error' => 'Ongeldige invoer.', 'validationErrors' => ['Veld section bevat geen toegestane waarde.']],
     JSON_UNESCAPED_UNICODE
 );
 $serverError = assertApiResponseScenario(

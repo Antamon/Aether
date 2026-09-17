@@ -16,3 +16,16 @@ if (!function_exists('aetherJsonError')) {
         aetherJsonResponse(['error' => $message], $status);
     }
 }
+
+if (!function_exists('aetherJsonValidationError')) {
+    /** @param list<string> $errors */
+    function aetherJsonValidationError(array $errors): never
+    {
+        http_response_code(422);
+        echo json_encode(
+            ['error' => 'Ongeldige invoer.', 'validationErrors' => $errors],
+            JSON_UNESCAPED_UNICODE
+        );
+        exit;
+    }
+}
