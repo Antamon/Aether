@@ -148,7 +148,9 @@ function runCacheManagementTests(): void
 
         $updateManager = file_get_contents($applicationRoot . '/js/updateManager.js');
         assertCacheManagement(
-            str_contains($updateManager, 'currentVersion !== availableVersion')
+            str_contains($updateManager, "new URL('version.php', document.baseURI)")
+                && !str_contains($updateManager, 'document.currentScript')
+                && str_contains($updateManager, 'currentVersion !== availableVersion')
                 && str_contains($updateManager, "cache: 'no-store'")
                 && str_contains($updateManager, 'setInterval(checkForUpdate')
                 && str_contains($updateManager, 'if (updateNotice)')
@@ -157,6 +159,15 @@ function runCacheManagementTests(): void
                 && str_contains($updateManager, 'global.confirm(')
                 && str_contains($updateManager, '} catch (error) {'),
             'De frontend-updateherkenning mist een van de vereiste guards of gedragingen.'
+        );
+
+        $browserTest = file_get_contents($applicationRoot . '/tests/update_manager_browser_test.html');
+        assertCacheManagement(
+            str_contains($browserTest, '<base href="../">')
+                && str_contains($browserTest, 'asset.php?path=js/updateManager.js')
+                && str_contains($browserTest, "new URL('../version.php', simulatedAssetResolverUrl)")
+                && str_contains($browserTest, 'requestedUrls[0] === expectedVersionUrl'),
+            'De browsertest dekt het submapscenario via asset.php en de redirect niet.'
         );
 
         echo "Cache- en updatebeheertests geslaagd.\n";

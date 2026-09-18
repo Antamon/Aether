@@ -36,7 +36,9 @@ De browser moet de resolver dus bij een volgende paginalaad opnieuw raadplegen. 
 - `VERSION` bevat één opaque deployment-ID. De huidige waarde is `2026.09.17.1`.
 - `api/shared/appVersion.php` leest en valideert dit bestand zonder waarschuwingen naar de gebruiker te lekken.
 - `version.php` publiceert `{"version":"..."}` en stuurt altijd `no-store`.
-- `js/updateManager.js` bepaalt het versie-endpoint relatief ten opzichte van zijn eigen URL. Dit blijft werken wanneer Aether in een applicatiesubmap staat.
+- `js/updateManager.js` bepaalt het versie-endpoint met `new URL('version.php', document.baseURI)`. De paginalocatie is daarmee de basis, ook wanneer het script via `asset.php?path=js/updateManager.js` en een redirect naar een `?v=`-URL wordt geladen. Afleiding uit `document.currentScript.src` was onbetrouwbaar: die DOM-URL kan de oorspronkelijke `asset.php`-URL blijven, waardoor `../version.php` vanuit een applicatiesubmap één directory te hoog uitkomt.
+
+  Concreet werd `/aether/aetherapp-dev/asset.php?path=js/updateManager.js` met `../version.php` opgelost als `/aether/version.php`. Vanaf de pagina-URI `/aether/aetherapp-dev/index.html` wordt `version.php` nu correct `/aether/aetherapp-dev/version.php`. De uiteindelijke redirect naar `js/updateManager.js?v=...` heeft daardoor geen invloed meer op de endpointkeuze.
 - De checker haalt bij de start een basisversie op en controleert daarna iedere 60 seconden. Een tijdelijke netwerk- of JSON-fout blijft stil; een volgende timer probeert opnieuw.
 - Eén globale manager, één lopend verzoek en één bestaande melding voorkomen dubbele timers, parallelle controles en herhaalde meldingen.
 - Bij een andere deployment-ID verschijnt rechtsonder een melding met de knop **Vernieuwen**. De applicatie herlaadt nooit automatisch. Na invoer in een formulierveld of rich-textveld vraagt de knop eerst bevestiging wegens mogelijk niet-opgeslagen wijzigingen.
@@ -86,8 +88,9 @@ De `.htaccess`-regels vereisen Apache `mod_headers` en toegestane `.htaccess`-ov
 - dat alle vijf ingangspagina's de centrale resolver en updatechecker gebruiken;
 - het JSON-contract van het echte `version.php`-endpoint in een afzonderlijk PHP-proces;
 - de frontendcode voor versieverschil, `no-store`, interval, request- en meldingsguards, stille netwerkfouten en bescherming van mogelijk niet-opgeslagen invoer.
+- endpointresolutie vanuit de applicatiepagina in een submap, terwijl `updateManager.js` via `asset.php` en de versiegebonden redirect wordt geladen.
 
-`tests/update_manager_browser_test.html` is de herhaalbare browsertest met afgeschermde fetch-, timer- en bevestigingstestdoubles. De test voert de echte `js/updateManager.js` uit en controleert een gewijzigde versie, precies één timer en melding, bevestiging bij gewijzigde invoer en een stille gesimuleerde netwerkfout. Het resultaat staat in het element `#test-result`.
+`tests/update_manager_browser_test.html` is de herhaalbare browsertest met versie-, timer- en bevestigingstestdoubles. Via `<base href="../">` bootst hij een applicatieroot boven de testmap na, laadt hij de echte `js/updateManager.js` door `asset.php` en diens redirect, en vraagt hij het werkelijk berekende `version.php`-endpoint op. Daarna controleert hij met gesimuleerde versies precies één timer en melding, bevestiging bij gewijzigde invoer en een stille gesimuleerde netwerkfout. De test moet daarom via een PHP-webserver worden geopend; het resultaat staat in `#test-result`.
 
 Uitgevoerd op 17 september 2026 met PHP 8.4.25:
 

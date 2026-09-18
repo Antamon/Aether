@@ -2,6 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
+  <base href="../">
   <title>Aether update manager browser test</title>
 </head>
 <body>
@@ -9,15 +10,22 @@
   <output id="test-result">RUNNING</output>
 
   <script>
+    const aetherNativeFetch = window.fetch.bind(window);
     window.__aetherBrowserTest = {
       fetchCalls: 0,
       intervalCalls: 0,
       confirmCalls: 0,
+      requestedUrls: [],
       versions: ['release-one', 'release-two']
     };
 
-    window.fetch = async function () {
+    window.fetch = async function (url, options) {
       const state = window.__aetherBrowserTest;
+      state.requestedUrls.push(String(url));
+      const endpointResponse = await aetherNativeFetch(url, options);
+      if (!endpointResponse.ok) {
+        throw new Error('Het berekende version endpoint antwoordt met HTTP ' + endpointResponse.status + '.');
+      }
       const index = Math.min(state.fetchCalls, state.versions.length - 1);
       const version = state.versions[index];
       state.fetchCalls += 1;
@@ -35,7 +43,7 @@
       return false;
     };
   </script>
-  <script src="../js/updateManager.js"></script>
+  <script src="asset.php?path=js/updateManager.js"></script>
   <script>
     function assertBrowserTest(condition, message) {
       if (!condition) {
@@ -69,6 +77,17 @@
             && window.AetherUpdateManager.getTimerId() === 101;
         }, 1000);
 
+        const expectedVersionUrl = new URL('version.php', document.baseURI).toString();
+        const simulatedAssetResolverUrl = new URL('asset.php?path=js/updateManager.js', document.baseURI).toString();
+        const legacyVersionUrl = new URL('../version.php', simulatedAssetResolverUrl).toString();
+        assertBrowserTest(
+          window.__aetherBrowserTest.requestedUrls[0] === expectedVersionUrl,
+          'Version endpoint is niet relatief aan de applicatieroot: ' + window.__aetherBrowserTest.requestedUrls[0]
+        );
+        assertBrowserTest(
+          legacyVersionUrl !== expectedVersionUrl,
+          'De submapfixture reproduceert het oude asset.php-padprobleem niet.'
+        );
         assertBrowserTest(window.__aetherBrowserTest.intervalCalls === 1, 'Er is meer dan één timer gestart.');
         assertBrowserTest(
           window.AetherUpdateManager.isNewVersion('release-one', 'release-two'),

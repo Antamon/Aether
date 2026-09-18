@@ -6,10 +6,7 @@
   }
 
   const checkIntervalMilliseconds = 60 * 1000;
-  const currentScriptUrl = document.currentScript && document.currentScript.src;
-  const versionEndpoint = currentScriptUrl
-    ? new URL('../version.php', currentScriptUrl).toString()
-    : 'version.php';
+  const versionEndpoint = new URL('version.php', document.baseURI).toString();
 
   let loadedVersion = null;
   let checkInProgress = false;
