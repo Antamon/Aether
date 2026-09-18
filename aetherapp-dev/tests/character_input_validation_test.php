@@ -136,8 +136,9 @@ $routes = [
 
 $projectRoot = dirname(__DIR__);
 $directSchemaRoutes = [
-    'deleteCharacterLanguage', 'getCharacterList', 'getDisciplineList',
-    'getNewSkills', 'newCharacter', 'saveCharacterSection',
+    'AddNewSkill', 'deleteCharacterLanguage', 'deleteSkillSpecialisation',
+    'getCharacterLanguageOptions', 'getCharacterList', 'getDisciplineList',
+    'getNewSkills', 'getSkillSpecialisations', 'newCharacter', 'saveCharacterSection',
 ];
 foreach ($routes as $route) {
     assertCharacterValidation(

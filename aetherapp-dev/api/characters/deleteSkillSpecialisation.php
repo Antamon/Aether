@@ -1,55 +1,62 @@
 <?php
 declare(strict_types=1);
-require_once "../../db.php";
-require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
+
 try {
-    $pdo = getPDO();
-    $input = aetherReadCharacterJsonRequest('deleteSkillSpecialisation');
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('deleteSkillSpecialisation', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
 
-    $idSkill = (int) ($input['idSkill'] ?? 0);
-    $idCharacter = (int) ($input['idCharacter'] ?? 0);
-    $idSpec = (int) ($input['idSkillSpecialisation'] ?? 0);
+$idSkill = $input['idSkill'];
+$idCharacter = $input['idCharacter'];
+$idSpec = $input['idSkillSpecialisation'];
 
-    if ($idSkill <= 0 || $idCharacter <= 0 || $idSpec <= 0) {
-        throw new RuntimeException("Ongeldige parameters.");
-    }
-
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
+try {
     aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
     aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
-    $sqlDel = "
-        DELETE FROM tblCharacterSpecialisation
-        WHERE idCharacter = ? AND idSkill = ? AND idSkillSpecialisation = ?
-    ";
-    $stmt = $pdo->prepare($sqlDel);
+    $stmt = $pdo->prepare(
+        'DELETE FROM tblCharacterSpecialisation
+          WHERE idCharacter = ?
+            AND idSkill = ?
+            AND idSkillSpecialisation = ?'
+    );
     $stmt->execute([$idCharacter, $idSkill, $idSpec]);
 
-    // Nieuwe lijst voor deze skill teruggeven
-    $sqlSpecs = "
-        SELECT cs.id      AS idCharSpec,
-               ss.id      AS idSkillSpecialisation,
-               ss.name,
-               ss.kind
-        FROM tblCharacterSpecialisation cs
-        JOIN tblSkillSpecialisation ss ON ss.id = cs.idSkillSpecialisation
-        WHERE cs.idCharacter = ? AND cs.idSkill = ?
-        ORDER BY ss.name
-    ";
-    $stmt = $pdo->prepare($sqlSpecs);
+    $stmt = $pdo->prepare(
+        'SELECT cs.id AS idCharSpec,
+                ss.id AS idSkillSpecialisation,
+                ss.name,
+                ss.kind
+           FROM tblCharacterSpecialisation cs
+           JOIN tblSkillSpecialisation ss ON ss.id = cs.idSkillSpecialisation
+          WHERE cs.idCharacter = ?
+            AND cs.idSkill = ?
+       ORDER BY ss.name'
+    );
     $stmt->execute([$idCharacter, $idSkill]);
-    $specs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode([
+    aetherJsonResponse([
         'success' => true,
-        'specialisations' => $specs
+        'specialisations' => $stmt->fetchAll(PDO::FETCH_ASSOC),
     ]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    aetherJsonError(500, 'Kon specialisatie niet verwijderen.');
 }

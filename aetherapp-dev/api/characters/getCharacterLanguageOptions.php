@@ -1,59 +1,45 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/characterPointUtils.php';
-require_once __DIR__ . '/characterLanguageUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterLanguageUtils.php';
+require_once __DIR__ . '/characterSchemas.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 
-$input = aetherReadCharacterJsonRequest('getCharacterLanguageOptions');
-$idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
-
-if ($idCharacter <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldig personage.']);
-    exit;
+try {
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('getCharacterLanguageOptions', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 }
 
+$idCharacter = $input['idCharacter'];
+
 try {
-    $pdo = getPDO();
-
     if (!characterLanguageSchemaReady($pdo)) {
-        echo json_encode(['options' => []]);
-        exit;
+        aetherJsonResponse(['options' => []]);
     }
 
-    $character = dbOne(
-        $pdo,
-        'SELECT id, idUser, type, `class`
-           FROM tblCharacter
-          WHERE id = :id',
-        ['id' => $idCharacter]
-    );
-
-    if (!$character) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
+    $character = aetherFetchCharacterAccessRecord($pdo, $idCharacter);
+    if ($character === null) {
+        aetherJsonError(404, 'Personage niet gevonden.');
     }
-
-    $currentUserId = (int) $currentUser['id'];
-    $currentUserRole = $currentUser['role'];
-    if (!canCurrentUserManageCharacterLanguages($character, $currentUserRole, $currentUserId)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen rechten om talen te beheren.']);
-        exit;
+    if (!canCurrentUserManageCharacterLanguages($character, $currentUser['role'], (int) $currentUser['id'])) {
+        aetherJsonError(403, 'Geen rechten om talen te beheren.');
     }
-
     if (!canCharacterUseWrittenLanguages($pdo, $character)) {
-        echo json_encode(['options' => []]);
-        exit;
+        aetherJsonResponse(['options' => []]);
     }
 
     $options = dbAll(
@@ -66,19 +52,19 @@ try {
                  WHERE cl.idCharacter = :idCharacter
                    AND cl.idLanguage = l.id
            )
-          ORDER BY LOWER(l.name), l.name, l.id',
+       ORDER BY LOWER(l.name), l.name, l.id',
         ['idCharacter' => $idCharacter]
     );
 
-    echo json_encode([
-        'options' => array_map(static function (array $row): array {
-            return [
+    aetherJsonResponse([
+        'options' => array_map(
+            static fn(array $row): array => [
                 'id' => (int) ($row['id'] ?? 0),
                 'name' => (string) ($row['name'] ?? ''),
-            ];
-        }, $options),
+            ],
+            $options
+        ),
     ]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon taalopties niet ophalen.']);
+    aetherJsonError(500, 'Kon taalopties niet ophalen.');
 }

@@ -1,55 +1,59 @@
 <?php
 declare(strict_types=1);
-require_once "../../db.php";
-require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+
 try {
-    $pdo = getPDO();
-    $input = aetherReadCharacterJsonRequest('getSkillSpecialisations');
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('getSkillSpecialisations', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
 
-    $idSkill = (int) ($input['idSkill'] ?? 0);
-    $idCharacter = (int) ($input['idCharacter'] ?? 0);
+$idSkill = $input['idSkill'];
+$idCharacter = $input['idCharacter'];
 
-    if ($idSkill <= 0 || $idCharacter <= 0) {
-        throw new RuntimeException("Ongeldige parameters.");
-    }
-
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
+try {
     aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
     aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
-    // Alle specialisaties voor deze skill (kind = 'specialisation')
-    $sqlAll = "
-        SELECT id, name
-        FROM tblSkillSpecialisation
-        WHERE idSkill = ? AND kind = 'specialisation'
-        ORDER BY name
-    ";
-    $stmtAll = $pdo->prepare($sqlAll);
-    $stmtAll->execute([$idSkill]);
-    $allSpecs = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare(
+        "SELECT id, name
+           FROM tblSkillSpecialisation
+          WHERE idSkill = ?
+            AND kind = 'specialisation'
+       ORDER BY name"
+    );
+    $stmt->execute([$idSkill]);
+    $allSpecs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Reeds genomen door dit personage
-    $sqlTaken = "
-        SELECT idSkillSpecialisation
-        FROM tblCharacterSpecialisation
-        WHERE idCharacter = ? AND idSkill = ?
-    ";
-    $stmtTaken = $pdo->prepare($sqlTaken);
-    $stmtTaken->execute([$idCharacter, $idSkill]);
-    $takenRows = $stmtTaken->fetchAll(PDO::FETCH_ASSOC);
-    $takenIds = array_column($takenRows, 'idSkillSpecialisation');
+    $stmt = $pdo->prepare(
+        'SELECT idSkillSpecialisation
+           FROM tblCharacterSpecialisation
+          WHERE idCharacter = ?
+            AND idSkill = ?'
+    );
+    $stmt->execute([$idCharacter, $idSkill]);
+    $takenIds = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'idSkillSpecialisation');
 
-    // Filter: enkel nog niet-genomen specialisaties
-    $options = array_values(array_filter($allSpecs, function ($row) use ($takenIds) {
-        return !in_array($row['id'], $takenIds, true);
-    }));
-
-    echo json_encode(['options' => $options]);
+    $options = array_values(array_filter(
+        $allSpecs,
+        static fn(array $row): bool => !in_array($row['id'], $takenIds, true)
+    ));
+    aetherJsonResponse(['options' => $options]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    aetherJsonError(500, 'Kon specialisaties niet laden.');
 }

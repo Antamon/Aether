@@ -15,6 +15,8 @@ Onderstaande inventaris behandelt uitvoerbare routes in `api/characters`. Bestan
 | `getCharacterList.php` | Gemigreerd | Eén lijstquery, met server-side rolfilter voor participants. |
 | `getNewSkills.php` | Gemigreerd | Eén lijstquery na characteraccess; skillzichtbaarheid blijft door de vertrouwde databaserol bepaald. |
 | `getDisciplineList.php` | Gemigreerd | Eén lijstquery na character- en skillaccess. |
+| `getSkillSpecialisations.php` | Gemigreerd in batch 2 | Twee eenvoudige reads leveren de nog niet gekozen specialisaties; er zijn geen neveneffecten. |
+| `getCharacterLanguageOptions.php` | Gemigreerd in batch 2 | Leest taalopties na bestaand taalbeleid en objectaccess; er zijn geen writes. |
 | `getCharacterSections.php` | Uitgesteld | De route leest rich-textvelden en valt onder de expliciete rich-textuitsluiting van deze opdracht. |
 
 ### 2. Eenvoudige schrijfroutes met één primaire query
@@ -23,6 +25,8 @@ Onderstaande inventaris behandelt uitvoerbare routes in `api/characters`. Bestan
 |---|---|---|
 | `newCharacter.php` | Gemigreerd | Eén prepared `INSERT`; eigenaar, type, status en auditvelden blijven server-side bepaald. |
 | `deleteCharacterLanguage.php` | Gemigreerd | Eén prepared `DELETE` na auth, CSRF, schemavalidatie en eigenaarschapscontrole. De bestaande compatibiliteitscontrole voor een ontbrekend taalschema blijft behouden. |
+| `AddNewSkill.php` | Gemigreerd in batch 2 | Eén prepared `INSERT`; de aansluitende read behoudt het bestaande skillobject als succesresponse. |
+| `deleteSkillSpecialisation.php` | Gemigreerd in batch 2 | Eén prepared `DELETE`; de aansluitende read behoudt de bestaande bijgewerkte specialisatielijst. |
 | `saveCharacterSection.php` | Reeds eerder gemigreerde pilot | Het patroon en de bestaande test zijn behouden; deze rich-textroute is in deze opdracht niet gewijzigd. |
 
 ### 3. Upload-, multipart- en portretroutes
@@ -39,10 +43,9 @@ Onderstaande inventaris behandelt uitvoerbare routes in `api/characters`. Bestan
 | `getCharacter.php` | Samengesteld leesmodel met veel queries en domeinhelpers; expliciet uitgesloten. |
 | `getCharacterActionEvents.php`, `getCharacterActionKnowledgeTargets.php` | Bouwen responses uit meerdere action-, skill-, burn- en knowledgequeries. |
 | `getCharacterDiary.php`, `saveCharacterDiary.php` | Meerdere queries en rich-textvelden; expliciet buiten scope. |
-| `getCharacterLanguageOptions.php`, `addCharacterLanguage.php` | Taal-, klasse-, trait-, skill- en puntenregels met meerdere queries. |
+| `addCharacterLanguage.php` | Taal-, klasse-, trait-, skill- en puntenregels met meerdere mogelijke mutaties. |
 | `getCharacterTieOptions.php`, `getCharacterTies.php`, `saveCharacterTie.php`, `deleteCharacterTie.php` | Meerdere relatiequeries, wederkerige relaties en/of afhankelijke mutaties. |
-| `getSkillSpecialisations.php` | Twee afhankelijke leesqueries en applicatiefiltering. |
-| `AddNewSkill.php`, `addSkillSpecialisation.php`, `deleteSkillSpecialisation.php`, `updateSkill.php` | Combineren skillpolicy met meerdere reads/writes of geven na een mutatie een opnieuw opgebouwde lijst terug. |
+| `addSkillSpecialisation.php`, `updateSkill.php` | Meerdere mogelijke mutaties, puntenregels of actietakken. |
 | `revealCharacterActionKnowledge.php`, `useCharacterSkillAction.php` | Transactionele action- en knowledge-use-cases. |
 | `buyCompanyShare.php`, `saveCompanyShare.php` | Companybeleid en meerdere afhankelijke queries/mutaties. |
 | `deleteBankTransaction.php`, `saveBankTransfer.php` | Transactionele economiehandelingen; `saveBankTransfer.php` is expliciet uitgesloten. |
@@ -62,12 +65,16 @@ Bij twijfel is de route in categorie 4 gebleven. Vooral een tweede query na een 
 | `getDisciplineList.php` | `POST` JSON met `idSkill` en `idCharacter` | Ongewijzigd object `{"options": [...]}`. |
 | `newCharacter.php` | `POST` JSON volgens het bestaande `newCharacter`-schema | Ongewijzigd kaal numeriek character-ID. |
 | `deleteCharacterLanguage.php` | `POST` JSON met `idCharacter` en `idCharacterLanguage` | Ongewijzigd `{"success": true}`. |
+| `getSkillSpecialisations.php` | `POST` JSON met `idSkill` en `idCharacter` | Ongewijzigd object `{"options": [...]}`. |
+| `getCharacterLanguageOptions.php` | `POST` JSON met `idCharacter` | Ongewijzigd object `{"options": [...]}`. |
+| `AddNewSkill.php` | `POST` JSON met `idCharacter`, `idSkill` en optioneel `level` | Ongewijzigd skillobject. |
+| `deleteSkillSpecialisation.php` | `POST` JSON met `idSkill`, `idCharacter` en `idSkillSpecialisation` | Ongewijzigd object met `success` en `specialisations`. |
 
 De routes gebruiken nu expliciet `aetherReadJsonObject()`. De actieve frontend verstuurt JSON en heeft de oude stille terugval naar `$_POST` niet nodig. Ongeldige of niet-object-JSON volgt daardoor het gedeelde HTTP 400-contract; veldvalidatie blijft HTTP 422 met `error` en `validationErrors`.
 
 ## Verwijderde duplicatie
 
-In de vijf routes zijn waar van toepassing verwijderd:
+In de eerste vijf routes en de vier routes van batch 2 zijn waar van toepassing verwijderd:
 
 - extra `session_start()`-aanroepen;
 - de tijdelijke `aetherReadCharacterJsonRequest()`-facade;
@@ -83,7 +90,7 @@ Prepared statements en vaste server-side kolommen zijn behouden. Geen SQL-kolomn
 
 `characterRequestValidation.php` blijft nodig voor de nog niet gemigreerde routes. Dat betreft momenteel:
 
-- skills en specialisaties;
+- complexe skill- en specialisatiebewerkingen;
 - character detail, actions, diary, ties en language options;
 - economie, companies, traits en complexe updates;
 - portretupload en -verwijdering.
@@ -111,12 +118,15 @@ De facade kan per route worden verwijderd zodra het requestcontract is bevestigd
 
 `tests/character_input_validation_test.php` herkent nu naast de tijdelijke facade ook het directe patroon van requestlezer, moduleschema en generieke validator.
 
+`tests/simple_character_endpoints_batch2_test.php` voert de vier batch-2-routes eveneens in afzonderlijke PHP-processen uit. De test controleert de bestaande succesresponses, schema-defaults, onbekende en ongeldige velden, HTTP 401, CSRF, charactereigenaarschap, geheime skilltoegang, directorrechten en nul writes bij iedere geweigerde schrijfactie.
+
 ### Uitgevoerde eindcontroles
 
 Uitgevoerd met PHP 8.4.25:
 
 | Controle | Resultaat |
 |---|---|
+| `tests/simple_character_endpoints_batch2_test.php` | Geslaagd |
 | `tests/simple_character_endpoints_test.php` | Geslaagd |
 | `tests/save_character_section_endpoint_test.php` | Geslaagd |
 | `tests/access_control_test.php` | Geslaagd |
@@ -131,5 +141,7 @@ Uitgevoerd met PHP 8.4.25:
 | `tests/authenticated_user_test.php` | Niet uitgevoerd: de test meldt `SKIP` omdat PDO SQLite ontbreekt |
 
 Na de eerste routebatch slaagden auth, routecoverage, requestvalidatie, responsecontract, de bestaande pilot-endpointtest en alle vijf syntaxcontroles. De statische character-validatietest herkende aanvankelijk alleen de oude facade-aanroep; na de gerichte aanpassing voor het directe schema-enginepatroon is die test opnieuw uitgevoerd en geslaagd.
+
+Na batch 2 zijn de nieuwe endpointtest, de volledige eerste-batchtest, de pilot-endpointtest en alle genoemde regressietests opnieuw uitgevoerd. De vier nieuwe routes en de batch-2-test doorstonden ook afzonderlijk de PHP-syntaxcontrole.
 
 De nieuwe endpointtest gebruikt PDO-testdoubles: prepared parameters en mutatievolgorde worden gecontroleerd, maar er is daarmee geen echte MySQL-integratie bewezen. Er is in deze opdracht geen browser-, WordPress-, Apache- of productie-integratietest uitgevoerd.
