@@ -137,9 +137,10 @@ $routes = [
 $projectRoot = dirname(__DIR__);
 $directSchemaRoutes = [
     'AddNewSkill', 'deleteCharacterLanguage', 'deleteSkillSpecialisation',
-    'getCharacter', 'getCharacterDiary', 'getCharacterLanguageOptions',
-    'getCharacterList', 'getCharacterSections', 'getDisciplineList', 'getNewSkills',
-    'getSkillSpecialisations', 'newCharacter', 'saveCharacterSection', 'updateCharacter',
+    'deleteCharacterTie', 'getCharacter', 'getCharacterDiary', 'getCharacterLanguageOptions',
+    'getCharacterList', 'getCharacterSections', 'getCharacterTies', 'getDisciplineList',
+    'getNewSkills', 'getSkillSpecialisations', 'newCharacter', 'saveCharacterSection',
+    'saveCharacterTie', 'updateCharacter',
 ];
 foreach ($routes as $route) {
     assertCharacterValidation(
@@ -176,7 +177,10 @@ assertCharacterValidation(
 
 $tieOptions = file_get_contents($projectRoot . '/api/characters/getCharacterTieOptions.php');
 assertCharacterValidation(
-    $tieOptions !== false && str_contains($tieOptions, "aetherValidateCharacterRequestOrFail('getCharacterTieOptions'"),
+    $tieOptions !== false
+        && str_contains($tieOptions, 'aetherReadFormFields()')
+        && str_contains($tieOptions, "aetherCharacterRequestSchema('getCharacterTieOptions'")
+        && str_contains($tieOptions, 'aetherValidateInput('),
     'De parameterloze tie-optieroute wijst onverwachte parameters niet af.'
 );
 assertCharacterValidation(

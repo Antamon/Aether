@@ -93,7 +93,9 @@ function aetherCharacterRequestSchema(string $route, array $input = []): array
             'content' => $richText(false, 16000),
         ],
         'saveCharacterTie' => [
-            'idCharacter' => $id(), 'idTie' => $optionalId(), 'idOtherCharacter' => $id(),
+            'idCharacter' => $id(),
+            'idTie' => ['type' => 'nullable_int', 'required' => false, 'min' => 0, 'default' => null],
+            'idOtherCharacter' => $id(),
             'relationType' => $enum(true, ['superior', 'dependent', 'landlord', 'household_staff', 'spouse', 'ally', 'adversary', 'person_of_interest']),
             'description' => $text(false, 255),
         ],
