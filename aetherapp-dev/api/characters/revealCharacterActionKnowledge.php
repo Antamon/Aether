@@ -3,65 +3,50 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/gossipKnowledgeUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterActionService.php';
 
-$input = aetherReadCharacterJsonRequest('revealCharacterActionKnowledge');
-$idCharacter = (int) ($input['idCharacter'] ?? 0);
-$idEvent = (int) ($input['idEvent'] ?? 0);
-$idSourceCharacter = (int) ($input['idSourceCharacter'] ?? 0);
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
-if ($idCharacter <= 0 || $idEvent <= 0 || $idSourceCharacter <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Personage, event en bronpersonage zijn verplicht.']);
-    exit;
+try {
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('revealCharacterActionKnowledge', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 }
 
 try {
-    $pdo = getPDO();
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
-    $currentUserRole = $currentUser['role'];
-    $currentUserId = (int) $currentUser['id'];
-
-    $character = dbOne($pdo, 'SELECT * FROM tblCharacter WHERE id = :idCharacter', ['idCharacter' => $idCharacter]);
-    if ($character === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
+    aetherRequireCharacterActionAccess(
+        $pdo,
+        $currentUser,
+        $input['idCharacter'],
+        'Geen rechten om deze actie uit te voeren.'
+    );
+    aetherJsonResponse(aetherRevealCharacterActionKnowledge(
+        $pdo,
+        $input['idCharacter'],
+        $input['idEvent'],
+        $input['idSourceCharacter']
+    ));
+} catch (AetherCharacterActionException $e) {
+    if ($e->includesNullDetails()) {
+        aetherJsonResponse(['error' => $e->getMessage(), 'details' => null], $e->getHttpStatus());
     }
-
-    if (!canViewCharacterActions($character, $currentUserRole, $currentUserId)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen rechten om deze actie uit te voeren.']);
-        exit;
-    }
-
-    $worldKnowledgeLevel = getCharacterSkillLevelByIdForGossip($pdo, $idCharacter, AETHER_WORLD_KNOWLEDGE_SKILL_ID);
-    if ($worldKnowledgeLevel <= 0) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Dit personage bezit Wereldwijs niet.']);
-        exit;
-    }
-
-    $pdo->beginTransaction();
-    $result = revealKnowledgeGossip($pdo, $idCharacter, $idEvent, $idSourceCharacter, $worldKnowledgeLevel);
-    $pdo->commit();
-
-    echo json_encode($result);
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+    if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-
-    $message = $e instanceof RuntimeException
-        ? $e->getMessage()
-        : 'Kon de wereldwijsroddels niet vrijspelen.';
-
-    http_response_code($e instanceof RuntimeException ? 400 : 500);
-    echo json_encode([
-        'error' => $message,
-        'details' => $e instanceof RuntimeException ? null : $e->getMessage(),
-    ]);
+    error_log('revealCharacterActionKnowledge.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon de wereldwijsroddels niet vrijspelen.');
 }

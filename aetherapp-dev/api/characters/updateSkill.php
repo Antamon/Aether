@@ -1,184 +1,40 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/characterPointUtils.php';
-require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
-
 header('Content-Type: application/json; charset=utf-8');
 
-try {
-    $pdo = getPDO();
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Databaseverbinding mislukt.']);
-    exit;
-}
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterSkillRepository.php';
+require_once __DIR__ . '/characterSkillService.php';
 
-$input = aetherReadCharacterJsonRequest('updateSkill');
-
-$action = $input['action'] ?? null;
-$idSkill = isset($input['idSkill']) ? (int) $input['idSkill'] : 0;
-$idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
-
-if (!$action || !$idSkill || !$idCharacter) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige parameters.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 try {
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
-    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
-    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
-
-    // --- 1. Bestaande skill-link ophalen (tblLinkCharacterSkill) ---
-    $stmt = $pdo->prepare(
-        'SELECT level 
-         FROM tblLinkCharacterSkill 
-         WHERE idCharacter = ? AND idSkill = ?'
-    );
-    $stmt->execute([$idCharacter, $idSkill]);
-    $skillRow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$skillRow) {
-        echo json_encode(['error' => 'Skill niet gevonden voor dit personage.']);
-        exit;
-    }
-
-    $level = (int) $skillRow['level'];
-
-    // --- 2. Is dit een discipline-skill? ---
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) 
-        FROM tblLinkSkillType lst
-        JOIN tblSkillType st ON st.id = lst.idSkillType
-        WHERE lst.idSkill = ? AND st.code = 'discipline'
-    ");
-    $stmt->execute([$idSkill]);
-    $isDisciplineSkill = ((int) $stmt->fetchColumn() > 0);
-
-    // --- 3. Character ophalen: type + idUser (voor EP-berekening) ---
-    $stmt = $pdo->prepare(
-        'SELECT id, type, idUser, experienceToTrait, physicalHealth, mentalHealth
-         FROM tblCharacter 
-         WHERE id = ?'
-    );
-    $stmt->execute([$idCharacter]);
-    $character = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$character) {
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
-    }
-
-    $pointSummary = getCharacterPointSummary($pdo, $character);
-    $isPlayer = $pointSummary['isPlayer'];
-    $maxXP = $pointSummary['experienceBudget'];
-
-    // --- 5. Huidig gebruikte EP berekenen ---
-    $usedXP = getCharacterSkillExperienceCost($pdo, $idCharacter);
-
-    // --- 6. Actie verwerken ---
-    if ($action === 'up') {
-        if ($level >= 3) {
-            echo json_encode(['error' => 'Maximum vaardigheidsniveau bereikt.']);
-            exit;
-        }
-
-        // Kosten van deze upgrade
-        $cost = ($level === 0 ? 1 : ($level === 1 ? 2 : 3));
-
-        if ($isPlayer && $maxXP !== null && ($usedXP + $cost) > $maxXP) {
-            echo json_encode(['error' => 'Onvoldoende ervaringspunten.']);
-            exit;
-        }
-
-        $level++;
-
-    } elseif ($action === 'down') {
-        if ($level <= 0) {
-            echo json_encode(['error' => 'Niveau is al 0.']);
-            exit;
-        }
-        $level--;
-
-        // Als de skill nu terug op 0 komt, discipline-link(s) loskoppelen
-        if ($level === 0) {
-            $stmt = $pdo->prepare("
-                DELETE cs
-                FROM tblCharacterSpecialisation cs
-                JOIN tblSkillSpecialisation ss 
-                ON ss.id = cs.idSkillSpecialisation
-                WHERE cs.idCharacter = ?
-                AND cs.idSkill = ?
-                AND ss.kind = 'discipline'
-            ");
-            $stmt->execute([$idCharacter, $idSkill]);
-        }
-
-    } elseif ($action === 'delete') {
-        // wordt verderop afgehandeld in de DELETE-queries
-
-    } else {
-        http_response_code(400);
-        echo json_encode(['error' => 'Onbekende actie.']);
-        exit;
-    }
-
-    // --- 7. Wijziging wegschrijven ---
-    if ($action === 'delete') {
-        // Eerst alle specialisaties van dit character + skill verwijderen
-        $stmt = $pdo->prepare("
-            DELETE FROM tblCharacterSpecialisation
-            WHERE idCharacter = ? AND idSkill = ?
-        ");
-        $stmt->execute([$idCharacter, $idSkill]);
-
-        // Daarna de skill-link zelf verwijderen
-        $stmt = $pdo->prepare("
-            DELETE FROM tblLinkCharacterSkill
-            WHERE idCharacter = ? AND idSkill = ?
-        ");
-        $stmt->execute([$idCharacter, $idSkill]);
-
-    } else {
-        $stmt = $pdo->prepare(
-            'UPDATE tblLinkCharacterSkill 
-             SET level = ? 
-             WHERE idCharacter = ? AND idSkill = ?'
-        );
-        $stmt->execute([$level, $idCharacter, $idSkill]);
-    }
-
-    // --- 8. Nieuwe lijst van skills voor feedback (optioneel) ---
-    $stmt = $pdo->prepare(
-        'SELECT s.id, s.name, s.description, 
-                s.beginner, s.professional, s.master, 
-                cs.level
-         FROM tblSkill s 
-         JOIN tblLinkCharacterSkill cs ON cs.idSkill = s.id
-         WHERE cs.idCharacter = ?
-         ORDER BY s.name'
-    );
-    $stmt->execute([$idCharacter]);
-    $skills = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Used XP opnieuw berekenen
-    $usedXP = getCharacterSkillExperienceCost($pdo, $idCharacter);
-
-    echo json_encode([
-        'skills' => $skills,
-        'usedExperience' => $usedXP,
-        'maxExperience' => $maxXP
-    ]);
-
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput($requestData, aetherCharacterRequestSchema('updateSkill', $requestData));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
+try {
+    aetherRequireCharacterAccess($pdo, $currentUser, $input['idCharacter'], 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $input['idSkill']);
+    aetherJsonResponse(aetherUpdateCharacterSkill(
+        $pdo,
+        $input['idCharacter'],
+        $input['idSkill'],
+        $input['action']
+    ));
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Fout bij updaten van skill.',
-        'details' => $e->getMessage()
-    ]);
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('updateSkill.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Fout bij updaten van skill.');
 }

@@ -1,178 +1,48 @@
 <?php
 declare(strict_types=1);
-require_once '../../db.php';
-require_once __DIR__ . '/characterPointUtils.php';
-require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+
 header('Content-Type: application/json; charset=utf-8');
 
-/**
- * Huidig gebruikte EP voor een personage:
- * - levels in tblLinkCharacterSkill
- * - + 2 EP per niet-discipline specialisatie
- */
-function getUsedXP(PDO $pdo, int $idChar): int
-{
-    return getCharacterSkillExperienceCost($pdo, $idChar);
-}
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterSkillRepository.php';
+require_once __DIR__ . '/characterSkillService.php';
+
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 try {
-    $pdo = getPDO();
-    $input = aetherReadCharacterJsonRequest('addSkillSpecialisation');
-
-    $idSkill = (int) ($input['idSkill'] ?? 0);
-    $idChar = (int) ($input['idCharacter'] ?? 0);
-    $idSpec = (int) ($input['idSkillSpecialisation'] ?? 0);
-    $name = trim((string) ($input['name'] ?? ''));
-    $kindFromClient = $input['kind'] ?? null; // 'discipline' of 'specialisation' of null
-
-    if ($idSkill <= 0 || $idChar <= 0) {
-        throw new RuntimeException("Ongeldige parameters.");
-    }
-
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
-    aetherRequireCharacterAccess($pdo, $currentUser, $idChar, 'edit');
-    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
-
-    // --- Character ophalen: type + idUser ---
-    $stmt = $pdo->prepare("
-        SELECT id, type, idUser, experienceToTrait, physicalHealth, mentalHealth
-        FROM tblCharacter
-        WHERE id = ?
-    ");
-    $stmt->execute([$idChar]);
-    $character = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$character) {
-        throw new RuntimeException("Personage niet gevonden.");
-    }
-
-    $pointSummary = getCharacterPointSummary($pdo, $character);
-    $isPlayer = $pointSummary['isPlayer'];
-    $maxXP = $pointSummary['experienceBudget'];
-
-    // 1) Bestaande specialisatie uit dropdown
-    if ($idSpec > 0) {
-
-        // Eerst type/kind van deze specialisatie ophalen
-        $stmt = $pdo->prepare("
-            SELECT kind
-            FROM tblSkillSpecialisation
-            WHERE id = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$idSpec]);
-        $specRow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$specRow) {
-            throw new RuntimeException("Onbekende specialisatie.");
-        }
-
-        $specKind = $specRow['kind'] ?: 'specialisation';
-
-        // Bestaat de link al?
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) 
-            FROM tblCharacterSpecialisation
-            WHERE idCharacter = ? 
-              AND idSkill = ? 
-              AND idSkillSpecialisation = ?
-        ");
-        $stmt->execute([$idChar, $idSkill, $idSpec]);
-        $alreadyLinked = (int) $stmt->fetchColumn() > 0;
-
-        // Enkel XP-check als:
-        // - spelerspersonage
-        // - geen discipline
-        // - link bestaat nog niet
-        if ($isPlayer && $maxXP !== null && $specKind !== 'discipline' && !$alreadyLinked) {
-            $usedXP = getUsedXP($pdo, $idChar);
-            $cost = 2; // elke niet-discipline specialisatie = 2 EP
-
-            if ($usedXP + $cost > $maxXP) {
-                echo json_encode(['error' => 'Onvoldoende ervaringspunten voor deze specialisatie.']);
-                exit;
-            }
-        }
-
-        if (!$alreadyLinked) {
-            $stmt = $pdo->prepare("
-                INSERT INTO tblCharacterSpecialisation (idCharacter, idSkill, idSkillSpecialisation)
-                VALUES (?, ?, ?)
-            ");
-            $stmt->execute([$idChar, $idSkill, $idSpec]);
-        }
-
-    } else {
-        // 2) Nieuwe naam → eerst kijken of die al bestaat voor deze skill
-        if ($name === '') {
-            throw new RuntimeException("Geen naam opgegeven voor nieuwe specialisatie.");
-        }
-
-        $stmt = $pdo->prepare("
-            SELECT id, kind
-            FROM tblSkillSpecialisation
-            WHERE idSkill = ? 
-              AND LOWER(name) = LOWER(?)
-            LIMIT 1
-        ");
-        $stmt->execute([$idSkill, $name]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row) {
-            // Specialisatie bestaat al → gebruik die id + kind
-            $idSpec = (int) $row['id'];
-            $specKind = $row['kind'] ?: 'specialisation';
-        } else {
-            // Bestaat nog niet → nieuwe rij aanmaken
-            // Alleen beheerrollen mogen via deze route een globale discipline-definitie maken.
-            $specKind = ($kindFromClient === 'discipline' && aetherIsPrivilegedRole($currentUser['role']))
-                ? 'discipline'
-                : 'specialisation';
-
-            $stmt = $pdo->prepare("
-                INSERT INTO tblSkillSpecialisation (idSkill, name, kind)
-                VALUES (?, ?, ?)
-            ");
-            $stmt->execute([$idSkill, $name, $specKind]);
-            $idSpec = (int) $pdo->lastInsertId();
-        }
-
-        // Link met het personage ENKEL als die nog niet bestaat
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) 
-            FROM tblCharacterSpecialisation
-            WHERE idCharacter = ? 
-              AND idSkill = ? 
-              AND idSkillSpecialisation = ?
-        ");
-        $stmt->execute([$idChar, $idSkill, $idSpec]);
-        $alreadyLinked = (int) $stmt->fetchColumn() > 0;
-
-        // XP-check (zelfde voorwaarden)
-        if ($isPlayer && $maxXP !== null && $specKind !== 'discipline' && !$alreadyLinked) {
-            $usedXP = getUsedXP($pdo, $idChar);
-            $cost = 2;
-
-            if ($usedXP + $cost > $maxXP) {
-                echo json_encode(['error' => 'Onvoldoende ervaringspunten voor deze specialisatie.']);
-                exit;
-            }
-        }
-
-        if (!$alreadyLinked) {
-            $stmt = $pdo->prepare("
-                INSERT INTO tblCharacterSpecialisation (idCharacter, idSkill, idSkillSpecialisation)
-                VALUES (?, ?, ?)
-            ");
-            $stmt->execute([$idChar, $idSkill, $idSpec]);
-        }
-    }
-
-    echo json_encode(['success' => true]);
-
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('addSkillSpecialisation', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
+try {
+    aetherRequireCharacterAccess($pdo, $currentUser, $input['idCharacter'], 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $input['idSkill']);
+    aetherJsonResponse(aetherAddCharacterSkillSpecialisation(
+        $pdo,
+        $currentUser,
+        $input['idCharacter'],
+        $input['idSkill'],
+        (int) ($input['idSkillSpecialisation'] ?? 0),
+        (string) ($input['name'] ?? ''),
+        isset($input['kind']) ? (string) $input['kind'] : null
+    ));
+} catch (AetherCharacterSkillException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('addSkillSpecialisation.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon specialisatie niet opslaan.');
 }

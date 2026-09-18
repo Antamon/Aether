@@ -3,50 +3,41 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/gossipKnowledgeUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterActionService.php';
 
-$input = aetherReadCharacterJsonRequest('getCharacterActionKnowledgeTargets');
-$idCharacter = (int) ($input['idCharacter'] ?? 0);
-$idEvent = (int) ($input['idEvent'] ?? 0);
-
-if ($idCharacter <= 0 || $idEvent <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Personage en event zijn verplicht.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
 try {
-    $pdo = getPDO();
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    $currentUserRole = $currentUser['role'];
-    $currentUserId = (int) $currentUser['id'];
-
-    $character = dbOne($pdo, 'SELECT * FROM tblCharacter WHERE id = :idCharacter', ['idCharacter' => $idCharacter]);
-    if ($character === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
-    }
-
-    if (!canViewCharacterActions($character, $currentUserRole, $currentUserId)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen rechten om deze acties te bekijken.']);
-        exit;
-    }
-
-    $worldKnowledgeLevel = getCharacterSkillLevelByIdForGossip($pdo, $idCharacter, AETHER_WORLD_KNOWLEDGE_SKILL_ID);
-
-    echo json_encode([
-        'worldKnowledgeLevel' => $worldKnowledgeLevel,
-        'attemptCount' => getCharacterEventGossipAttemptCount($pdo, $idCharacter, $idEvent),
-        'targets' => fetchVisibleKnowledgeTargetsForViewer($pdo, $idCharacter, $idEvent, $worldKnowledgeLevel),
-    ]);
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('getCharacterActionKnowledgeTargets', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
+try {
+    aetherRequireCharacterActionAccess(
+        $pdo,
+        $currentUser,
+        $input['idCharacter'],
+        'Geen rechten om deze acties te bekijken.'
+    );
+    aetherJsonResponse(aetherBuildCharacterKnowledgeTargets(
+        $pdo,
+        $input['idCharacter'],
+        $input['idEvent']
+    ));
+} catch (AetherCharacterActionException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon de wereldwijsdoelen niet laden.',
-        'details' => $e->getMessage(),
-    ]);
+    error_log('getCharacterActionKnowledgeTargets.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon de wereldwijsdoelen niet laden.');
 }

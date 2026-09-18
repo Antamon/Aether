@@ -3,48 +3,37 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/characterSkillActionUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterActionService.php';
 
-$input = aetherReadCharacterJsonRequest('getCharacterActionEvents');
-$idCharacter = (int) ($input['idCharacter'] ?? 0);
-
-if ($idCharacter <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Personage ontbreekt.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
 try {
-    $pdo = getPDO();
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    $currentUserRole = $currentUser['role'];
-    $currentUserId = (int) $currentUser['id'];
-
-    $character = dbOne($pdo, 'SELECT * FROM tblCharacter WHERE id = :idCharacter', ['idCharacter' => $idCharacter]);
-    if ($character === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
-    }
-
-    if (!canViewCharacterActions($character, $currentUserRole, $currentUserId)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen rechten om deze acties te bekijken.']);
-        exit;
-    }
-
-    echo json_encode([
-        'events' => fetchCharacterActionEvents($pdo),
-        'worldKnowledgeLevel' => getCharacterSkillLevelByIdForGossip($pdo, $idCharacter, AETHER_WORLD_KNOWLEDGE_SKILL_ID),
-        'psiBurn' => getCharacterPsiBurn($pdo, $idCharacter),
-        'actions' => buildCharacterPsiActionGroups($pdo, $idCharacter),
-    ]);
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('getCharacterActionEvents', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
+try {
+    aetherRequireCharacterActionAccess(
+        $pdo,
+        $currentUser,
+        $input['idCharacter'],
+        'Geen rechten om deze acties te bekijken.'
+    );
+    aetherJsonResponse(aetherBuildCharacterActionCatalog($pdo, $currentUser, $input['idCharacter']));
+} catch (AetherCharacterActionException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon de actiedata niet laden.',
-        'details' => $e->getMessage(),
-    ]);
+    error_log('getCharacterActionEvents.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon de actiedata niet laden.');
 }
