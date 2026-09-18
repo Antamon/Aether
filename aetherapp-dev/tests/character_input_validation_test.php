@@ -135,6 +135,10 @@ $routes = [
 ];
 
 $projectRoot = dirname(__DIR__);
+$directSchemaRoutes = [
+    'deleteCharacterLanguage', 'getCharacterList', 'getDisciplineList',
+    'getNewSkills', 'newCharacter', 'saveCharacterSection',
+];
 foreach ($routes as $route) {
     assertCharacterValidation(
         is_array(aetherCharacterRequestSchema($route)),
@@ -143,12 +147,12 @@ foreach ($routes as $route) {
     $path = $projectRoot . '/api/characters/' . $route . '.php';
     $contents = file_get_contents($path);
     assertCharacterValidation($contents !== false, "Route kon niet gelezen worden: {$route}");
-    if ($route === 'saveCharacterSection') {
+    if (in_array($route, $directSchemaRoutes, true)) {
         assertCharacterValidation(
             str_contains($contents, 'aetherReadJsonObject()')
-                && str_contains($contents, "aetherCharacterRequestSchema('saveCharacterSection'")
+                && str_contains($contents, "aetherCharacterRequestSchema('{$route}'")
                 && str_contains($contents, 'aetherValidateInput('),
-            'Route saveCharacterSection gebruikt de expliciete JSON-lezer en het characterschema niet.'
+            "Route {$route} gebruikt de expliciete JSON-lezer en het characterschema niet."
         );
     } else {
         assertCharacterValidation(

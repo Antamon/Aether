@@ -4,24 +4,27 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterSchemas.php';
 
-$postData = aetherReadCharacterJsonRequest('getNewSkills');
-
-$characterId = isset($postData['id']) ? (int) $postData['id'] : 0;
-if ($characterId <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldig character ID.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
 try {
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCharacterAccess($pdo, $currentUser, $characterId, 'edit');
-    $isAdmin = aetherIsPrivilegedRole($currentUser['role']);
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput($requestData, aetherCharacterRequestSchema('getNewSkills', $requestData));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
 
-    // Basis-SELECT
+$characterId = $input['id'];
+
+try {
+    aetherRequireCharacterAccess($pdo, $currentUser, $characterId, 'edit');
+
     $sql = '
         SELECT id, name
           FROM tblSkill
@@ -31,23 +34,12 @@ try {
                     WHERE idCharacter = :idCharacter
                )
     ';
-
-    // Gewone deelnemers: alleen public skills
-    if (!$isAdmin) {
+    if (!aetherIsPrivilegedRole($currentUser['role'])) {
         $sql .= " AND visibility = 'public'";
     }
-
     $sql .= ' ORDER BY name';
 
-    $skills = dbAll(
-        $pdo,
-        $sql,
-        ['idCharacter' => $characterId]
-    );
-
-    echo json_encode($skills);
-
+    aetherJsonResponse(dbAll($pdo, $sql, ['idCharacter' => $characterId]));
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Server error while loading new skills.']);
+    aetherJsonError(500, 'Server error while loading new skills.');
 }

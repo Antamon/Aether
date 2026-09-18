@@ -1,65 +1,56 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
 header('Content-Type: application/json; charset=utf-8');
 
-try {
-    $pdo = getPDO();
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'DB-verbinding mislukt.']);
-    exit;
-}
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
 
-$input = aetherReadCharacterJsonRequest('getDisciplineList');
-$idSkill = isset($input['idSkill']) ? (int) $input['idSkill'] : 0;
-$idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
-
-if ($idSkill <= 0 || $idCharacter <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige parameters.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
 try {
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput($requestData, aetherCharacterRequestSchema('getDisciplineList', $requestData));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
+
+$idSkill = $input['idSkill'];
+$idCharacter = $input['idCharacter'];
+
+try {
     aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
     aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
-    // Alle disciplines voor deze skill die de speler NOG NIET heeft
-    $sql = "
-        SELECT ss.id, ss.name
-        FROM tblSkillSpecialisation ss
-        LEFT JOIN tblCharacterSpecialisation cs
-            ON cs.idSkillSpecialisation = ss.id
-           AND cs.idCharacter = :idCharacter
-        WHERE ss.idSkill = :idSkill
-          AND ss.kind = 'discipline'
-          AND cs.idSkillSpecialisation IS NULL
-        ORDER BY ss.name
-    ";
-
-    $stmt = $pdo->prepare($sql);
+    $stmt = $pdo->prepare(
+        "SELECT ss.id, ss.name
+           FROM tblSkillSpecialisation ss
+           LEFT JOIN tblCharacterSpecialisation cs
+             ON cs.idSkillSpecialisation = ss.id
+            AND cs.idCharacter = :idCharacter
+          WHERE ss.idSkill = :idSkill
+            AND ss.kind = 'discipline'
+            AND cs.idSkillSpecialisation IS NULL
+       ORDER BY ss.name"
+    );
     $stmt->execute([
         ':idSkill' => $idSkill,
-        ':idCharacter' => $idCharacter
+        ':idCharacter' => $idCharacter,
     ]);
 
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    echo json_encode([
-        'options' => array_map(function ($r) {
-            return [
-                'id' => (int) $r['id'],
-                'name' => $r['name']
-            ];
-        }, $rows)
-    ]);
-
+    $options = array_map(
+        static fn(array $row): array => [
+            'id' => (int) $row['id'],
+            'name' => $row['name'],
+        ],
+        $stmt->fetchAll(PDO::FETCH_ASSOC)
+    );
+    aetherJsonResponse(['options' => $options]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    aetherJsonError(500, 'Kon disciplines niet laden.');
 }
