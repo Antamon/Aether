@@ -146,9 +146,10 @@ assertRouteCoverage(str_contains($newCharacter, "\$postData['createdBy'] = \$cre
 assertRouteCoverage(str_contains($newCharacter, "\$postData['role']") === false, 'Nieuw personage leest een browserrol uit de payload.');
 
 $updateCharacter = routeContents($projectRoot, 'api/characters/updateCharacter.php');
-assertRouteCoverage(str_contains($updateCharacter, 'aetherCanChangeCharacterAuthorityField'), 'Personage-update controleert bevoegdheidsvelden niet centraal.');
+$characterService = routeContents($projectRoot, 'api/characters/characterService.php');
+assertRouteCoverage(str_contains($characterService, 'aetherCanChangeCharacterAuthorityField'), 'Personage-update controleert bevoegdheidsvelden niet centraal.');
 foreach (['idUser', 'type', 'state', 'createdBy', 'createdAt'] as $authorityField) {
-    assertRouteCoverage(str_contains($updateCharacter, "'{$authorityField}'"), "Personage-update noemt bevoegdheidsveld {$authorityField} niet in de servercontrole.");
+    assertRouteCoverage(str_contains($characterService, "'{$authorityField}'"), "Personage-update noemt bevoegdheidsveld {$authorityField} niet in de servercontrole.");
 }
 
 $eventList = routeContents($projectRoot, 'api/events/getEventList.php');

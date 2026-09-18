@@ -139,6 +139,7 @@ $directSchemaRoutes = [
     'AddNewSkill', 'deleteCharacterLanguage', 'deleteSkillSpecialisation',
     'getCharacterLanguageOptions', 'getCharacterList', 'getDisciplineList',
     'getNewSkills', 'getSkillSpecialisations', 'newCharacter', 'saveCharacterSection',
+    'updateCharacter',
 ];
 foreach ($routes as $route) {
     assertCharacterValidation(
@@ -185,14 +186,17 @@ assertCharacterValidation(
 
 $newCharacterRoute = file_get_contents($projectRoot . '/api/characters/newCharacter.php');
 $updateCharacterRoute = file_get_contents($projectRoot . '/api/characters/updateCharacter.php');
+$characterRepository = file_get_contents($projectRoot . '/api/characters/characterRepository.php');
 assertCharacterValidation(
     $newCharacterRoute !== false && !str_contains($newCharacterRoute, 'array_keys($postData)'),
     'Nieuw personage bouwt nog SQL-kolommen uit browserinput.'
 );
 assertCharacterValidation(
     $updateCharacterRoute !== false
-    && str_contains($updateCharacterRoute, '$columnMap = [')
-    && !str_contains($updateCharacterRoute, '$setParts[] = "$col = :$col"'),
+    && $characterRepository !== false
+    && str_contains($characterRepository, 'function aetherCharacterUpdateColumnMap(')
+    && str_contains($characterRepository, "'firstName' => '`firstName`'")
+    && !str_contains($characterRepository, '$setParts[] = "$col = :$col"'),
     'Personage-update gebruikt geen vaste kolommapping.'
 );
 
