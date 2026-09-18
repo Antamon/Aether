@@ -127,12 +127,23 @@ $saveSection = richTextSource($projectRoot, 'api/characters/saveCharacterSection
 $readSections = richTextSource($projectRoot, 'api/characters/getCharacterSections.php');
 $saveDiary = richTextSource($projectRoot, 'api/characters/saveCharacterDiary.php');
 $readDiary = richTextSource($projectRoot, 'api/characters/getCharacterDiary.php');
-foreach ([$saveSection, $readSections, $saveDiary, $readDiary] as $routeSource) {
+$readService = richTextSource($projectRoot, 'api/characters/characterReadService.php');
+foreach ([$saveSection, $saveDiary] as $routeSource) {
     assertCharacterRichText(
         str_contains($routeSource, 'characterRichText.php'),
-        'Een rich-text lees- of schrijfroutelaadt de character-sanitizer niet.'
+        'Een rich-text schrijfroutelaadt de character-sanitizer niet.'
     );
 }
+foreach ([$readSections, $readDiary] as $routeSource) {
+    assertCharacterRichText(
+        str_contains($routeSource, 'characterReadService.php'),
+        'Een rich-text leesroute laadt de gedeelde character-leesservice niet.'
+    );
+}
+assertCharacterRichText(
+    str_contains($readService, 'characterRichText.php'),
+    'De character-leesservice laadt de character-sanitizer niet.'
+);
 assertCharacterRichText(
     str_contains($saveSection, 'aetherSanitizeCharacterRichText')
         && str_contains($saveSection, "'content' => \$content"),
@@ -143,8 +154,8 @@ assertCharacterRichText(
     'Goals en achievements worden niet beide vóór opslag gesanitized.'
 );
 assertCharacterRichText(
-    str_contains($readSections, 'aetherSanitizeCharacterRichText')
-        && str_contains($readDiary, 'aetherSanitizeCharacterDiaryRow'),
+    str_contains($readService, 'aetherSanitizeCharacterRichText')
+        && str_contains($readService, 'aetherSanitizeCharacterDiaryRow'),
     'Bestaande rich text wordt niet tijdens iedere leesroute gesanitized.'
 );
 
