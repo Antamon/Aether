@@ -1,56 +1,33 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/characterMediaUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/characterPortraitService.php';
 
-$postData = aetherReadCharacterJsonRequest('deleteCharacterPortrait');
-$id = (int) ($postData['id'] ?? 0);
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldig personage ID.']);
-    exit;
+try {
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput($requestData, aetherCharacterRequestSchema('deleteCharacterPortrait', $requestData));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 }
 
 try {
-    $pdo = getPDO();
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
-    $currentUserRole = $currentUser['role'];
-    $currentUserId = (int) $currentUser['id'];
-
-    $character = dbOne(
-        $pdo,
-        'SELECT id, idUser
-           FROM tblCharacter
-          WHERE id = :id',
-        ['id' => $id]
-    );
-
-    if ($character === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
-    }
-
-    if (!canManageCharacterPortrait($character, $currentUserRole, $currentUserId)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Je hebt geen rechten om dit portret te beheren.']);
-        exit;
-    }
-
-    $portraitPath = getCharacterPortraitAbsolutePath($id);
-    if (is_file($portraitPath) && !unlink($portraitPath)) {
-        throw new RuntimeException('Kon portret niet verwijderen.');
-    }
-
-    echo json_encode(['status' => 'ok']);
+    aetherJsonResponse(aetherDeleteCharacterPortrait($pdo, $currentUser, $input['id']));
+} catch (AetherCharacterPortraitException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon portret niet verwijderen.']);
+    error_log('deleteCharacterPortrait.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon portret niet verwijderen.');
 }

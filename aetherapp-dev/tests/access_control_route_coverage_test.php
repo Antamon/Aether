@@ -83,7 +83,7 @@ $characterWriteObjectChecks = [
     'api/characters/deleteCharacter.php' => 'aetherCanEditCharacter',
     'api/characters/deleteCharacterEconomySnapshot.php' => 'canManageCharacterEconomySnapshots',
     'api/characters/deleteCharacterLanguage.php' => 'canCurrentUserManageCharacterLanguages',
-    'api/characters/deleteCharacterPortrait.php' => 'canManageCharacterPortrait',
+    'api/characters/deleteCharacterPortrait.php' => 'aetherCanManageCharacterPortrait',
     'api/characters/deleteCharacterTie.php' => 'aetherCanEditCharacter',
     'api/characters/deleteSkillSpecialisation.php' => 'aetherRequireCharacterAccess',
     'api/characters/revealCharacterActionKnowledge.php' => 'aetherRequireCharacterActionAccess',
@@ -97,11 +97,22 @@ $characterWriteObjectChecks = [
     'api/characters/updateCharacter.php' => 'aetherCanEditCharacter',
     'api/characters/updateSkill.php' => 'aetherRequireCharacterAccess',
     'api/characters/updateTrait.php' => 'aetherCanEditDraftCharacter',
-    'api/characters/uploadCharacterPortrait.php' => 'canManageCharacterPortrait',
+    'api/characters/uploadCharacterPortrait.php' => 'aetherCanManageCharacterPortrait',
     'api/characters/useCharacterSkillAction.php' => 'aetherRequireCharacterActionAccess',
 ];
 foreach ($characterWriteObjectChecks as $route => $objectAccessMarker) {
     $contents = routeContents($projectRoot, $route);
+    $policyFiles = [
+        'api/characters/addCharacterLanguage.php' => 'api/characters/characterLanguageService.php',
+        'api/characters/saveCharacterDiary.php' => 'api/characters/characterDiaryService.php',
+        'api/characters/updateTrait.php' => 'api/characters/characterTraitService.php',
+        'api/characters/deleteCharacter.php' => 'api/characters/characterLifecycleService.php',
+        'api/characters/deleteCharacterPortrait.php' => 'api/characters/characterPortraitService.php',
+        'api/characters/uploadCharacterPortrait.php' => 'api/characters/characterPortraitService.php',
+    ];
+    if (isset($policyFiles[$route])) {
+        $contents .= routeContents($projectRoot, $policyFiles[$route]);
+    }
     assertRouteCoverage(
         str_contains($contents, $objectAccessMarker),
         "Schrijfroute zonder objectcontrole ({$objectAccessMarker}): {$route}"
@@ -162,6 +173,7 @@ $movedCharacterAccessFunctions = [
     'aetherCanEditCharacter',
     'aetherCanEditDraftCharacter',
     'aetherCanEditCharacterDiaryAchievements',
+    'aetherCanManageCharacterPortrait',
     'aetherFetchCharacterAccessRecord',
     'aetherRequireCharacterAccess',
     'aetherCanChangeCharacterAuthorityField',

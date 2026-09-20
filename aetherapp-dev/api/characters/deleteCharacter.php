@@ -1,166 +1,35 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterAccess.php';
-require_once __DIR__ . '/characterRequestValidation.php';
-
-function tableExists(PDO $pdo, string $tableName): bool
-{
-    $row = dbOne(
-        $pdo,
-        'SELECT 1
-           FROM information_schema.TABLES
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = :table
-          LIMIT 1',
-        ['table' => $tableName]
-    );
-
-    return $row !== null;
-}
-
-function deleteCompanyPersonnelLinks(PDO $pdo, int $idCharacter): void
-{
-    if (!tableExists($pdo, 'tblCompanyPersonnel')) {
-        return;
-    }
-
-    if (tableExists($pdo, 'tblCompanyPersonnelSkillSpecialisation') && tableExists($pdo, 'tblCompanyPersonnelSkill')) {
-        $stmt = $pdo->prepare(
-            'DELETE cpss
-               FROM tblCompanyPersonnelSkillSpecialisation cpss
-               INNER JOIN tblCompanyPersonnelSkill cps
-                       ON cps.id = cpss.idCompanyPersonnelSkill
-               INNER JOIN tblCompanyPersonnel cp
-                       ON cp.id = cps.idCompanyPersonnel
-              WHERE cp.idCharacter = :idCharacter'
-        );
-        $stmt->execute(['idCharacter' => $idCharacter]);
-    }
-
-    if (tableExists($pdo, 'tblCompanyPersonnelSkill')) {
-        $stmt = $pdo->prepare(
-            'DELETE cps
-               FROM tblCompanyPersonnelSkill cps
-               INNER JOIN tblCompanyPersonnel cp
-                       ON cp.id = cps.idCompanyPersonnel
-              WHERE cp.idCharacter = :idCharacter'
-        );
-        $stmt->execute(['idCharacter' => $idCharacter]);
-    }
-
-    $stmt = $pdo->prepare('DELETE FROM tblCompanyPersonnel WHERE idCharacter = :idCharacter');
-    $stmt->execute(['idCharacter' => $idCharacter]);
-}
-
-function deleteCharacterShareLinks(PDO $pdo, int $idCharacter): void
-{
-    if (!tableExists($pdo, 'tblLinkCharacterTrait') || !tableExists($pdo, 'tblLinkCharacterTraitCompany')) {
-        return;
-    }
-
-    $stmt = $pdo->prepare(
-        'DELETE lctc
-           FROM tblLinkCharacterTraitCompany lctc
-           INNER JOIN tblLinkCharacterTrait lct
-                   ON lct.id = lctc.idLinkCharacterTrait
-          WHERE lct.idCharacter = :idCharacter'
-    );
-    $stmt->execute(['idCharacter' => $idCharacter]);
-}
-
-function deleteCharacterLanguageLinks(PDO $pdo, int $idCharacter): void
-{
-    if (!tableExists($pdo, 'tblCharacterLanguage')) {
-        return;
-    }
-
-    $stmt = $pdo->prepare('DELETE FROM tblCharacterLanguage WHERE idCharacter = :idCharacter');
-    $stmt->execute(['idCharacter' => $idCharacter]);
-}
-
-$postData = aetherReadCharacterJsonRequest('deleteCharacter');
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterMediaUtils.php';
+require_once __DIR__ . '/characterLifecycleRepository.php';
+require_once __DIR__ . '/characterLifecycleService.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
 
-$idCharacter = isset($postData['id']) ? (int) $postData['id'] : 0;
-if ($idCharacter <= 0) {
-    http_response_code(422);
-    echo json_encode(['error' => 'Ongeldig personage.']);
-    exit;
+try {
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput($requestData, aetherCharacterRequestSchema('deleteCharacter', $requestData));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 }
 
 try {
-    $character = dbOne(
-        $pdo,
-        'SELECT id, idUser, type, state, firstName, lastName
-           FROM tblCharacter
-          WHERE id = :id',
-        ['id' => $idCharacter]
-    );
-
-    if ($character === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
-    }
-
-    if (!aetherCanEditCharacter($currentUser, $character)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen toestemming om dit personage te verwijderen.']);
-        exit;
-    }
-
-    $pdo->beginTransaction();
-
-    if (tableExists($pdo, 'tblCompanySnapshotPayout')) {
-        $stmt = $pdo->prepare('DELETE FROM tblCompanySnapshotPayout WHERE idCharacter = :idCharacter');
-        $stmt->execute(['idCharacter' => $idCharacter]);
-    }
-
-    if (tableExists($pdo, 'tblCharacterBankTransaction')) {
-        $stmt = $pdo->prepare(
-            'DELETE FROM tblCharacterBankTransaction
-              WHERE idSourceCharacter = :idSourceCharacter
-                 OR idTargetCharacter = :idTargetCharacter'
-        );
-        $stmt->execute([
-            'idSourceCharacter' => $idCharacter,
-            'idTargetCharacter' => $idCharacter
-        ]);
-    }
-
-    deleteCompanyPersonnelLinks($pdo, $idCharacter);
-    deleteCharacterShareLinks($pdo, $idCharacter);
-    deleteCharacterLanguageLinks($pdo, $idCharacter);
-
-    $stmt = $pdo->prepare('DELETE FROM tblCharacter WHERE id = :idCharacter');
-    $stmt->execute(['idCharacter' => $idCharacter]);
-
-    if ($stmt->rowCount() < 1) {
-        throw new RuntimeException('Het personage kon niet verwijderd worden.');
-    }
-
-    $pdo->commit();
-
-    echo json_encode([
-        'success' => true,
-        'id' => $idCharacter,
-        'name' => trim((string) ($character['firstName'] ?? '') . ' ' . (string) ($character['lastName'] ?? ''))
-    ]);
+    aetherJsonResponse(aetherDeleteCharacter($pdo, $currentUser, $input['id']));
+} catch (AetherCharacterLifecycleException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Het verwijderen van het personage is mislukt.',
-        'details' => $e->getMessage()
-    ]);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('deleteCharacter.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Het verwijderen van het personage is mislukt.');
 }

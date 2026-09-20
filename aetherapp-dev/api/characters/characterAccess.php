@@ -39,6 +39,16 @@ function aetherCanEditCharacterDiaryAchievements(array $user, array $character):
             && (int) ($character['idUser'] ?? 0) === (int) ($user['id'] ?? 0));
 }
 
+function aetherCanManageCharacterPortrait(array $user, array $character): bool
+{
+    if (aetherIsPrivilegedRole((string) ($user['role'] ?? ''))) {
+        return true;
+    }
+
+    return ($user['role'] ?? '') === AETHER_ROLE_PARTICIPANT
+        && (int) ($character['idUser'] ?? 0) === (int) ($user['id'] ?? 0);
+}
+
 function aetherFetchCharacterAccessRecord(PDO $pdo, int $characterId): ?array
 {
     $stmt = $pdo->prepare(

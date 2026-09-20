@@ -136,12 +136,13 @@ $routes = [
 
 $projectRoot = dirname(__DIR__);
 $directSchemaRoutes = [
-    'AddNewSkill', 'addSkillSpecialisation', 'deleteCharacterLanguage', 'deleteSkillSpecialisation',
+    'AddNewSkill', 'addCharacterLanguage', 'addSkillSpecialisation', 'deleteCharacter', 'deleteCharacterLanguage',
+    'deleteCharacterPortrait', 'deleteSkillSpecialisation',
     'deleteCharacterTie', 'getCharacter', 'getCharacterDiary', 'getCharacterLanguageOptions',
     'getCharacterActionEvents', 'getCharacterActionKnowledgeTargets', 'getCharacterList',
     'getCharacterSections', 'getCharacterTies', 'getDisciplineList',
-    'getNewSkills', 'getSkillSpecialisations', 'newCharacter', 'saveCharacterSection',
-    'revealCharacterActionKnowledge', 'saveCharacterTie', 'updateCharacter', 'updateSkill',
+    'getNewSkills', 'getSkillSpecialisations', 'newCharacter', 'saveCharacterDiary', 'saveCharacterSection',
+    'revealCharacterActionKnowledge', 'saveCharacterTie', 'updateCharacter', 'updateSkill', 'updateTrait',
     'useCharacterSkillAction',
 ];
 foreach ($routes as $route) {
@@ -169,7 +170,10 @@ foreach ($routes as $route) {
 
 $upload = file_get_contents($projectRoot . '/api/characters/uploadCharacterPortrait.php');
 assertCharacterValidation(
-    $upload !== false && str_contains($upload, "aetherValidateCharacterRequestOrFail('uploadCharacterPortrait'"),
+    $upload !== false
+        && str_contains($upload, 'aetherReadFormFields()')
+        && str_contains($upload, "aetherCharacterRequestSchema('uploadCharacterPortrait'")
+        && str_contains($upload, 'aetherValidateInput('),
     'Portretupload valideert de multipartvelden niet.'
 );
 assertCharacterValidation(

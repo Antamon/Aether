@@ -126,9 +126,10 @@ function richTextSource(string $projectRoot, string $relativePath): string
 $saveSection = richTextSource($projectRoot, 'api/characters/saveCharacterSection.php');
 $readSections = richTextSource($projectRoot, 'api/characters/getCharacterSections.php');
 $saveDiary = richTextSource($projectRoot, 'api/characters/saveCharacterDiary.php');
+$diaryService = richTextSource($projectRoot, 'api/characters/characterDiaryService.php');
 $readDiary = richTextSource($projectRoot, 'api/characters/getCharacterDiary.php');
 $readService = richTextSource($projectRoot, 'api/characters/characterReadService.php');
-foreach ([$saveSection, $saveDiary] as $routeSource) {
+foreach ([$saveSection, $saveDiary . $diaryService] as $routeSource) {
     assertCharacterRichText(
         str_contains($routeSource, 'characterRichText.php'),
         'Een rich-text schrijfroutelaadt de character-sanitizer niet.'
@@ -150,7 +151,7 @@ assertCharacterRichText(
     'Charactersecties worden niet vóór opslag gesanitized en gesanitized teruggegeven.'
 );
 assertCharacterRichText(
-    substr_count($saveDiary, 'aetherSanitizeCharacterRichText') >= 2,
+    substr_count($diaryService, 'aetherSanitizeCharacterRichText') >= 2,
     'Goals en achievements worden niet beide vóór opslag gesanitized.'
 );
 assertCharacterRichText(
