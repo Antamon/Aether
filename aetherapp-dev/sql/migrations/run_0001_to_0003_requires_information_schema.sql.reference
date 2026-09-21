@@ -1,0 +1,450 @@
+-- Aether migraties 0001 t/m 0003, gebundeld voor MariaDB 10.11.18 en phpMyAdmin.
+-- Selecteer vóór uitvoering expliciet de afzonderlijke aetherapp-dev-testdatabase.
+-- Maak eerst een volledige databaseback-up. Dit script wijzigt geen applicatiedata.
+-- MariaDB-DDL kan impliciet committen; zie de afzonderlijke rollbackbestanden.
+
+-- De migraties vereisen geen uitgeschakelde foreign keys. Gebruik 1 in plaats van
+-- de door sommige phpMyAdmin-varianten gegenereerde, fout geanalyseerde waarde ON.
+SET FOREIGN_KEY_CHECKS = 1;
+
+DELIMITER $$
+
+BEGIN NOT ATOMIC
+  DECLARE v_count BIGINT DEFAULT 0;
+  DECLARE v_named_parts INT DEFAULT 0;
+  DECLARE v_named_non_unique INT DEFAULT 1;
+  DECLARE v_named_columns TEXT DEFAULT '';
+  DECLARE v_equivalent_indexes INT DEFAULT 0;
+
+  SET @aether_migrations_complete = 0;
+
+  IF DATABASE() IS NULL THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: selecteer eerst expliciet de aetherapp-dev-testdatabase.';
+  END IF;
+
+  SET @aether_target_schema = DATABASE();
+
+  CREATE TABLE IF NOT EXISTS `tblSchemaMigration` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `migrationCode` varchar(120) NOT NULL,
+    `description` varchar(255) NOT NULL,
+    `appliedAt` datetime NOT NULL DEFAULT current_timestamp(),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tblSchemaMigration_code` (`migrationCode`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Verifieer eerst het migratieregister. Een bestaande afwijkende tabel wordt niet aangepast.
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblSchemaMigration'
+    AND ENGINE = 'InnoDB';
+  IF v_count <> 1 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: tblSchemaMigration ontbreekt of gebruikt geen InnoDB.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblSchemaMigration'
+    AND (
+      (COLUMN_NAME = 'id' AND DATA_TYPE = 'int' AND IS_NULLABLE = 'NO' AND EXTRA LIKE '%auto_increment%')
+      OR (COLUMN_NAME = 'migrationCode' AND DATA_TYPE = 'varchar' AND CHARACTER_MAXIMUM_LENGTH = 120 AND IS_NULLABLE = 'NO')
+      OR (COLUMN_NAME = 'description' AND DATA_TYPE = 'varchar' AND CHARACTER_MAXIMUM_LENGTH = 255 AND IS_NULLABLE = 'NO')
+      OR (COLUMN_NAME = 'appliedAt' AND DATA_TYPE = 'datetime' AND IS_NULLABLE = 'NO')
+    );
+  IF v_count <> 4 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: tblSchemaMigration heeft niet de verwachte kolommen.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblSchemaMigration';
+  IF v_count <> 4 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: tblSchemaMigration bevat onverwachte extra kolommen.';
+  END IF;
+
+  SELECT COUNT(*),
+         COALESCE(MAX(NON_UNIQUE), 1),
+         COALESCE(GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ','), '')
+    INTO v_named_parts, v_named_non_unique, v_named_columns
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblSchemaMigration'
+    AND INDEX_NAME = 'uq_tblSchemaMigration_code';
+  IF v_named_parts <> 1 OR v_named_non_unique <> 0 OR v_named_columns <> 'migrationCode' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: uq_tblSchemaMigration_code heeft een verkeerde definitie.';
+  END IF;
+
+  SELECT COUNT(*),
+         COALESCE(MAX(NON_UNIQUE), 1),
+         COALESCE(GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ','), '')
+    INTO v_named_parts, v_named_non_unique, v_named_columns
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblSchemaMigration'
+    AND INDEX_NAME = 'PRIMARY';
+  IF v_named_parts <> 1 OR v_named_non_unique <> 0 OR v_named_columns <> 'id' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: tblSchemaMigration heeft niet de verwachte primary key.';
+  END IF;
+
+  INSERT INTO `tblSchemaMigration` (`migrationCode`, `description`)
+  SELECT '0001_create_schema_migration_registry', 'Create the Aether schema migration registry'
+  FROM DUAL
+  WHERE NOT EXISTS (
+    SELECT 1 FROM `tblSchemaMigration`
+    WHERE `migrationCode` = '0001_create_schema_migration_registry'
+  );
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblSchemaMigration`
+  WHERE `migrationCode` = '0001_create_schema_migration_registry';
+  IF v_count <> 1 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: registratie van migratie 0001 is niet uniek aanwezig.';
+  END IF;
+
+  -- Controleer de vereiste domeintabellen en sleutelkolommen vóór datacontroles of ALTER TABLE.
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME IN (
+      'tblLinkCharacterSkill',
+      'tblCharacter',
+      'tblSkill',
+      'tblCharacterSpecialisation',
+      'tblSkillSpecialisation'
+    );
+  IF v_count <> 5 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: een vereiste character- of skilltabel ontbreekt.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND (
+      (TABLE_NAME = 'tblLinkCharacterSkill' AND COLUMN_NAME IN ('id', 'idCharacter', 'idSkill'))
+      OR (TABLE_NAME = 'tblCharacter' AND COLUMN_NAME = 'id')
+      OR (TABLE_NAME = 'tblSkill' AND COLUMN_NAME = 'id')
+      OR (TABLE_NAME = 'tblCharacterSpecialisation' AND COLUMN_NAME IN ('id', 'idCharacter', 'idSkill', 'idSkillSpecialisation'))
+      OR (TABLE_NAME = 'tblSkillSpecialisation' AND COLUMN_NAME IN ('id', 'idSkill'))
+    );
+  IF v_count <> 11 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: een vereiste character- of skillsleutelkolom ontbreekt.';
+  END IF;
+
+  -- Alle blokkerende preflightcontroles staan bewust vóór de eerste relevante ALTER TABLE.
+  SELECT COUNT(*) INTO v_count
+  FROM (
+    SELECT idCharacter, idSkill
+    FROM `tblLinkCharacterSkill`
+    GROUP BY idCharacter, idSkill
+    HAVING COUNT(*) > 1
+  ) AS duplicateCharacterSkills;
+  IF v_count > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0002 gestopt: dubbele (idCharacter, idSkill)-koppelingen gevonden.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblLinkCharacterSkill`
+  WHERE idCharacter IS NULL OR idSkill IS NULL;
+  IF v_count > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0002 gestopt: onverwachte NULL in idCharacter of idSkill.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM (
+    SELECT idCharacter, idSkill, idSkillSpecialisation
+    FROM `tblCharacterSpecialisation`
+    GROUP BY idCharacter, idSkill, idSkillSpecialisation
+    HAVING COUNT(*) > 1
+  ) AS duplicateCharacterSpecialisations;
+  IF v_count > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0003 gestopt: dubbele character-skill-specialisatiekoppelingen gevonden.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblCharacterSpecialisation`
+  WHERE idCharacter IS NULL OR idSkill IS NULL OR idSkillSpecialisation IS NULL;
+  IF v_count > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0003 gestopt: onverwachte NULL in een specialisatiesleutel.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblCharacterSpecialisation` AS cs
+  LEFT JOIN `tblCharacter` AS c ON c.id = cs.idCharacter
+  LEFT JOIN `tblSkill` AS s ON s.id = cs.idSkill
+  LEFT JOIN `tblSkillSpecialisation` AS ss ON ss.id = cs.idSkillSpecialisation
+  WHERE c.id IS NULL OR s.id IS NULL OR ss.id IS NULL;
+  IF v_count > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0003 gestopt: verweesde character-specialisatierecords gevonden.';
+  END IF;
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblCharacterSpecialisation` AS cs
+  JOIN `tblSkillSpecialisation` AS ss ON ss.id = cs.idSkillSpecialisation
+  WHERE ss.idSkill <> cs.idSkill;
+  IF v_count > 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0003 gestopt: een specialisatie hoort bij een andere skill.';
+  END IF;
+
+  -- Een bedoelde indexnaam met een afwijkende definitie is altijd een blokkade.
+  SELECT COUNT(*),
+         COALESCE(MAX(NON_UNIQUE), 1),
+         COALESCE(GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ','), '')
+    INTO v_named_parts, v_named_non_unique, v_named_columns
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblLinkCharacterSkill'
+    AND INDEX_NAME = 'uq_tblLinkCharacterSkill_character_skill';
+  IF v_named_parts > 0
+     AND (v_named_non_unique <> 0 OR v_named_columns <> 'idCharacter,idSkill') THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0002 gestopt: de bedoelde indexnaam heeft een verkeerde definitie.';
+  END IF;
+
+  SELECT COUNT(*),
+         COALESCE(MAX(NON_UNIQUE), 1),
+         COALESCE(GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ','), '')
+    INTO v_named_parts, v_named_non_unique, v_named_columns
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = @aether_target_schema
+    AND TABLE_NAME = 'tblCharacterSpecialisation'
+    AND INDEX_NAME = 'uq_tblCharacterSpecialisation_character_skill_specialisation';
+  IF v_named_parts > 0
+     AND (v_named_non_unique <> 0
+          OR v_named_columns <> 'idCharacter,idSkill,idSkillSpecialisation') THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0003 gestopt: de bedoelde indexnaam heeft een verkeerde definitie.';
+  END IF;
+
+  -- Voeg 0002 alleen toe wanneer geen equivalente unieke index onder enige naam bestaat.
+  SELECT COUNT(*) INTO v_equivalent_indexes
+  FROM (
+    SELECT INDEX_NAME
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @aether_target_schema
+      AND TABLE_NAME = 'tblLinkCharacterSkill'
+    GROUP BY INDEX_NAME, NON_UNIQUE
+    HAVING NON_UNIQUE = 0
+       AND GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') = 'idCharacter,idSkill'
+  ) AS equivalentCharacterSkillIndexes;
+
+  IF v_equivalent_indexes = 0 THEN
+    ALTER TABLE `tblLinkCharacterSkill`
+      ADD UNIQUE KEY `uq_tblLinkCharacterSkill_character_skill` (`idCharacter`, `idSkill`);
+  END IF;
+
+  SELECT COUNT(*) INTO v_equivalent_indexes
+  FROM (
+    SELECT INDEX_NAME
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @aether_target_schema
+      AND TABLE_NAME = 'tblLinkCharacterSkill'
+    GROUP BY INDEX_NAME, NON_UNIQUE
+    HAVING NON_UNIQUE = 0
+       AND GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') = 'idCharacter,idSkill'
+  ) AS verifiedCharacterSkillIndexes;
+  IF v_equivalent_indexes = 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0002 gestopt: de unieke character-skillindex kon niet worden geverifieerd.';
+  END IF;
+
+  INSERT INTO `tblSchemaMigration` (`migrationCode`, `description`)
+  SELECT '0002_unique_character_skill', 'Enforce one link per character and skill'
+  FROM DUAL
+  WHERE NOT EXISTS (
+    SELECT 1 FROM `tblSchemaMigration`
+    WHERE `migrationCode` = '0002_unique_character_skill'
+  );
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblSchemaMigration`
+  WHERE `migrationCode` = '0002_unique_character_skill';
+  IF v_count <> 1 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: registratie van migratie 0002 is niet uniek aanwezig.';
+  END IF;
+
+  -- Voeg 0003 alleen toe wanneer geen equivalente unieke index onder enige naam bestaat.
+  SELECT COUNT(*) INTO v_equivalent_indexes
+  FROM (
+    SELECT INDEX_NAME
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @aether_target_schema
+      AND TABLE_NAME = 'tblCharacterSpecialisation'
+    GROUP BY INDEX_NAME, NON_UNIQUE
+    HAVING NON_UNIQUE = 0
+       AND GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') = 'idCharacter,idSkill,idSkillSpecialisation'
+  ) AS equivalentCharacterSpecialisationIndexes;
+
+  IF v_equivalent_indexes = 0 THEN
+    ALTER TABLE `tblCharacterSpecialisation`
+      ADD UNIQUE KEY `uq_tblCharacterSpecialisation_character_skill_specialisation`
+        (`idCharacter`, `idSkill`, `idSkillSpecialisation`);
+  END IF;
+
+  SELECT COUNT(*) INTO v_equivalent_indexes
+  FROM (
+    SELECT INDEX_NAME
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @aether_target_schema
+      AND TABLE_NAME = 'tblCharacterSpecialisation'
+    GROUP BY INDEX_NAME, NON_UNIQUE
+    HAVING NON_UNIQUE = 0
+       AND GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') = 'idCharacter,idSkill,idSkillSpecialisation'
+  ) AS verifiedCharacterSpecialisationIndexes;
+  IF v_equivalent_indexes = 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie 0003 gestopt: de unieke character-specialisatie-index kon niet worden geverifieerd.';
+  END IF;
+
+  INSERT INTO `tblSchemaMigration` (`migrationCode`, `description`)
+  SELECT '0003_unique_character_specialisation', 'Enforce one character link per skill specialisation'
+  FROM DUAL
+  WHERE NOT EXISTS (
+    SELECT 1 FROM `tblSchemaMigration`
+    WHERE `migrationCode` = '0003_unique_character_specialisation'
+  );
+
+  SELECT COUNT(*) INTO v_count
+  FROM `tblSchemaMigration`
+  WHERE `migrationCode` = '0003_unique_character_specialisation';
+  IF v_count <> 1 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Migratie gestopt: registratie van migratie 0003 is niet uniek aanwezig.';
+  END IF;
+
+  -- Resultaatqueries staan buiten het compoundblok om phpMyAdmin-resultsets te synchroniseren.
+  SET @aether_migrations_complete = 1;
+END$$
+
+DELIMITER ;
+
+SELECT 'Migraties 0001-0003 zijn geslaagd.' AS migrationResult
+WHERE @aether_migrations_complete = 1;
+
+SELECT migrationCode, description, appliedAt
+FROM `tblSchemaMigration`
+WHERE @aether_migrations_complete = 1
+  AND migrationCode IN (
+    '0001_create_schema_migration_registry',
+    '0002_unique_character_skill',
+    '0003_unique_character_specialisation'
+  )
+ORDER BY migrationCode;
+
+SELECT CASE
+         WHEN COUNT(*) = 0 THEN 'Geen verweesde character-skilllinks gevonden.'
+         ELSE CONCAT('WAARSCHUWING: ', COUNT(*), ' verweesde character-skilllink(s) gevonden; niet gewijzigd.')
+       END AS characterSkillOrphanWarning
+FROM `tblLinkCharacterSkill` AS lcs
+LEFT JOIN `tblCharacter` AS c ON c.id = lcs.idCharacter
+LEFT JOIN `tblSkill` AS s ON s.id = lcs.idSkill
+WHERE c.id IS NULL OR s.id IS NULL
+HAVING @aether_migrations_complete = 1;
+
+SELECT lcs.id, lcs.idCharacter, lcs.idSkill, lcs.level,
+       CASE
+         WHEN c.id IS NULL THEN 'missing_character'
+         WHEN s.id IS NULL THEN 'missing_skill'
+       END AS orphanReason
+FROM `tblLinkCharacterSkill` AS lcs
+LEFT JOIN `tblCharacter` AS c ON c.id = lcs.idCharacter
+LEFT JOIN `tblSkill` AS s ON s.id = lcs.idSkill
+WHERE @aether_migrations_complete = 1
+  AND (c.id IS NULL OR s.id IS NULL)
+ORDER BY lcs.id;
+
+SELECT
+  (SELECT COUNT(*)
+   FROM (
+     SELECT idCharacter, idSkill
+     FROM `tblLinkCharacterSkill`
+     GROUP BY idCharacter, idSkill
+     HAVING COUNT(*) > 1
+   ) AS finalDuplicateCharacterSkills) AS duplicateCharacterSkillGroups,
+  (SELECT COUNT(*)
+   FROM (
+     SELECT idCharacter, idSkill, idSkillSpecialisation
+     FROM `tblCharacterSpecialisation`
+     GROUP BY idCharacter, idSkill, idSkillSpecialisation
+     HAVING COUNT(*) > 1
+   ) AS finalDuplicateCharacterSpecialisations) AS duplicateCharacterSpecialisationGroups,
+  (SELECT COUNT(*)
+   FROM `tblCharacterSpecialisation` AS cs
+   LEFT JOIN `tblCharacter` AS c ON c.id = cs.idCharacter
+   LEFT JOIN `tblSkill` AS s ON s.id = cs.idSkill
+   LEFT JOIN `tblSkillSpecialisation` AS ss ON ss.id = cs.idSkillSpecialisation
+   WHERE c.id IS NULL
+      OR s.id IS NULL
+      OR ss.id IS NULL
+      OR ss.idSkill <> cs.idSkill) AS specialisationIntegrityProblems,
+  'Alle drie waarden moeten 0 zijn.' AS integrityCheckResult
+WHERE @aether_migrations_complete = 1;
+
+-- Deze drie controles moeten na succes lege resultsets tonen.
+SELECT idCharacter, idSkill, COUNT(*) AS duplicateCount,
+       GROUP_CONCAT(id ORDER BY id) AS involvedIds
+FROM `tblLinkCharacterSkill`
+GROUP BY idCharacter, idSkill
+HAVING COUNT(*) > 1 AND @aether_migrations_complete = 1;
+
+SELECT idCharacter, idSkill, idSkillSpecialisation, COUNT(*) AS duplicateCount,
+       GROUP_CONCAT(id ORDER BY id) AS involvedIds
+FROM `tblCharacterSpecialisation`
+GROUP BY idCharacter, idSkill, idSkillSpecialisation
+HAVING COUNT(*) > 1 AND @aether_migrations_complete = 1;
+
+SELECT cs.id, cs.idCharacter, cs.idSkill, cs.idSkillSpecialisation,
+       CASE
+         WHEN c.id IS NULL THEN 'missing_character'
+         WHEN s.id IS NULL THEN 'missing_skill'
+         WHEN ss.id IS NULL THEN 'missing_specialisation'
+         WHEN ss.idSkill <> cs.idSkill THEN 'specialisation_belongs_to_other_skill'
+       END AS integrityProblem
+FROM `tblCharacterSpecialisation` AS cs
+LEFT JOIN `tblCharacter` AS c ON c.id = cs.idCharacter
+LEFT JOIN `tblSkill` AS s ON s.id = cs.idSkill
+LEFT JOIN `tblSkillSpecialisation` AS ss ON ss.id = cs.idSkillSpecialisation
+WHERE @aether_migrations_complete = 1
+  AND (
+    c.id IS NULL
+    OR s.id IS NULL
+    OR ss.id IS NULL
+    OR ss.idSkill <> cs.idSkill
+  )
+ORDER BY cs.id;
+
+-- Bewust als laatste: sommige phpMyAdmin-hostinglagen nemen de brondatabase van
+-- een information_schema-resultaat over als context voor het volgende statement.
+SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE,
+       GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') AS indexedColumns
+FROM information_schema.STATISTICS
+WHERE @aether_migrations_complete = 1
+  AND TABLE_SCHEMA = @aether_target_schema
+  AND TABLE_NAME IN ('tblLinkCharacterSkill', 'tblCharacterSpecialisation')
+GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE
+HAVING NON_UNIQUE = 0
+   AND (
+     (TABLE_NAME = 'tblLinkCharacterSkill'
+      AND indexedColumns = 'idCharacter,idSkill')
+     OR (TABLE_NAME = 'tblCharacterSpecialisation'
+         AND indexedColumns = 'idCharacter,idSkill,idSkillSpecialisation')
+   )
+ORDER BY TABLE_NAME, INDEX_NAME;

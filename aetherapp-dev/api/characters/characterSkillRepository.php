@@ -154,7 +154,22 @@ function aetherInsertCharacterSkillSpecialisation(
 ): void {
     $stmt = $pdo->prepare(
         'INSERT INTO tblCharacterSpecialisation (idCharacter, idSkill, idSkillSpecialisation)
-         VALUES (?, ?, ?)'
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE id = id'
     );
     $stmt->execute([$characterId, $skillId, $specialisationId]);
+}
+
+function aetherInsertCharacterSkillLink(PDO $pdo, int $characterId, int $skillId, int $level): void
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO tblLinkCharacterSkill (idCharacter, idSkill, level)
+         VALUES (:idCharacter, :idSkill, :level)
+         ON DUPLICATE KEY UPDATE id = id'
+    );
+    $stmt->execute([
+        'idCharacter' => $characterId,
+        'idSkill' => $skillId,
+        'level' => $level,
+    ]);
 }

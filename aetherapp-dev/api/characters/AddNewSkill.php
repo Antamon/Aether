@@ -10,6 +10,7 @@ require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterAccess.php';
 require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterSkillRepository.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
@@ -29,15 +30,7 @@ try {
     aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
     aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
-    $stmt = $pdo->prepare(
-        'INSERT INTO tblLinkCharacterSkill (idCharacter, idSkill, level)
-         VALUES (:idCharacter, :idSkill, :level)'
-    );
-    $stmt->execute([
-        'idCharacter' => $idCharacter,
-        'idSkill' => $idSkill,
-        'level' => $level,
-    ]);
+    aetherInsertCharacterSkillLink($pdo, $idCharacter, $idSkill, $level);
 
     $skill = dbOne($pdo, 'SELECT * FROM tblSkill WHERE id = :idSkill', ['idSkill' => $idSkill]);
     aetherJsonResponse($skill);

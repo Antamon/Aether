@@ -192,21 +192,18 @@ function getCharacterEventGossipAttemptCount(PDO $pdo, int $idViewerCharacter, i
 
 function incrementCharacterEventGossipAttemptCount(PDO $pdo, int $idViewerCharacter, int $idEvent): int
 {
-    $nextAttemptCount = getCharacterEventGossipAttemptCount($pdo, $idViewerCharacter, $idEvent) + 1;
-
     $pdo->prepare(
         'INSERT INTO tblCharacterEventGossipAttempt (idViewerCharacter, idEvent, attemptCount, updatedAt)
-         VALUES (:idViewerCharacter, :idEvent, :attemptCount, NOW())
+         VALUES (:idViewerCharacter, :idEvent, 1, NOW())
          ON DUPLICATE KEY UPDATE
-            attemptCount = VALUES(attemptCount),
-            updatedAt = VALUES(updatedAt)'
+            attemptCount = attemptCount + 1,
+            updatedAt = NOW()'
     )->execute([
         'idViewerCharacter' => $idViewerCharacter,
         'idEvent' => $idEvent,
-        'attemptCount' => $nextAttemptCount,
     ]);
 
-    return $nextAttemptCount;
+    return getCharacterEventGossipAttemptCount($pdo, $idViewerCharacter, $idEvent);
 }
 
 function decrementCharacterEventGossipAttemptCount(PDO $pdo, int $idViewerCharacter, int $idEvent): int

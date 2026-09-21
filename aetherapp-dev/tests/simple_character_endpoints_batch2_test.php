@@ -16,6 +16,12 @@ if (defined('AETHER_SIMPLE_BATCH2_TEST_BOOTSTRAP')) {
         {
             $this->parameters = $params ?? [];
             if (str_contains($this->query, 'INSERT INTO tblLinkCharacterSkill')) {
+                if ($this->testPdo->scenario === 'skill_unique_conflict'
+                    && !str_contains($this->query, 'ON DUPLICATE KEY UPDATE')) {
+                    $exception = new PDOException('SQLSTATE[23000]: duplicate skill link', 23000);
+                    $exception->errorInfo = ['23000', 1062, 'duplicate skill link'];
+                    throw $exception;
+                }
                 $this->testPdo->mutations++;
                 $this->testPdo->lastWriteParameters = $this->parameters;
             }
@@ -91,7 +97,8 @@ if (defined('AETHER_SIMPLE_BATCH2_TEST_BOOTSTRAP')) {
         public function __construct(
             public array $users,
             public array $characters,
-            public array $skills
+            public array $skills,
+            public string $scenario
         ) {
         }
 
@@ -155,7 +162,7 @@ if (defined('AETHER_SIMPLE_BATCH2_TEST_BOOTSTRAP')) {
         5 => ['id' => 5, 'name' => 'academicus', 'visibility' => 'public'],
         6 => ['id' => 6, 'name' => 'verborgen kunst', 'visibility' => 'secret'],
     ];
-    $pdo = new SimpleBatch2Pdo($users, $characters, $skills);
+    $pdo = new SimpleBatch2Pdo($users, $characters, $skills, $scenario);
 
     $sessionUserId = match ($scenario) {
         'unauthenticated' => 999,
@@ -283,6 +290,7 @@ try {
         'idCharacter' => 1, 'idSkill' => 5, 'level' => 0,
     ], 'AddNewSkill gebruikt niet de gevalideerde prepared parameters en schema-default.');
     expectSimpleBatch2($fixturePaths, 'AddNewSkill', 'director', ['idCharacter' => 2, 'idSkill' => 6, 'level' => 2], 200, ['id' => 6, 'name' => 'verborgen kunst', 'visibility' => 'secret'], 1);
+    expectSimpleBatch2($fixturePaths, 'AddNewSkill', 'skill_unique_conflict', ['idCharacter' => 1, 'idSkill' => 5], 200, ['id' => 5, 'name' => 'academicus', 'visibility' => 'public'], 1);
     expectSimpleBatch2($fixturePaths, 'AddNewSkill', 'forged_role', ['idCharacter' => 2, 'idSkill' => 5], 403, ['error' => 'Je hebt geen rechten voor dit personage.']);
     expectSimpleBatch2($fixturePaths, 'AddNewSkill', 'secret_skill', ['idCharacter' => 1, 'idSkill' => 6], 403, ['error' => 'Je hebt geen rechten om deze vaardigheid te beheren.']);
     expectSimpleBatch2($fixturePaths, 'AddNewSkill', 'invalid_csrf', ['idCharacter' => 1, 'idSkill' => 5], 403, ['error' => 'Ongeldig of ontbrekend CSRF-token. Vernieuw de pagina en probeer opnieuw.']);

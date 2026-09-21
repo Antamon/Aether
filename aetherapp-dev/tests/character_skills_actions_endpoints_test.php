@@ -77,14 +77,36 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
                 if ($this->pdo->scenario === 'specialisation_link_error') {
                     throw new PDOException('SQLSTATE[HY000]: secret_specialisation_link');
                 }
-                $this->pdo->characterSpecialisations[] = [
-                    'idCharacter' => (int) $this->params[0], 'idSkill' => (int) $this->params[1],
+                $link = [
+                    'idCharacter' => (int) $this->params[0],
+                    'idSkill' => (int) $this->params[1],
                     'idSkillSpecialisation' => (int) $this->params[2],
                 ];
+                if ($this->pdo->scenario === 'specialisation_unique_conflict') {
+                    if (!str_contains($sql, 'ON DUPLICATE KEY UPDATE')) {
+                        $exception = new PDOException('SQLSTATE[23000]: duplicate specialisation link', 23000);
+                        $exception->errorInfo = ['23000', 1062, 'duplicate specialisation link'];
+                        throw $exception;
+                    }
+                    // Simuleer dat een gelijktijdige transactie dezelfde link na de voorafgaande SELECT invoegde.
+                    $this->pdo->characterSpecialisations[] = $link;
+                } else {
+                    $this->pdo->characterSpecialisations[] = $link;
+                }
             } elseif (str_starts_with($sql, 'INSERT INTO tblCharacterEventGossipAttempt')) {
                 $this->pdo->write($sql, $this->params);
                 $key = $this->params['idViewerCharacter'] . ':' . $this->params['idEvent'];
-                $this->pdo->attempts[$key] = (int) $this->params['attemptCount'];
+                if ($this->pdo->scenario === 'gossip_concurrent_increment') {
+                    // Een tweede transactie verhoogde dezelfde beginwaarde vlak vóór deze SQL-write.
+                    $this->pdo->attempts[$key] = (int) ($this->pdo->attempts[$key] ?? 0) + 1;
+                }
+                if (str_contains($sql, 'attemptCount = attemptCount + 1')) {
+                    $this->pdo->attempts[$key] = isset($this->pdo->attempts[$key])
+                        ? (int) $this->pdo->attempts[$key] + 1
+                        : 1;
+                } else {
+                    $this->pdo->attempts[$key] = (int) ($this->params['attemptCount'] ?? 0);
+                }
             } elseif (str_starts_with($sql, 'INSERT INTO tblCharacterEventGossipUnlock')) {
                 $this->pdo->write($sql, $this->params);
                 if ($this->pdo->scenario === 'knowledge_unlock_error') {
@@ -118,7 +140,7 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
             if (str_contains($sql, 'FROM tblUser')) {
                 return $this->pdo->users[(int) ($this->params['id'] ?? 0)] ?? false;
             }
-            if (str_contains($sql, 'FROM tblCharacter') && !str_contains($sql, 'JOIN')) {
+            if (str_contains($sql, 'FROM tblCharacter WHERE') && !str_contains($sql, 'JOIN')) {
                 $id = (int) ($this->params['id'] ?? $this->params[':id'] ?? $this->params[':idCharacter'] ?? $this->params[0] ?? 0);
                 return $this->pdo->characters[$id] ?? false;
             }
@@ -627,6 +649,13 @@ try {
     ], $newSpecState);
     assertSkillsActions($newSpec['status'] === 200 && $newSpec['committedWrites'] === 2, 'Definitie en link committen niet samen');
     assertSkillsActions(($newSpec['state']['specialisations'][102]['kind'] ?? '') === 'discipline', 'Beheerdiscipline verloor haar bestaande uitzondering');
+    $specRaceState = $stateFiles[] = createSkillsActionsState($initialState);
+    $specRace = runSkillsActions($routes['addSpec'], 'addSpec', 'specialisation_unique_conflict', [
+        'idSkill' => 42, 'idCharacter' => 1, 'idSkillSpecialisation' => 100, 'name' => '',
+    ], $specRaceState);
+    assertSkillsActions($specRace['status'] === 200 && $specRace['decoded'] === ['success' => true]
+        && count($specRace['state']['characterSpecialisations']) === 1,
+        'Gelijktijdige identieke specialisatielink werd niet gecontroleerd als succes afgehandeld');
 
     $events = runSkillsActions($routes['events'], 'events', 'participant', ['idCharacter' => 1], $state);
     assertSkillsActions(array_keys($events['decoded'] ?? []) === ['events', 'worldKnowledgeLevel', 'psiBurn', 'actions'], 'Actioncatalogusresponse wijzigde');
@@ -658,6 +687,17 @@ try {
         'displayName', 'portraitUrl', 'type', 'isFullyUnlocked',
     ], 'Reveal-response wijzigde');
     assertSkillsActions($reveal['committedWrites'] === 2 && ($reveal['state']['attempts']['1:7'] ?? 0) === 1, 'Gossipwrites committen niet samen');
+    $concurrentRevealState = $stateFiles[] = createSkillsActionsState($initialState);
+    $concurrentReveal = runSkillsActions($routes['reveal'], 'reveal', 'gossip_concurrent_increment', [
+        'idCharacter' => 1, 'idEvent' => 7, 'idSourceCharacter' => 3,
+    ], $concurrentRevealState);
+    assertSkillsActions($concurrentReveal['status'] === 200
+        && ($concurrentReveal['decoded']['attemptCount'] ?? 0) === 2
+        && ($concurrentReveal['state']['attempts']['1:7'] ?? 0) === 2,
+        'Twee gesimuleerde gossipincrements leverden geen eindwaarde 2 op: '
+            . json_encode(['response' => $concurrentReveal['decoded'], 'attempts' => $concurrentReveal['state']['attempts']]));
+    assertSkillsActions(str_contains((string) ($concurrentReveal['writes'][0]['sql'] ?? ''), 'attemptCount = attemptCount + 1'),
+        'Gossipincrement gebruikt geen atomaire database-increment');
 
     $actionState = $stateFiles[] = createSkillsActionsState($initialState);
     $use = runSkillsActions($routes['useAction'], 'useAction', 'participant', [
