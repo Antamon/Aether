@@ -1,35 +1,21 @@
 <?php
 declare(strict_types=1);
-
 header('Content-Type: application/json; charset=utf-8');
-
-require_once __DIR__ . '/adminUtils.php';
-
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
-$idSkill = (int) ($input['idSkill'] ?? 0);
-
-if ($idSkill <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldige vaardigheid geselecteerd.']);
-    exit;
-}
-
+require_once __DIR__ . '/adminAccess.php';
+require_once __DIR__ . '/adminSchemas.php';
+require_once __DIR__ . '/adminSkillService.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/response.php';
 try {
     $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo);
-
-    $skill = fetchAdminSkillDetail($pdo, $idSkill);
-    if ($skill === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Vaardigheid niet gevonden.']);
-        exit;
-    }
-
-    echo json_encode($skill);
+    aetherRequireAdminEditor($pdo);
+    $data = aetherValidateAdminRequest('getSkill', aetherReadJsonObject());
+    $skill = fetchAdminSkillDetail($pdo, $data['idSkill']);
+    if ($skill === null) aetherJsonError(404, 'Vaardigheid niet gevonden.');
+    aetherJsonResponse($skill);
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon de vaardigheid niet laden.',
-        'details' => $e->getMessage(),
-    ]);
+    error_log('getSkill: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon de vaardigheid niet laden.');
 }

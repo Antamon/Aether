@@ -1383,7 +1383,7 @@ async function saveAdminSkill(options = {}) {
                 return false;
             }
 
-            const result = await apiFetchJson("api/admin/saveSkill.php", {
+            const result = await apiFetchIdempotentJson("api/admin/saveSkill.php", {
                 method: "POST",
                 body: {
                     idSkill,

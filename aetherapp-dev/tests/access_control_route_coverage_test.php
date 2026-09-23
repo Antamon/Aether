@@ -66,7 +66,7 @@ $writeRoutes = [
     'api/events/updateParticipation.php',
 ];
 
-$authPattern = '/(?:aetherRequireAuthenticatedUser|aetherRequirePrivilegedUser|requirePrivilegedAdminAccess|requireAdministratorAccess|requirePrivilegedCompanyAccess)\s*\(/';
+$authPattern = '/(?:aetherRequireAuthenticatedUser|aetherRequirePrivilegedUser|aetherRequireAdminEditor|requirePrivilegedAdminAccess|requireAdministratorAccess|requirePrivilegedCompanyAccess)\s*\(/';
 $csrfPattern = '/(?:aetherRequireCsrfToken\s*\(|requirePrivilegedAdminAccess\s*\(\s*\$pdo\s*,\s*true|requireAdministratorAccess\s*\(\s*\$pdo\s*,\s*true|requirePrivilegedCompanyAccess\s*\(\s*\$pdo\s*,\s*true)/s';
 
 foreach ($writeRoutes as $route) {
@@ -74,6 +74,9 @@ foreach ($writeRoutes as $route) {
     assertRouteCoverage((bool) preg_match($authPattern, $contents), "Schrijfroute zonder zichtbare authenticatiecontrole: {$route}");
     assertRouteCoverage((bool) preg_match($csrfPattern, $contents), "Schrijfroute zonder zichtbare CSRF-controle: {$route}");
 }
+
+$adminAccess = routeContents($projectRoot, 'api/admin/adminAccess.php');
+assertRouteCoverage(str_contains($adminAccess, 'aetherRequireAuthenticatedUser($pdo)'), 'Adminbeleid moet de actuele tblUser-identiteit laden.');
 
 $characterWriteObjectChecks = [
     'api/characters/AddNewSkill.php' => 'aetherRequireCharacterAccess',

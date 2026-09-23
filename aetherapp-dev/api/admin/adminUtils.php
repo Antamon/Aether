@@ -167,16 +167,12 @@ function isSkillVisibilitySecret(PDO $pdo, mixed $value): bool
 
 function fetchAdminSkillTypeOptions(PDO $pdo): array
 {
-    try {
-        $rows = dbAll(
-            $pdo,
-            'SELECT id, code, name, description
-               FROM tblSkillType
-              ORDER BY name ASC, id ASC'
-        );
-    } catch (Throwable $e) {
-        return [];
-    }
+    $rows = dbAll(
+        $pdo,
+        'SELECT id, code, name, description
+           FROM tblSkillType
+          ORDER BY name ASC, id ASC'
+    );
 
     return array_map(static function (array $row): array {
         return [
