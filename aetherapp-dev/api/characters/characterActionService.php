@@ -101,6 +101,81 @@ function aetherBuildCharacterKnowledgeTargets(PDO $pdo, int $characterId, int $e
 }
 
 /** @return array<string, mixed> */
+function aetherAuthorizeCharacterSkillActionReplay(
+    PDO $pdo,
+    array $currentUser,
+    array $input
+): array {
+    $character = aetherRequireCharacterActionAccess(
+        $pdo,
+        $currentUser,
+        (int) $input['idCharacter'],
+        'Geen rechten om deze actie uit te voeren.'
+    );
+    if (!aetherCanManageSkill($pdo, $currentUser, (int) $input['idSkill'])) {
+        throw new AetherCharacterActionException(403, 'Je hebt geen rechten om deze vaardigheid te gebruiken.');
+    }
+    if (fetchCharacterActionEvent($pdo, (int) $input['idEvent']) === null) {
+        throw new AetherCharacterActionException(404, 'Event niet gevonden.');
+    }
+    if (validateCharacterPsiSkill(
+        $pdo,
+        (int) $input['idCharacter'],
+        (int) $input['idSkill'],
+        (string) $input['actionSubtype']
+    ) === null) {
+        throw new AetherCharacterActionException(403, 'Deze vaardigheid is niet langer beschikbaar voor dit personage.');
+    }
+    return $character;
+}
+
+function aetherAuthorizeKnowledgeRevealReplay(PDO $pdo, array $currentUser, array $input): void
+{
+    aetherRequireCharacterActionAccess(
+        $pdo,
+        $currentUser,
+        (int) $input['idCharacter'],
+        'Geen rechten om deze actie uit te voeren.'
+    );
+    if (fetchCharacterActionEvent($pdo, (int) $input['idEvent']) === null) {
+        throw new AetherCharacterActionException(404, 'Event niet gevonden.');
+    }
+    $level = getCharacterSkillLevelByIdForGossip(
+        $pdo,
+        (int) $input['idCharacter'],
+        AETHER_WORLD_KNOWLEDGE_SKILL_ID
+    );
+    $target = fetchKnowledgeTargetDiaryRow($pdo, (int) $input['idEvent'], (int) $input['idSourceCharacter']);
+    if ($level <= 0 || $target === null || !fetchGossipVisibilityState(
+        $pdo,
+        (int) $input['idEvent'],
+        (int) $input['idSourceCharacter'],
+        (string) ($target['type'] ?? '')
+    )) {
+        throw new AetherCharacterActionException(403, 'Deze wereldwijsroddels zijn niet langer beschikbaar.');
+    }
+}
+
+/** @template T @param callable():T $mutation @return T */
+function aetherRunCharacterActionMutation(PDO $pdo, callable $mutation): mixed
+{
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) $pdo->beginTransaction();
+    try {
+        $result = $mutation();
+        if ($ownsTransaction) $pdo->commit();
+        return $result;
+    } catch (Throwable $e) {
+        if ($ownsTransaction && $pdo->inTransaction()) $pdo->rollBack();
+        if ($e instanceof RuntimeException && !$e instanceof PDOException
+            && !$e instanceof AetherCharacterActionException) {
+            throw new AetherCharacterActionException(400, $e->getMessage(), true);
+        }
+        throw $e;
+    }
+}
+
+/** @return array<string, mixed> */
 function aetherRevealCharacterActionKnowledge(
     PDO $pdo,
     int $characterId,
@@ -116,26 +191,21 @@ function aetherRevealCharacterActionKnowledge(
         throw new AetherCharacterActionException(403, 'Dit personage bezit Wereldwijs niet.');
     }
 
-    $pdo->beginTransaction();
-    try {
-        $result = revealKnowledgeGossip(
+    return aetherRunCharacterActionMutation($pdo, static function () use (
+        $pdo,
+        $characterId,
+        $eventId,
+        $sourceCharacterId,
+        $worldKnowledgeLevel
+    ): array {
+        return revealKnowledgeGossip(
             $pdo,
             $characterId,
             $eventId,
             $sourceCharacterId,
             $worldKnowledgeLevel
         );
-        $pdo->commit();
-        return $result;
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        if ($e instanceof RuntimeException && !$e instanceof PDOException) {
-            throw new AetherCharacterActionException(400, $e->getMessage(), true);
-        }
-        throw $e;
-    }
+    });
 }
 
 /** @return array<string, mixed> */
@@ -159,9 +229,16 @@ function aetherUseCharacterSkillAction(
         throw new AetherCharacterActionException(403, 'Je hebt geen rechten om deze vaardigheid te gebruiken.');
     }
 
-    $pdo->beginTransaction();
-    try {
-        $result = executeCharacterPsiSkillUse(
+    return aetherRunCharacterActionMutation($pdo, static function () use (
+        $pdo,
+        $character,
+        $eventId,
+        $skillId,
+        $actionSubtype,
+        $clearBurn,
+        $currentUser
+    ): array {
+        return executeCharacterPsiSkillUse(
             $pdo,
             $character,
             $eventId,
@@ -170,15 +247,5 @@ function aetherUseCharacterSkillAction(
             $clearBurn,
             (int) $currentUser['id']
         );
-        $pdo->commit();
-        return $result;
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        if ($e instanceof RuntimeException && !$e instanceof PDOException) {
-            throw new AetherCharacterActionException(400, $e->getMessage(), true);
-        }
-        throw $e;
-    }
+    });
 }

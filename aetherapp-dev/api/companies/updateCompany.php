@@ -5,61 +5,60 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/companyUtils.php';
 require_once __DIR__ . '/../characters/companyShareUtils.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/idempotency.php';
+require_once __DIR__ . '/companyFinanceSchemas.php';
 
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
-
-$id = (int) ($postData['id'] ?? 0);
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldig bedrijf ID.']);
-    exit;
-}
-
-unset($postData['id']);
-
-if (empty($postData)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen velden om bij te werken.']);
-    exit;
+final class AetherCompanyUpdateException extends RuntimeException
+{
+    public function __construct(private int $httpStatus, string $message) { parent::__construct($message); }
+    public function getHttpStatus(): int { return $this->httpStatus; }
 }
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo, true);
-
+    $currentUser = requirePrivilegedCompanyAccess($pdo, true);
+    $postData = aetherReadJsonObject();
+    $input = aetherValidateInput($postData, aetherCompanyUpdateSchema());
+    $id = (int) $input['id'];
+    unset($input['id']);
+    if ($input === []) {
+        throw new AetherCompanyUpdateException(400, 'Geen velden om bij te werken.');
+    }
+    $requestKey = aetherRequireIdempotencyKey();
+    $pdo->beginTransaction();
+    $claim = aetherClaimIdempotency($pdo, $currentUser, 'company.update', $requestKey, $input + ['id' => $id]);
     $currentCompany = dbOne(
         $pdo,
         'SELECT id, companyValue
            FROM tblCompany
-          WHERE id = :id',
+          WHERE id = :id
+          FOR UPDATE',
         ['id' => $id]
     );
 
     if ($currentCompany === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Bedrijf niet gevonden.']);
-        exit;
+        throw new AetherCompanyUpdateException(404, 'Bedrijf niet gevonden.');
+    }
+    if ($claim['replayed']) {
+        $pdo->commit();
+        aetherJsonResponse($claim['response']);
     }
 
     $allowedFields = ['companyName', 'description', 'foundationDate', 'companyValue', 'stability', 'profitability'];
     $updateData = [];
 
     foreach ($allowedFields as $field) {
-        if (!array_key_exists($field, $postData)) {
+        if (!array_key_exists($field, $input)) {
             continue;
         }
 
-        $value = $postData[$field];
+        $value = $input[$field];
 
         switch ($field) {
             case 'companyName':
-                $value = trim((string) $value);
-                if ($value === '') {
-                    http_response_code(400);
-                    echo json_encode(['error' => 'De bedrijfsnaam is verplicht.']);
-                    exit;
-                }
                 break;
 
             case 'description':
@@ -67,26 +66,12 @@ try {
                 break;
 
             case 'foundationDate':
-                $value = trim((string) $value);
                 if ($value === '') {
                     $value = null;
-                    break;
-                }
-
-                $dateTime = DateTimeImmutable::createFromFormat('Y-m-d', $value);
-                $dateErrors = DateTimeImmutable::getLastErrors();
-                $hasDateErrors = is_array($dateErrors)
-                    && (($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0);
-
-                if (!$dateTime || $hasDateErrors || $dateTime->format('Y-m-d') !== $value) {
-                    http_response_code(400);
-                    echo json_encode(['error' => 'Geef een geldige oprichtingsdatum op.']);
-                    exit;
                 }
                 break;
 
             case 'companyValue':
-                $value = normalizeCompanyValue($value);
                 break;
 
             case 'stability':
@@ -96,12 +81,6 @@ try {
         }
 
         $updateData[$field] = $value;
-    }
-
-    if (empty($updateData)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Geen geldige velden om bij te werken.']);
-        exit;
     }
 
     $setParts = [];
@@ -122,8 +101,6 @@ try {
         : ($currentCompany['companyValue'] ?? 0);
     $nextCompanyTypeKey = getCompanyTypeByValue($nextCompanyValue)['key'] ?? null;
 
-    $pdo->beginTransaction();
-
     $stmt = $pdo->prepare($sql);
     $stmt->execute($updateData);
 
@@ -137,20 +114,24 @@ try {
         $updatedShareTraitCount = remapCompanyShareTraitsForCompany($pdo, $id, $nextCompanyTypeKey);
     }
 
-    $pdo->commit();
-
-    echo json_encode([
+    $response = [
         'status' => 'ok',
         'updatedShareTraitCount' => $updatedShareTraitCount,
-    ]);
+    ];
+    aetherCompleteIdempotency($pdo, $currentUser, 'company.update', $requestKey, $response);
+    $pdo->commit();
+    aetherJsonResponse($response);
+} catch (AetherValidationException $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherCompanyUpdateException|AetherIdempotencyException $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
 
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon bedrijf niet bewaren.',
-        'details' => $e->getMessage(),
-    ]);
+    error_log('updateCompany failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon bedrijf niet bewaren.');
 }

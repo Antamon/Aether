@@ -42,6 +42,45 @@ function getCharacterSkillActionStateNumericValue(
     return (int) ($row['numericValue'] ?? $default);
 }
 
+function lockCharacterSkillActionStateNumericValue(
+    PDO $pdo,
+    int $idCharacter,
+    string $actionCode,
+    string $stateCode,
+    int $default = 0
+): int {
+    $pdo->prepare(
+        'INSERT INTO tblCharacterSkillActionState (
+            idCharacter, actionCode, stateCode, numericValue, updatedAt
+         ) VALUES (
+            :idCharacter, :actionCode, :stateCode, :numericValue, NOW()
+         )
+         ON DUPLICATE KEY UPDATE id = id'
+    )->execute([
+        'idCharacter' => $idCharacter,
+        'actionCode' => $actionCode,
+        'stateCode' => $stateCode,
+        'numericValue' => $default,
+    ]);
+
+    $stmt = $pdo->prepare(
+        'SELECT numericValue
+           FROM tblCharacterSkillActionState
+          WHERE idCharacter = :idCharacter
+            AND actionCode = :actionCode
+            AND stateCode = :stateCode
+          FOR UPDATE'
+    );
+    $stmt->execute([
+        'idCharacter' => $idCharacter,
+        'actionCode' => $actionCode,
+        'stateCode' => $stateCode,
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) throw new RuntimeException('Kon de vaardigheidsstatus niet vergrendelen.');
+    return (int) ($row['numericValue'] ?? $default);
+}
+
 function saveCharacterSkillActionStateNumericValue(
     PDO $pdo,
     int $idCharacter,
@@ -537,7 +576,7 @@ function executeCharacterPsiSkillUse(
         throw new RuntimeException('Personage, event en vaardigheid zijn verplicht.');
     }
 
-    $event = dbOne($pdo, 'SELECT id, title FROM tblEvent WHERE id = :idEvent', ['idEvent' => $idEvent]);
+    $event = fetchCharacterActionEvent($pdo, $idEvent);
     if ($event === null) {
         throw new RuntimeException('Event niet gevonden.');
     }
@@ -549,7 +588,13 @@ function executeCharacterPsiSkillUse(
 
     $definitions = getPsiCategoryDefinitions();
     $categoryLabel = (string) (($definitions[$psiCategoryCode]['label'] ?? $psiCategoryCode));
-    $burnBefore = getCharacterPsiBurn($pdo, $idCharacter);
+    $burnBefore = max(0, lockCharacterSkillActionStateNumericValue(
+        $pdo,
+        $idCharacter,
+        AETHER_SKILL_ACTION_CODE_PSI,
+        AETHER_SKILL_ACTION_STATE_BURN,
+        0
+    ));
     $rollBase = random_int(AETHER_PSI_MIN_ROLL, AETHER_PSI_MAX_ROLL);
     $rollModifier = $clearBurn ? AETHER_PSI_CLEAR_BURN_MODIFIER : 0;
     $effectiveValue = max(

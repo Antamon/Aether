@@ -143,7 +143,9 @@ $directSchemaRoutes = [
     'getCharacterSections', 'getCharacterTies', 'getDisciplineList',
     'getNewSkills', 'getSkillSpecialisations', 'newCharacter', 'saveCharacterDiary', 'saveCharacterSection',
     'revealCharacterActionKnowledge', 'saveCharacterTie', 'updateCharacter', 'updateSkill', 'updateTrait',
-    'useCharacterSkillAction',
+    'useCharacterSkillAction', 'buyCompanyShare', 'deleteBankTransaction',
+    'deleteCharacterEconomySnapshot', 'saveBankTransfer', 'saveCharacterEconomySnapshot',
+    'saveCharacterSecuritiesPortfolio', 'saveCompanyShare',
 ];
 foreach ($routes as $route) {
     assertCharacterValidation(

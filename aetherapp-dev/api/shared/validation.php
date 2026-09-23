@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/decimal.php';
+
 class AetherValidationException extends InvalidArgumentException
 {
     /** @var list<array{field: ?string, code: string, message: string}> */
@@ -120,6 +122,24 @@ function aetherValidateInput(array $input, array $schema): array
                 continue;
             }
             $value = (int) $value;
+        } elseif ($type === 'decimal') {
+            try {
+                $value = aetherNormalizeDecimal($value, (int) ($rules['scale'] ?? 2));
+            } catch (InvalidArgumentException $e) {
+                $addError($field, 'invalid_decimal', "Veld {$field}: " . $e->getMessage());
+                continue;
+            }
+            if (isset($rules['min']) && aetherDecimalCompare($value, (string) $rules['min'], (int) ($rules['scale'] ?? 2)) < 0) {
+                $addError($field, 'below_minimum', "Veld {$field} is kleiner dan toegestaan.");
+            }
+            if (isset($rules['minExclusive']) && aetherDecimalCompare($value, (string) $rules['minExclusive'], (int) ($rules['scale'] ?? 2)) <= 0) {
+                $addError($field, 'below_exclusive_minimum', "Veld {$field} moet groter zijn dan {$rules['minExclusive']}.");
+            }
+            if (isset($rules['max']) && aetherDecimalCompare($value, (string) $rules['max'], (int) ($rules['scale'] ?? 2)) > 0) {
+                $addError($field, 'above_maximum', "Veld {$field} is groter dan toegestaan.");
+            }
+            $validated[$field] = $value;
+            continue;
         } elseif ($type === 'number') {
             if ((!is_int($value) && !is_float($value) && !(is_string($value) && is_numeric($value))) || is_bool($value)) {
                 $addError($field, 'invalid_type', "Veld {$field} moet een getal zijn.");

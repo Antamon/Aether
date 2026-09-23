@@ -32,14 +32,14 @@ async function fetchCharacterActionKnowledgeTargets(idCharacter, idEvent) {
 }
 
 async function revealCharacterActionKnowledge(idCharacter, idEvent, idSourceCharacter) {
-    return apiFetchJson("api/characters/revealCharacterActionKnowledge.php", {
+    return apiFetchIdempotentJson("api/characters/revealCharacterActionKnowledge.php", {
         method: "POST",
         body: { idCharacter, idEvent, idSourceCharacter },
     });
 }
 
 async function useCharacterSkillAction(idCharacter, idEvent, idSkill, actionCode, actionSubtype, clearBurn = false) {
-    return apiFetchJson("api/characters/useCharacterSkillAction.php", {
+    return apiFetchIdempotentJson("api/characters/useCharacterSkillAction.php", {
         method: "POST",
         body: {
             idCharacter,

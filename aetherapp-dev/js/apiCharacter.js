@@ -26,7 +26,11 @@ async function deleteCharacterById(id) {
 }
 
 async function updateCharacter(payload) {
-    return apiFetchJson("api/characters/updateCharacter.php", {
+    const fetcher = Object.prototype.hasOwnProperty.call(payload, "bankaccount")
+        || Object.prototype.hasOwnProperty.call(payload, "securitiesaccount")
+        ? apiFetchFinancialJson
+        : apiFetchJson;
+    return fetcher("api/characters/updateCharacter.php", {
         method: "POST",
         body: payload
     });

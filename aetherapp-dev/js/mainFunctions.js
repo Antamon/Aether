@@ -34,7 +34,10 @@ async function apiFetchJson(endpoint, options = {}) {
         } catch (e) {
             text = "(geen body)";
         }
-        throw new Error(`API-fout ${response.status}: ${text}`);
+        const error = new Error(`API-fout ${response.status}: ${text}`);
+        error.status = response.status;
+        error.responseBody = text;
+        throw error;
     }
 
     // Probeer JSON te parsen – als dat niet kan, geven we null terug
@@ -56,6 +59,80 @@ window.AETHER_CSRF_TOKEN = null;
 function userHasPrivilegedRole(user) {
     const role = user?.role || "";
     return role === "administrator" || role === "director";
+}
+
+function aetherStableJson(value) {
+    if (Array.isArray(value)) return value.map(aetherStableJson);
+    if (value && typeof value === "object") {
+        return Object.keys(value).sort().reduce((result, key) => {
+            result[key] = aetherStableJson(value[key]);
+            return result;
+        }, {});
+    }
+    return value;
+}
+
+function aetherCreateRequestId() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    return Array.from(bytes, (byte, index) =>
+        ([4, 6, 8, 10].includes(index) ? "-" : "") + byte.toString(16).padStart(2, "0")
+    ).join("");
+}
+
+const aetherFinancialRequestMemory = new Map();
+
+function aetherFinancialStorageKey(endpoint, body) {
+    return "aether:financial-request:" + endpoint + ":" + JSON.stringify(aetherStableJson(body));
+}
+
+function aetherReadPendingFinancialRequest(storageKey) {
+    try {
+        return sessionStorage.getItem(storageKey) || aetherFinancialRequestMemory.get(storageKey) || null;
+    } catch (error) {
+        return aetherFinancialRequestMemory.get(storageKey) || null;
+    }
+}
+
+function aetherStorePendingFinancialRequest(storageKey, requestId) {
+    aetherFinancialRequestMemory.set(storageKey, requestId);
+    try { sessionStorage.setItem(storageKey, requestId); } catch (error) { /* geheugenfallback */ }
+}
+
+function aetherClearPendingFinancialRequest(storageKey) {
+    aetherFinancialRequestMemory.delete(storageKey);
+    try { sessionStorage.removeItem(storageKey); } catch (error) { /* geheugenfallback */ }
+}
+
+async function apiFetchIdempotentJson(endpoint, options = {}) {
+    const body = options.body ?? null;
+    const storageKey = aetherFinancialStorageKey(endpoint, body);
+    const requestId = aetherReadPendingFinancialRequest(storageKey) || aetherCreateRequestId();
+    aetherStorePendingFinancialRequest(storageKey, requestId);
+    try {
+        const result = await apiFetchJson(endpoint, {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                "Idempotency-Key": requestId
+            }
+        });
+        aetherClearPendingFinancialRequest(storageKey);
+        return result;
+    } catch (error) {
+        if (Number.isInteger(error?.status) && error.status < 500) {
+            aetherClearPendingFinancialRequest(storageKey);
+        }
+        throw error;
+    }
+}
+
+// Tijdelijke compatibiliteitsnaam voor de al gemigreerde financiële routes.
+async function apiFetchFinancialJson(endpoint, options = {}) {
+    return apiFetchIdempotentJson(endpoint, options);
 }
 
 function syncPrivilegedNavbar(user) {

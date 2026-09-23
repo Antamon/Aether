@@ -60,6 +60,8 @@ $codes = [
     '0001_create_schema_migration_registry',
     '0002_unique_character_skill',
     '0003_unique_character_specialisation',
+    '0004_api_idempotency',
+    '0005_unique_event_user',
 ];
 $phases = ['preflight', 'apply', 'verify', 'rollback'];
 
@@ -74,13 +76,15 @@ foreach ($phases as $phase) {
 
 foreach ($codes as $code) {
     $preflight = sqlWithoutComments(migrationSql($root, 'preflight', $code));
+    $preflightWriteScan = preg_replace('/SHOW\s+CREATE\s+TABLE/i', 'SHOW_TABLE', $preflight) ?? $preflight;
     migrationConcurrencyAssert(
-        preg_match('/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|DROP|TRUNCATE|CALL)\b/i', $preflight) !== 1,
+        preg_match('/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|DROP|TRUNCATE|CALL)\b/i', $preflightWriteScan) !== 1,
         "Preflight {$code} bevat een schrijfbewerking."
     );
     $verify = sqlWithoutComments(migrationSql($root, 'verify', $code));
+    $verifyWriteScan = preg_replace('/SHOW\s+CREATE\s+TABLE/i', 'SHOW_TABLE', $verify) ?? $verify;
     migrationConcurrencyAssert(
-        preg_match('/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|DROP|TRUNCATE|CALL)\b/i', $verify) !== 1,
+        preg_match('/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|DROP|TRUNCATE|CALL)\b/i', $verifyWriteScan) !== 1,
         "Verify {$code} bevat een schrijfbewerking."
     );
 }
@@ -203,10 +207,10 @@ foreach ([$skillRollback, $specialisationRollback] as $rollback) {
     migrationConcurrencyAssert(preg_match('/\b(DELETE|UPDATE|TRUNCATE|REPLACE)\b/i', $withoutRegistryDelete) !== 1, 'Rollback wijzigt gebruikersdata.');
 }
 
-$export = (string) file_get_contents($root . '/sql/oneiros_be_aether.sql');
+$export = (string) file_get_contents($root . '/sql/oneiros_beaetherdev.sql');
 migrationConcurrencyAssert(str_contains($export, 'Server version: 10.11.18-MariaDB'), 'Verwachte MariaDB-versie ontbreekt in de export.');
-migrationConcurrencyAssert(!str_contains($export, 'uq_tblLinkCharacterSkill_character_skill'), 'Export bevat onverwacht al de nieuwe skillindex.');
-migrationConcurrencyAssert(!str_contains($export, 'uq_tblCharacterSpecialisation_character_skill_specialisation'), 'Export bevat onverwacht al de nieuwe specialisatie-index.');
+migrationConcurrencyAssert(str_contains($export, 'uq_tblLinkCharacterSkill_character_skill'), 'Recente export mist de bevestigde skillindex.');
+migrationConcurrencyAssert(str_contains($export, 'uq_tblCharacterSpecialisation_character_skill_specialisation'), 'Recente export mist de bevestigde specialisatie-index.');
 
 $skillRows = exportRows($export, 'tblLinkCharacterSkill', '/^\((\d+),\s*(\d+),\s*(\d+),\s*(-?\d+)\)[,;]?$/');
 $skillKeys = [];
@@ -248,6 +252,73 @@ $skillRepository = (string) file_get_contents($root . '/api/characters/character
 migrationConcurrencyAssert(substr_count($skillRepository, 'ON DUPLICATE KEY UPDATE id = id') >= 2, 'Skillinserts behandelen unieke races niet idempotent.');
 $gossip = (string) file_get_contents($root . '/api/characters/gossipKnowledgeUtils.php');
 migrationConcurrencyAssert(str_contains($gossip, 'attemptCount = attemptCount + 1'), 'Gossipattempt gebruikt geen atomaire increment.');
+
+$idempotencyApply = migrationSql($root, 'apply', $codes[3]);
+migrationConcurrencyAssert(str_contains($idempotencyApply, 'CREATE TABLE IF NOT EXISTS tblApiIdempotency'), 'Migratie 0004 maakt de idempotentietabel niet herhaalbaar aan.');
+migrationConcurrencyAssert(str_contains($idempotencyApply, 'uq_tblApiIdempotency_user_operation_key'), 'Migratie 0004 mist de samengestelde unieke sleutel.');
+$financeBundle = (string) file_get_contents($root . '/sql/migrations/run_0004_finance_idempotency_phpmyadmin.sql');
+$financeBundleWithoutComments = sqlWithoutComments($financeBundle);
+migrationConcurrencyAssert(!str_contains(strtolower($financeBundleWithoutComments), 'information_schema'), 'De 0004-phpMyAdminbundel gebruikt information_schema.');
+migrationConcurrencyAssert(str_contains($financeBundle, '@aether_prerequisite_count = 3'), 'De 0004-bundel controleert migraties 0001-0003 niet.');
+migrationConcurrencyAssert(strpos($financeBundle, '@aether_prerequisite_count') < strpos($financeBundle, 'CREATE TABLE IF NOT EXISTS tblApiIdempotency'), 'De 0004-preflight staat niet vóór DDL.');
+migrationConcurrencyAssert(str_contains($financeBundle, 'INSERT IGNORE INTO tblApiIdempotency'), 'De 0004-bundel verifieert de unieke sleutel niet uitvoerbaar.');
+migrationConcurrencyAssert(strpos($financeBundle, '@aether_probe_count = 3') < strpos($financeBundle, "VALUES ('0004_create_api_idempotency'"), 'Migratie 0004 wordt vóór verificatie geregistreerd.');
+migrationConcurrencyAssert(
+    str_contains($financeBundle, "(1, '__migration_0004_probe__'")
+        && str_contains($financeBundle, "(0, '__migration_0004_probe_other__'"),
+    'De structuurprobe bewijst niet dat gebruiker en operatie deel van de unieke sleutel zijn.'
+);
+
+$eventPreflight = migrationSql($root, 'preflight', $codes[4]);
+migrationConcurrencyAssert(str_contains($eventPreflight, 'HAVING COUNT(*) > 1'), 'Event-userpreflight zoekt geen dubbele deelnames.');
+migrationConcurrencyAssert(str_contains($eventPreflight, 'idEvent IS NULL OR idUser IS NULL'), 'Event-userpreflight zoekt geen NULL-sleutels.');
+migrationConcurrencyAssert(str_contains($eventPreflight, 'LEFT JOIN tblEvent') && str_contains($eventPreflight, 'LEFT JOIN tblUser'), 'Event-userpreflight zoekt geen weesrecords.');
+
+$eventApply = sqlWithoutComments(migrationSql($root, 'apply', $codes[4]));
+migrationConcurrencyAssert(str_contains($eventApply, 'ADD UNIQUE INDEX IF NOT EXISTS uq_tblLinkEventUser_event_user (idEvent, idUser)'), 'Event-usermigratie mist de unieke event/userindex.');
+migrationConcurrencyAssert(str_contains($eventApply, 'ADD INDEX IF NOT EXISTS idx_tblLinkEventUser_user_event (idUser, idEvent)'), 'Event-usermigratie mist de omgekeerde lookupindex.');
+migrationConcurrencyAssert(strpos($eventApply, 'ALTER TABLE') < strpos($eventApply, "VALUES ('0005_unique_event_user'"), 'Migratie 0005 wordt vóór DDL geregistreerd.');
+
+$eventBundlePath = $root . '/sql/migrations/run_0005_event_integrity_phpmyadmin.sql';
+migrationConcurrencyAssert(is_file($eventBundlePath), 'De zelfstandige phpMyAdminbundel voor migratie 0005 ontbreekt.');
+$eventBundle = is_file($eventBundlePath) ? (string) file_get_contents($eventBundlePath) : '';
+$eventBundleWithoutComments = sqlWithoutComments($eventBundle);
+migrationConcurrencyAssert(!preg_match('/\bSOURCE\b/i', $eventBundleWithoutComments), 'De 0005-bundel gebruikt SOURCE.');
+migrationConcurrencyAssert(!str_contains(strtolower($eventBundleWithoutComments), 'information_schema'), 'De 0005-bundel gebruikt information_schema en is niet geschikt voor de beperkte phpMyAdmin-omgeving.');
+migrationConcurrencyAssert(str_contains($eventBundle, '@aether_prerequisite_count = 4'), 'De 0005-bundel vereist migraties 0001-0004 niet.');
+$eventAlterPosition = migrationPosition($eventBundle, 'ALTER TABLE tblLinkEventUser', 'De 0005-bundel bevat geen event-user-ALTER.');
+foreach ([
+    '@aether_duplicate_count' => 'De 0005-bundel controleert duplicaten niet.',
+    '@aether_null_count' => 'De 0005-bundel controleert NULL-sleutels niet.',
+    '@aether_orphan_count' => 'De 0005-bundel controleert weesrecords niet.',
+] as $needle => $message) {
+    migrationConcurrencyAssert(migrationPosition($eventBundle, $needle, $message) < $eventAlterPosition, $message . ' De controle staat niet vóór DDL.');
+}
+migrationConcurrencyAssert(
+    !str_contains($eventBundle, '__AETHER_BLOCK_0005_ORPHAN_EVENT_USERS__'),
+    'Verweesde eventdeelnames blokkeren onterecht een unieke event/userindex.'
+);
+migrationConcurrencyAssert(
+    migrationPosition($eventBundle, 'AS orphanWarning;', 'De waarschuwing voor verweesde eventdeelnames ontbreekt.') < $eventAlterPosition
+        && str_contains($eventBundle, 'WHERE e.id IS NULL OR u.id IS NULL;'),
+    'Verweesde eventdeelnames worden niet vóór DDL gewaarschuwd en na afloop getoond.'
+);
+migrationConcurrencyAssert(str_contains($eventBundle, 'ADD UNIQUE INDEX IF NOT EXISTS uq_tblLinkEventUser_event_user'), 'De 0005-bundel voegt de unieke index niet hervatbaar toe.');
+migrationConcurrencyAssert(str_contains($eventBundle, 'ADD INDEX IF NOT EXISTS idx_tblLinkEventUser_user_event'), 'De 0005-bundel voegt de lookupindex niet hervatbaar toe.');
+$eventVerificationPosition = migrationPosition($eventBundle, '@aether_probe_count_after_second = 1', 'De 0005-bundel verifieert de unieke index niet uitvoerbaar.');
+$eventRegistrationPosition = migrationPosition($eventBundle, "VALUES ('0005_unique_event_user'", 'De 0005-registratie ontbreekt.');
+migrationConcurrencyAssert($eventVerificationPosition < $eventRegistrationPosition, 'Migratie 0005 wordt vóór verificatie geregistreerd.');
+$eventDomainWrites = preg_replace('/INSERT\s+INTO\s+tblSchemaMigration[\s\S]*?;/i', '', $eventBundleWithoutComments) ?? $eventBundleWithoutComments;
+$eventDomainWrites = preg_replace('/INSERT\s+IGNORE\s+INTO\s+tblLinkEventUser[\s\S]*?;/i', '', $eventDomainWrites) ?? $eventDomainWrites;
+migrationConcurrencyAssert(preg_match('/\b(DELETE|UPDATE|REPLACE|TRUNCATE)\b/i', $eventDomainWrites) !== 1, 'De 0005-bundel ruimt applicatiedata automatisch op.');
+
+$eventRollback = sqlWithoutComments(migrationSql($root, 'rollback', $codes[4]));
+migrationConcurrencyAssert(str_contains($eventRollback, 'DROP INDEX IF EXISTS uq_tblLinkEventUser_event_user'), 'Rollback 0005 verwijdert de unieke event-userindex niet.');
+migrationConcurrencyAssert(str_contains($eventRollback, 'DROP INDEX IF EXISTS idx_tblLinkEventUser_user_event'), 'Rollback 0005 verwijdert de event-userlookupindex niet.');
+
+$gossip = (string) file_get_contents($root . '/api/characters/gossipKnowledgeUtils.php');
+migrationConcurrencyAssert(str_contains($gossip, 'SELECT attemptCount') && str_contains($gossip, 'FOR UPDATE'), 'De gossipattemptcounter wordt niet onder een row lock gelezen.');
+migrationConcurrencyAssert(str_contains($gossip, 'SELECT unlockGossip1, unlockGossip2, unlockGossip3') && str_contains($gossip, 'GREATEST(unlockGossip1'), 'Gossipunlock gebruikt geen lock plus monotone merge.');
 
 if ($failures !== []) {
     fwrite(STDERR, implode(PHP_EOL, $failures) . PHP_EOL);

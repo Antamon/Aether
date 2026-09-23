@@ -4,48 +4,25 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/eventSchemas.php';
+require_once __DIR__ . '/eventService.php';
 
-$currentUser = aetherRequirePrivilegedUser($pdo);
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
 
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
-
-if (empty($postData['id'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldig event ID.']);
-    exit;
-}
-
-$id = (int) $postData['id'];
-unset($postData['id']);
-
-if (empty($postData)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen velden om bij te werken.']);
-    exit;
-}
-
 try {
-    $columns = array_keys($postData);
-    $setParts = [];
-    foreach ($columns as $col) {
-        $setParts[] = "$col = :$col";
-    }
-    $setSql = implode(', ', $setParts);
-
-    $sql = "UPDATE tblEvent SET $setSql WHERE id = :id";
-
-    $params = $postData;
-    $params['id'] = $id;
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-
-    echo $stmt->rowCount();
-
+    $input = aetherValidateInput(aetherReadJsonObject(), aetherEventRequestSchema('update'));
+    aetherJsonResponse(aetherUpdateEvent($pdo, $currentUser, $input));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherEventException $e) {
+    if ($e->getHttpStatus() === 422) aetherJsonValidationError([$e->getMessage()]);
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon event niet bijwerken.']);
+    error_log('updateEvent.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon event niet bijwerken.');
 }

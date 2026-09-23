@@ -3,43 +3,42 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/adminUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/idempotency.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/../events/eventSchemas.php';
+require_once __DIR__ . '/../events/eventKnowledgeService.php';
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
-$idEvent = (int) ($input['idEvent'] ?? 0);
-$idSourceCharacter = (int) ($input['idSourceCharacter'] ?? 0);
-$idViewerCharacter = (int) ($input['idViewerCharacter'] ?? 0);
-
-if ($idEvent <= 0 || $idSourceCharacter <= 0 || $idViewerCharacter <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Event, bronpersonage en ontdekker zijn verplicht.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 try {
-    $pdo = getPDO();
-    requirePrivilegedAdminAccess($pdo, true);
-
-    $pdo->beginTransaction();
-    deleteGossipUnlockState($pdo, $idViewerCharacter, $idEvent, $idSourceCharacter);
-    $attemptCount = decrementCharacterEventGossipAttemptCount($pdo, $idViewerCharacter, $idEvent);
-    $pdo->commit();
-
-    echo json_encode([
-        'ok' => true,
-        'idEvent' => $idEvent,
-        'idSourceCharacter' => $idSourceCharacter,
-        'idViewerCharacter' => $idViewerCharacter,
-        'attemptCount' => $attemptCount,
-    ]);
+    $input = aetherValidateInput(aetherReadJsonObject(), aetherEventRequestSchema('deleteKnowledgeUnlock'));
+    aetherAuthorizeKnowledgeUnlockReplay($pdo, $currentUser, $input);
+    $requestKey = aetherRequireIdempotencyKey();
+    $response = aetherRunIdempotentMutation(
+        $pdo,
+        $currentUser,
+        'event.knowledge.delete_unlock',
+        $requestKey,
+        $input,
+        static fn(): array => aetherDeleteEventKnowledgeUnlock($pdo, $currentUser, $input),
+        static function () use ($pdo, $currentUser, $input): void {
+            aetherAuthorizeKnowledgeUnlockReplay($pdo, $currentUser, $input);
+        }
+    );
+    aetherJsonResponse($response);
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherEventException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
+} catch (AetherIdempotencyException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon deze wereldwijsontdekking niet verwijderen.',
-        'details' => $e->getMessage(),
-    ]);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('deleteKnowledgeUnlock.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon deze wereldwijsontdekking niet verwijderen.');
 }

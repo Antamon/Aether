@@ -1842,7 +1842,7 @@ async function saveCompanyShareAssignment(select) {
 
     try {
         const selectedCompanyId = Number(select.value || 0);
-        await apiFetchJson("api/characters/saveCompanyShare.php", {
+        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
             method: "POST",
             body: {
                 action: selectedCompanyId > 0 ? "assign_company" : "clear_company",
@@ -1868,7 +1868,7 @@ async function increaseCompanyShareRank(button) {
     button.disabled = true;
 
     try {
-        await apiFetchJson("api/characters/saveCompanyShare.php", {
+        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
             method: "POST",
             body: {
                 action: "increase_rank",
@@ -1893,7 +1893,7 @@ async function decreaseCompanyShareRank(button) {
     button.disabled = true;
 
     try {
-        await apiFetchJson("api/characters/saveCompanyShare.php", {
+        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
             method: "POST",
             body: {
                 action: "decrease_rank",
@@ -1928,7 +1928,7 @@ async function buyNewCompanyShare(button) {
     select.disabled = true;
 
     try {
-        await apiFetchJson("api/characters/buyCompanyShare.php", {
+        await apiFetchFinancialJson("api/characters/buyCompanyShare.php", {
             method: "POST",
             body: {
                 idCharacter: currentCharacter.id,
@@ -1981,7 +1981,7 @@ async function submitBankTransfer() {
     }
 
     try {
-        await apiFetchJson("api/characters/saveBankTransfer.php", {
+        await apiFetchFinancialJson("api/characters/saveBankTransfer.php", {
             method: "POST",
             body: {
                 idSourceCharacter: currentCharacter.id,
@@ -2009,7 +2009,7 @@ async function deleteBankTransaction(idTransaction) {
     }
 
     try {
-        await apiFetchJson("api/characters/deleteBankTransaction.php", {
+        await apiFetchFinancialJson("api/characters/deleteBankTransaction.php", {
             method: "POST",
             body: { idTransaction }
         });
@@ -2037,7 +2037,7 @@ async function createCharacterEconomySnapshot(button) {
     select.disabled = true;
 
     try {
-        await apiFetchJson("api/characters/saveCharacterEconomySnapshot.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterEconomySnapshot.php", {
             method: "POST",
             body: {
                 idCharacter: currentCharacter.id,
@@ -2062,7 +2062,7 @@ async function deleteCharacterEconomySnapshot(idSnapshot) {
     }
 
     try {
-        await apiFetchJson("api/characters/deleteCharacterEconomySnapshot.php", {
+        await apiFetchFinancialJson("api/characters/deleteCharacterEconomySnapshot.php", {
             method: "POST",
             body: { idSnapshot }
         });
@@ -2095,7 +2095,7 @@ async function saveSecuritiesSettings() {
     }
 
     try {
-        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
             method: "POST",
             body: {
                 action: "save_settings",
@@ -2127,7 +2127,7 @@ async function depositSecuritiesBalance() {
     }
 
     try {
-        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
             method: "POST",
             body: {
                 action: "deposit",
@@ -2158,7 +2158,7 @@ async function withdrawSecuritiesBalance() {
     }
 
     try {
-        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
             method: "POST",
             body: {
                 action: "manual_withdrawal",
@@ -2179,7 +2179,7 @@ async function rerollSecuritiesSnapshot(idSnapshot) {
     if (!currentCharacter?.id || idSnapshot <= 0) return;
 
     try {
-        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
             method: "POST",
             body: {
                 action: "reroll_snapshot",
@@ -2200,7 +2200,7 @@ async function approveSecuritiesSnapshot(idSnapshot) {
     if (!currentCharacter?.id || idSnapshot <= 0) return;
 
     try {
-        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
             method: "POST",
             body: {
                 action: "approve_snapshot",
@@ -2239,7 +2239,7 @@ async function saveSecuritiesSnapshotWithdrawal() {
     }
 
     try {
-        await apiFetchJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
             method: "POST",
             body: {
                 action: "withdraw_snapshot",

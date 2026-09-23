@@ -103,6 +103,12 @@ $characterWriteObjectChecks = [
 foreach ($characterWriteObjectChecks as $route => $objectAccessMarker) {
     $contents = routeContents($projectRoot, $route);
     $policyFiles = [
+        'api/characters/buyCompanyShare.php' => 'api/characters/characterShareService.php',
+        'api/characters/deleteCharacterEconomySnapshot.php' => 'api/characters/characterFinanceService.php',
+        'api/characters/saveBankTransfer.php' => 'api/characters/characterFinanceService.php',
+        'api/characters/saveCharacterEconomySnapshot.php' => 'api/characters/characterFinanceService.php',
+        'api/characters/saveCharacterSecuritiesPortfolio.php' => 'api/characters/characterFinanceService.php',
+        'api/characters/saveCompanyShare.php' => 'api/characters/characterShareService.php',
         'api/characters/addCharacterLanguage.php' => 'api/characters/characterLanguageService.php',
         'api/characters/saveCharacterDiary.php' => 'api/characters/characterDiaryService.php',
         'api/characters/updateTrait.php' => 'api/characters/characterTraitService.php',
@@ -164,7 +170,14 @@ foreach (['idUser', 'type', 'state', 'createdBy', 'createdAt'] as $authorityFiel
 }
 
 $eventList = routeContents($projectRoot, 'api/events/getEventList.php');
-assertRouteCoverage(str_contains($eventList, 'aetherIsPrivilegedRole'), 'Eventlijst beperkt een opgegeven gebruikers-ID niet op basis van de serverrol.');
+$eventAccess = routeContents($projectRoot, 'api/events/eventAccess.php');
+$eventService = routeContents($projectRoot, 'api/events/eventService.php');
+assertRouteCoverage(
+    str_contains($eventList, 'aetherGetEventList')
+        && str_contains($eventService, 'aetherCanReadEventParticipationForUser')
+        && str_contains($eventAccess, 'aetherIsPrivilegedRole'),
+    'Eventlijst beperkt een opgegeven gebruikers-ID niet via het centrale eventbeleid.'
+);
 
 $genericAccessControl = routeContents($projectRoot, 'api/auth/accessControl.php');
 $characterAccess = routeContents($projectRoot, 'api/characters/characterAccess.php');

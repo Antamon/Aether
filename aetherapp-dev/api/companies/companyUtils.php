@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../characters/characterPointUtils.php';
 require_once __DIR__ . '/../characters/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/../shared/decimal.php';
 
 function requirePrivilegedCompanyAccess(PDO $pdo, bool $requireCsrf = false): array
 {
@@ -81,22 +82,29 @@ function getCompanyTypeDefinitions(): array
 
 function getCompanyTypeByValue(mixed $value): array
 {
-    $companyValue = normalizeCompanyValue($value);
+    try {
+        $companyValue = aetherNormalizeDecimal($value, 2);
+    } catch (InvalidArgumentException) {
+        $companyValue = '0.00';
+    }
+    if (aetherDecimalCompare($companyValue, '0.00') < 0) {
+        $companyValue = '0.00';
+    }
     $definitions = getCompanyTypeDefinitions();
 
-    if ($companyValue <= 30000.0) {
+    if (aetherDecimalCompare($companyValue, '30000.00') <= 0) {
         return $definitions['micro'];
     }
 
-    if ($companyValue <= 450000.0) {
+    if (aetherDecimalCompare($companyValue, '450000.00') <= 0) {
         return $definitions['family'];
     }
 
-    if ($companyValue <= 6750000.0) {
+    if (aetherDecimalCompare($companyValue, '6750000.00') <= 0) {
         return $definitions['national'];
     }
 
-    if ($companyValue <= 101250000.0) {
+    if (aetherDecimalCompare($companyValue, '101250000.00') <= 0) {
         return $definitions['small_international'];
     }
 
@@ -401,23 +409,32 @@ function generateRandomCompanySnapshotAdjustment(float $companyValue, float $sta
 }
 
 function generateRandomCompanySnapshotAdjustmentFromBounds(
-    float $companyValue,
-    float $lowerBoundPercentage,
-    float $upperBoundPercentage
-): float {
-    $normalizedCompanyValue = normalizeCompanyValue($companyValue);
-    $lowerAmountInCents = (int) round($normalizedCompanyValue * ($lowerBoundPercentage / 100) * 100);
-    $upperAmountInCents = (int) round($normalizedCompanyValue * ($upperBoundPercentage / 100) * 100);
+    mixed $companyValue,
+    mixed $lowerBoundPercentage,
+    mixed $upperBoundPercentage
+): string {
+    $normalizedCompanyValue = aetherNormalizeDecimal($companyValue, 2);
+    if (aetherDecimalCompare($normalizedCompanyValue, '0.00') < 0) {
+        $normalizedCompanyValue = '0.00';
+    }
+    $lowerPercentage = aetherNormalizeDecimal($lowerBoundPercentage, 2);
+    $upperPercentage = aetherNormalizeDecimal($upperBoundPercentage, 2);
+    $lowerAmountInCents = aetherDecimalToMinorUnits(
+        aetherDecimalMultiplyRatio($normalizedCompanyValue, aetherDecimalToMinorUnits($lowerPercentage), 10000)
+    );
+    $upperAmountInCents = aetherDecimalToMinorUnits(
+        aetherDecimalMultiplyRatio($normalizedCompanyValue, aetherDecimalToMinorUnits($upperPercentage), 10000)
+    );
 
     if ($upperAmountInCents < $lowerAmountInCents) {
         [$lowerAmountInCents, $upperAmountInCents] = [$upperAmountInCents, $lowerAmountInCents];
     }
 
     if ($lowerAmountInCents === $upperAmountInCents) {
-        return round($lowerAmountInCents / 100, 2);
+        return aetherMinorUnitsToDecimal($lowerAmountInCents);
     }
 
-    return round(random_int($lowerAmountInCents, $upperAmountInCents) / 100, 2);
+    return aetherMinorUnitsToDecimal(random_int($lowerAmountInCents, $upperAmountInCents));
 }
 
 function getCompanyPersonnelImportanceMultipliers(): array
@@ -647,43 +664,51 @@ function getCompanyPersonnelSalaryIncreaseExpenseAmount(PDO $pdo, int $idCompany
 }
 
 function applyCompanyPersonnelImpactToSnapshotAdjustment(
-    float $rawAdjustmentAmount,
-    float $personnelImpactPercentage
+    mixed $rawAdjustmentAmount,
+    mixed $personnelImpactPercentage
 ): array {
-    $normalizedRawAdjustmentAmount = round($rawAdjustmentAmount, 2);
-    $normalizedPersonnelImpactPercentage = round($personnelImpactPercentage, 2);
-    $personnelAdjustmentAmount = 0.0;
+    $normalizedRawAdjustmentAmount = aetherNormalizeDecimal($rawAdjustmentAmount, 2);
+    $normalizedPersonnelImpactPercentage = aetherNormalizeDecimal($personnelImpactPercentage, 2);
+    $personnelAdjustmentAmount = '0.00';
 
-    if ($normalizedPersonnelImpactPercentage > 0 && $normalizedRawAdjustmentAmount < 0) {
-        $personnelAdjustmentAmount = round(
-            abs($normalizedRawAdjustmentAmount) * ($normalizedPersonnelImpactPercentage / 100),
-            2
+    if (aetherDecimalCompare($normalizedPersonnelImpactPercentage, '0.00') > 0
+        && aetherDecimalCompare($normalizedRawAdjustmentAmount, '0.00') < 0) {
+        $absoluteRaw = aetherMinorUnitsToDecimal(abs(aetherDecimalToMinorUnits($normalizedRawAdjustmentAmount)));
+        $personnelAdjustmentAmount = aetherDecimalMultiplyRatio(
+            $absoluteRaw,
+            aetherDecimalToMinorUnits($normalizedPersonnelImpactPercentage),
+            10000
         );
-    } elseif ($normalizedPersonnelImpactPercentage < 0 && $normalizedRawAdjustmentAmount > 0) {
-        $personnelAdjustmentAmount = round(
-            $normalizedRawAdjustmentAmount * ($normalizedPersonnelImpactPercentage / 100),
-            2
+    } elseif (aetherDecimalCompare($normalizedPersonnelImpactPercentage, '0.00') < 0
+        && aetherDecimalCompare($normalizedRawAdjustmentAmount, '0.00') > 0) {
+        $personnelAdjustmentAmount = aetherDecimalMultiplyRatio(
+            $normalizedRawAdjustmentAmount,
+            aetherDecimalToMinorUnits($normalizedPersonnelImpactPercentage),
+            10000
         );
     }
 
     return [
         'rawAdjustmentAmount' => $normalizedRawAdjustmentAmount,
         'personnelAdjustmentAmount' => $personnelAdjustmentAmount,
-        'finalAdjustmentAmount' => round($normalizedRawAdjustmentAmount + $personnelAdjustmentAmount, 2),
+        'finalAdjustmentAmount' => aetherDecimalAdd($normalizedRawAdjustmentAmount, $personnelAdjustmentAmount),
     ];
 }
 
 function calculateCompanySnapshotFinancials(
-    float $companyValue,
+    mixed $companyValue,
     int $stability,
     int $profitability,
-    float $personnelImpactPercentage = 0.0,
-    float $personnelSalaryIncreaseExpenseAmount = 0.0,
-    ?float $lowerBoundPercentage = null,
-    ?float $upperBoundPercentage = null
+    mixed $personnelImpactPercentage = '0.00',
+    mixed $personnelSalaryIncreaseExpenseAmount = '0.00',
+    mixed $lowerBoundPercentage = null,
+    mixed $upperBoundPercentage = null
 ): array
 {
-    $normalizedCompanyValue = normalizeCompanyValue($companyValue);
+    $normalizedCompanyValue = aetherNormalizeDecimal($companyValue, 2);
+    if (aetherDecimalCompare($normalizedCompanyValue, '0.00') < 0) {
+        $normalizedCompanyValue = '0.00';
+    }
     $normalizedStability = normalizeCompanySliderValue($stability);
     $normalizedProfitability = normalizeCompanySliderValue($profitability);
 
@@ -692,28 +717,38 @@ function calculateCompanySnapshotFinancials(
     $resolvedLowerBoundPercentage = $lowerBoundPercentage ?? -$stabilityRangePercentage;
     $resolvedUpperBoundPercentage = $upperBoundPercentage ?? $stabilityRangePercentage;
 
-    $baseProfitAmountBeforePersonnel = round($normalizedCompanyValue * ($profitabilityPercentage / 100), 2);
-    $normalizedPersonnelSalaryIncreaseExpenseAmount = round(max(0.0, $personnelSalaryIncreaseExpenseAmount), 2);
-    $baseProfitAmount = round($baseProfitAmountBeforePersonnel - $normalizedPersonnelSalaryIncreaseExpenseAmount, 2);
+    $baseProfitAmountBeforePersonnel = aetherDecimalMultiplyRatio(
+        $normalizedCompanyValue,
+        (int) $profitabilityPercentage,
+        100
+    );
+    $normalizedPersonnelSalaryIncreaseExpenseAmount = aetherNormalizeDecimal($personnelSalaryIncreaseExpenseAmount, 2);
+    if (aetherDecimalCompare($normalizedPersonnelSalaryIncreaseExpenseAmount, '0.00') < 0) {
+        $normalizedPersonnelSalaryIncreaseExpenseAmount = '0.00';
+    }
+    $baseProfitAmount = aetherDecimalSubtract(
+        $baseProfitAmountBeforePersonnel,
+        $normalizedPersonnelSalaryIncreaseExpenseAmount
+    );
     $rawStabilityAdjustmentAmount = generateRandomCompanySnapshotAdjustmentFromBounds(
         $normalizedCompanyValue,
-        (float) $resolvedLowerBoundPercentage,
-        (float) $resolvedUpperBoundPercentage
+        $resolvedLowerBoundPercentage,
+        $resolvedUpperBoundPercentage
     );
     $personnelAdjustedStability = applyCompanyPersonnelImpactToSnapshotAdjustment(
         $rawStabilityAdjustmentAmount,
         $personnelImpactPercentage
     );
     $stabilityAdjustmentAmount = $personnelAdjustedStability['finalAdjustmentAmount'];
-    $profitAmount = round($baseProfitAmount + $stabilityAdjustmentAmount, 2);
+    $profitAmount = aetherDecimalAdd($baseProfitAmount, $stabilityAdjustmentAmount);
 
     return [
         'companyValue' => $normalizedCompanyValue,
         'profitabilityPercentage' => $profitabilityPercentage,
         'stabilityRangePercentage' => $stabilityRangePercentage,
-        'personnelImpactPercentage' => round($personnelImpactPercentage, 2),
-        'stabilityLowerBoundPercentage' => round((float) $resolvedLowerBoundPercentage, 2),
-        'stabilityUpperBoundPercentage' => round((float) $resolvedUpperBoundPercentage, 2),
+        'personnelImpactPercentage' => aetherNormalizeDecimal($personnelImpactPercentage, 2),
+        'stabilityLowerBoundPercentage' => aetherNormalizeDecimal($resolvedLowerBoundPercentage, 2),
+        'stabilityUpperBoundPercentage' => aetherNormalizeDecimal($resolvedUpperBoundPercentage, 2),
         'personnelSalaryIncreaseExpenseAmount' => $normalizedPersonnelSalaryIncreaseExpenseAmount,
         'baseProfitAmountBeforePersonnel' => $baseProfitAmountBeforePersonnel,
         'baseProfitAmount' => $baseProfitAmount,
@@ -870,13 +905,13 @@ function refreshCompanySnapshotsForCurrentPersonnel(PDO $pdo, int $idCompany): v
         $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
         $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
         $financials = calculateCompanySnapshotFinancials(
-            (float) ($snapshot['companyValue'] ?? 0),
+            $snapshot['companyValue'] ?? 0,
             $stability,
             $profitability,
-            (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+            $personnelImpactSummary['totalPercentage'] ?? 0,
             $personnelSalaryIncreaseExpenseAmount,
-            (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
-            (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
+            $personnelImpactSummary['lowerBoundPercentage'] ?? 0,
+            $personnelImpactSummary['upperBoundPercentage'] ?? 0
         );
 
         $updateStmt->execute([

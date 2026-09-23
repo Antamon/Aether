@@ -83,46 +83,46 @@ async function generateEventList(idParticipant = 0) {
 
             if (value.type === "weekend") {
                 aetherNumber++;
-                divType.innerHTML = "Aether " + aetherNumber;
+                divType.textContent = "Aether " + aetherNumber;
             } else {
                 // bv. "mini"
-                divType.innerHTML = "Aether " + value.type;
+                divType.textContent = "Aether " + value.type;
             }
             newTableRow.appendChild(divType);
 
             // Titel
             const divTitle = document.createElement("td");
-            divTitle.innerHTML = value.title;
+            divTitle.textContent = value.title;
             newTableRow.appendChild(divTitle);
 
             // Beschrijving
             const divDescription = document.createElement("td");
             divDescription.classList.add("col-4");
-            divDescription.innerHTML = value.description;
+            divDescription.textContent = value.description;
             newTableRow.appendChild(divDescription);
 
             // Datum (start / eind)
             const divDate = document.createElement("td");
             divDate.classList.add("text-nowrap");
             if (value.dateStart && value.dateEnd) {
-                divDate.innerHTML = `${value.dateStart} – ${value.dateEnd}`;
+                divDate.textContent = `${value.dateStart} – ${value.dateEnd}`;
             } else if (value.dateStart) {
-                divDate.innerHTML = value.dateStart;
+                divDate.textContent = value.dateStart;
             } else {
-                divDate.innerHTML = "";
+                divDate.textContent = "";
             }
             newTableRow.appendChild(divDate);
 
             // Locatie
             const divVenue = document.createElement("td");
             divVenue.classList.add("text-nowrap");
-            divVenue.innerHTML = value.venue ?? "";
+            divVenue.textContent = value.venue ?? "";
             newTableRow.appendChild(divVenue);
 
             // EP
             const divExperience = document.createElement("td");
             divExperience.classList.add("text-center");
-            divExperience.innerHTML = value.ep ?? "";
+            divExperience.textContent = value.ep ?? "";
             newTableRow.appendChild(divExperience);
 
             // Deelname
@@ -166,9 +166,9 @@ async function generateEventList(idParticipant = 0) {
             } else {
                 // Gewone speler → tekst
                 if (value.participation === true) {
-                    divParticipation.innerHTML = "Yes";
+                    divParticipation.textContent = "Yes";
                 } else {
-                    divParticipation.innerHTML = "";
+                    divParticipation.textContent = "";
                 }
             }
 
@@ -210,13 +210,13 @@ function makeEventRowEditable(eventValue, idParticipant = 0) {
 
     const optionWeekend = document.createElement("option");
     optionWeekend.value = "weekend";
-    optionWeekend.innerHTML = "weekend";
+    optionWeekend.textContent = "weekend";
     if (eventValue.type === "weekend") optionWeekend.selected = true;
     selectType.appendChild(optionWeekend);
 
     const optionMini = document.createElement("option");
     optionMini.value = "mini";
-    optionMini.innerHTML = "mini";
+    optionMini.textContent = "mini";
     if (eventValue.type === "mini") optionMini.selected = true;
     selectType.appendChild(optionMini);
 

@@ -37,6 +37,17 @@ function fetchCharacterActionEvents(PDO $pdo): array
     }, $rows);
 }
 
+/** @return array<string, mixed>|null */
+function fetchCharacterActionEvent(PDO $pdo, int $idEvent): ?array
+{
+    if ($idEvent <= 0) return null;
+    return dbOne(
+        $pdo,
+        'SELECT id, title, dateStart, dateEnd FROM tblEvent WHERE id = :idEvent',
+        ['idEvent' => $idEvent]
+    );
+}
+
 function getCharacterSkillLevelByIdForGossip(PDO $pdo, int $idCharacter, int $idSkill): int
 {
     if ($idCharacter <= 0 || $idSkill <= 0) {
@@ -127,6 +138,64 @@ function fetchGossipUnlockRow(PDO $pdo, int $idViewerCharacter, int $idEvent, in
     );
 }
 
+/** Create the lock target when needed and return its latest state under a row lock. */
+function lockGossipUnlockRow(PDO $pdo, int $idViewerCharacter, int $idEvent, int $idSourceCharacter): array
+{
+    $pdo->prepare(
+        'INSERT INTO tblCharacterEventGossipUnlock (
+            idViewerCharacter, idEvent, idSourceCharacter,
+            unlockGossip1, unlockGossip2, unlockGossip3, createdAt, updatedAt
+         ) VALUES (
+            :idViewerCharacter, :idEvent, :idSourceCharacter, 0, 0, 0, NOW(), NOW()
+         )
+         ON DUPLICATE KEY UPDATE id = id'
+    )->execute([
+        'idViewerCharacter' => $idViewerCharacter,
+        'idEvent' => $idEvent,
+        'idSourceCharacter' => $idSourceCharacter,
+    ]);
+
+    $stmt = $pdo->prepare(
+        'SELECT unlockGossip1, unlockGossip2, unlockGossip3
+           FROM tblCharacterEventGossipUnlock
+          WHERE idViewerCharacter = :idViewerCharacter
+            AND idEvent = :idEvent
+            AND idSourceCharacter = :idSourceCharacter
+          FOR UPDATE'
+    );
+    $stmt->execute([
+        'idViewerCharacter' => $idViewerCharacter,
+        'idEvent' => $idEvent,
+        'idSourceCharacter' => $idSourceCharacter,
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) throw new RuntimeException('Kon de gossipontgrendeling niet vergrendelen.');
+    return $row;
+}
+
+function lockExistingGossipUnlockRow(
+    PDO $pdo,
+    int $idViewerCharacter,
+    int $idEvent,
+    int $idSourceCharacter
+): ?array {
+    $stmt = $pdo->prepare(
+        'SELECT unlockGossip1, unlockGossip2, unlockGossip3
+           FROM tblCharacterEventGossipUnlock
+          WHERE idViewerCharacter = :idViewerCharacter
+            AND idEvent = :idEvent
+            AND idSourceCharacter = :idSourceCharacter
+          FOR UPDATE'
+    );
+    $stmt->execute([
+        'idViewerCharacter' => $idViewerCharacter,
+        'idEvent' => $idEvent,
+        'idSourceCharacter' => $idSourceCharacter,
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
 function buildUnlockedGossipState(?array $row): array
 {
     return [
@@ -159,9 +228,9 @@ function saveUnlockedGossipState(PDO $pdo, int $idViewerCharacter, int $idEvent,
             NOW()
          )
          ON DUPLICATE KEY UPDATE
-            unlockGossip1 = VALUES(unlockGossip1),
-            unlockGossip2 = VALUES(unlockGossip2),
-            unlockGossip3 = VALUES(unlockGossip3),
+            unlockGossip1 = GREATEST(unlockGossip1, VALUES(unlockGossip1)),
+            unlockGossip2 = GREATEST(unlockGossip2, VALUES(unlockGossip2)),
+            unlockGossip3 = GREATEST(unlockGossip3, VALUES(unlockGossip3)),
             updatedAt = VALUES(updatedAt)'
     )->execute([
         'idViewerCharacter' => $idViewerCharacter,
@@ -188,6 +257,28 @@ function getCharacterEventGossipAttemptCount(PDO $pdo, int $idViewerCharacter, i
     );
 
     return max(0, (int) ($row['attemptCount'] ?? 0));
+}
+
+/** Ensure and lock the viewer/event attempt counter before evaluating reveal chances. */
+function lockCharacterEventGossipAttemptCount(PDO $pdo, int $idViewerCharacter, int $idEvent): int
+{
+    $pdo->prepare(
+        'INSERT INTO tblCharacterEventGossipAttempt (idViewerCharacter, idEvent, attemptCount, updatedAt)
+         VALUES (:idViewerCharacter, :idEvent, 0, NOW())
+         ON DUPLICATE KEY UPDATE id = id'
+    )->execute(['idViewerCharacter' => $idViewerCharacter, 'idEvent' => $idEvent]);
+
+    $stmt = $pdo->prepare(
+        'SELECT attemptCount
+           FROM tblCharacterEventGossipAttempt
+          WHERE idViewerCharacter = :idViewerCharacter
+            AND idEvent = :idEvent
+          FOR UPDATE'
+    );
+    $stmt->execute(['idViewerCharacter' => $idViewerCharacter, 'idEvent' => $idEvent]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) throw new RuntimeException('Kon de gossipattempt niet vergrendelen.');
+    return max(0, (int) $row['attemptCount']);
 }
 
 function incrementCharacterEventGossipAttemptCount(PDO $pdo, int $idViewerCharacter, int $idEvent): int
@@ -508,7 +599,12 @@ function revealKnowledgeGossip(PDO $pdo, int $idViewerCharacter, int $idEvent, i
         throw new RuntimeException('Dit personage heeft geen gossip op een niveau dat Wereldwijs kan onthullen.');
     }
 
-    $unlockState = buildUnlockedGossipState(fetchGossipUnlockRow($pdo, $idViewerCharacter, $idEvent, $idSourceCharacter));
+    // De viewer/eventcounter wordt altijd eerst vergrendeld. Daarna volgt de concrete
+    // viewer/event/source-unlockrij. Zo delen gelijktijdige reveals één actuele pogingsteller.
+    $attemptNumber = lockCharacterEventGossipAttemptCount($pdo, $idViewerCharacter, $idEvent);
+    $unlockState = buildUnlockedGossipState(
+        lockGossipUnlockRow($pdo, $idViewerCharacter, $idEvent, $idSourceCharacter)
+    );
 
     $pendingLevels = [];
     foreach ($gossipPayload as $level => $gossip) {
@@ -520,7 +616,6 @@ function revealKnowledgeGossip(PDO $pdo, int $idViewerCharacter, int $idEvent, i
         }
     }
 
-    $attemptNumber = getCharacterEventGossipAttemptCount($pdo, $idViewerCharacter, $idEvent);
     $newlyUnlocked = [];
 
     if (count($pendingLevels) > 0) {

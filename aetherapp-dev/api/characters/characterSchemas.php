@@ -78,9 +78,9 @@ function aetherCharacterRequestSchema(string $route, array $input = []): array
         ],
         'saveBankTransfer' => [
             'idSourceCharacter' => $id(), 'idTargetCharacter' => $id(),
-            'amount' => ['type' => 'number', 'required' => true, 'minExclusive' => 0, 'max' => 9999999999.99, 'scale' => 2],
+            'amount' => ['type' => 'decimal', 'required' => true, 'minExclusive' => '0.00', 'max' => '9999999999.99', 'scale' => 2],
             'description' => $text(false, 255),
-            'transactionDate' => ['type' => 'date', 'required' => true],
+            'transactionDate' => ['type' => 'date', 'required' => false, 'allowEmpty' => true, 'default' => ''],
         ],
         'saveCharacterDiary' => [
             'idCharacter' => $id(), 'idDiary' => $optionalId(), 'idEvent' => $id(),
@@ -153,12 +153,12 @@ function aetherCharacterSecuritiesSchema(array $input, callable $id, callable $e
             'managerCharacterId' => ['type' => 'nullable_int', 'required' => false, 'min' => 1],
         ],
         'deposit', 'manual_withdrawal' => $schema + [
-            'amount' => ['type' => 'number', 'required' => true, 'minExclusive' => 0, 'max' => 9999999999.99, 'scale' => 2],
+            'amount' => ['type' => 'decimal', 'required' => true, 'minExclusive' => '0.00', 'max' => '9999999999.99', 'scale' => 2],
         ],
         'reroll_snapshot', 'approve_snapshot' => $schema + ['idSnapshot' => $id()],
         'withdraw_snapshot' => $schema + [
             'idSnapshot' => $id(),
-            'amount' => ['type' => 'number', 'required' => true, 'min' => 0, 'max' => 9999999999.99, 'scale' => 2],
+            'amount' => ['type' => 'decimal', 'required' => true, 'min' => '0.00', 'max' => '9999999999.99', 'scale' => 2],
         ],
         default => $schema,
     };
@@ -200,8 +200,8 @@ function aetherUpdateCharacterSchema(callable $id, callable $text, callable $enu
     $editable['birthDate']['allowEmpty'] = true;
 
     return ['id' => $id()] + $editable + [
-        'bankaccount' => ['type' => 'number', 'required' => false, 'min' => -9999999999.99, 'max' => 9999999999.99, 'scale' => 2],
-        'securitiesaccount' => ['type' => 'number', 'required' => false, 'min' => 0, 'max' => 9999999999.99, 'scale' => 2],
+        'bankaccount' => ['type' => 'decimal', 'required' => false, 'min' => '-9999999999.99', 'max' => '9999999999.99', 'scale' => 2],
+        'securitiesaccount' => ['type' => 'decimal', 'required' => false, 'min' => '0.00', 'max' => '9999999999.99', 'scale' => 2],
         // Herkend om de bestaande expliciete 403-controle te behouden; nooit opgenomen in SQL.
         'createdBy' => ['type' => 'int', 'required' => false, 'min' => 0],
         'createdAt' => ['type' => 'string', 'required' => false, 'trim' => true, 'maxLength' => 32, 'html' => false],

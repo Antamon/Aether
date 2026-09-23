@@ -22,3 +22,7 @@ healthApp/
 # Secure files
 db.php
 **/*.sql
+
+# Schema migrations are deployment artifacts; database dumps elsewhere stay ignored.
+!sql/migrations/**/*.sql
+!sql/migrations/*.sql

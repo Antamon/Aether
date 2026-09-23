@@ -7,6 +7,7 @@ require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../shared/response.php';
 require_once __DIR__ . '/../shared/request.php';
 require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/idempotency.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterAccess.php';
 require_once __DIR__ . '/characterSchemas.php';
@@ -26,23 +27,36 @@ try {
     aetherJsonValidationError($e->getValidationErrors());
 }
 
-$characterId = $input['id'];
+$characterId = (int) $input['id'];
+$validatedPayload = $input;
 unset($input['id']);
 
 try {
-    $currentCharacter = aetherFetchCharacterForUpdate($pdo, $characterId);
-    if ($currentCharacter === null) {
-        aetherJsonError(404, 'Personage niet gevonden.');
+    if (array_intersect(['bankaccount', 'securitiesaccount', 'state'], array_keys($input)) !== []) {
+        $preflightCharacter = aetherFetchCharacterForUpdate($pdo, $characterId);
+        if ($preflightCharacter === null) throw new AetherCharacterUpdateException(404, 'Personage niet gevonden.');
+        if (!aetherCanEditCharacter($currentUser, $preflightCharacter)) {
+            throw new AetherCharacterUpdateException(403, 'Je hebt geen rechten om dit personage te wijzigen.');
+        }
+        aetherPrepareCharacterUpdate($pdo, $currentUser, $preflightCharacter, $input);
+        $key = aetherRequireIdempotencyKey();
+        $rowCount = aetherRunIdempotentMutation(
+            $pdo,
+            $currentUser,
+            'character.direct_balance_update',
+            $key,
+            $validatedPayload,
+            static fn(): int => aetherUpdateCharacterUseCase($pdo, $currentUser, $characterId, $input, true)
+        );
+    } else {
+        $rowCount = aetherUpdateCharacterUseCase($pdo, $currentUser, $characterId, $input);
     }
-    if (!aetherCanEditCharacter($currentUser, $currentCharacter)) {
-        aetherJsonError(403, 'Je hebt geen rechten om dit personage te wijzigen.');
-    }
-
-    $fields = aetherPrepareCharacterUpdate($pdo, $currentUser, $currentCharacter, $input);
-    $rowCount = aetherApplyCharacterUpdate($pdo, $currentCharacter, $fields);
     aetherJsonResponse($rowCount);
 } catch (AetherCharacterUpdateException $e) {
     aetherJsonError($e->getHttpStatus(), $e->getMessage());
+} catch (AetherIdempotencyException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
+    error_log('updateCharacter failed: ' . $e->getMessage());
     aetherJsonError(500, 'Kon character niet bijwerken.');
 }

@@ -31,14 +31,14 @@ function aetherCharacterUpdateColumnMap(): array
     ];
 }
 
-function aetherFetchCharacterForUpdate(PDO $pdo, int $characterId): ?array
+function aetherFetchCharacterForUpdate(PDO $pdo, int $characterId, bool $lock = false): ?array
 {
     $stmt = $pdo->prepare(
         'SELECT id, `class`, type, state, idUser, experienceToTrait,
                 physicalHealth, mentalHealth, physicalHealthFree, mentalHealthFree,
-                securitiesaccount
+                bankaccount, securitiesaccount
            FROM tblCharacter
-          WHERE id = :id'
+          WHERE id = :id' . ($lock ? ' FOR UPDATE' : '')
     );
     $stmt->execute(['id' => $characterId]);
     $character = $stmt->fetch(PDO::FETCH_ASSOC);

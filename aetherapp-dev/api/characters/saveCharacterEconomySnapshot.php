@@ -1,178 +1,34 @@
 <?php
 declare(strict_types=1);
-
-session_start();
 header('Content-Type: application/json; charset=utf-8');
-
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/characterPointUtils.php';
-require_once __DIR__ . '/economyUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/idempotency.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterFinanceService.php';
 
-$input = aetherReadCharacterJsonRequest('saveCharacterEconomySnapshot');
-
-$idCharacter = isset($input['idCharacter']) ? (int) $input['idCharacter'] : 0;
-$idEvent = isset($input['idEvent']) ? (int) $input['idEvent'] : 0;
-
-if ($idCharacter <= 0 || $idEvent <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Personage en event zijn verplicht.']);
-    exit;
-}
-
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 try {
-    $pdo = getPDO();
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
-    $currentUserRole = $currentUser['role'];
-    $currentUserId = (int) $currentUser['id'];
-
-    $stmtCharacter = $pdo->prepare(
-        'SELECT *
-         FROM tblCharacter
-         WHERE id = :id'
+    $request = aetherReadJsonObject();
+    $input = aetherValidateInput($request, aetherCharacterRequestSchema('saveCharacterEconomySnapshot', $request));
+    $key = aetherRequireIdempotencyKey();
+    $response = aetherRunIdempotentMutation(
+        $pdo, $currentUser, 'character.economy_snapshot.create', $key, $input,
+        fn(): array => aetherCreateEconomySnapshot($pdo, $currentUser, $input),
+        static function () use ($pdo, $currentUser, $input): void {
+            aetherAuthorizeEconomySnapshotReplay($pdo, $currentUser, (int) $input['idCharacter']);
+        }
     );
-    $stmtCharacter->execute(['id' => $idCharacter]);
-    $character = $stmtCharacter->fetch(PDO::FETCH_ASSOC);
-
-    if (!$character) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Personage niet gevonden.']);
-        exit;
-    }
-
-    if (!canManageCharacterEconomySnapshots($character, $currentUserRole, $currentUserId)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Je hebt geen rechten om een economiesnapshot voor dit personage te maken.']);
-        exit;
-    }
-
-    $stmtEvent = $pdo->prepare(
-        'SELECT id, title, dateStart
-         FROM tblEvent
-         WHERE id = :id'
-    );
-    $stmtEvent->execute(['id' => $idEvent]);
-    $event = $stmtEvent->fetch(PDO::FETCH_ASSOC);
-
-    if (!$event) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Event niet gevonden.']);
-        exit;
-    }
-
-    $stmtExisting = $pdo->prepare(
-        'SELECT id
-         FROM tblCharacterEconomySnapshot
-         WHERE idCharacter = :idCharacter
-           AND idEvent = :idEvent'
-    );
-    $stmtExisting->execute([
-        'idCharacter' => $idCharacter,
-        'idEvent' => $idEvent,
-    ]);
-
-    if ($stmtExisting->fetch(PDO::FETCH_ASSOC)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Voor dit event bestaat al een economiesnapshot van dit personage.']);
-        exit;
-    }
-
-    $snapshotAmount = getCharacterEconomySnapshotAmount($pdo, $character);
-    $securitiesSnapshot = calculateCharacterSecuritiesSnapshotData($pdo, $character);
-    $transactionDate = trim((string) ($event['dateStart'] ?? ''));
-    if ($transactionDate === '') {
-        $transactionDate = getDefaultBankTransferDate();
-    }
-
-    $pdo->beginTransaction();
-
-    $stmtInsert = $pdo->prepare(
-        "INSERT INTO tblCharacterEconomySnapshot
-            (
-                idCharacter,
-                idEvent,
-                amount,
-                transactionDate,
-                securitiesBalanceSnapshot,
-                securitiesManagerType,
-                securitiesManagerCharacterId,
-                securitiesRiskProfile,
-                securitiesManagerSkillLevel,
-                securitiesBasePercentage,
-                securitiesVariationLimitPercentage,
-                securitiesVariationPercentage,
-                securitiesReturnPercentage,
-                securitiesReturnAmount,
-                securitiesStatus,
-                createdAt,
-                createdBy
-            )
-         VALUES
-            (
-                :idCharacter,
-                :idEvent,
-                :amount,
-                :transactionDate,
-                :securitiesBalanceSnapshot,
-                :securitiesManagerType,
-                :securitiesManagerCharacterId,
-                :securitiesRiskProfile,
-                :securitiesManagerSkillLevel,
-                :securitiesBasePercentage,
-                :securitiesVariationLimitPercentage,
-                :securitiesVariationPercentage,
-                :securitiesReturnPercentage,
-                :securitiesReturnAmount,
-                :securitiesStatus,
-                NOW(),
-                :createdBy
-            )"
-    );
-    $stmtInsert->execute([
-        'idCharacter' => $idCharacter,
-        'idEvent' => $idEvent,
-        'amount' => $snapshotAmount,
-        'transactionDate' => $transactionDate,
-        'securitiesBalanceSnapshot' => $securitiesSnapshot['balanceSnapshot'] ?? 0,
-        'securitiesManagerType' => $securitiesSnapshot['managerType'] ?? 'none',
-        'securitiesManagerCharacterId' => $securitiesSnapshot['managerCharacterId'] ?? null,
-        'securitiesRiskProfile' => $securitiesSnapshot['riskProfile'] ?? 3,
-        'securitiesManagerSkillLevel' => $securitiesSnapshot['managerSkillLevel'] ?? 0,
-        'securitiesBasePercentage' => $securitiesSnapshot['basePercentage'] ?? 0,
-        'securitiesVariationLimitPercentage' => $securitiesSnapshot['variationLimitPercentage'] ?? 0,
-        'securitiesVariationPercentage' => $securitiesSnapshot['variationPercentage'] ?? 0,
-        'securitiesReturnPercentage' => $securitiesSnapshot['returnPercentage'] ?? 0,
-        'securitiesReturnAmount' => $securitiesSnapshot['returnAmount'] ?? 0,
-        'securitiesStatus' => $securitiesSnapshot['status'] ?? 'none',
-        'createdBy' => $currentUserId,
-    ]);
-
-    $stmtUpdateCharacter = $pdo->prepare(
-        'UPDATE tblCharacter
-         SET bankaccount = ROUND(COALESCE(bankaccount, 0) + :amount, 2)
-         WHERE id = :idCharacter'
-    );
-    $stmtUpdateCharacter->execute([
-        'amount' => $snapshotAmount,
-        'idCharacter' => $idCharacter,
-    ]);
-
-    $pdo->commit();
-
-    echo json_encode([
-        'success' => true,
-        'amount' => $snapshotAmount,
-    ]);
+    aetherJsonResponse($response);
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherFinanceException|AetherIdempotencyException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon economiesnapshot niet bewaren.',
-        'details' => $e->getMessage(),
-    ]);
+    error_log('saveCharacterEconomySnapshot failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon economiesnapshot niet bewaren.');
 }

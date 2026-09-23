@@ -2,6 +2,27 @@
 
 Datum: 21 september 2026
 
+Update: 22 september 2026
+
+## Eventmodule-update (0005)
+
+Volgens de actuele opdrachtcontext zijn migraties 0001–0004 op `aetherapp-dev` uitgevoerd. De lokale export van 21 september blijft het recentste bestand dat in deze werkmap beschikbaar is en bewijst alleen 0001–0003; hij wordt daarom niet voorgesteld als bewijs voor de online toestand van 0004.
+
+Deze eventbatch voegt migratie `0005_unique_event_user` toe. De unieke index op `(idEvent, idUser)` sluit dubbele eventdeelnames onder concurrency. De omgekeerde index `(idUser, idEvent)` ondersteunt de bestaande eventlijstlookup. De zelfstandige phpMyAdminbundel staat in `sql/migrations/run_0005_event_integrity_phpmyadmin.sql`; deze taak heeft hem niet op een database uitgevoerd.
+
+Characteractionwrites gebruiken nu dezelfde `tblApiIdempotency`-voorziening als finance. De idempotentiesleutel is gebonden aan de actuele gebruiker, operatie en gevalideerde payload. `useCharacterSkillAction.php`, `revealCharacterActionKnowledge.php` en de actieve beheerwrites voor knowledge/action-use slaan mutatie en response in één transactie op. Een replay controleert de actuele rechten opnieuw.
+
+De gossipunlockrace is gesloten met deze lockvolgorde:
+
+1. idempotentierij voor gebruiker, operatie en request-ID;
+2. viewer/event-attemptcounter via `SELECT ... FOR UPDATE`;
+3. concrete viewer/event/source-unlockrij via `SELECT ... FOR UPDATE`;
+4. atomaire tellerincrement;
+5. monotone vlagmerge met `GREATEST`, zodat een eenmaal ontgrendelde vlag niet naar nul terugkeert;
+6. opgeslagen idempotentieresponse en commit.
+
+Een fout rolt claim, attemptcounter en unlockstate samen terug. De lokale stateful tests bewijzen volgorde, replay en rollback. `tests/event_gossip_mariadb_concurrency_test.php` levert daarnaast een echte overlaptest met twee onafhankelijke MariaDB-connecties; die wordt alleen uitgevoerd met een expliciet toegestane wegwerpdatabase.
+
 ## Samenvatting
 
 Deze batch introduceert een eenvoudige migratiestructuur voor handmatige uitvoering via phpMyAdmin of een gecontroleerde MariaDB/MySQL-CLI. Er is geen publiek PHP-endpoint toegevoegd en er is geen SQL uitgevoerd tegen de geconfigureerde ontwikkel- of productiedatabase.
@@ -13,7 +34,7 @@ De batch voegt twee unieke relaties toe:
 
 De applicatie-inserts gebruiken na de migratie `ON DUPLICATE KEY UPDATE id = id`. Twee gelijktijdige identieke toevoegingen leveren daardoor één koppeling en dezelfde bestaande succesresponse op. De gossipattemptcounter gebruikt voortaan een atomaire database-increment, zodat gelijktijdige reveals geen increment meer kunnen overschrijven.
 
-Action-idempotentie is onderzocht maar niet geïmplementeerd. De huidige frontend stuurt geen unieke request-ID en herhaalde psi-requests zijn volgens het bestaande contract afzonderlijke acties. Een betrouwbare wijziging vraagt een nieuw requestcontract en een generieke transactionele opslag die ook voor de latere financiële batch bruikbaar is.
+Financiële idempotentie is geïmplementeerd via migratie 0004 en `tblApiIdempotency`. De browser bewaart per gebruikershandeling een cryptografisch willekeurige request-ID en hergebruikt die bij een netwerkfout of HTTP 5xx. De server bindt de sleutel aan de actuele gebruiker uit `tblUser`, een vaste operatiecode en een SHA-256-hash van de gevalideerde payload. De claim, domeinmutatie en opgeslagen succesresponse staan in één transactie. De eventbatch gebruikt dezelfde voorziening nu ook voor characteractions en eventgebonden beheerwrites.
 
 ## Online status `oneiros_beaetherdev`
 
@@ -32,13 +53,13 @@ De door de gebruiker uitgevoerde one.com-inspectie van 21 september 2026 bevesti
 
 De inspectie rapporteert vier niet-blokkerende, reeds bekende verweesde character-skilllinks: IDs 70, 71 en 72 verwijzen naar character 3; ID 508 verwijst naar character 81. Zij zijn niet gewijzigd.
 
-De aangeleverde export `C:\Users\jan_m\Downloads\oneiros_be_mysql_service_one_com.sql` vermeldt generatietijd `2026-09-21 07:43 UTC`. Hij bevat nog geen `tblSchemaMigration` en nog niet de twee nieuwe unieke indexes. De export is dus de pre-migratieback-up, ongeveer elf minuten vóór de registratietijd, en geen export van de huidige post-migratietoestand.
+De recentste beschikbare export is `sql/oneiros_beaetherdev.sql`, gegenereerd op `2026-09-21 09:01`. Deze bevat `tblSchemaMigration` en beide unieke indexes en is daarom de actuele post-migratiebron voor 0001–0003. De oudere export in de Downloads-map blijft uitsluitend de pre-migratieback-up.
 
-Er hoeft geen verdere SQL-migratie te worden uitgevoerd. Maak bij een volgende normale back-upronde een nieuwe export om ook een herstelbaar post-migratiebestand te bewaren.
+Volgens de aangeleverde actuele context is migratie 0004 online uitgevoerd. Deze lokale taak heeft geen SQL tegen een geconfigureerde database uitgevoerd en heeft die online toestand daarom niet zelfstandig geverifieerd.
 
 ## Huidige schemasituatie
 
-De onderzochte export is `sql/oneiros_be_aether.sql`, gegenereerd op 22 augustus 2026 door phpMyAdmin 5.2.3. De export vermeldt MariaDB **10.11.18** en PHP 8.3.6. De online testdatabase is niet rechtstreeks onderzocht; de preflightqueries moeten daarom altijd op `aetherapp-dev` worden uitgevoerd voordat een applybestand wordt gebruikt.
+De actuele onderzochte export is `sql/oneiros_beaetherdev.sql`, gegenereerd op 21 september 2026 om 09:01 door phpMyAdmin 5.2.3. De export vermeldt MariaDB **10.11.18** en PHP 8.3.6. Hij bevat de bevestigde toestand na migraties 0001–0003. Vóór migratie 0004 blijft een back-up en controle van de geselecteerde `aetherapp-dev`-database vereist.
 
 ### `tblLinkCharacterSkill`
 
@@ -76,22 +97,32 @@ sql/migrations/
   run_0001_to_0003_phpmyadmin.sql
   inspect_0001_to_0003_onecom_readonly.sql
   run_0001_to_0003_requires_information_schema.sql.reference
+  run_0004_finance_idempotency_phpmyadmin.sql
+  run_0005_event_integrity_phpmyadmin.sql
   preflight/
     0001_create_schema_migration_registry.sql
     0002_unique_character_skill.sql
     0003_unique_character_specialisation.sql
+    0004_api_idempotency.sql
+    0005_unique_event_user.sql
   apply/
     0001_create_schema_migration_registry.sql
     0002_unique_character_skill.sql
     0003_unique_character_specialisation.sql
+    0004_api_idempotency.sql
+    0005_unique_event_user.sql
   verify/
     0001_create_schema_migration_registry.sql
     0002_unique_character_skill.sql
     0003_unique_character_specialisation.sql
+    0004_api_idempotency.sql
+    0005_unique_event_user.sql
   rollback/
     0001_create_schema_migration_registry.sql
     0002_unique_character_skill.sql
     0003_unique_character_specialisation.sql
+    0004_api_idempotency.sql
+    0005_unique_event_user.sql
 ```
 
 ### Hostingblokkade voor de gebundelde uitvoering
@@ -172,44 +203,56 @@ Daarna leest dezelfde lopende revealtransactie de toegewezen waarde. InnoDB seri
 
 De lokale test simuleert dat een andere transactie de waarde verhoogt vlak vóór de geteste write. De eindwaarde en response worden 2; de oude read-modify-writequery zou 1 terugschrijven.
 
-De teller is hiermee beschermd tegen verloren increments. Twee gelijktijdige reveals voor exact dezelfde bron kunnen nog allebei een eerder gelezen unlockstatus gebruiken. De bestaande upsert schrijft de volledige set unlockvlaggen terug. Er is in deze batch geen spelregel of opslagmodel gewijzigd om die vlaggen samen te voegen; dit blijft een apart concurrency-aandachtspunt voor een gerichte vervolgwijziging.
+De teller is hiermee beschermd tegen verloren increments. De eventbatch vergrendelt daarnaast de concrete viewer/event/source-unlockrij en schrijft vlaggen monotoon met `GREATEST`. Twee gelijktijdige reveals kunnen daardoor geen eerder ontgrendelde vlag terug op nul zetten. Attemptcounter en unlockresultaat blijven onderdeel van dezelfde transactie.
 
-## Idempotentievoorstel voor characteracties en financiën
+## Financiële idempotentie
 
-Idempotentie is in deze batch niet geactiveerd. `useCharacterSkillAction.php` ontvangt alleen character, event, skill, actioncode, subtype en `clearBurn`. De bestaande test en frontend staan toe dat dezelfde payload tweemaal twee auditregels en twee statewijzigingen veroorzaakt. Alleen een payloadhash gebruiken zou legitieme herhaalde acties ten onrechte samenvoegen.
-
-Een latere gezamenlijke action-/financiële wijziging kan het volgende contract gebruiken:
+Migratie 0004 voegt `tblApiIdempotency` toe. De financiële characterwrites, company-snapshotwrites, directe company-value-update en directe character-saldowijzigingen gebruiken het volgende contract:
 
 - de browser maakt per gebruikershandeling een cryptografisch willekeurige UUID en stuurt die als `Idempotency-Key`;
 - een retry van dezelfde handeling hergebruikt exact dezelfde key;
-- de server berekent na validatie een SHA-256-hash over route, vertrouwde user-ID en canonieke gevalideerde payload;
+- de server berekent na validatie een SHA-256-hash over de canonieke gevalideerde payload en bindt die via de unieke sleutel aan vertrouwde user-ID en operatie;
 - dezelfde key met een andere hash geeft HTTP 409;
 - dezelfde voltooide key met dezelfde hash retourneert de opgeslagen HTTP-status en response;
 - een gelijktijdige identieke aanvraag wacht op of leest dezelfde transactionele rij en voert de domeinwrite niet opnieuw uit.
 
-Voorgestelde generieke tabel, nog niet als migratie toegevoegd:
+De geïmplementeerde tabel bevat:
 
 ```text
 tblApiIdempotency
   id                  bigint primary key auto_increment
   idUser              int not null
-  route               varchar(120) not null
-  requestKey          varchar(64) not null
-  requestHash         char(64) not null
+  operation           varchar(100) not null
+  requestKey          varchar(128) not null
+  payloadHash         char(64) not null
   status              enum('processing','completed') not null
-  httpStatus          smallint null
-  responseBody        longtext null
+  responseStatus      smallint null
+  responseJson        mediumtext null
   createdAt           datetime not null
-  completedAt         datetime null
+  updatedAt           datetime not null
   expiresAt           datetime not null
-  unique (idUser, route, requestKey)
+  unique (idUser, operation, requestKey)
 ```
 
-De idempotentierij, action-/financiële mutatie en opgeslagen response moeten in dezelfde database-transactie staan. Een rollback verwijdert dan ook de nog niet voltooide claim. Voltooide resultaten kunnen bijvoorbeeld 72 uur bewaard en via een gecontroleerde beheer- of cronprocedure op `expiresAt` opgeruimd worden. De exacte bewaartermijn, maximale responsgrootte, behandeling van langlopende `processing`-rijen en frontend-UUID-ondersteuning moeten vóór implementatie worden beslist.
+De idempotentierij, financiële mutatie en opgeslagen response staan in dezelfde database-transactie. Een rollback verwijdert dus ook de niet-voltooide claim. `expiresAt` wordt op zeven jaar gezet: financiële audit- en retrybescherming vraagt een veel langere termijn dan de eerder als voorbeeld genoemde 72 uur. De runtime negeert verlopen regels niet stilzwijgend. Opruiming mag later alleen via een gecontroleerde archiefprocedure gebeuren; na het verwijderen van een sleutel kan een zeer oude retry opnieuw als nieuwe handeling gelden.
+
+Characteracties zijn sinds de eventbatch aangesloten. Een bewust nieuwe actie krijgt een nieuwe browserkey; alleen een retry van dezelfde gebruikershandeling hergebruikt de bestaande key. De gossipunlockrij wordt vóór wijziging vergrendeld en met `GREATEST` samengevoegd, zodat gelijktijdige reveals geen ontgrendelde vlag verliezen.
 
 ## Handmatige uitvoering via phpMyAdmin op `aetherapp-dev`
 
-### Voorbereiding
+Migraties 0001–0003 zijn volgens de aangeleverde inspectieresultaten al toegepast. Voer ze niet opnieuw uit. Voor deze financiële batch is `run_0004_finance_idempotency_phpmyadmin.sql` het zelfstandige bestand: het vereist geen `SOURCE`, stored procedure of `information_schema`, controleert de drie prerequisites, verifieert de unieke idempotentiescope met tijdelijke probegegevens en registreert 0004 pas daarna.
+
+### Uitvoering migratie 0004
+
+1. Activeer onderhoudsmodus voor financiële writes en maak een volledige database-export.
+2. Selecteer expliciet de `aetherapp-dev`-testdatabase.
+3. Importeer `sql/migrations/run_0004_finance_idempotency_phpmyadmin.sql` één keer.
+4. Controleer de succesmelding, de ene registratie `0004_create_api_idempotency`, `SHOW CREATE TABLE` en de unieke index op `(idUser, operation, requestKey)`.
+5. Volg daarna de bestands- en VERSION-volgorde in `docs/character-economy-finance-refactor.md`.
+
+### Historische uitvoering en inspectie van 0001–0003
+
+#### Voorbereiding
 
 1. Plan een kort onderhoudsvenster waarin geen skills of specialisaties worden toegevoegd.
 2. Controleer in phpMyAdmin dat de geselecteerde database werkelijk de afzonderlijke `aetherapp-dev`-testdatabase is.
@@ -217,7 +260,7 @@ De idempotentierij, action-/financiële mutatie en opgeslagen response moeten in
 4. Bewaar daarnaast het resultaat van alle preflightqueries als bewijs van de beginsituatie.
 5. Upload nog geen aangepaste PHP-bestanden; de databaseconstraints komen eerst.
 
-### Veilige one.com-inspectie
+#### Veilige one.com-inspectie
 
 1. Selecteer in phpMyAdmin expliciet `oneiros_beaetherdev`.
 2. Importeer uitsluitend `sql/migrations/inspect_0001_to_0003_onecom_readonly.sql`.
@@ -227,7 +270,7 @@ De idempotentierij, action-/financiële mutatie en opgeslagen response moeten in
 
 Pas nadat de inspectieresultaten zijn beoordeeld kan een gerichte uitvoering worden opgesteld voor de werkelijk aanwezige indexen en registraties. Daarmee wordt voorkomen dat een eerdere gedeeltelijke uitvoering wordt overschreven of dat een fout gedefinieerde index stilzwijgend wordt geaccepteerd.
 
-### PHP-upload na succesvolle SQL
+#### PHP-upload na succesvolle SQL
 
 Upload vervolgens samen:
 
@@ -258,6 +301,7 @@ MariaDB-DDL zoals `ALTER TABLE` veroorzaakt impliciete commits. De applybestande
 
 - De registryrollback verwijdert de tabel bewust niet, omdat dit migratiehistoriek zou vernietigen.
 - De rollbackbestanden voor 0002 en 0003 verwijderen uitsluitend de toegevoegde index en daarna hun registerrij wanneer de index aantoonbaar weg is.
+- De rollback van 0004 verwijdert de idempotentietabel en daarmee retry-/auditgegevens. Zet daarom eerst alle afhankelijke runtimecode terug en voer deze rollback alleen na een expliciete auditbeslissing uit.
 - Een rollback verwijdert of reconstrueert geen gebruikersdata.
 - Het verwijderen van de indexes maakt toekomstige duplicaten opnieuw mogelijk. Laat de indexes bij voorkeur staan, ook wanneer alleen de PHP-code wordt teruggedraaid.
 - Als een index toch moet worden verwijderd: activeer onderhoudsmodus, herstel eerst een compatibele PHP-versie en voer daarna uitsluitend het betreffende rollbackbestand uit.
@@ -277,10 +321,11 @@ De lokale PDO-testdouble bewijst de queryvorm, transactievolgorde, rollbackstate
 
 Op 21 september 2026 zijn lokaal uitgevoerd:
 
-- alle 19 aanwezige `tests/*_test.php`-bestanden;
-- 18 testsuites geslaagd, waaronder skills/actions, traits/diary/languages, ties, character reads, `updateCharacter`, toegangscontrole, routecoverage, request-/validatie-/responsecontracten, rich text, OIDC, lifecycle/portraits en de migratie-/concurrencytest;
+- alle 22 aanwezige `tests/*_test.php`-bestanden;
+- 20 testsuites geslaagd, waaronder de nieuwe financiële endpoint- en servicetests, skills/actions, traits/diary/languages, ties, character reads, `updateCharacter`, toegangscontrole, routecoverage, request-/validatie-/responsecontracten, rich text, OIDC, lifecycle/portraits en de migratietest;
 - `authenticated_user_test.php` niet uitgevoerd: de suite meldt `SKIP` met exitcode 2 omdat PDO SQLite lokaal niet beschikbaar is;
-- PHP-syntaxcontrole geslaagd voor alle 131 gevonden PHP-bestanden buiten `vendor`, `legacy` en `node_modules`;
+- `character_finance_mariadb_concurrency_test.php` overgeslagen omdat geen expliciet toegestane wegwerp-MariaDB was ingesteld;
+- PHP-syntaxcontrole geslaagd voor alle 141 gevonden PHP-bestanden buiten `vendor`, `legacy` en `node_modules`;
 - `git diff --check` geslaagd;
 - aanvullende controle op trailing whitespace in de nieuwe, nog niet door Git gevolgde documentatie-, SQL- en testbestanden geslaagd.
 
@@ -288,7 +333,7 @@ Niet uitgevoerd en daarom niet als geslaagd aangemerkt:
 
 - de SQL-migraties tegen MariaDB/MySQL;
 - een echte parallelle test met twee databaseconnecties;
-- succesvolle phpMyAdmin-DDL-uitvoering; one.com blokkeerde de vereiste metadata-inspectie met fout 1044;
+- phpMyAdmin-uitvoering van migratie 0004;
 - WordPress-sessie- en browsertests op `aetherapp-dev`.
 
 ## Gewijzigde bestanden

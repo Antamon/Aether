@@ -1,97 +1,34 @@
 <?php
 declare(strict_types=1);
-
-session_start();
 header('Content-Type: application/json; charset=utf-8');
-
-require_once __DIR__ . '/../../db.php';
-require_once __DIR__ . '/characterPointUtils.php';
-require_once __DIR__ . '/economyUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/idempotency.php';
 require_once __DIR__ . '/../auth/accessControl.php';
-require_once __DIR__ . '/characterRequestValidation.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterFinanceService.php';
 
-$input = aetherReadCharacterJsonRequest('deleteBankTransaction');
-$idTransaction = isset($input['idTransaction']) ? (int) $input['idTransaction'] : 0;
-
-if ($idTransaction <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige verrichting.']);
-    exit;
-}
-
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 try {
-    $pdo = getPDO();
-    $currentUser = aetherRequireAuthenticatedUser($pdo);
-    aetherRequireCsrfToken();
-    $currentUserRole = $currentUser['role'];
-    $currentUserId = (int) $currentUser['id'];
-
-    if (!isPrivilegedUserRole($currentUserRole)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Je hebt geen rechten om verrichtingen te verwijderen.']);
-        exit;
-    }
-
-    $stmtTransaction = $pdo->prepare(
-        'SELECT id, idSourceCharacter, idTargetCharacter, amount
-         FROM tblCharacterBankTransaction
-         WHERE id = :id'
+    $request = aetherReadJsonObject();
+    $input = aetherValidateInput($request, aetherCharacterRequestSchema('deleteBankTransaction', $request));
+    $key = aetherRequireIdempotencyKey();
+    $response = aetherRunIdempotentMutation(
+        $pdo, $currentUser, 'character.bank_transfer.delete', $key, $input,
+        fn(): array => aetherDeleteBankTransfer($pdo, $currentUser, (int) $input['idTransaction']),
+        static function () use ($currentUser): void {
+            aetherAuthorizePrivilegedFinanceReplay($currentUser, 'Je hebt geen rechten om verrichtingen te verwijderen.');
+        }
     );
-    $stmtTransaction->execute(['id' => $idTransaction]);
-    $transaction = $stmtTransaction->fetch(PDO::FETCH_ASSOC);
-
-    if (!$transaction) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Verrichting niet gevonden.']);
-        exit;
-    }
-
-    $amount = round((float) ($transaction['amount'] ?? 0), 2);
-    $idSourceCharacter = (int) ($transaction['idSourceCharacter'] ?? 0);
-    $idTargetCharacter = (int) ($transaction['idTargetCharacter'] ?? 0);
-
-    if ($amount <= 0 || $idSourceCharacter <= 0 || $idTargetCharacter <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Deze verrichting kan niet veilig verwijderd worden.']);
-        exit;
-    }
-
-    $pdo->beginTransaction();
-
-    $stmtRestoreSource = $pdo->prepare(
-        'UPDATE tblCharacter
-         SET bankaccount = ROUND(COALESCE(bankaccount, 0) + :amount, 2)
-         WHERE id = :id'
-    );
-    $stmtRestoreSource->execute([
-        'amount' => $amount,
-        'id' => $idSourceCharacter,
-    ]);
-
-    $stmtRevertTarget = $pdo->prepare(
-        'UPDATE tblCharacter
-         SET bankaccount = ROUND(COALESCE(bankaccount, 0) - :amount, 2)
-         WHERE id = :id'
-    );
-    $stmtRevertTarget->execute([
-        'amount' => $amount,
-        'id' => $idTargetCharacter,
-    ]);
-
-    $stmtDelete = $pdo->prepare(
-        'DELETE FROM tblCharacterBankTransaction
-         WHERE id = :id'
-    );
-    $stmtDelete->execute(['id' => $idTransaction]);
-
-    $pdo->commit();
-
-    echo json_encode(['success' => true]);
+    aetherJsonResponse($response);
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherFinanceException|AetherIdempotencyException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon verrichting niet verwijderen.']);
+    error_log('deleteBankTransaction failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon verrichting niet verwijderen.');
 }

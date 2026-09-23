@@ -1888,7 +1888,7 @@ async function createCompanySnapshot() {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "create",
@@ -1973,7 +1973,7 @@ async function updateCompanySnapshot(idCompanySnapshot) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "update",
@@ -2004,7 +2004,7 @@ async function recalculateCompanySnapshot(idCompanySnapshot) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "recalculate",
@@ -2033,7 +2033,7 @@ async function deleteCompanySnapshot(idCompanySnapshot) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "delete",
@@ -2062,7 +2062,7 @@ async function applyCompanySnapshot(idCompanySnapshot, applyAction) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "apply",
@@ -2149,7 +2149,7 @@ async function saveCompany(options = {}) {
                 return false;
             }
 
-            await apiFetchJson("api/companies/updateCompany.php", {
+            await apiFetchFinancialJson("api/companies/updateCompany.php", {
                 method: "POST",
                 body: {
                     id,

@@ -211,7 +211,7 @@ function pageNav(userRole, character, activeTab = "sheet") {
 
                 const newState = e.target.value;
                 try {
-                    await apiFetchJson("api/characters/updateCharacter.php", {
+                    await apiFetchFinancialJson("api/characters/updateCharacter.php", {
                         method: "POST",
                         body: {
                             id: idCharacter,

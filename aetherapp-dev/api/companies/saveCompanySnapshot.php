@@ -5,6 +5,18 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/companyUtils.php';
 require_once __DIR__ . '/../characters/companyShareUtils.php';
+require_once __DIR__ . '/../characters/characterFinanceService.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/idempotency.php';
+require_once __DIR__ . '/companyFinanceSchemas.php';
+
+final class AetherCompanyFinanceException extends RuntimeException
+{
+    public function __construct(private int $httpStatus, string $message) { parent::__construct($message); }
+    public function getHttpStatus(): int { return $this->httpStatus; }
+}
 
 function buildCompanySnapshotResponse(PDO $pdo, int $idCompany): array
 {
@@ -28,16 +40,16 @@ function buildCompanySnapshotResponse(PDO $pdo, int $idCompany): array
     ];
 }
 
-function getCompanySnapshotDividendPerPercentage(float $profitAmount): float
+function getCompanySnapshotDividendPerPercentage(mixed $profitAmount): string
 {
-    if ($profitAmount <= 0) {
-        return 0.0;
+    $amount = aetherFinanceDecimal($profitAmount);
+    if (aetherDecimalCompare($amount, '0.00') <= 0) {
+        return '0.00';
     }
-
-    return round($profitAmount / 110, 2);
+    return aetherDecimalMultiplyRatio($amount, 1, 110);
 }
 
-function applyCompanyValueDeltaAndRemap(PDO $pdo, int $idCompany, float $delta): float
+function applyCompanyValueDeltaAndRemap(PDO $pdo, int $idCompany, mixed $delta): string
 {
     $company = dbOne(
         $pdo,
@@ -51,9 +63,11 @@ function applyCompanyValueDeltaAndRemap(PDO $pdo, int $idCompany, float $delta):
         throw new RuntimeException('Bedrijf niet gevonden.');
     }
 
-    $currentCompanyValue = round((float) ($company['companyValue'] ?? 0), 2);
-    $nextCompanyValue = normalizeCompanyValue($currentCompanyValue + $delta);
-    $actualDelta = round($nextCompanyValue - $currentCompanyValue, 2);
+    $currentCompanyValue = aetherFinanceDecimal($company['companyValue'] ?? 0);
+    $deltaValue = aetherFinanceDecimal($delta);
+    $nextCompanyValue = aetherDecimalAdd($currentCompanyValue, $deltaValue);
+    if (aetherDecimalCompare($nextCompanyValue, '0.00') < 0) $nextCompanyValue = '0.00';
+    $actualDelta = aetherDecimalSubtract($nextCompanyValue, $currentCompanyValue);
     $previousCompanyTypeKey = getCompanyTypeByValue($currentCompanyValue)['key'] ?? null;
     $nextCompanyTypeKey = getCompanyTypeByValue($nextCompanyValue)['key'] ?? null;
 
@@ -79,15 +93,15 @@ function applyCompanyValueDeltaAndRemap(PDO $pdo, int $idCompany, float $delta):
     return $actualDelta;
 }
 
-function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $idCompany, float $dividendPerPercentage): float
+function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $idCompany, string $dividendPerPercentage): string
 {
-    if ($dividendPerPercentage <= 0) {
-        return 0.0;
+    if (aetherDecimalCompare($dividendPerPercentage, '0.00') <= 0) {
+        return '0.00';
     }
 
     $payoutEntries = getCompanyShareholderPayoutEntries($pdo, $idCompany);
     if (count($payoutEntries) === 0) {
-        return 0.0;
+        return '0.00';
     }
 
     $snapshotId = (int) ($snapshot['id'] ?? 0);
@@ -110,7 +124,12 @@ function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $id
             (:idCompanySnapshot, :idCharacter, :amount, :transactionDate, :description)'
     );
 
-    $paidOutTotal = 0.0;
+    $characterIds = array_values(array_unique(array_map(
+        static fn(array $entry): int => (int) ($entry['idCharacter'] ?? 0),
+        $payoutEntries
+    )));
+    aetherFinanceLockCharacters($pdo, $characterIds);
+    $paidOutMinor = 0;
     foreach ($payoutEntries as $entry) {
         $idCharacter = (int) ($entry['idCharacter'] ?? 0);
         $percentage = max(0, (int) ($entry['percentage'] ?? 0));
@@ -118,8 +137,8 @@ function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $id
             continue;
         }
 
-        $amount = round($dividendPerPercentage * $percentage, 2);
-        if ($amount <= 0) {
+        $amount = aetherDecimalMultiplyRatio($dividendPerPercentage, $percentage, 1);
+        if (aetherDecimalCompare($amount, '0.00') <= 0) {
             continue;
         }
 
@@ -134,10 +153,10 @@ function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $id
             'transactionDate' => $transactionDate !== '' ? $transactionDate : date('Y-m-d'),
             'description' => $description,
         ]);
-        $paidOutTotal += $amount;
+        $paidOutMinor += aetherDecimalToMinorUnits($amount);
     }
 
-    return round($paidOutTotal, 2);
+    return aetherMinorUnitsToDecimal($paidOutMinor);
 }
 
 function reverseCompanySnapshotDividendPayouts(PDO $pdo, int $idCompanySnapshot): void
@@ -154,6 +173,11 @@ function reverseCompanySnapshotDividendPayouts(PDO $pdo, int $idCompanySnapshot)
         return;
     }
 
+    aetherFinanceLockCharacters($pdo, array_map(
+        static fn(array $payout): int => (int) ($payout['idCharacter'] ?? 0),
+        $payouts
+    ));
+
     $updateCharacterStmt = $pdo->prepare(
         'UPDATE tblCharacter
             SET bankaccount = ROUND(COALESCE(bankaccount, 0) - :amount, 2)
@@ -161,8 +185,8 @@ function reverseCompanySnapshotDividendPayouts(PDO $pdo, int $idCompanySnapshot)
     );
     foreach ($payouts as $payout) {
         $idCharacter = (int) ($payout['idCharacter'] ?? 0);
-        $amount = round((float) ($payout['amount'] ?? 0), 2);
-        if ($idCharacter <= 0 || $amount <= 0) {
+        $amount = aetherFinanceDecimal($payout['amount'] ?? 0);
+        if ($idCharacter <= 0 || aetherDecimalCompare($amount, '0.00') <= 0) {
             continue;
         }
 
@@ -191,58 +215,48 @@ function reverseCompanySnapshotEffects(PDO $pdo, array $snapshot, int $idCompany
         reverseCompanySnapshotDividendPayouts($pdo, $snapshotId);
     }
 
-    $companyValueDelta = round((float) ($snapshot['companyValueDelta'] ?? 0), 2);
-    if ($companyValueDelta !== 0.0) {
-        applyCompanyValueDeltaAndRemap($pdo, $idCompany, -$companyValueDelta);
+    $companyValueDelta = aetherFinanceDecimal($snapshot['companyValueDelta'] ?? 0);
+    if (aetherDecimalCompare($companyValueDelta, '0.00') !== 0) {
+        applyCompanyValueDeltaAndRemap($pdo, $idCompany, aetherMinorUnitsToDecimal(-aetherDecimalToMinorUnits($companyValueDelta)));
     }
-}
-
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
-
-$action = trim((string) ($postData['action'] ?? ''));
-$applyAction = trim((string) ($postData['applyAction'] ?? ''));
-$idCompany = (int) ($postData['idCompany'] ?? 0);
-$idCompanySnapshot = (int) ($postData['idCompanySnapshot'] ?? 0);
-$idEvent = (int) ($postData['idEvent'] ?? 0);
-$stability = normalizeCompanySliderValue($postData['stability'] ?? 0);
-$profitability = normalizeCompanySliderValue($postData['profitability'] ?? 0);
-
-if ($idCompany <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldig bedrijf ID.']);
-    exit;
-}
-
-if (!in_array($action, ['create', 'update', 'recalculate', 'apply', 'delete'], true)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige snapshot-actie.']);
-    exit;
 }
 
 try {
     $pdo = getPDO();
-    requirePrivilegedCompanyAccess($pdo, true);
-
+    $currentUser = requirePrivilegedCompanyAccess($pdo, true);
+    $postData = aetherReadJsonObject();
+    $input = aetherValidateInput($postData, aetherCompanySnapshotSchema($postData));
+    $action = (string) $input['action'];
+    $applyAction = (string) ($input['applyAction'] ?? '');
+    $idCompany = (int) $input['idCompany'];
+    $idCompanySnapshot = (int) ($input['idCompanySnapshot'] ?? 0);
+    $idEvent = (int) ($input['idEvent'] ?? 0);
+    $stability = (int) ($input['stability'] ?? 0);
+    $profitability = (int) ($input['profitability'] ?? 0);
+    $requestKey = aetherRequireIdempotencyKey();
+    $operation = 'company.snapshot.' . $action . ($action === 'apply' ? '.' . $applyAction : '');
+    $pdo->beginTransaction();
+    $claim = aetherClaimIdempotency($pdo, $currentUser, $operation, $requestKey, $input);
     $company = dbOne(
         $pdo,
         'SELECT id, companyName, companyValue
            FROM tblCompany
-          WHERE id = :idCompany',
+          WHERE id = :idCompany
+          FOR UPDATE',
         ['idCompany' => $idCompany]
     );
 
     if ($company === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Bedrijf niet gevonden.']);
-        exit;
+        throw new AetherCompanyFinanceException(404, 'Bedrijf niet gevonden.');
+    }
+    if ($claim['replayed']) {
+        $pdo->commit();
+        aetherJsonResponse($claim['response']);
     }
 
     if ($action === 'create') {
         if ($idEvent <= 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Kies eerst een event.']);
-            exit;
+            throw new AetherCompanyFinanceException(400, 'Kies eerst een event.');
         }
 
         $event = dbOne(
@@ -254,9 +268,7 @@ try {
         );
 
         if ($event === null) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Event niet gevonden.']);
-            exit;
+            throw new AetherCompanyFinanceException(404, 'Event niet gevonden.');
         }
 
         $existing = dbOne(
@@ -272,21 +284,19 @@ try {
         );
 
         if ($existing !== null) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Voor dit event bestaat al een snapshot.']);
-            exit;
+            throw new AetherCompanyFinanceException(400, 'Voor dit event bestaat al een snapshot.');
         }
 
         $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
         $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
         $financials = calculateCompanySnapshotFinancials(
-            (float) ($company['companyValue'] ?? 0),
+            $company['companyValue'] ?? 0,
             $stability,
             $profitability,
-            (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+            $personnelImpactSummary['totalPercentage'] ?? 0,
             $personnelSalaryIncreaseExpenseAmount,
-            (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
-            (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
+            $personnelImpactSummary['lowerBoundPercentage'] ?? 0,
+            $personnelImpactSummary['upperBoundPercentage'] ?? 0
         );
 
         $stmt = $pdo->prepare(
@@ -337,9 +347,7 @@ try {
         ]);
     } elseif ($action === 'update' || $action === 'recalculate' || $action === 'apply' || $action === 'delete') {
         if ($idCompanySnapshot <= 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Geen geldige snapshot geselecteerd.']);
-            exit;
+            throw new AetherCompanyFinanceException(400, 'Geen geldige snapshot geselecteerd.');
         }
 
         $snapshot = dbOne(
@@ -363,7 +371,8 @@ try {
                JOIN tblEvent AS e
                  ON e.id = cs.idEvent
               WHERE cs.id = :idCompanySnapshot
-                AND cs.idCompany = :idCompany',
+                AND cs.idCompany = :idCompany
+              FOR UPDATE',
             [
                 'idCompanySnapshot' => $idCompanySnapshot,
                 'idCompany' => $idCompany,
@@ -371,31 +380,27 @@ try {
         );
 
         if ($snapshot === null) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Snapshot niet gevonden.']);
-            exit;
+            throw new AetherCompanyFinanceException(404, 'Snapshot niet gevonden.');
         }
 
         $appliedActionCurrent = trim((string) ($snapshot['appliedAction'] ?? 'none'));
 
         if ($action === 'update' || $action === 'recalculate') {
             if ($appliedActionCurrent !== '' && $appliedActionCurrent !== 'none') {
-                http_response_code(400);
-                echo json_encode(['error' => 'Een toegepaste snapshot kan niet meer aangepast of herberekend worden.']);
-                exit;
+                throw new AetherCompanyFinanceException(400, 'Een toegepaste snapshot kan niet meer aangepast of herberekend worden.');
             }
 
             if ($action === 'update') {
                 $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
                 $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
                 $financials = calculateCompanySnapshotFinancials(
-                    (float) ($snapshot['companyValue'] ?? 0),
+                    $snapshot['companyValue'] ?? 0,
                     $stability,
                     $profitability,
-                    (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+                    $personnelImpactSummary['totalPercentage'] ?? 0,
                     $personnelSalaryIncreaseExpenseAmount,
-                    (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
-                    (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
+                    $personnelImpactSummary['lowerBoundPercentage'] ?? 0,
+                    $personnelImpactSummary['upperBoundPercentage'] ?? 0
                 );
             } else {
                 $resolvedStability = normalizeCompanySliderValue($snapshot['stability'] ?? 0);
@@ -403,13 +408,13 @@ try {
                 $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $resolvedStability);
                 $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
                 $financials = calculateCompanySnapshotFinancials(
-                    (float) ($snapshot['companyValue'] ?? 0),
+                    $snapshot['companyValue'] ?? 0,
                     $resolvedStability,
                     $resolvedProfitability,
-                    (float) ($personnelImpactSummary['totalPercentage'] ?? 0),
+                    $personnelImpactSummary['totalPercentage'] ?? 0,
                     $personnelSalaryIncreaseExpenseAmount,
-                    (float) ($personnelImpactSummary['lowerBoundPercentage'] ?? 0),
-                    (float) ($personnelImpactSummary['upperBoundPercentage'] ?? 0)
+                    $personnelImpactSummary['lowerBoundPercentage'] ?? 0,
+                    $personnelImpactSummary['upperBoundPercentage'] ?? 0
                 );
                 $stability = $resolvedStability;
                 $profitability = $resolvedProfitability;
@@ -443,41 +448,36 @@ try {
             ]);
         } elseif ($action === 'apply') {
             if ($appliedActionCurrent !== '' && $appliedActionCurrent !== 'none') {
-                http_response_code(400);
-                echo json_encode(['error' => 'Deze snapshot is al toegepast.']);
-                exit;
+                throw new AetherCompanyFinanceException(400, 'Deze snapshot is al toegepast.');
             }
 
             if (!in_array($applyAction, ['loss_adjustment', 'reinvest', 'dividend'], true)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Ongeldige snapshot-verwerking.']);
-                exit;
+                throw new AetherCompanyFinanceException(400, 'Ongeldige snapshot-verwerking.');
             }
 
-            $profitAmount = round((float) ($snapshot['profitAmount'] ?? 0), 2);
-            $pdo->beginTransaction();
+            $profitAmount = aetherFinanceDecimal($snapshot['profitAmount'] ?? 0);
 
             if ($applyAction === 'loss_adjustment') {
-                if ($profitAmount >= 0) {
-                    throw new RuntimeException('Deze snapshot bevat geen verlies om te verwerken.');
+                if (aetherDecimalCompare($profitAmount, '0.00') >= 0) {
+                    throw new AetherCompanyFinanceException(400, 'Deze snapshot bevat geen verlies om te verwerken.');
                 }
 
                 $companyValueDelta = applyCompanyValueDeltaAndRemap($pdo, $idCompany, $profitAmount);
             } elseif ($applyAction === 'reinvest') {
-                if ($profitAmount <= 0) {
-                    throw new RuntimeException('Deze snapshot bevat geen winst om te herinvesteren.');
+                if (aetherDecimalCompare($profitAmount, '0.00') <= 0) {
+                    throw new AetherCompanyFinanceException(400, 'Deze snapshot bevat geen winst om te herinvesteren.');
                 }
 
                 $companyValueDelta = applyCompanyValueDeltaAndRemap($pdo, $idCompany, $profitAmount);
             } else {
-                if ($profitAmount <= 0) {
-                    throw new RuntimeException('Deze snapshot bevat geen winst om dividend uit te betalen.');
+                if (aetherDecimalCompare($profitAmount, '0.00') <= 0) {
+                    throw new AetherCompanyFinanceException(400, 'Deze snapshot bevat geen winst om dividend uit te betalen.');
                 }
 
                 $snapshot['companyName'] = (string) ($company['companyName'] ?? '');
                 $dividendPerPercentage = getCompanySnapshotDividendPerPercentage($profitAmount);
                 $paidOutTotal = createCompanySnapshotDividendPayouts($pdo, $snapshot, $idCompany, $dividendPerPercentage);
-                $retainedAmount = round($profitAmount - $paidOutTotal, 2);
+                $retainedAmount = aetherDecimalSubtract($profitAmount, $paidOutTotal);
                 $companyValueDelta = applyCompanyValueDeltaAndRemap($pdo, $idCompany, $retainedAmount);
             }
 
@@ -496,9 +496,7 @@ try {
                 'idCompany' => $idCompany,
             ]);
 
-            $pdo->commit();
         } else {
-            $pdo->beginTransaction();
             reverseCompanySnapshotEffects($pdo, $snapshot, $idCompany);
 
             $deletePayoutStmt = $pdo->prepare(
@@ -516,19 +514,24 @@ try {
                 'idCompanySnapshot' => $idCompanySnapshot,
                 'idCompany' => $idCompany,
             ]);
-            $pdo->commit();
         }
     }
 
-    echo json_encode(buildCompanySnapshotResponse($pdo, $idCompany));
+    $response = buildCompanySnapshotResponse($pdo, $idCompany);
+    aetherCompleteIdempotency($pdo, $currentUser, $operation, $requestKey, $response);
+    $pdo->commit();
+    aetherJsonResponse($response);
+} catch (AetherValidationException $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherCompanyFinanceException|AetherIdempotencyException $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
 
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon de bedrijfssnapshot niet bewaren.',
-        'details' => $e->getMessage(),
-    ]);
+    error_log('saveCompanySnapshot failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon de bedrijfssnapshot niet bewaren.');
 }

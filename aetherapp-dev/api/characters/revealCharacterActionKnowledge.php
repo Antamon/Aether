@@ -7,6 +7,7 @@ require __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../shared/response.php';
 require_once __DIR__ . '/../shared/request.php';
 require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/idempotency.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterAccess.php';
 require_once __DIR__ . '/characterSchemas.php';
@@ -32,16 +33,38 @@ try {
         $input['idCharacter'],
         'Geen rechten om deze actie uit te voeren.'
     );
-    aetherJsonResponse(aetherRevealCharacterActionKnowledge(
+    $requestKey = aetherRequireIdempotencyKey();
+    $result = aetherRunIdempotentMutation(
         $pdo,
-        $input['idCharacter'],
-        $input['idEvent'],
-        $input['idSourceCharacter']
-    ));
+        $currentUser,
+        'character.action.reveal_knowledge',
+        $requestKey,
+        $input,
+        static function () use ($pdo, $currentUser, $input): array {
+            aetherRequireCharacterActionAccess(
+                $pdo,
+                $currentUser,
+                (int) $input['idCharacter'],
+                'Geen rechten om deze actie uit te voeren.'
+            );
+            return aetherRevealCharacterActionKnowledge(
+                $pdo,
+                $input['idCharacter'],
+                $input['idEvent'],
+                $input['idSourceCharacter']
+            );
+        },
+        static function () use ($pdo, $currentUser, $input): void {
+            aetherAuthorizeKnowledgeRevealReplay($pdo, $currentUser, $input);
+        }
+    );
+    aetherJsonResponse($result);
 } catch (AetherCharacterActionException $e) {
     if ($e->includesNullDetails()) {
         aetherJsonResponse(['error' => $e->getMessage(), 'details' => null], $e->getHttpStatus());
     }
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
+} catch (AetherIdempotencyException $e) {
     aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

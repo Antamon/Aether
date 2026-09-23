@@ -14,6 +14,7 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
         private array $params = [];
         private array $rows = [];
         private int $cursor = 0;
+        private int $affectedRows = 0;
 
         public function __construct(private CharacterSkillsActionsTestPdo $pdo, private string $query)
         {
@@ -29,13 +30,34 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
             $this->params = $params ?? [];
             $this->rows = [];
             $this->cursor = 0;
+            $this->affectedRows = 0;
             $sql = $this->sql();
 
             if ($this->pdo->scenario === 'server_error' && str_contains($sql, 'FROM tblEvent')) {
                 throw new PDOException('SQLSTATE[42S02]: secret_action_table');
             }
 
-            if (str_starts_with($sql, 'UPDATE tblLinkCharacterSkill')) {
+            if (str_starts_with($sql, 'INSERT INTO tblApiIdempotency')) {
+                $this->pdo->write($sql, $this->params);
+                $key = $this->params['idUser'] . ':' . $this->params['operation'] . ':' . $this->params['requestKey'];
+                if (!isset($this->pdo->idempotency[$key])) {
+                    $this->pdo->idempotency[$key] = [
+                        'payloadHash' => $this->params['payloadHash'],
+                        'status' => 'processing',
+                        'responseStatus' => null,
+                        'responseJson' => null,
+                    ];
+                }
+            } elseif (str_starts_with($sql, 'UPDATE tblApiIdempotency')) {
+                $this->pdo->write($sql, $this->params);
+                $key = $this->params['idUser'] . ':' . $this->params['operation'] . ':' . $this->params['requestKey'];
+                if (isset($this->pdo->idempotency[$key])) {
+                    $this->pdo->idempotency[$key]['status'] = 'completed';
+                    $this->pdo->idempotency[$key]['responseStatus'] = 200;
+                    $this->pdo->idempotency[$key]['responseJson'] = $this->params['responseJson'];
+                    $this->affectedRows = 1;
+                }
+            } elseif (str_starts_with($sql, 'UPDATE tblLinkCharacterSkill')) {
                 $this->pdo->write($sql, $this->params);
                 $idCharacter = (int) $this->params[1];
                 $idSkill = (int) $this->params[2];
@@ -96,7 +118,7 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
             } elseif (str_starts_with($sql, 'INSERT INTO tblCharacterEventGossipAttempt')) {
                 $this->pdo->write($sql, $this->params);
                 $key = $this->params['idViewerCharacter'] . ':' . $this->params['idEvent'];
-                if ($this->pdo->scenario === 'gossip_concurrent_increment') {
+                if ($this->pdo->scenario === 'gossip_concurrent_increment' && str_contains($sql, 'id = id')) {
                     // Een tweede transactie verhoogde dezelfde beginwaarde vlak vóór deze SQL-write.
                     $this->pdo->attempts[$key] = (int) ($this->pdo->attempts[$key] ?? 0) + 1;
                 }
@@ -104,6 +126,8 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
                     $this->pdo->attempts[$key] = isset($this->pdo->attempts[$key])
                         ? (int) $this->pdo->attempts[$key] + 1
                         : 1;
+                } elseif (str_contains($sql, 'id = id')) {
+                    $this->pdo->attempts[$key] = (int) ($this->pdo->attempts[$key] ?? 0);
                 } else {
                     $this->pdo->attempts[$key] = (int) ($this->params['attemptCount'] ?? 0);
                 }
@@ -113,14 +137,28 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
                     throw new PDOException('SQLSTATE[HY000]: secret_unlock');
                 }
                 $key = $this->params['idViewerCharacter'] . ':' . $this->params['idEvent'] . ':' . $this->params['idSourceCharacter'];
-                $this->pdo->unlocks[$key] = [
-                    'unlockGossip1' => (int) $this->params['unlockGossip1'],
-                    'unlockGossip2' => (int) $this->params['unlockGossip2'],
-                    'unlockGossip3' => (int) $this->params['unlockGossip3'],
-                ];
+                if (str_contains($sql, 'id = id')) {
+                    $this->pdo->unlocks[$key] ??= [
+                        'unlockGossip1' => 0, 'unlockGossip2' => 0, 'unlockGossip3' => 0,
+                    ];
+                } else {
+                    $previous = $this->pdo->unlocks[$key] ?? [
+                        'unlockGossip1' => 0, 'unlockGossip2' => 0, 'unlockGossip3' => 0,
+                    ];
+                    $this->pdo->unlocks[$key] = [
+                        'unlockGossip1' => max((int) $previous['unlockGossip1'], (int) $this->params['unlockGossip1']),
+                        'unlockGossip2' => max((int) $previous['unlockGossip2'], (int) $this->params['unlockGossip2']),
+                        'unlockGossip3' => max((int) $previous['unlockGossip3'], (int) $this->params['unlockGossip3']),
+                    ];
+                }
             } elseif (str_starts_with($sql, 'INSERT INTO tblCharacterSkillActionState')) {
                 $this->pdo->write($sql, $this->params);
-                $this->pdo->burn[(int) $this->params['idCharacter']] = (int) $this->params['numericValue'];
+                $idCharacter = (int) $this->params['idCharacter'];
+                if (str_contains($sql, 'id = id')) {
+                    $this->pdo->burn[$idCharacter] ??= (int) $this->params['numericValue'];
+                } else {
+                    $this->pdo->burn[$idCharacter] = (int) $this->params['numericValue'];
+                }
             } elseif (str_starts_with($sql, 'INSERT INTO tblCharacterSkillActionUse')) {
                 $this->pdo->write($sql, $this->params);
                 if ($this->pdo->scenario === 'action_use_error') {
@@ -134,9 +172,18 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
             return true;
         }
 
+        public function rowCount(): int
+        {
+            return $this->affectedRows;
+        }
+
         public function fetch(int $mode = PDO::FETCH_DEFAULT, int $cursorOrientation = PDO::FETCH_ORI_NEXT, int $cursorOffset = 0): mixed
         {
             $sql = $this->sql();
+            if (str_contains($sql, 'FROM tblApiIdempotency')) {
+                $key = $this->params['idUser'] . ':' . $this->params['operation'] . ':' . $this->params['requestKey'];
+                return $this->pdo->idempotency[$key] ?? false;
+            }
             if (str_contains($sql, 'FROM tblUser')) {
                 return $this->pdo->users[(int) ($this->params['id'] ?? 0)] ?? false;
             }
@@ -288,6 +335,7 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
         public array $unlocks;
         public array $burn;
         public array $actionUses;
+        public array $idempotency;
         public int $nextSpecialisationId;
         public int $nextActionUseId;
         public int $lastInsertIdValue = 0;
@@ -391,7 +439,7 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
                 'events' => $this->events, 'diaries' => $this->diaries, 'visibility' => $this->visibility,
                 'attempts' => $this->attempts, 'unlocks' => $this->unlocks, 'burn' => $this->burn,
                 'actionUses' => $this->actionUses, 'nextSpecialisationId' => $this->nextSpecialisationId,
-                'nextActionUseId' => $this->nextActionUseId,
+                'nextActionUseId' => $this->nextActionUseId, 'idempotency' => $this->idempotency,
             ];
         }
     }
@@ -420,6 +468,7 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
     $route = (string) ($argv[1] ?? 'events');
     $scenario = (string) ($argv[2] ?? 'participant');
     $stateFile = (string) ($argv[3] ?? '');
+    $requestKey = (string) ($argv[4] ?? 'test-request-key-0000000000000000');
     $state = json_decode((string) file_get_contents($stateFile), true, 512, JSON_THROW_ON_ERROR);
     $pdo = new CharacterSkillsActionsTestPdo($scenario, $state);
 
@@ -433,6 +482,9 @@ if (defined('AETHER_CHARACTER_SKILLS_ACTIONS_TEST_BOOTSTRAP')) {
     $_SESSION = ['user' => ['id' => $userId, 'role' => 'administrator'], 'aetherCsrfToken' => 'expected-token'];
     if ($scenario !== 'missing_csrf') {
         $_SERVER['HTTP_X_CSRF_TOKEN'] = $scenario === 'invalid_csrf' ? 'forged-token' : 'expected-token';
+    }
+    if (in_array($route, ['reveal', 'useAction'], true) && $scenario !== 'missing_idempotency') {
+        $_SERVER['HTTP_IDEMPOTENCY_KEY'] = $requestKey;
     }
     register_shutdown_function(static function () use ($pdo, $stateFile): void {
         file_put_contents($stateFile, json_encode($pdo->exportState(), JSON_THROW_ON_ERROR));
@@ -500,10 +552,18 @@ function createSkillsActionsState(array $state): string
 }
 
 /** @return array<string, mixed> */
-function runSkillsActions(string $path, string $route, string $scenario, array|string $request, string $stateFile): array
+function runSkillsActions(
+    string $path,
+    string $route,
+    string $scenario,
+    array|string $request,
+    string $stateFile,
+    ?string $requestKey = null
+): array
 {
+    $requestKey ??= 'test-request-' . bin2hex(random_bytes(12));
     $process = proc_open(
-        [PHP_BINARY, $path, $route, $scenario, $stateFile],
+        [PHP_BINARY, $path, $route, $scenario, $stateFile, $requestKey],
         [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
         $pipes
     );
@@ -607,7 +667,7 @@ $initialState = [
         '7:4' => ['idCharacter' => 4, 'idEvent' => 7, 'gossip1' => 'Verborgen extra', 'gossip2' => '', 'gossip3' => ''],
     ],
     'visibility' => [], 'attempts' => [], 'unlocks' => [], 'burn' => [1 => 0, 2 => 0, 5 => 0],
-    'actionUses' => [], 'nextSpecialisationId' => 102, 'nextActionUseId' => 500,
+    'actionUses' => [], 'nextSpecialisationId' => 102, 'nextActionUseId' => 500, 'idempotency' => [],
 ];
 
 try {
@@ -686,7 +746,7 @@ try {
         'attemptCount', 'newlyUnlockedLevels', 'unlockedGossips', 'unlockedGossipLevel',
         'displayName', 'portraitUrl', 'type', 'isFullyUnlocked',
     ], 'Reveal-response wijzigde');
-    assertSkillsActions($reveal['committedWrites'] === 2 && ($reveal['state']['attempts']['1:7'] ?? 0) === 1, 'Gossipwrites committen niet samen');
+    assertSkillsActions($reveal['committedWrites'] === 6 && ($reveal['state']['attempts']['1:7'] ?? 0) === 1, 'Gossipwrites en idempotentieresponse committen niet samen');
     $concurrentRevealState = $stateFiles[] = createSkillsActionsState($initialState);
     $concurrentReveal = runSkillsActions($routes['reveal'], 'reveal', 'gossip_concurrent_increment', [
         'idCharacter' => 1, 'idEvent' => 7, 'idSourceCharacter' => 3,
@@ -696,8 +756,11 @@ try {
         && ($concurrentReveal['state']['attempts']['1:7'] ?? 0) === 2,
         'Twee gesimuleerde gossipincrements leverden geen eindwaarde 2 op: '
             . json_encode(['response' => $concurrentReveal['decoded'], 'attempts' => $concurrentReveal['state']['attempts']]));
-    assertSkillsActions(str_contains((string) ($concurrentReveal['writes'][0]['sql'] ?? ''), 'attemptCount = attemptCount + 1'),
-        'Gossipincrement gebruikt geen atomaire database-increment');
+    $attemptWrite = array_values(array_filter(
+        $concurrentReveal['writes'],
+        static fn(array $write): bool => str_contains((string) ($write['sql'] ?? ''), 'attemptCount = attemptCount + 1')
+    ));
+    assertSkillsActions($attemptWrite !== [], 'Gossipincrement gebruikt geen atomaire database-increment');
 
     $actionState = $stateFiles[] = createSkillsActionsState($initialState);
     $use = runSkillsActions($routes['useAction'], 'useAction', 'participant', [
@@ -707,8 +770,12 @@ try {
     assertSkillsActions($use['status'] === 200 && array_keys($use['decoded'] ?? []) === [
         'usageId', 'actionCode', 'categoryCode', 'categoryLabel', 'skill', 'event', 'roll', 'burn', 'result',
     ], 'Skillaction-response wijzigde');
-    assertSkillsActions($use['committedWrites'] === 2 && count($use['state']['actionUses']) === 1, 'Action state en use committen niet samen');
-    $useParams = $use['writes'][1]['parameters'] ?? [];
+    assertSkillsActions($use['committedWrites'] === 5 && count($use['state']['actionUses']) === 1, 'Action state, use en idempotentieresponse committen niet samen');
+    $actionUseWrites = array_values(array_filter(
+        $use['writes'],
+        static fn(array $write): bool => str_starts_with((string) ($write['sql'] ?? ''), 'INSERT INTO tblCharacterSkillActionUse')
+    ));
+    $useParams = $actionUseWrites[0]['parameters'] ?? [];
     assertSkillsActions(($useParams['idCharacter'] ?? 0) === 1 && ($useParams['idEvent'] ?? 0) === 7
         && ($useParams['idSkill'] ?? 0) === 40 && ($useParams['createdBy'] ?? 0) === 10,
         'Action use prepared parameters bevatten niet de vertrouwde ids');
@@ -718,19 +785,82 @@ try {
     ], $actionState);
     assertSkillsActions($repeatUse['status'] === 200 && count($repeatUse['state']['actionUses']) === 2,
         'Bestaand gedrag zonder action-use-limiet wijzigde');
+
+    $idempotentState = $stateFiles[] = createSkillsActionsState($initialState);
+    $idempotentPayload = [
+        'idCharacter' => 1, 'idEvent' => 7, 'idSkill' => 40,
+        'actionCode' => 'psi', 'actionSubtype' => 'zintuiglijke_gave', 'clearBurn' => false,
+    ];
+    $idempotencyKey = 'test-action-idempotency-00000001';
+    $firstIdempotentUse = runSkillsActions(
+        $routes['useAction'], 'useAction', 'participant', $idempotentPayload, $idempotentState, $idempotencyKey
+    );
+    $replayedUse = runSkillsActions(
+        $routes['useAction'], 'useAction', 'participant', $idempotentPayload, $idempotentState, $idempotencyKey
+    );
+    assertSkillsActions($replayedUse['status'] === 200
+        && $replayedUse['decoded'] === $firstIdempotentUse['decoded']
+        && count($replayedUse['state']['actionUses']) === 1,
+        'Action-idempotentiereplay voerde een tweede actie uit of wijzigde de response');
+    $conflictingUse = runSkillsActions(
+        $routes['useAction'],
+        'useAction',
+        'participant',
+        array_replace($idempotentPayload, ['clearBurn' => true]),
+        $idempotentState,
+        $idempotencyKey
+    );
+    assertSkillsActions($conflictingUse['status'] === 409
+        && count($conflictingUse['state']['actionUses']) === 1,
+        'Dezelfde action-key met een andere payload gaf geen conflict zonder tweede actie');
+
+    $revokedStateData = $replayedUse['state'];
+    $revokedStateData['characters'][1]['idUser'] = 99;
+    file_put_contents($idempotentState, json_encode($revokedStateData, JSON_THROW_ON_ERROR));
+    $revokedReplay = runSkillsActions(
+        $routes['useAction'], 'useAction', 'participant', $idempotentPayload, $idempotentState, $idempotencyKey
+    );
+    assertSkillsActions($revokedReplay['status'] === 403
+        && count($revokedReplay['state']['actionUses']) === 1
+        && $revokedReplay['committedWrites'] === 0,
+        'Ingetrokken characterrechten blokkeerden een opgeslagen actionreplay niet');
+
+    $revealReplayState = $stateFiles[] = createSkillsActionsState($initialState);
+    $revealPayload = ['idCharacter' => 1, 'idEvent' => 7, 'idSourceCharacter' => 3];
+    $revealKey = 'test-reveal-idempotency-0000001';
+    $firstReveal = runSkillsActions(
+        $routes['reveal'], 'reveal', 'participant', $revealPayload, $revealReplayState, $revealKey
+    );
+    $replayedReveal = runSkillsActions(
+        $routes['reveal'], 'reveal', 'participant', $revealPayload, $revealReplayState, $revealKey
+    );
+    assertSkillsActions($replayedReveal['status'] === 200
+        && $replayedReveal['decoded'] === $firstReveal['decoded']
+        && ($replayedReveal['state']['attempts']['1:7'] ?? 0) === 1,
+        'Gossipreplay gebruikte een tweede poging of wijzigde de opgeslagen response');
+
+    foreach (['reveal' => $revealPayload, 'useAction' => $idempotentPayload] as $route => $request) {
+        $missingKeyState = $stateFiles[] = createSkillsActionsState($initialState);
+        assertSkillsActionsError(
+            runSkillsActions($routes[$route], $route, 'missing_idempotency', $request, $missingKeyState),
+            400,
+            0,
+            "{$route} zonder idempotentiesleutel"
+        );
+    }
     $directorActionState = $stateFiles[] = createSkillsActionsState($initialState);
     $directorUse = runSkillsActions($routes['useAction'], 'useAction', 'director', [
         'idCharacter' => 2, 'idEvent' => 7, 'idSkill' => 40,
         'actionCode' => 'psi', 'actionSubtype' => 'zintuiglijke_gave', 'clearBurn' => false,
     ], $directorActionState);
-    assertSkillsActions($directorUse['status'] === 200 && $directorUse['committedWrites'] === 2,
+    assertSkillsActions($directorUse['status'] === 200 && $directorUse['committedWrites'] === 5,
         'Director verloor action-schrijfrechten op een ander character');
     $administratorActionState = $stateFiles[] = createSkillsActionsState($initialState);
     $administratorSecretUse = runSkillsActions($routes['useAction'], 'useAction', 'administrator', [
         'idCharacter' => 1, 'idEvent' => 7, 'idSkill' => 41,
         'actionCode' => 'psi', 'actionSubtype' => 'somatische_gave', 'clearBurn' => false,
     ], $administratorActionState);
-    assertSkillsActions($administratorSecretUse['status'] === 200 && $administratorSecretUse['committedWrites'] === 2,
+    assertSkillsActions($administratorSecretUse['status'] === 200 && $administratorSecretUse['committedWrites'] === 5,
         'Administrator verloor gebruik van een geheime actionskill');
 
     $rejections = [
@@ -749,7 +879,8 @@ try {
     foreach ($rejections as [$route, $scenario, $request, $status, $label]) {
         $rejectState = $stateFiles[] = createSkillsActionsState($initialState);
         $rejection = runSkillsActions($routes[$route], $route, $scenario, $request, $rejectState);
-        assertSkillsActionsError($rejection, $status, 0, $label);
+        $expectedWrites = in_array($route, ['reveal', 'useAction'], true) ? 1 : 0;
+        assertSkillsActionsError($rejection, $status, $expectedWrites, $label);
         if (in_array($route, ['reveal', 'useAction'], true) && $status === 400) {
             assertSkillsActions(array_keys($rejection['decoded'] ?? []) === ['error', 'details']
                 && $rejection['decoded']['details'] === null,
@@ -822,8 +953,8 @@ try {
     $rollbackCases = [
         ['updateSkill', 'skill_delete_error', ['action' => 'delete', 'idSkill' => 42, 'idCharacter' => 1], 2],
         ['addSpec', 'specialisation_link_error', ['idSkill' => 42, 'idCharacter' => 1, 'idSkillSpecialisation' => 0, 'name' => 'Rollback spec'], 2],
-        ['reveal', 'knowledge_unlock_error', ['idCharacter' => 1, 'idEvent' => 7, 'idSourceCharacter' => 3], 2],
-        ['useAction', 'action_use_error', ['idCharacter' => 1, 'idEvent' => 7, 'idSkill' => 40, 'actionCode' => 'psi', 'actionSubtype' => 'zintuiglijke_gave'], 2],
+        ['reveal', 'knowledge_unlock_error', ['idCharacter' => 1, 'idEvent' => 7, 'idSourceCharacter' => 3], 3],
+        ['useAction', 'action_use_error', ['idCharacter' => 1, 'idEvent' => 7, 'idSkill' => 40, 'actionCode' => 'psi', 'actionSubtype' => 'zintuiglijke_gave'], 4],
     ];
     foreach ($rollbackCases as [$route, $scenario, $request, $writeAttempts]) {
         $rollbackState = $stateFiles[] = createSkillsActionsState($initialState);

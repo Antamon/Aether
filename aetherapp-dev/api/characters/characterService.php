@@ -5,6 +5,7 @@ require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/economyUtils.php';
 require_once __DIR__ . '/characterAccess.php';
 require_once __DIR__ . '/characterRepository.php';
+require_once __DIR__ . '/../shared/decimal.php';
 
 final class AetherCharacterUpdateException extends RuntimeException
 {
@@ -17,6 +18,24 @@ final class AetherCharacterUpdateException extends RuntimeException
     {
         return $this->httpStatus;
     }
+}
+
+function aetherUpdateCharacterUseCase(
+    PDO $pdo,
+    array $currentUser,
+    int $characterId,
+    array $input,
+    bool $lock = false
+): int {
+    $currentCharacter = aetherFetchCharacterForUpdate($pdo, $characterId, $lock);
+    if ($currentCharacter === null) {
+        throw new AetherCharacterUpdateException(404, 'Personage niet gevonden.');
+    }
+    if (!aetherCanEditCharacter($currentUser, $currentCharacter)) {
+        throw new AetherCharacterUpdateException(403, 'Je hebt geen rechten om dit personage te wijzigen.');
+    }
+    $fields = aetherPrepareCharacterUpdate($pdo, $currentUser, $currentCharacter, $input);
+    return aetherApplyCharacterUpdate($pdo, $currentCharacter, $fields);
 }
 
 /**
@@ -71,7 +90,7 @@ function aetherPrepareCharacterUpdate(
                 'Je hebt geen rechten om de bankrekening van dit personage aan te passen.'
             );
         }
-        $fields['bankaccount'] = round((float) $fields['bankaccount'], 2);
+        $fields['bankaccount'] = aetherNormalizeDecimal($fields['bankaccount'], 2);
     }
     if (array_key_exists('securitiesaccount', $fields)) {
         if (!canEditCharacterSecuritiesAccount($currentCharacter, $role)) {
@@ -80,14 +99,17 @@ function aetherPrepareCharacterUpdate(
                 'Je hebt geen rechten om de effectenportefeuille van dit personage aan te passen.'
             );
         }
-        $fields['securitiesaccount'] = max(0, round((float) $fields['securitiesaccount'], 2));
+        $fields['securitiesaccount'] = aetherNormalizeDecimal($fields['securitiesaccount'], 2);
     }
 
     if (array_key_exists('state', $fields)
         && (string) ($currentCharacter['state'] ?? '') === 'draft'
         && (string) $fields['state'] !== 'draft'
         && !array_key_exists('bankaccount', $fields)) {
-        $fields['bankaccount'] = getDraftBankAccountAmountForCharacter($pdo, $currentCharacter);
+        $fields['bankaccount'] = aetherNormalizeDecimal(
+            getDraftBankAccountAmountForCharacter($pdo, $currentCharacter),
+            2
+        );
     }
 
     $paidHealthFields = ['physicalHealth', 'mentalHealth'];
@@ -180,7 +202,10 @@ function aetherApplyCharacterUpdate(
         ['street', 'houseNumber', 'postalCode', 'municipality']
     ) !== [];
 
-    $pdo->beginTransaction();
+    $managesTransaction = !$pdo->inTransaction();
+    if ($managesTransaction) {
+        $pdo->beginTransaction();
+    }
     try {
         $rowCount = aetherUpdateCharacterRecord($pdo, $characterId, $fields);
 
@@ -199,10 +224,12 @@ function aetherApplyCharacterUpdate(
             aetherPruneCharacterClassTraits($pdo, $characterId);
         }
 
-        $pdo->commit();
+        if ($managesTransaction) {
+            $pdo->commit();
+        }
         return $rowCount;
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
+        if ($managesTransaction && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         throw $e;

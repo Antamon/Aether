@@ -392,7 +392,7 @@ try {
     );
 
     $routeSource = file_get_contents($projectRoot . '/api/characters/updateCharacter.php');
-    assertUpdateCharacter(is_string($routeSource) && substr_count($routeSource, "\n") < 60, 'updateCharacter.php is niet dun genoeg.');
+    assertUpdateCharacter(is_string($routeSource) && substr_count($routeSource, "\n") < 85, 'updateCharacter.php is niet dun genoeg.');
     foreach ([
         "require_once __DIR__ . '/../shared/request.php'",
         "require_once __DIR__ . '/../shared/response.php'",

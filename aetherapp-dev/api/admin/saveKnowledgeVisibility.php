@@ -3,35 +3,52 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/adminUtils.php';
+require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../shared/idempotency.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/../events/eventSchemas.php';
+require_once __DIR__ . '/../events/eventKnowledgeService.php';
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
-$idEvent = (int) ($input['idEvent'] ?? 0);
-$idCharacter = (int) ($input['idCharacter'] ?? 0);
-$isVisible = isset($input['isVisible']) ? (bool) $input['isVisible'] : null;
-
-if ($idEvent <= 0 || $idCharacter <= 0 || $isVisible === null) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Event, personage en zichtbaarheid zijn verplicht.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 try {
-    $pdo = getPDO();
-    $user = requirePrivilegedAdminAccess($pdo, true);
-
-    setGossipVisibilityState($pdo, $idEvent, $idCharacter, $isVisible, (int) ($user['idUser'] ?? 0));
-
-    echo json_encode([
-        'ok' => true,
-        'idEvent' => $idEvent,
-        'idCharacter' => $idCharacter,
-        'isVisible' => $isVisible,
-    ]);
+    $input = aetherValidateInput(aetherReadJsonObject(), aetherEventRequestSchema('knowledgeVisibility'));
+    aetherAuthorizeEventKnowledgeTargetReplay(
+        $pdo,
+        $currentUser,
+        (int) $input['idEvent'],
+        (int) $input['idCharacter']
+    );
+    $requestKey = aetherRequireIdempotencyKey();
+    $response = aetherRunIdempotentMutation(
+        $pdo,
+        $currentUser,
+        'event.knowledge.visibility',
+        $requestKey,
+        $input,
+        static fn(): array => aetherSaveEventKnowledgeVisibility($pdo, $currentUser, $input),
+        static function () use ($pdo, $currentUser, $input): void {
+            aetherAuthorizeEventKnowledgeTargetReplay(
+                $pdo,
+                $currentUser,
+                (int) $input['idEvent'],
+                (int) $input['idCharacter']
+            );
+        }
+    );
+    aetherJsonResponse($response);
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherEventException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
+} catch (AetherIdempotencyException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Kon de zichtbaarheid van deze wereldwijsgossip niet bewaren.',
-        'details' => $e->getMessage(),
-    ]);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('saveKnowledgeVisibility.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon de zichtbaarheid van deze wereldwijsgossip niet bewaren.');
 }
