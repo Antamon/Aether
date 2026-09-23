@@ -2,9 +2,9 @@
 declare(strict_types=1);
 
 /** @return array<string, mixed>|null */
-function aetherFetchCharacterForDeletion(PDO $pdo, int $characterId): ?array
+function aetherFetchCharacterForDeletion(PDO $pdo, int $characterId, bool $lock = false): ?array
 {
-    $stmt = $pdo->prepare('SELECT id, idUser, type, state, firstName, lastName FROM tblCharacter WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, idUser, type, state, firstName, lastName FROM tblCharacter WHERE id = :id' . ($lock ? ' FOR UPDATE' : ''));
     $stmt->execute(['id' => $characterId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;

@@ -3,21 +3,17 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/companyUtils.php';
+require_once __DIR__ . '/companyAccess.php';
+require_once __DIR__ . '/companyRepository.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
 
 try {
     $pdo = getPDO();
     requirePrivilegedCompanyAccess($pdo);
 
-    $companies = dbAll(
-        $pdo,
-        'SELECT id, companyName
-           FROM tblCompany
-       ORDER BY companyName ASC, id ASC'
-    );
-
-    echo json_encode($companies);
+    aetherJsonResponse(aetherCompanyList($pdo));
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon bedrijvenlijst niet laden.']);
+    error_log('getCompanyList failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon bedrijvenlijst niet laden.');
 }

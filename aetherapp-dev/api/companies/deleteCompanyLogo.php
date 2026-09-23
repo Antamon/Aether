@@ -3,43 +3,21 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/companyUtils.php';
-
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
-$id = (int) ($postData['id'] ?? 0);
-
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Geen geldig bedrijf ID.']);
-    exit;
-}
+require_once __DIR__ . '/companyLogoService.php';
+require_once __DIR__ . '/companySchemas.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/response.php';
 
 try {
     $pdo = getPDO();
     requirePrivilegedCompanyAccess($pdo, true);
-
-    $company = dbOne(
-        $pdo,
-        'SELECT id
-           FROM tblCompany
-          WHERE id = :id',
-        ['id' => $id]
-    );
-
-    if ($company === null) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Bedrijf niet gevonden.']);
-        exit;
-    }
-
-    $logoPath = getCompanyLogoAbsolutePath($id);
-    if (is_file($logoPath) && !unlink($logoPath)) {
-        throw new RuntimeException('Kon logo niet verwijderen.');
-    }
-
-    echo json_encode(['status' => 'ok']);
+    $input = aetherValidateInput(aetherReadJsonObject(), aetherCompanyDetailSchema());
+    aetherJsonResponse(aetherDeleteCompanyLogo($pdo, $input['id']));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+} catch (AetherCompanyException $e) {
+    aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon bedrijfslogo niet verwijderen.']);
+    error_log('deleteCompanyLogo failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon bedrijfslogo niet verwijderen.');
 }

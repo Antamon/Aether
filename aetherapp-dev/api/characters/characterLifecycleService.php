@@ -14,20 +14,20 @@ final class AetherCharacterLifecycleException extends RuntimeException
 /** @return array{success: true, id: int, name: string} */
 function aetherDeleteCharacter(PDO $pdo, array $currentUser, int $characterId): array
 {
-    $character = aetherFetchCharacterForDeletion($pdo, $characterId);
-    if ($character === null) {
-        throw new AetherCharacterLifecycleException(404, 'Personage niet gevonden.');
-    }
-    if (!aetherCanEditCharacter($currentUser, $character)) {
-        throw new AetherCharacterLifecycleException(403, 'Geen toestemming om dit personage te verwijderen.');
-    }
-
-    $stagedPortraits = aetherStageCharacterPortraitPaths(
-        aetherGetCharacterPortraitPaths($characterId),
-        $characterId
-    );
+    $stagedPortraits = [];
     try {
         $pdo->beginTransaction();
+        $character = aetherFetchCharacterForDeletion($pdo, $characterId, true);
+        if ($character === null) {
+            throw new AetherCharacterLifecycleException(404, 'Personage niet gevonden.');
+        }
+        if (!aetherCanEditCharacter($currentUser, $character)) {
+            throw new AetherCharacterLifecycleException(403, 'Geen toestemming om dit personage te verwijderen.');
+        }
+        $stagedPortraits = aetherStageCharacterPortraitPaths(
+            aetherGetCharacterPortraitPaths($characterId),
+            $characterId
+        );
         aetherDeleteCharacterManualRelations($pdo, $characterId);
         aetherDeleteCharacterRecord($pdo, $characterId);
         $pdo->commit();

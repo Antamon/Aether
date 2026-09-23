@@ -7,7 +7,7 @@ function aetherCompanyUpdateSchema(): array
     return [
         'id' => ['type' => 'int', 'required' => true, 'min' => 1],
         'companyName' => ['type' => 'string', 'required' => false, 'trim' => true, 'minLength' => 1, 'maxLength' => 255],
-        'description' => ['type' => 'string', 'required' => false, 'trim' => true],
+        'description' => ['type' => 'string', 'required' => false, 'trim' => true, 'maxLength' => 65535],
         'foundationDate' => ['type' => 'date', 'required' => false, 'allowEmpty' => true],
         'companyValue' => ['type' => 'decimal', 'required' => false, 'min' => '0.00', 'max' => '9999999999.99', 'scale' => 2],
         'stability' => ['type' => 'int', 'required' => false, 'min' => -7, 'max' => 7],

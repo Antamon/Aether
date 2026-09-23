@@ -6,22 +6,7 @@ require_once __DIR__ . '/../characters/characterPointUtils.php';
 require_once __DIR__ . '/../characters/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/../shared/decimal.php';
-
-function requirePrivilegedCompanyAccess(PDO $pdo, bool $requireCsrf = false): array
-{
-    $user = aetherRequireAuthenticatedUser($pdo);
-    if (!aetherIsPrivilegedRole($user['role'])) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Je hebt geen rechten om bedrijven te beheren.']);
-        exit;
-    }
-
-    if ($requireCsrf) {
-        aetherRequireCsrfToken();
-    }
-
-    return $user;
-}
+require_once __DIR__ . '/companyAccess.php';
 
 function normalizeCompanySliderValue(mixed $value): int
 {
@@ -126,24 +111,64 @@ function getCompanyLogoDirectory(): string
     return dirname(__DIR__, 2) . '/img/bedrijfslogo';
 }
 
-function getCompanyLogoAbsolutePath(int $companyId): string
+/** @return array<string, string> MIME type => safe, server-chosen file extension */
+function aetherCompanyLogoMimeExtensions(): array
 {
-    return getCompanyLogoDirectory() . '/' . $companyId . '.png';
+    return [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+    ];
 }
 
-function getCompanyLogoPublicPath(int $companyId): string
+function aetherCompanyLogoExtensionIsAllowed(string $extension): bool
 {
-    return 'img/bedrijfslogo/' . $companyId . '.png';
+    return in_array($extension, array_values(aetherCompanyLogoMimeExtensions()), true);
+}
+
+function getCompanyLogoAbsolutePath(int $companyId, string $extension = 'png'): string
+{
+    if ($companyId <= 0 || !aetherCompanyLogoExtensionIsAllowed($extension)) {
+        throw new InvalidArgumentException('Ongeldig bedrijfslogopad.');
+    }
+    return getCompanyLogoDirectory() . '/' . $companyId . '.' . $extension;
+}
+
+function getCompanyLogoPublicPath(int $companyId, string $extension = 'png'): string
+{
+    if ($companyId <= 0 || !aetherCompanyLogoExtensionIsAllowed($extension)) {
+        throw new InvalidArgumentException('Ongeldig bedrijfslogopad.');
+    }
+    return 'img/bedrijfslogo/' . $companyId . '.' . $extension;
+}
+
+/** @return list<string> */
+function aetherCompanyLogoManagedPaths(int $companyId): array
+{
+    $paths = [];
+    foreach (array_unique(array_values(aetherCompanyLogoMimeExtensions())) as $extension) {
+        $path = getCompanyLogoAbsolutePath($companyId, $extension);
+        if (is_file($path) && !is_link($path)) {
+            $paths[] = $path;
+        }
+    }
+    usort($paths, static function (string $left, string $right): int {
+        return (@filemtime($right) ?: 0) <=> (@filemtime($left) ?: 0) ?: strcmp($left, $right);
+    });
+    return $paths;
 }
 
 function getCompanyLogoUrl(int $companyId): ?string
 {
-    $logoPath = getCompanyLogoAbsolutePath($companyId);
-    if (!is_file($logoPath)) {
+    $logoPath = aetherCompanyLogoManagedPaths($companyId)[0] ?? null;
+    if ($logoPath === null) {
         return null;
     }
 
-    return getCompanyLogoPublicPath($companyId) . '?v=' . filemtime($logoPath);
+    $modifiedAt = @filemtime($logoPath);
+    return getCompanyLogoPublicPath($companyId, (string) pathinfo($logoPath, PATHINFO_EXTENSION))
+        . ($modifiedAt === false ? '' : '?v=' . $modifiedAt);
 }
 
 function inferCompanyShareClassFromTraitName(string $traitName): ?string
@@ -759,7 +784,7 @@ function calculateCompanySnapshotFinancials(
     ];
 }
 
-function getCompanySnapshots(PDO $pdo, int $idCompany): array
+function getCompanySnapshots(PDO $pdo, int $idCompany, bool $strict = false): array
 {
     if ($idCompany <= 0) {
         return [];
@@ -793,6 +818,7 @@ function getCompanySnapshots(PDO $pdo, int $idCompany): array
             ['idCompany' => $idCompany]
         );
     } catch (Throwable $e) {
+        if ($strict) throw $e;
         return [];
     }
 
@@ -1168,7 +1194,7 @@ function getCompanyPersonnelSkillOptions(PDO $pdo): array
     return $options;
 }
 
-function getCompanyPersonnelEntries(PDO $pdo, int $idCompany): array
+function getCompanyPersonnelEntries(PDO $pdo, int $idCompany, bool $strict = false): array
 {
     if ($idCompany <= 0) {
         return [];
@@ -1209,6 +1235,7 @@ function getCompanyPersonnelEntries(PDO $pdo, int $idCompany): array
             ['idCompany' => $idCompany]
         );
     } catch (Throwable $e) {
+        if ($strict) throw $e;
         return [];
     }
 
