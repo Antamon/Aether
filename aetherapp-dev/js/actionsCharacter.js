@@ -197,7 +197,7 @@ function buildCharacterActionsLayout(character) {
     const wrapper = document.createElement("div");
 
     const card = document.createElement("div");
-    card.className = "card character-sheet-card";
+    card.className = "card aether-panel character-sheet-card";
 
     const header = document.createElement("div");
     header.className = "card-header character-actions-card-header";

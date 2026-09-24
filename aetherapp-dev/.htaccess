@@ -20,3 +20,28 @@
         Header always set Expires "0"
     </FilesMatch>
 </IfModule>
+
+# Local secrets and example files are PHP includes, never HTTP endpoints.
+<FilesMatch "^(?:db|config(?:\.local|\.example)|db\.legacy\.local)\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Defense in depth if a private source directory is uploaded accidentally.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:tests|docs|sql|legacy)(?:/|$) - [F,L]
+</IfModule>
+
+<FilesMatch "\.(?:sql|md|log|bak|env)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</FilesMatch>

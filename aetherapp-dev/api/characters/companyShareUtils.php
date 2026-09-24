@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../companies/companyUtils.php';
-
 function normalizeCompanyShareTraitName(string $traitName): string
 {
     return mb_strtolower(trim(preg_replace('/\s+/', ' ', $traitName)));
@@ -54,6 +52,7 @@ function getCompanyShareTraitDefinitions(): array
 
 function getCompanyShareTraitMetadataByName(string $traitName): ?array
 {
+    require_once __DIR__ . '/../companies/companyUtils.php';
     $definitions = getCompanyShareTraitDefinitions();
     $normalizedName = normalizeCompanyShareTraitName($traitName);
 
@@ -77,6 +76,7 @@ function getCompanyShareTraitMetadataByName(string $traitName): ?array
 
 function getCompanyShareTraitMetadata(array $trait): ?array
 {
+    require_once __DIR__ . '/../companies/companyUtils.php';
     if (!empty($trait['isCompanyShare']) || !empty($trait['shareClass'])) {
         $companyTypeDefinitions = getCompanyTypeDefinitions();
         $allowedCompanyTypeKeys = array_values(array_filter(

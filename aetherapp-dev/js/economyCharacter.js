@@ -871,7 +871,7 @@ function getApiErrorMessage(error, fallbackMessage) {
 
 function buildEconomyCard(title) {
     const card = document.createElement("div");
-    card.className = "card shadow-sm mb-4";
+    card.className = "card aether-panel shadow-sm mb-4";
 
     const body = document.createElement("div");
     body.className = "card-body";

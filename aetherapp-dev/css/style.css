@@ -1,3 +1,27 @@
+:root {
+  --aether-surface-border: rgba(100, 0, 0, 0.12);
+  --aether-inset-background: rgba(100, 0, 0, 0.03);
+}
+
+.aether-page {
+  padding-bottom: 2rem;
+}
+
+.aether-panel {
+  border: 1px solid var(--aether-surface-border);
+}
+
+.aether-inset {
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--aether-surface-border);
+  border-radius: 0.75rem;
+  background-color: var(--aether-inset-background);
+}
+
+.aether-field-label {
+  font-weight: 600;
+}
+
 #navbarName{
     color: var(--bs-navbar-brand-hover-color);
 }
@@ -17,10 +41,6 @@
   display: flex;
   align-items: flex-start;
   gap: 1.5rem;
-}
-
-.character-sheet-card {
-  border: 1px solid rgba(100, 0, 0, 0.12);
 }
 
 .character-sheet-card .card-body {
@@ -672,10 +692,6 @@ background-color: #640000;
   min-width: 10.5rem;
 }
 
-.company-page .card {
-  border: 1px solid rgba(100, 0, 0, 0.12);
-}
-
 .company-list {
   gap: 0.5rem;
 }
@@ -769,16 +785,8 @@ background-color: #640000;
   margin-top: 0.75rem;
 }
 
-.company-inline-field .col-form-label {
-  font-weight: 600;
-}
-
 .company-type-card {
   margin-top: 1rem;
-  padding: 1rem 1.125rem;
-  border: 1px solid rgba(100, 0, 0, 0.12);
-  border-radius: 0.75rem;
-  background-color: rgba(100, 0, 0, 0.03);
 }
 
 .company-type-card-label {
@@ -798,9 +806,6 @@ background-color: #640000;
 
 .company-slider-card {
   padding: 1rem;
-  border: 1px solid rgba(100, 0, 0, 0.12);
-  border-radius: 0.75rem;
-  background-color: rgba(100, 0, 0, 0.03);
 }
 
 .company-slider-value {
@@ -811,13 +816,6 @@ background-color: #640000;
 .company-slider-help {
   min-height: 4.5rem;
   color: var(--bs-secondary-color);
-}
-
-.company-shareholders-card {
-  padding: 1rem 1.125rem;
-  border: 1px solid rgba(100, 0, 0, 0.12);
-  border-radius: 0.75rem;
-  background-color: rgba(100, 0, 0, 0.03);
 }
 
 .company-shareholders-card-label {
@@ -877,13 +875,6 @@ background-color: #640000;
 
 .company-shareholders-empty {
   color: var(--bs-secondary-color);
-}
-
-.company-snapshots-card {
-  padding: 1rem 1.125rem;
-  border: 1px solid rgba(100, 0, 0, 0.12);
-  border-radius: 0.75rem;
-  background-color: rgba(100, 0, 0, 0.03);
 }
 
 .company-snapshots-list {
@@ -956,13 +947,6 @@ background-color: #640000;
 .company-snapshot-profit-meta {
   margin-top: 0.2rem;
   color: var(--bs-secondary-color);
-}
-
-.company-personnel-card {
-  padding: 1rem 1.125rem;
-  border: 1px solid rgba(100, 0, 0, 0.12);
-  border-radius: 0.75rem;
-  background-color: rgba(100, 0, 0, 0.03);
 }
 
 .company-personnel-card-label {
@@ -1078,10 +1062,6 @@ background-color: #640000;
 
 .company-personnel-specialisation-empty {
   color: var(--bs-secondary-color);
-}
-
-.admin-page .admin-card {
-  border: 1px solid rgba(100, 0, 0, 0.12);
 }
 
 .admin-toolbar {

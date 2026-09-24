@@ -218,6 +218,11 @@ function copyUpdateCharacterFixtureTree(string $source, string $target): void
         if ($item->isDot()) {
             continue;
         }
+        // Editor/antivirus swap files can appear briefly on Windows; they are
+        // not API source files and may be locked while the fixture is copied.
+        if (str_ends_with($item->getFilename(), '.tmp')) {
+            continue;
+        }
         $targetPath = $target . '/' . $item->getFilename();
         if ($item->isDir()) {
             copyUpdateCharacterFixtureTree($item->getPathname(), $targetPath);

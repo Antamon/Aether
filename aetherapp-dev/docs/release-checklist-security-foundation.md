@@ -1,5 +1,7 @@
 # Release-readiness en productiechecklist: security foundation
 
+> **Update 23 september 2026:** de oudere uitsluiting van `db.php` hieronder is achterhaald door [configuratie-en-integratie-readiness.md](configuratie-en-integratie-readiness.md). `db.php` is nu een voor Git bedoelde bootstrap zonder secrets. Gebruik de nieuwere configuratie- en uploadinstructies voor deze batch.
+
 Datum beoordeling: 17 september 2026  
 Beoordeelde branch/commit: `main` op `26f0c7d` (`origin/main` wees tijdens de controle naar dezelfde commit)  
 Status: **nog niet vrijgegeven voor productie**

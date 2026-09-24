@@ -2,6 +2,10 @@
 
 Deze bestanden zijn bedoeld voor handmatige uitvoering via phpMyAdmin of een gecontroleerde MariaDB-CLI. Er bestaat geen publiek migratie-endpoint.
 
+## Productieschema versus dev (exportvergelijking 24 september 2026)
+
+Voor de afzonderlijk aangeleverde productie- en dev-exports van 24 september is `production_align_to_dev_2026_09_24.sql` voorbereid. Het is één phpMyAdmin-bestand dat alleen de ontbrekende structuur van 0001–0005 toevoegt en alle bestaande productie-applicatierijen en oude productietabellen behoudt. Het is **niet uitgevoerd**. Volg eerst de back-up-, onderhouds-, preflight- en verificatiestappen in `docs/productie-schema-gelijktrekken.md`; dit bestand is uitsluitend voor de geselecteerde productiedatabase `oneiros_be_aether` en vervangt de afzonderlijke inspectie- en rollbackbestanden niet.
+
 ## Actuele beginsituatie
 
 De recentste beschikbare export is `sql/oneiros_beaetherdev.sql`, gegenereerd op 21 september 2026 om 09:01 door phpMyAdmin 5.2.3 op MariaDB 10.11.18. Deze export bevestigt:

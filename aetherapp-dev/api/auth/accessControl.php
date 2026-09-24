@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../sessionUserBootstrap.php';
+require_once __DIR__ . '/../shared/session.php';
 require_once __DIR__ . '/../shared/cache.php';
 require_once __DIR__ . '/../shared/response.php';
 
@@ -11,13 +12,6 @@ aetherSendNoStoreHeaders(true);
 const AETHER_ROLE_PARTICIPANT = 'participant';
 const AETHER_ROLE_DIRECTOR = 'director';
 const AETHER_ROLE_ADMINISTRATOR = 'administrator';
-
-function aetherStartSession(): void
-{
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
-}
 
 function aetherIsKnownRole(string $role): bool
 {
@@ -36,6 +30,17 @@ function aetherIsPrivilegedRole(string $role): bool
 function aetherEnsureSessionIdentity(): int
 {
     aetherStartSession();
+
+    // A WordPress logout or account switch must invalidate an old Aether session.
+    // Also verify older sessions without a source marker when WordPress is present.
+    $wordpressSource = ($_SESSION['user']['source'] ?? null) === 'wordpress';
+    $wordpressAvailable = function_exists('aetherLoadWordPressIfAvailable') && aetherLoadWordPressIfAvailable();
+    if (!empty($_SESSION['user']['id']) && ($wordpressSource || $wordpressAvailable)) {
+        if (!$wordpressAvailable || !is_user_logged_in()
+            || (int) (wp_get_current_user()->ID ?? 0) !== (int) ($_SESSION['user']['id'] ?? 0)) {
+            unset($_SESSION['user'], $_SESSION['aetherCsrfToken']);
+        }
+    }
 
     if (empty($_SESSION['user']['id'])) {
         aetherHydrateSessionUserFromWordPress();

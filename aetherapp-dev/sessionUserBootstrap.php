@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/api/shared/session.php';
 
 function aetherFindWordPressLoadPath(): ?string
 {
@@ -40,6 +41,10 @@ function aetherLoadWordPressIfAvailable(): bool
 {
     static $loaded = false;
 
+    if (function_exists('is_user_logged_in') && function_exists('wp_get_current_user')) {
+        return true;
+    }
+
     if ($loaded) {
         return function_exists('is_user_logged_in') && function_exists('wp_get_current_user');
     }
@@ -57,9 +62,7 @@ function aetherLoadWordPressIfAvailable(): bool
 
 function aetherHydrateSessionUserFromWordPress(): bool
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
+    aetherStartSession();
 
     if (!aetherLoadWordPressIfAvailable()) {
         return false;
@@ -92,6 +95,7 @@ function aetherHydrateSessionUserFromWordPress(): bool
     }
 
     session_regenerate_id(true);
+    unset($_SESSION['aetherCsrfToken']);
     $_SESSION['user'] = [
         'id' => $wpUserId,
         'username' => (string) ($wpUser->user_login ?? ''),

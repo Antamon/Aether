@@ -841,7 +841,7 @@ function renderCharacterDetailsReadOnly(character) {
     const birthLine = [character.birthPlace, birthDate].filter(Boolean).join(" / ");
 
     container.innerHTML = `
-        <div class="card character-sheet-card mb-4">
+        <div class="card aether-panel character-sheet-card mb-4">
             <div class="card-body">
                 <div class="character-sheet-header mb-3">
                     <div class="character-portrait-panel">
@@ -908,13 +908,13 @@ function renderCharacterDetailsReadOnly(character) {
                 </div>
             </div>
         </div>
-        <div class="card character-sheet-card mb-4">
+        <div class="card aether-panel character-sheet-card mb-4">
             <div class="card-body">
                 <h4 class="character-sheet-card-title">Gezondheid</h4>
                 <div id="healthSectionContent"></div>
             </div>
         </div>
-        <div class="card character-sheet-card" id="leftInfoSections">
+        <div class="card aether-panel character-sheet-card" id="leftInfoSections">
             <div class="card-body">
                 <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
                 <div class="mb-4" id="livingStandardSectionContent"></div>

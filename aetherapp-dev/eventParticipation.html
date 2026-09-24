@@ -39,59 +39,67 @@
         </div>
     </nav>
 
-    <div class="container">
+    <main class="container aether-page event-page">
         <h1 class="mb-3" id="titleParticipant"></h1>
         <!-- Participant selection box -->
         <div class="row mb-3 d-none" id="participantFilterWrapper">
             <div id="listParticipant"></div>
         </div>
         <!-- Event participation table -->
-        <div class="row"> 
-            <!-- Event participation table header -->
-            <table class="table col-lg-6 col-12  table-striped">
-                <thead>
-                    <tr>
-                        <th class="col"></th>
-                        <th class="col">Titel</th>
-                        <th class="col-4">beschrijving</th>
-                        <th class="col">Datum</th>
-                        <th class="col">Locatie</th>
-                        <th class="col text-center">EP</th>
-                        <th class="col text-center">Deelname</th>
-                    </tr>
-                </thead>
-                <!-- Participation table list -->
-                <tbody id="eventList"></tbody>
-                <!-- New event -->
-                <tfoot class="d-none" id="eventNew">
-                    <tr>
-                        <td>
-                            <select class="form-select" id="newType">
-                                <option value="weekend">weekend</option>
-                                <option value="mini">mini</option>
-                            </select>
-                        </td>
-                        <td><input type="text" id="newTitle"></td>
-                        <td><input type="text" id="newDescription"></td>
-                        <td>
-                            <input type="date" id="newDateStart">
-                            <input type="date" id="newDateEnd">
-                        </td>
-                        <td><input type="text" id="newVenue"></td>
-                        <td><input type="text" id="newExperience"></td>
-                        <td class="text-center"><i class="fa-solid fa-check" id="eventNewSubmit"></i></td>
-                        <td class="text-center"><i class="fa-solid fa-xmark" id="eventNewCancel"></i></td>
-                    </tr>
-                    </tfoot>
-            </table>
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card aether-panel shadow-sm">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <!-- Event participation table header -->
+                            <table class="table table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="col"></th>
+                                        <th class="col">Titel</th>
+                                        <th class="col-4">beschrijving</th>
+                                        <th class="col">Datum</th>
+                                        <th class="col">Locatie</th>
+                                        <th class="col text-center">EP</th>
+                                        <th class="col text-center">Deelname</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="eventList"></tbody>
+                                <tfoot class="d-none" id="eventNew">
+                                    <tr>
+                                        <td>
+                                            <select class="form-select" id="newType">
+                                                <option value="weekend">weekend</option>
+                                                <option value="mini">mini</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="text" class="form-control" id="newTitle" aria-label="Titel"></td>
+                                        <td><input type="text" class="form-control" id="newDescription" aria-label="Beschrijving"></td>
+                                        <td>
+                                            <input type="date" class="form-control mb-1" id="newDateStart" aria-label="Begindatum">
+                                            <input type="date" class="form-control" id="newDateEnd" aria-label="Einddatum">
+                                        </td>
+                                        <td><input type="text" class="form-control" id="newVenue" aria-label="Locatie"></td>
+                                        <td><input type="text" class="form-control" id="newExperience" aria-label="Ervaringspunten"></td>
+                                        <td class="text-center text-nowrap">
+                                            <i class="fa-solid fa-check me-2" id="eventNewSubmit"></i>
+                                            <i class="fa-solid fa-xmark" id="eventNewCancel"></i>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Buttons new event -->
-            <div class="d-flex justify-content-center d-none" id="eventNewButtonGroup">
+            <div class="col-12 d-flex justify-content-center d-none" id="eventNewButtonGroup">
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-primary" id="eventNewButton"><i class="fa-solid fa-plus"></i> Nieuw event</button>
                 </div>
             </div>               
         </div>
-    </div>
+    </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
     <script src="asset.php?path=js/mainFunctions.js"></script>

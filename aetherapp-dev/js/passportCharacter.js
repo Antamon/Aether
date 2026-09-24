@@ -1011,7 +1011,7 @@ function renderPassportTab(character) {
     row.appendChild(rightCol);
 
     const leftCard = document.createElement("div");
-    leftCard.className = "card shadow-sm h-100";
+    leftCard.className = "card aether-panel shadow-sm h-100";
     const leftBody = document.createElement("div");
     leftBody.className = "card-body";
     leftCard.appendChild(leftBody);
@@ -1089,7 +1089,7 @@ function renderPassportTab(character) {
     leftCol.appendChild(leftCard);
 
     const rightCard = document.createElement("div");
-    rightCard.className = "card shadow-sm h-100";
+    rightCard.className = "card aether-panel shadow-sm h-100";
     const rightBody = document.createElement("div");
     rightBody.className = "card-body";
     rightCard.appendChild(rightBody);

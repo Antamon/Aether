@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-session_start();
+require_once __DIR__ . '/api/shared/session.php';
+aetherStartSession();
 header('Content-Type: application/json; charset=utf-8');
 
 require 'db.php';
@@ -9,7 +10,7 @@ require_once 'sessionUserBootstrap.php';
 require_once __DIR__ . '/api/auth/accessControl.php';
 
 // 1. Is er een Aether-sessie? Zo niet, probeer rechtstreeks uit WordPress te hydrateren.
-if (!isset($_SESSION['user']['id'])) {
+if (aetherEnsureSessionIdentity() <= 0) {
     aetherHydrateSessionUserFromWordPress();
 }
 

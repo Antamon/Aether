@@ -369,8 +369,6 @@ function getCompanyAllocatedSharePercentage(PDO $pdo, int $idCompany): int
     $allocated = 0;
     foreach ($rows as $row) {
         try {
-            require_once __DIR__ . '/../characters/traitUtils.php';
-            require_once __DIR__ . '/../characters/companyShareUtils.php';
             $trait = getTraitDefinition($pdo, (int) ($row['idTrait'] ?? 0));
             if (!$trait || !isCompanyShareTrait($trait)) {
                 continue;

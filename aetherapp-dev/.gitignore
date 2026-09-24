@@ -20,7 +20,9 @@ economie/
 healthApp/
 
 # Secure files
-db.php
+config.local.php
+db.legacy.local.php
+!db.php
 **/*.sql
 
 # Schema migrations are deployment artifacts; database dumps elsewhere stay ignored.

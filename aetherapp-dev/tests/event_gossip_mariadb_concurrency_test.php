@@ -1,20 +1,22 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/mariadb_disposable_guard.php';
 
 $dsn = getenv('AETHER_TEST_MYSQL_DSN') ?: '';
 $user = getenv('AETHER_TEST_MYSQL_USER') ?: '';
 $password = getenv('AETHER_TEST_MYSQL_PASSWORD') ?: '';
-if ($dsn === '' || getenv('AETHER_ALLOW_MARIADB_CONCURRENCY_TESTS') !== 'YES') {
+if (!aetherMariaDbConcurrencyAllowed('AETHER_ALLOW_MARIADB_CONCURRENCY_TESTS')) {
     echo "SKIP: echte MariaDB-eventconcurrencytest vereist expliciete testdatabaseconfiguratie.\n";
     exit(0);
 }
 
 if (($argv[1] ?? '') === 'worker') {
-    [, , $mode, $flag, $dsn64, $user64, $password64, $table, $ready, $release] = $argv;
-    $pdo = new PDO(base64_decode($dsn64), base64_decode($user64), base64_decode($password64), [
+    [, , $mode, $flag, $table, $ready, $release] = $argv;
+    $pdo = new PDO($dsn, $user, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
+    aetherAssertDisposableMariaDbConnection($pdo);
     $pdo->beginTransaction();
     $select = $pdo->query("SELECT attemptCount, unlockGossip1, unlockGossip2 FROM {$table} WHERE id=1 FOR UPDATE");
     $row = $select->fetch(PDO::FETCH_ASSOC);
@@ -33,11 +35,7 @@ $pdo = new PDO($dsn, $user, $password, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
-$database = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
-if (!preg_match('/(?:test|dev|ci)/i', $database)) {
-    fwrite(STDERR, "REFUSED: geen herkenbare wegwerp-testdatabase.\n");
-    exit(1);
-}
+aetherAssertDisposableMariaDbConnection($pdo);
 
 $suffix = bin2hex(random_bytes(5));
 $table = 'tmp_aether_event_gossip_' . $suffix;
@@ -52,8 +50,8 @@ try {
         unlockGossip2 TINYINT(1) NOT NULL
     ) ENGINE=InnoDB");
     $pdo->exec("INSERT INTO {$table} (id, attemptCount, unlockGossip1, unlockGossip2) VALUES (1, 0, 0, 0)");
-    $command = static function (string $mode, string $flag) use ($dsn, $user, $password, $table, $ready, $release): array {
-        return [PHP_BINARY, __FILE__, 'worker', $mode, $flag, base64_encode($dsn), base64_encode($user), base64_encode($password), $table, $ready, $release];
+    $command = static function (string $mode, string $flag) use ($table, $ready, $release): array {
+        return [PHP_BINARY, __FILE__, 'worker', $mode, $flag, $table, $ready, $release];
     };
     $process1 = proc_open($command('first', 'one'), [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes1);
     $deadline = microtime(true) + 5;
