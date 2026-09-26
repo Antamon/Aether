@@ -327,10 +327,7 @@ function setupNavTabHandlers(character) {
 }
 
 function closeOffcanvasIfOpen() {
-    const offcanvasEl = document.getElementById("offcanvasScrolling");
-    if (!offcanvasEl) return;
-    const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
-    if (offcanvasInstance) {
-        offcanvasInstance.hide();
+    if (typeof window.closeCharacterSidebar === "function") {
+        window.closeCharacterSidebar();
     }
 }

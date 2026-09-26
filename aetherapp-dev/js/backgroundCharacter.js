@@ -346,7 +346,7 @@ function renderSections(container, character, sections, metaMap, tabName) {
 
 function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     const wrapper = document.createElement("div");
-    wrapper.className = "mb-4 border rounded p-3 bg-white background-section";
+    wrapper.className = "aether-panel mb-4 background-section";
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-center mb-2";
@@ -449,7 +449,7 @@ async function renderTies(container, character) {
     }
 
     const block = document.createElement("div");
-    block.className = "mb-4 border rounded p-3 bg-white background-section";
+    block.className = "aether-panel mb-4 background-section";
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-center mb-2";

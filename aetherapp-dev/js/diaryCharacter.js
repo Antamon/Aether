@@ -161,7 +161,7 @@ function renderDiaryEntry(entry, rights, character) {
     const canEditAchievementsOnly = rights.achievementsOnly;
 
     const wrap = document.createElement("div");
-    wrap.className = "mb-4 border rounded p-3 bg-white diary-entry";
+    wrap.className = "aether-panel mb-4 diary-entry";
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-center justify-content-center mb-2 position-relative";

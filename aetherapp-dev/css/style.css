@@ -1,6 +1,19 @@
 :root {
   --aether-surface-border: rgba(100, 0, 0, 0.12);
   --aether-inset-background: rgba(100, 0, 0, 0.03);
+  --aether-sidebar-width: min(545.5px, calc(100vw - 100px));
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: "Amarante", Georgia, serif;
+}
+
+body {
+  background-color: #d7c4a7;
+  background-image: url("../img/paper.png");
+  background-repeat: repeat;
+  background-position: top left;
 }
 
 .aether-page {
@@ -8,7 +21,51 @@
 }
 
 .aether-panel {
-  border: 1px solid var(--aether-surface-border);
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  border: 0;
+  /* The border tiles remain 71 x 90 px; content uses half that inset. */
+  padding: 45px 35.5px;
+  border-radius: 10px;
+  background:
+    linear-gradient(#9d774f 0 0) 6.985px 90px / 4px calc(100% - 180px) no-repeat,
+    linear-gradient(#9d774f 0 0) 15.985px 90px / 2px calc(100% - 180px) no-repeat,
+    linear-gradient(#9d774f 0 0) right 7.507px top 90px / 4px calc(100% - 180px) no-repeat,
+    linear-gradient(#9d774f 0 0) right 16.507px top 90px / 2px calc(100% - 180px) no-repeat,
+    rgba(255, 255, 255, 0.72);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.aether-panel::before,
+.aether-panel::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+}
+
+/* Four independently positioned and fixed-size corner ornaments. */
+.aether-panel::before {
+  background:
+    url("../img/mainContentBorderTopLeft.svg") left top / 71px 90px no-repeat,
+    url("../img/mainContentBorderTopRight.svg") right top / 71px 90px no-repeat,
+    url("../img/mainContentBorderBottomLeft.svg") left bottom / 71px 90px no-repeat,
+    url("../img/mainContentBorderBottomRight.svg") right bottom / 71px 90px no-repeat;
+}
+
+/* This element is horizontally clipped between the two fixed corner tiles. */
+.aether-panel::after {
+  inset: 0 71px;
+  background:
+    url("../img/mainContentBorderTopMiddle.svg") left top / 71px 90px repeat-x,
+    url("../img/mainContentBorderBottomMiddle.svg") left bottom / 71px 90px repeat-x;
+}
+
+.aether-panel > * {
+  position: relative;
+  z-index: 2;
 }
 
 .aether-inset {
@@ -22,18 +79,169 @@
   font-weight: 600;
 }
 
+@media (max-width: 767.98px) {
+  .aether-page {
+    padding-inline: 0.5rem;
+  }
+}
+
 #navbarName{
     color: var(--bs-navbar-brand-hover-color);
 }
 
-#offcanvasScrolling {
-  --offcanvas-width: 320px;
-  width: var(--offcanvas-width);
+.aether-top-nav {
+  position: relative;
+  z-index: 1040;
+}
+
+.aether-sidebar-deck {
+  --aether-sidebar-tab-height: 175px;
+  position: fixed;
+  top: var(--aether-navbar-bottom, 0px);
+  left: 0;
+  width: var(--aether-sidebar-width);
+  height: calc(100dvh - var(--aether-navbar-bottom, 0px));
+  z-index: 1030;
+  transform: translateX(calc(-100% + 19px));
+  transition: transform 0.3s ease-in-out;
+}
+
+.offcanvas-tab--characters { --aether-sidebar-tab-offset: 0px; z-index: 5; }
+.offcanvas-tab--events { --aether-sidebar-tab-offset: 140px; z-index: 4; }
+.offcanvas-tab--companies { --aether-sidebar-tab-offset: 280px; z-index: 3; }
+.offcanvas-tab--admin { --aether-sidebar-tab-offset: 420px; z-index: 2; }
+
+.aether-sidebar-deck.is-open {
+  transform: translateX(0);
+}
+
+/* Alleen de actieve tab volgt het geopende paneel; de andere drie blijven links. */
+.aether-sidebar-deck.is-open .offcanvas-tab:not(.is-active) {
+  transform: translateX(calc(-1 * (var(--aether-sidebar-width) - 19px)));
+  z-index: 0;
+  pointer-events: none;
+}
+
+.offcanvas-tab {
+  transition: transform 0.3s ease-in-out;
+}
+
+.aether-sidebar-panel {
+  visibility: hidden;
+}
+
+.aether-sidebar-panel.is-open,
+.aether-sidebar-deck:not(.is-open) .aether-sidebar-panel.is-home {
+  visibility: visible;
+}
+
+.aether-sidebar-panel {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 4px);
+  height: 100%;
+  border: 0;
+  background: #281e17 url("../img/leather.jpg") repeat;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.aether-sidebar-header {
+  flex: 0 0 119px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0.6rem;
+  padding: 0 1rem 13px;
+  color: #e6d4bf;
+  white-space: nowrap;
+}
+
+.aether-sidebar-header img {
+  width: 53px;
+  height: 43px;
+  flex: none;
+}
+
+.aether-sidebar-header img:last-child {
+  transform: scaleX(-1);
+}
+
+.aether-sidebar-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 6vw, 2.5rem);
+  line-height: 43px;
+}
+
+.aether-sidebar-paper {
+  position: relative;
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: calc(100% - 15px);
+  margin-right: 15px;
+  padding: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(#362a1e 0 0) left 6.989px top 55px / 2px calc(100% - 110px) no-repeat,
+    linear-gradient(#362a1e 0 0) left 15px top 55px / 3px calc(100% - 110px) no-repeat,
+    linear-gradient(#362a1e 0 0) left 21px top 55px / 1px calc(100% - 110px) no-repeat,
+    linear-gradient(#362a1e 0 0) right 6.989px top 55px / 2px calc(100% - 110px) no-repeat,
+    linear-gradient(#362a1e 0 0) right 15px top 55px / 3px calc(100% - 110px) no-repeat,
+    linear-gradient(#362a1e 0 0) right 21px top 55px / 1px calc(100% - 110px) no-repeat,
+    #e9d7bc url("../img/paper.png") repeat;
+}
+
+.aether-sidebar-paper::before,
+.aether-sidebar-paper::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+  z-index: 2;
+}
+
+.aether-sidebar-paper::before {
+  inset: 0;
+  background:
+    url("../img/sidebarContentBorderTopLeft.svg") left top / 55px 55px no-repeat,
+    url("../img/sidebarContentBorderTopRight.svg") right top / 55px 55px no-repeat,
+    url("../img/sidebarContentBorderBottomLeft.svg") left bottom / 55px 55px no-repeat,
+    url("../img/sidebarContentBorderBottomRight.svg") right bottom / 55px 55px no-repeat;
+}
+
+.aether-sidebar-paper::after {
+  inset: 0 55px;
+  background:
+    url("../img/sidebarContentBorderTopMiddle.svg") left top / 55px 55px repeat-x,
+    url("../img/sidebarContentBorderBottomMiddle.svg") left bottom / 55px 55px repeat-x;
+}
+
+.aether-sidebar-scroll {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow: auto;
+  padding: 55px 38px 45px;
+  scrollbar-gutter: stable;
+}
+
+.aether-sidebar-gold-edge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 1;
+  background: linear-gradient(to right, rgb(107, 68, 0), rgb(251, 233, 168) 65%, rgb(144, 113, 3));
+  pointer-events: none;
 }
 
 #characterNames {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -59,7 +267,7 @@
 #passportTab {
   width: 100%;
   padding: 0 !important;
-  background-color: #fff;
+  background-color: transparent !important;
   min-height: 300px;
 }
 
@@ -187,30 +395,127 @@
 }
 
 .offcanvas-tab {
-  position: fixed;
-  top: 50%;
-  left: 0;
-  /* iets buiten beeld, maar nog zichtbaar */
-  transform: translate(-20%, -50%);
-  z-index: 1061; /* above offcanvas/backdrop */
-  transition: transform 0.3s ease;
-  pointer-events: none; /* enkel knop klikbaar */
+  position: absolute;
+  top: max(0px, min(calc(165px + var(--aether-sidebar-tab-offset)), calc(100% - var(--aether-sidebar-tab-height))));
+  left: calc(100% - 15px);
 }
 
 .offcanvas-tab .tab-button {
-background-color: #640000;
-  color: rgba(255, 255, 255, 0.55);
-  pointer-events: auto;
-  border-radius: 0 0.5rem 0.5rem 0;
-  padding: 0.75rem 0.5rem 0.75rem 1rem;
-  font-size: 1.5rem;
+  position: relative;
+  display: block;
+  width: 124px;
+  height: 175px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform: scale(var(--aether-sidebar-tab-scale, 1));
+  transform-origin: left top;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
 }
 
+.offcanvas-tab .tab-button::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 124px;
+  content: "";
+  background: #281e17 url("../img/leather.jpg") repeat;
+  /* Leather meets the inner gold silhouette, without reaching its outer point. */
+  clip-path: polygon(0 0, 90.4px 33px, 95px 40px, 101px 50px, 105px 58px,
+    105px 113px, 101px 123px, 95px 131px, 90.4px 138px, 0 175px);
+}
 
-/* Tab schuift mee met open offcanvas */
-#offcanvasScrolling.show + .offcanvas-tab {
-  left: var(--offcanvas-width);
-  transform: translate(-100%, -50%);
+.offcanvas-tab .tab-button:focus-visible {
+  outline: 3px solid #fbe9a8;
+  outline-offset: 3px;
+}
+
+.aether-sidebar-tab-icon,
+.aether-sidebar-tab-gold {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.aether-sidebar-tab-icon {
+  left: 0;
+  top: 34px;
+  width: 94.5px;
+  height: 102.8px;
+}
+
+.aether-sidebar-tab-gold {
+  left: 90.4px;
+  top: 33px;
+  width: 33.2px;
+  height: 104.7px;
+}
+
+@media (max-width: 550px) {
+  .aether-sidebar-deck {
+    --aether-sidebar-tab-scale: 0.8;
+    --aether-sidebar-tab-height: 140px;
+  }
+
+  .aether-sidebar-header {
+    gap: 0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  .aether-sidebar-header img {
+    width: 32px;
+    height: 26px;
+  }
+
+  .aether-sidebar-scroll {
+    padding-inline: 27px;
+  }
+
+  #characterNames {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 850px) {
+  .aether-sidebar-deck {
+    --aether-sidebar-tab-height: 122.5px;
+    --aether-sidebar-tab-scale: 0.7;
+  }
+
+  .offcanvas-tab { top: max(0px, min(calc(40px + var(--aether-sidebar-tab-offset)), calc(100% - var(--aether-sidebar-tab-height)))); }
+  .offcanvas-tab--events { --aether-sidebar-tab-offset: 105px; }
+  .offcanvas-tab--companies { --aether-sidebar-tab-offset: 210px; }
+  .offcanvas-tab--admin { --aether-sidebar-tab-offset: 315px; }
+}
+
+@media (max-height: 650px) {
+  .aether-sidebar-deck {
+    --aether-sidebar-tab-height: 87.5px;
+    --aether-sidebar-tab-scale: 0.5;
+  }
+
+  .offcanvas-tab { top: max(0px, min(calc(10px + var(--aether-sidebar-tab-offset)), calc(100% - var(--aether-sidebar-tab-height)))); }
+  .offcanvas-tab--events { --aether-sidebar-tab-offset: 80px; }
+  .offcanvas-tab--companies { --aether-sidebar-tab-offset: 160px; }
+  .offcanvas-tab--admin { --aether-sidebar-tab-offset: 240px; }
+}
+
+@media (max-height: 450px) {
+  .aether-sidebar-deck {
+    --aether-sidebar-tab-height: 61.25px;
+    --aether-sidebar-tab-scale: 0.35;
+  }
+
+  .offcanvas-tab--events { --aether-sidebar-tab-offset: 55px; }
+  .offcanvas-tab--companies { --aether-sidebar-tab-offset: 110px; }
+  .offcanvas-tab--admin { --aether-sidebar-tab-offset: 165px; }
+}
+
+@media (min-width: 551px) and (max-width: 650px) {
+  #characterNames {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -345,9 +650,7 @@ background-color: #640000;
 }
 
 .background-section {
-  border: 1px solid rgba(100, 0, 0, 0.12) !important;
-  border-style: solid !important;
-  border-radius: 0.75rem;
+  min-width: 0;
 }
 
 .background-section h4 {
@@ -424,7 +727,7 @@ background-color: #640000;
   visibility: visible;
 }
 
-#economyTab .card {
+#economyTab .card:not(.aether-panel) {
   border: 1px solid rgba(100, 0, 0, 0.12);
 }
 

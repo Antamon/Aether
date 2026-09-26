@@ -125,7 +125,10 @@ async function initCompanyPage() {
         window.AETHER_CURRENT_USER = currentUser;
         syncPrivilegedNavbar(currentUser);
         setupCompanyPageListeners();
-        await loadCompanyList();
+        const params = new URLSearchParams(window.location.search);
+        const selectedId = params.get("company");
+        await loadCompanyList(selectedId && /^[1-9]\d*$/.test(selectedId) ? Number(selectedId) : 0);
+        if (params.get("new") === "1") startCreatingCompany();
     } catch (err) {
         console.error("Fout bij initialiseren bedrijvenpagina:", err);
         window.location.href = "index.html";
@@ -179,6 +182,7 @@ function setupCompanyPageListeners() {
                 }
             }
             startCreatingCompany();
+            window.closeCompanySidebar?.();
         });
     }
 
@@ -367,7 +371,9 @@ function renderCompanyList() {
                 }
             }
             isCreatingCompany = false;
-            await loadCompany(Number(company.id || 0));
+            if (await loadCompany(Number(company.id || 0))) {
+                window.closeCompanySidebar?.();
+            }
         });
 
         listEl.appendChild(button);
@@ -390,9 +396,11 @@ async function loadCompany(idCompany) {
         setCompanyFormState(currentCompanyId > 0);
         populateCompanyForm(company);
         renderCompanyList();
+        return true;
     } catch (err) {
         console.error("Fout bij laden bedrijf:", err);
         showCompanyFeedback("Kon het geselecteerde bedrijf niet laden.", "danger");
+        return false;
     }
 }
 
