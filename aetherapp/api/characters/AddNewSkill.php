@@ -4,38 +4,36 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
-$rawInput = file_get_contents('php://input');
-$postData = json_decode($rawInput, true) ?? [];
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterSkillRepository.php';
 
-$idCharacter = isset($postData['idCharacter']) ? (int) $postData['idCharacter'] : 0;
-$idSkill = isset($postData['idSkill']) ? (int) $postData['idSkill'] : 0;
-$level = isset($postData['level']) ? (int) $postData['level'] : 0;
-
-if ($idCharacter <= 0 || $idSkill <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige character- of skill-ID.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 try {
-    // 1. Link toevoegen in tblLinkCharacterSkill
-    $sql = 'INSERT INTO tblLinkCharacterSkill (idCharacter, idSkill, level)
-            VALUES (:idCharacter, :idSkill, :level)';
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput($requestData, aetherCharacterRequestSchema('AddNewSkill', $requestData));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        'idCharacter' => $idCharacter,
-        'idSkill' => $idSkill,
-        'level' => $level,
-    ]);
+$idCharacter = $input['idCharacter'];
+$idSkill = $input['idSkill'];
+$level = $input['level'];
 
-    // 2. Skill ophalen
-    $sqlSkill = 'SELECT * FROM tblSkill WHERE id = :idSkill';
-    $skill = dbOne($pdo, $sqlSkill, ['idSkill' => $idSkill]);
+try {
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    aetherRequireSkillAccess($pdo, $currentUser, $idSkill);
 
-    echo json_encode($skill);
+    aetherInsertCharacterSkillLink($pdo, $idCharacter, $idSkill, $level);
 
+    $skill = dbOne($pdo, 'SELECT * FROM tblSkill WHERE id = :idSkill', ['idSkill' => $idSkill]);
+    aetherJsonResponse($skill);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon vaardigheid niet toevoegen.']);
+    aetherJsonError(500, 'Kon vaardigheid niet toevoegen.');
 }

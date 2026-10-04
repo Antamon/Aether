@@ -125,7 +125,10 @@ async function initCompanyPage() {
         window.AETHER_CURRENT_USER = currentUser;
         syncPrivilegedNavbar(currentUser);
         setupCompanyPageListeners();
-        await loadCompanyList();
+        const params = new URLSearchParams(window.location.search);
+        const selectedId = params.get("company");
+        await loadCompanyList(selectedId && /^[1-9]\d*$/.test(selectedId) ? Number(selectedId) : 0);
+        if (params.get("new") === "1") startCreatingCompany();
     } catch (err) {
         console.error("Fout bij initialiseren bedrijvenpagina:", err);
         window.location.href = "index.html";
@@ -179,6 +182,7 @@ function setupCompanyPageListeners() {
                 }
             }
             startCreatingCompany();
+            window.closeCompanySidebar?.();
         });
     }
 
@@ -367,7 +371,9 @@ function renderCompanyList() {
                 }
             }
             isCreatingCompany = false;
-            await loadCompany(Number(company.id || 0));
+            if (await loadCompany(Number(company.id || 0))) {
+                window.closeCompanySidebar?.();
+            }
         });
 
         listEl.appendChild(button);
@@ -390,9 +396,11 @@ async function loadCompany(idCompany) {
         setCompanyFormState(currentCompanyId > 0);
         populateCompanyForm(company);
         renderCompanyList();
+        return true;
     } catch (err) {
         console.error("Fout bij laden bedrijf:", err);
         showCompanyFeedback("Kon het geselecteerde bedrijf niet laden.", "danger");
+        return false;
     }
 }
 
@@ -660,7 +668,7 @@ async function ensureCompanyCreated(force = false) {
     showCompanyFeedback("Nieuw bedrijf wordt aangemaakt...", "info");
 
     try {
-        const createdCompany = await apiFetchJson("api/companies/newCompany.php", {
+        const createdCompany = await apiFetchIdempotentJson("api/companies/newCompany.php", {
             method: "POST",
             body: {
                 companyName
@@ -710,6 +718,9 @@ async function uploadCompanyLogo(file) {
     try {
         const response = await fetch("api/companies/uploadCompanyLogo.php", {
             method: "POST",
+            headers: {
+                "X-CSRF-Token": window.AETHER_CSRF_TOKEN || ""
+            },
             body: formData
         });
 
@@ -1212,14 +1223,20 @@ function renderCompanySnapshots(company) {
         const lowerBoundPercentage = Number(snapshot.stabilityLowerBoundPercentage || 0);
         const upperBoundPercentage = Number(snapshot.stabilityUpperBoundPercentage || 0);
         const variationAmounts = getCompanySnapshotAdjustedVariationAmounts(snapshot);
-        result.innerHTML = `
-            <div class="company-snapshot-profit-label">Winst/verlies periode</div>
-            <div class="company-snapshot-profit-value">${formatCompanySnapshotCurrency(profitAmount)}</div>
-            <div class="company-snapshot-profit-meta">
-                <div>Rendabiliteit: ${formatCompanySnapshotCurrency(baseProfitAmount)}</div>
-                <div>Stabiliteit: ${formatCompanySnapshotCurrency(variationAmounts.minAmount)} tot ${formatCompanySnapshotCurrency(variationAmounts.maxAmount)}</div>
-            </div>
-        `;
+        const resultLabel = document.createElement("div");
+        resultLabel.className = "company-snapshot-profit-label";
+        resultLabel.textContent = "Winst/verlies periode";
+        const resultValue = document.createElement("div");
+        resultValue.className = "company-snapshot-profit-value";
+        resultValue.textContent = formatCompanySnapshotCurrency(profitAmount);
+        const resultMeta = document.createElement("div");
+        resultMeta.className = "company-snapshot-profit-meta";
+        const profitabilityLine = document.createElement("div");
+        profitabilityLine.textContent = `Rendabiliteit: ${formatCompanySnapshotCurrency(baseProfitAmount)}`;
+        const stabilityLine = document.createElement("div");
+        stabilityLine.textContent = `Stabiliteit: ${formatCompanySnapshotCurrency(variationAmounts.minAmount)} tot ${formatCompanySnapshotCurrency(variationAmounts.maxAmount)}`;
+        resultMeta.append(profitabilityLine, stabilityLine);
+        result.append(resultLabel, resultValue, resultMeta);
         item.appendChild(result);
 
         const actionSection = document.createElement("div");
@@ -1885,7 +1902,7 @@ async function createCompanySnapshot() {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "create",
@@ -1970,7 +1987,7 @@ async function updateCompanySnapshot(idCompanySnapshot) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "update",
@@ -2001,7 +2018,7 @@ async function recalculateCompanySnapshot(idCompanySnapshot) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "recalculate",
@@ -2030,7 +2047,7 @@ async function deleteCompanySnapshot(idCompanySnapshot) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "delete",
@@ -2059,7 +2076,7 @@ async function applyCompanySnapshot(idCompanySnapshot, applyAction) {
     }
 
     try {
-        const result = await apiFetchJson("api/companies/saveCompanySnapshot.php", {
+        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
             body: {
                 action: "apply",
@@ -2146,7 +2163,7 @@ async function saveCompany(options = {}) {
                 return false;
             }
 
-            await apiFetchJson("api/companies/updateCompany.php", {
+            await apiFetchFinancialJson("api/companies/updateCompany.php", {
                 method: "POST",
                 body: {
                     id,
@@ -2210,7 +2227,7 @@ async function saveCompanyPersonnel(options = {}) {
                 return true;
             }
 
-            const result = await apiFetchJson("api/companies/saveCompanyPersonnel.php", {
+            const result = await apiFetchIdempotentJson("api/companies/saveCompanyPersonnel.php", {
                 method: "POST",
                 body: {
                     idCompany,

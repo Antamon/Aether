@@ -1,41 +1,34 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterReadRepository.php';
+require_once __DIR__ . '/characterReadService.php';
 
-$input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
-$idCharacter = isset($input['idCharacter']) ? (int)$input['idCharacter'] : 0;
-if ($idCharacter <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'idCharacter ontbreekt.']);
-    exit;
+try {
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('getCharacterSections', $requestData)
+    );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 }
 
 try {
-    $stmt = $pdo->prepare("
-        SELECT section, content
-        FROM tblCharacterSection
-        WHERE idCharacter = :idCharacter
-    ");
-    $stmt->execute([':idCharacter' => $idCharacter]);
-
-    $sections = [
-        'personal_background' => '',
-        'knowledge' => '',
-        'nature' => '',
-        'demeanour' => ''
-    ];
-
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $sections[$row['section']] = $row['content'] ?? '';
-    }
-
-    echo json_encode($sections);
+    aetherRequireCharacterAccess($pdo, $currentUser, $input['idCharacter'], 'view');
+    aetherJsonResponse(aetherBuildCharacterSectionsReadModel($pdo, $input['idCharacter']));
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon character sections niet ophalen.']);
+    error_log('getCharacterSections.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon character sections niet ophalen.');
 }

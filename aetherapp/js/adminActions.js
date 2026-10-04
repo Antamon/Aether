@@ -632,7 +632,7 @@ async function saveAdminActionFromModal() {
     setAdminActionModalSavingState(true);
 
     try {
-        await apiFetchJson("api/admin/updateActionUse.php", {
+        await apiFetchIdempotentJson("api/admin/updateActionUse.php", {
             method: "POST",
             body: {
                 idActionUse,
@@ -669,7 +669,7 @@ async function deleteAdminActionUseRecord(idActionUse) {
     }
 
     try {
-        await apiFetchJson("api/admin/deleteActionUse.php", {
+        await apiFetchIdempotentJson("api/admin/deleteActionUse.php", {
             method: "POST",
             body: { idActionUse: Number(idActionUse) },
         });

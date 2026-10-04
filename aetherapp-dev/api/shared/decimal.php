@@ -46,6 +46,18 @@ function aetherNormalizeDecimal(mixed $value, int $scale = 2): string
         : $normalized;
 }
 
+/** Convert a calculated PHP float to the requested decimal scale before strict validation. */
+function aetherNormalizeCalculatedDecimal(mixed $value, int $scale = 2): string
+{
+    if (is_float($value)) {
+        if (!is_finite($value)) {
+            throw new InvalidArgumentException('Het bedrag moet eindig zijn.');
+        }
+        $value = number_format($value, $scale, '.', '');
+    }
+    return aetherNormalizeDecimal($value, $scale);
+}
+
 function aetherDecimalToMinorUnits(string $value, int $scale = 2): int
 {
     $normalized = aetherNormalizeDecimal($value, $scale);

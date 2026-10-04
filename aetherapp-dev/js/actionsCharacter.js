@@ -101,6 +101,7 @@ async function renderCharacterActionsTab(character) {
     if (!container || !character) {
         return;
     }
+    let catalogError = false;
 
     if (Number(aetherCharacterActionsState.characterId || 0) !== Number(character.id || 0)) {
         resetCharacterActionsState(character.id);
@@ -121,16 +122,31 @@ async function renderCharacterActionsTab(character) {
             }
         } catch (err) {
             console.error("Fout bij laden characteracties:", err);
-            container.innerHTML = `<div class="text-danger">Kon de acties van dit personage niet laden.</div>`;
-            aetherCharacterActionsState.isLoadingCatalog = false;
-            return;
+            catalogError = true;
         } finally {
             aetherCharacterActionsState.isLoadingCatalog = false;
         }
     }
 
     container.innerHTML = "";
+    if (catalogError) {
+        const warning = document.createElement("p");
+        warning.className = "text-danger";
+        warning.textContent = "De eventacties konden niet worden geladen.";
+        container.appendChild(warning);
+    }
     container.appendChild(buildCharacterActionsLayout(character));
+    if (aetherCharacterActionsState.activeAction === "economy") {
+        const host = container.querySelector("[data-share-action-content='economy']");
+        if (host) aetherShareMarketClient.attachActions(
+            host, character, aetherCharacterActionsState.selectedEventId
+        );
+    }
+}
+
+function characterHasFiscalityAction(character) {
+    return Array.isArray(character?.skills)
+        && character.skills.some((skill) => Number(skill.id) === 6 && Number(skill.level) >= 1);
 }
 
 function resetCharacterActionsState(idCharacter) {
@@ -150,7 +166,7 @@ function resetCharacterActionsState(idCharacter) {
     aetherCharacterActionsState.isUsingSkillAction = false;
 }
 
-function getCharacterActionsCatalog() {
+function getCharacterActionsCatalog(character) {
     const catalog = [];
 
     if (aetherCharacterActionsState.worldKnowledgeLevel > 0) {
@@ -159,6 +175,15 @@ function getCharacterActionsCatalog() {
             buttonAction: "character-action-knowledge",
             label: "Wereldwijs",
             imageSrc: "img/actionWereldwijs.png",
+        });
+    }
+
+    if (characterHasFiscalityAction(character)) {
+        catalog.push({
+            actionCode: "economy",
+            buttonAction: "character-action-economy",
+            label: aetherShareUi.tr("economyAction"),
+            imageSrc: "img/actionEconomie.png",
         });
     }
 
@@ -243,7 +268,7 @@ function buildCharacterActionsLayout(character) {
 
     const actionButtonRow = document.createElement("div");
     actionButtonRow.className = "character-actions-button-row";
-    const availableActions = getCharacterActionsCatalog();
+    const availableActions = getCharacterActionsCatalog(character);
 
     availableActions.forEach((action) => {
         const actionButton = document.createElement("button");
@@ -281,7 +306,12 @@ function buildCharacterActionsLayout(character) {
         const actionContent = document.createElement("div");
         actionContent.className = "character-actions-content mt-4";
 
-        if (aetherCharacterActionsState.activeAction === "knowledge") {
+        if (aetherCharacterActionsState.activeAction === "economy") {
+            const economy = document.createElement("div");
+            economy.className = "w-100";
+            economy.dataset.shareActionContent = "economy";
+            actionContent.appendChild(economy);
+        } else if (aetherCharacterActionsState.activeAction === "knowledge") {
             actionContent.appendChild(buildKnowledgeActionContent(character));
         } else {
             const activePsiAction = getActivePsiActionGroup();
@@ -881,10 +911,30 @@ document.addEventListener("change", (event) => {
         return;
     }
 
-    void renderCharacterActionsTab(currentCharacter);
+    void renderCharacterActionsTab(currentCharacter).then(() => {
+        if (aetherCharacterActionsState.activeAction === "economy") {
+            void aetherShareMarketClient.searchSelectedEvent().catch((error) => {
+                console.error("Aandelenzoekactie:", error);
+            });
+        }
+    });
 });
 
 document.addEventListener("click", (event) => {
+    const economyButton = event.target instanceof HTMLElement
+        ? event.target.closest("[data-action='character-action-economy']")
+        : null;
+    if (economyButton && Number(currentCharacter?.id || 0) > 0
+        && characterHasFiscalityAction(currentCharacter)) {
+        aetherCharacterActionsState.activeAction = "economy";
+        void renderCharacterActionsTab(currentCharacter).then(() => {
+            void aetherShareMarketClient.searchSelectedEvent().catch((error) => {
+                console.error("Aandelenzoekactie:", error);
+            });
+        });
+        return;
+    }
+
     const knowledgeButton = event.target instanceof HTMLElement
         ? event.target.closest("[data-action='character-action-knowledge']")
         : null;

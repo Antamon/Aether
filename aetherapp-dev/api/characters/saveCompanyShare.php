@@ -9,9 +9,13 @@ require_once __DIR__ . '/../shared/idempotency.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/characterSchemas.php';
 require_once __DIR__ . '/characterShareService.php';
+require_once __DIR__ . '/../shares/shareAccess.php';
 
 $currentUser = aetherRequireAuthenticatedUser($pdo);
 aetherRequireCsrfToken();
+if (aetherShareLegacyWritesClosed($pdo)) {
+    aetherJsonError(409, 'De oude procentuele aandelenbewerking is afgesloten. Vernieuw de pagina.');
+}
 try {
     $request = aetherReadJsonObject();
     $input = aetherValidateInput($request, aetherCharacterRequestSchema('saveCompanyShare', $request));

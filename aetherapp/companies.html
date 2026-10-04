@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="../favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="asset.php?path=css/style.css">
     <title>Bedrijven - Aether applicatie</title>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4" data-bs-theme="dark">
+<body data-sidebar-page="companies">
+    <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
             <a class="navbar-brand" href="index.html">
                 <img src="img/aether-logo.png" alt="Bootstrap">
@@ -23,7 +26,7 @@
                         <a class="nav-link" aria-current="page" href="index.html"><i class="fa-solid fa-user"></i> Personages</a>
                     </li>
                     <li class="nav-item mr-2">
-                        <a class="nav-link" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Deelnames</a>
+                        <a class="nav-link" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Evenementen</a>
                     </li>
                     <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
                         <a class="nav-link active" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
@@ -37,21 +40,17 @@
         </div>
     </nav>
 
-    <div class="container company-page">
+    <template id="companySidebarContent">
+        <div class="list-group company-list" id="companyList"></div>
+        <div class="company-list-actions mt-3">
+            <button type="button" class="btn btn-outline-primary w-100" id="newCompanyButton">Nieuw bedrijf</button>
+        </div>
+    </template>
+
+    <main class="container aether-page company-page">
         <div class="row g-4">
-            <div class="col-lg-3 col-12">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body">
-                        <h1 class="h4 mb-3">Bedrijven</h1>
-                        <div class="list-group company-list" id="companyList"></div>
-                        <div class="company-list-actions mt-3">
-                            <button type="button" class="btn btn-outline-primary w-100" id="newCompanyButton">Nieuw bedrijf</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-9 col-12">
-                <div class="card shadow-sm">
+            <div class="col-12">
+                <div class="card aether-panel shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                             <div>
@@ -80,34 +79,34 @@
 
                                 <div class="company-primary-fields">
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <label class="col-sm-4 col-form-label" for="companyName">Bedrijfsnaam</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyName">Bedrijfsnaam</label>
                                         <div class="col-sm-8">
                                             <input type="text" class="form-control" id="companyName" maxlength="255" required>
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <label class="col-sm-4 col-form-label" for="companyFoundationDate">Datum van oprichting</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyFoundationDate">Datum van oprichting</label>
                                         <div class="col-sm-8">
                                             <input type="date" class="form-control" id="companyFoundationDate">
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <label class="col-sm-4 col-form-label" for="companyValue">Bedrijfswaarde</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyValue">Bedrijfswaarde</label>
                                         <div class="col-sm-8">
                                             <input type="text" inputmode="decimal" class="form-control" id="companyValue" data-currency-input="true" required>
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2">
-                                        <label class="col-sm-4 col-form-label" for="companyDescription">Beschrijving</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyDescription">Beschrijving</label>
                                         <div class="col-sm-8">
                                             <textarea class="form-control" id="companyDescription" rows="4"></textarea>
                                         </div>
                                     </div>
 
-                                    <div class="company-type-card d-none" id="companyTypeCard">
+                                    <div class="company-type-card aether-inset d-none" id="companyTypeCard">
                                         <div class="company-type-card-label">Type bedrijf</div>
                                         <h3 class="h5 mb-2" id="companyTypeLabel"></h3>
                                         <p class="company-type-card-range mb-2" id="companyTypeRange"></p>
@@ -118,7 +117,7 @@
 
                             <div class="row g-3 mt-1">
                                 <div class="col-12 col-lg-6">
-                                    <div class="company-slider-card">
+                                    <div class="company-slider-card aether-inset">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
                                             <label class="form-label mb-0" for="companyStability">Stabiliteit</label>
                                             <span class="badge text-bg-light company-slider-value" id="companyStabilityValue">0</span>
@@ -127,7 +126,7 @@
                                         <p class="company-slider-help mb-0" id="companyStabilityHelp"></p>
                                     </div>
 
-                                    <div class="company-shareholders-card d-none mt-3" id="companyShareholdersCard">
+                                    <div class="company-shareholders-card aether-inset d-none mt-3" id="companyShareholdersCard">
                                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                                             <div class="company-shareholders-card-label mb-0">Aandeelhouders</div>
                                             <div class="company-shareholders-available" id="companyShareholdersAvailable">0% beschikbaar</div>
@@ -135,7 +134,7 @@
                                         <div id="companyShareholdersGroups"></div>
                                     </div>
 
-                                    <div class="company-snapshots-card d-none mt-3" id="companySnapshotsCard">
+                                    <div class="company-snapshots-card aether-inset d-none mt-3" id="companySnapshotsCard">
                                         <div class="company-shareholders-card-label">Snapshots</div>
                                         <div class="company-snapshots-create row g-2 mb-3">
                                             <div class="col-12 col-md-8">
@@ -153,7 +152,7 @@
                                 </div>
 
                                 <div class="col-12 col-lg-6">
-                                    <div class="company-slider-card">
+                                    <div class="company-slider-card aether-inset">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
                                             <label class="form-label mb-0" for="companyProfitability">Rendabiliteit</label>
                                             <span class="badge text-bg-light company-slider-value" id="companyProfitabilityValue">0</span>
@@ -162,7 +161,7 @@
                                         <p class="company-slider-help mb-0" id="companyProfitabilityHelp"></p>
                                     </div>
 
-                                    <div class="company-personnel-card d-none mt-3" id="companyPersonnelCard">
+                                    <div class="company-personnel-card aether-inset d-none mt-3" id="companyPersonnelCard">
                                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                                             <div>
                                                 <div class="company-personnel-card-label">Personeel</div>
@@ -182,7 +181,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <div class="modal fade" id="companyPersonnelSpecialisationModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -222,7 +221,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
-    <script src="js/mainFunctions.js"></script>
-    <script src="js/companyFunctions.js"></script>
+    <script src="asset.php?path=js/mainFunctions.js"></script>
+    <script src="asset.php?path=js/updateManager.js"></script>
+    <script src="asset.php?path=js/aetherSidebars.js"></script>
+    <script src="asset.php?path=js/companyFunctions.js"></script>
 </body>
 </html>

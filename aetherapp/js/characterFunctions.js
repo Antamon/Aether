@@ -120,6 +120,9 @@ async function uploadCharacterPortrait(file) {
     try {
         const response = await fetch("api/characters/uploadCharacterPortrait.php", {
             method: "POST",
+            headers: {
+                "X-CSRF-Token": window.AETHER_CSRF_TOKEN || ""
+            },
             body: formData
         });
 
@@ -201,6 +204,16 @@ async function initCharacterPage() {
         }
 
         setupCharacterPortraitControls();
+
+        const params = new URLSearchParams(window.location.search);
+        const selectedId = params.get("character");
+        if (selectedId && /^[1-9]\d*$/.test(selectedId)) {
+            document.getElementById("characterForm")?.classList.remove("d-none");
+            document.getElementById("skills")?.classList.remove("d-none");
+            await getCharacter(Number(selectedId));
+        } else if (params.get("new") === "1") {
+            await aetherStartNewCharacterFlow();
+        }
 
     } catch (err) {
         console.error("Fout bij initialiseren personagepagina:", err);
@@ -587,15 +600,8 @@ function closeCharacterSidebarIfOpen() {
         closeOffcanvasIfOpen();
         return;
     }
-
-    const offcanvasEl = document.getElementById("offcanvasScrolling");
-    if (!offcanvasEl || typeof bootstrap === "undefined") {
-        return;
-    }
-
-    const instance = bootstrap.Offcanvas.getInstance(offcanvasEl);
-    if (instance) {
-        instance.hide();
+    if (typeof window.closeCharacterSidebar === "function") {
+        window.closeCharacterSidebar();
     }
 }
 
@@ -710,7 +716,7 @@ function renderCharacterSidebarList() {
 
 async function characterList() {
     try {
-        const data = await fetchCharacterList(currentUser["role"]);
+        const data = await fetchCharacterList();
 
         if (!data) return;
 

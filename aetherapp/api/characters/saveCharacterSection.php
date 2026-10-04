@@ -1,69 +1,38 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterAccess.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterRichText.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
-
-$input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
-
-$idCharacter = isset($input['idCharacter']) ? (int)$input['idCharacter'] : 0;
-$section     = $input['section'] ?? '';
-$content     = $input['content'] ?? '';
-
-$allowedSections = [
-    'personal_background',
-    'knowledge',
-    'nature',
-    'demeanour'
-];
-
-if ($idCharacter <= 0 || !in_array($section, $allowedSections, true)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Ongeldige parameters.']);
-    exit;
-}
+$currentUser = aetherRequireAuthenticatedUser($pdo);
+aetherRequireCsrfToken();
 
 try {
-    // Character info ophalen
-    $stmtChar = $pdo->prepare("SELECT idUser, type FROM tblCharacter WHERE id = :id");
-    $stmtChar->execute([':id' => $idCharacter]);
-    $character = $stmtChar->fetch(PDO::FETCH_ASSOC);
-
-    if (!$character) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Character niet gevonden.']);
-        exit;
-    }
-
-    $userId = (int) $_SESSION['user']['id'];
-    // Rol uit DB ophalen (zelfde bron als getCurrentUser) zodat permissies kloppen
-    $stmtUser = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
-    $stmtUser->execute([':id' => $userId]);
-    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
-
-    $roleFromDb = $userRow['role'] ?? null;
-    $role   = $roleFromDb ?: ($_SESSION['user']['role'] ?? 'participant');
-
-    $isAdmin = ($role === 'administrator' || $role === 'director');
-    $isOwnerPlayer = (
-        $role === 'participant' &&
-        $character['type'] === 'player' &&
-        (int)$character['idUser'] === $userId
+    $requestData = aetherReadJsonObject();
+    $input = aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('saveCharacterSection', $requestData)
     );
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
+}
 
-    if (!$isAdmin && !$isOwnerPlayer) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Geen rechten om deze sectie te wijzigen.']);
-        exit;
-    }
+$idCharacter = $input['idCharacter'];
+$section = $input['section'];
+$content = $input['content'] ?? '';
+
+try {
+    aetherRequireCharacterAccess($pdo, $currentUser, $idCharacter, 'edit');
+    $userId = (int) $currentUser['id'];
+    $content = aetherSanitizeCharacterRichText((string) $content);
 
     $sql = "
         INSERT INTO tblCharacterSection (idCharacter, section, content, updatedAt, updatedBy)
@@ -81,8 +50,7 @@ try {
         ':updatedBy' => $userId
     ]);
 
-    echo json_encode(['success' => true]);
+    aetherJsonResponse(['success' => true, 'content' => $content]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon sectie niet opslaan.']);
+    aetherJsonError(500, 'Kon sectie niet opslaan.');
 }

@@ -77,6 +77,13 @@ function showPassportTab(character) {
     passportTab.style.minHeight = "300px";
 
     renderPassportTab(currentCharacter || character);
+    const requestedCharacter = currentCharacter || character;
+    void apiFetchJson(`api/shares/getCharacterPortfolio.php?idCharacter=${encodeURIComponent(requestedCharacter.id)}`)
+        .then((portfolio) => {
+            if (Number(currentCharacter?.id) !== Number(requestedCharacter.id)) return;
+            currentCharacter.shareHoldings = portfolio?.holdings || [];
+            renderPassportTab(currentCharacter);
+        }).catch((error) => console.error("Paspoortaandelen:", error));
 }
 
 function getPassportPageCharacterName(character) {
@@ -606,7 +613,7 @@ function buildPassportEconomyPages(character) {
             ? getCharacterTraitIncomeTotal(character)
             : 0);
     const securitiesAmount = Number(character?.securitiesaccount || 0);
-    const companyShares = Array.isArray(character?.companyShares) ? character.companyShares : [];
+    const holdings = Array.isArray(character?.shareHoldings) ? character.shareHoldings : [];
     const livingStandardText = typeof getCharacterLivingStandardText === "function"
         ? normalizePassportInlineText(getCharacterLivingStandardText(character))
         : "";
@@ -620,11 +627,11 @@ function buildPassportEconomyPages(character) {
             title: "Welvaart",
             monthlyIncome: formatCharacterCurrency(totalIncome),
             livingStandardText,
-            shareEntries: companyShares.map((share) => ({
+            shareEntries: holdings.map((share) => ({
                 companyName: normalizePassportPdfText(
                     String(share?.companyName || "").trim() || String(share?.name || "").trim() || "Onbekend bedrijf"
                 ),
-                percentageLabel: `${Number(share?.percentage || 0)}% aandelen`
+                quantityLabel: `${Number(share?.shareCount || 0)} aandelen`
             })),
             securitiesAmount: securitiesAmount > 0 ? formatCharacterCurrency(securitiesAmount) : ""
         }
@@ -650,7 +657,7 @@ function buildPassportTraitPages(character) {
 
     groups.forEach((group) => {
         const linkedTraits = Array.isArray(group?.linkedTraits) ? group.linkedTraits : [];
-        linkedTraits.forEach((trait) => {
+        linkedTraits.filter((trait) => !trait?.isCompanyShare).forEach((trait) => {
             const label = getPassportTraitDisplayLabel(trait);
             const description = normalizePassportInlineText(trait?.description || "");
             const fullWidth = PASSPORT_PDF_WIDTH_PT - (PASSPORT_PDF_GUIDE_OFFSET_PT * 2);
@@ -798,7 +805,7 @@ function getPassportSectionDefinitions(character) {
     const traitPages = buildPassportTraitPages(character);
     const skillPages = buildPassportSkillPages(character);
     const linkedTraits = typeof getCharacterLinkedTraits === "function"
-        ? getCharacterLinkedTraits(character)
+        ? getCharacterLinkedTraits(character).filter((trait) => !trait?.isCompanyShare)
         : [];
 
     return [
@@ -2380,9 +2387,9 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
 
     shareEntries.forEach((share) => {
         const companyName = normalizePassportPdfText(share?.companyName || "Onbekend bedrijf");
-        const percentageLabel = normalizePassportPdfText(share?.percentageLabel || "");
-        const percentageLines = wrapPassportTextToWidth(
-            percentageLabel,
+        const quantityLabel = normalizePassportPdfText(share?.quantityLabel || "");
+        const quantityLines = wrapPassportTextToWidth(
+            quantityLabel,
             bodySize,
             contentWidth,
             PASSPORT_PDF_DETAIL_TEXT_WIDTH_FACTOR
@@ -2399,7 +2406,7 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
             rotate180
         ));
 
-        percentageLines.forEach((line, index) => {
+        quantityLines.forEach((line, index) => {
             content.push(renderPassportLogicalPdfText(
                 "F1",
                 bodySize,
@@ -2413,7 +2420,7 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
         });
 
         cursorY -= bodyLineHeight;
-        cursorY -= percentageLines.length * bodyLineHeight;
+        cursorY -= quantityLines.length * bodyLineHeight;
         cursorY -= 3;
     });
 
@@ -3290,7 +3297,8 @@ function collectSelectedPassportPages(character) {
 }
 
 async function downloadCharacterPassportPdf(character) {
-    const pages = collectSelectedPassportPages(character);
+    const portfolio = await apiFetchJson(`api/shares/getCharacterPortfolio.php?idCharacter=${encodeURIComponent(character.id)}`);
+    const pages = collectSelectedPassportPages({ ...character, shareHoldings: portfolio?.holdings || [] });
     if (pages.length === 0) {
         alert("Er zijn geen pagina's geselecteerd voor het paspoort.");
         return;

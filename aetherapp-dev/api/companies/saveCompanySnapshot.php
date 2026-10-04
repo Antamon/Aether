@@ -9,6 +9,7 @@ require_once __DIR__ . '/../shared/request.php';
 require_once __DIR__ . '/../shared/response.php';
 require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../shared/idempotency.php';
+require_once __DIR__ . '/../shares/shareAccess.php';
 
 try {
     $pdo = getPDO();
@@ -27,6 +28,12 @@ try {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log('saveCompanySnapshot failed: ' . $e->getMessage());
+    $logMessage = 'saveCompanySnapshot failed: ' . get_class($e) . ': ' . $e->getMessage()
+        . ' in ' . $e->getFile() . ':' . $e->getLine();
+    error_log($logMessage);
+    // Keep a File Manager-readable diagnostic on dev hosting; .htaccess denies HTTP access to .log files.
+    if (basename(dirname(__DIR__, 2)) === 'aetherapp-dev') {
+        @error_log('[' . date('c') . '] ' . $logMessage . PHP_EOL, 3, __DIR__ . '/snapshot-errors.log');
+    }
     aetherJsonError(500, 'Kon de bedrijfssnapshot niet bewaren.');
 }

@@ -46,8 +46,7 @@ function setupSkillListeners() {
 
 async function getNewSkills(idCharacter) {
     const dataObject = {
-        id: idCharacter,
-        role: (currentUser && currentUser.role) ? currentUser.role : "participant"
+        id: idCharacter
     };
 
     try {
@@ -65,7 +64,7 @@ async function getNewSkills(idCharacter) {
 
         for (const value of Object.values(data)) {
             const newOption = document.createElement("option");
-            newOption.innerHTML =
+            newOption.textContent =
                 value["name"].charAt(0).toUpperCase() + value["name"].slice(1);
             newOption.value = value["id"];
             idNewSkill.appendChild(newOption);
@@ -220,7 +219,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
         title += ` (${labels})`;
     }
 
-    headerBtn.innerHTML = `${title} - ${proficiency}`;
+    headerBtn.textContent = `${title} - ${proficiency}`;
 
 
     header.appendChild(headerBtn);
@@ -491,7 +490,10 @@ function renderSkillsReadOnly(container, skills) {
         if (normalSpecs.length > 0) {
             const pSpecs = document.createElement("p");
             const names = normalSpecs.map(s => s.name).join(", ");
-            pSpecs.innerHTML = `<strong>Specialisations:</strong> ${names}`;
+            const label = document.createElement("strong");
+            label.textContent = "Specialisations:";
+            pSpecs.appendChild(label);
+            pSpecs.appendChild(document.createTextNode(` ${names}`));
             container.appendChild(pSpecs);
         }
 

@@ -1,72 +1,29 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
-require_once __DIR__ . '/economyUtils.php';
+require_once __DIR__ . '/../shared/response.php';
+require_once __DIR__ . '/../shared/request.php';
+require_once __DIR__ . '/../shared/validation.php';
+require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/characterSchemas.php';
+require_once __DIR__ . '/characterTieRepository.php';
+require_once __DIR__ . '/characterTieService.php';
 
-if (!isset($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Not authenticated']);
-    exit;
-}
-
-$userId = (int) $_SESSION['user']['id'];
-// Rol ophalen uit DB zodat we niet afhankelijk zijn van sessie-rol
-$stmtRole = $pdo->prepare("SELECT role FROM tblUser WHERE id = :id");
-$stmtRole->execute([':id' => $userId]);
-$roleRow = $stmtRole->fetch(PDO::FETCH_ASSOC);
-$role = $roleRow['role'] ?? ($_SESSION['user']['role'] ?? 'participant');
+$currentUser = aetherRequireAuthenticatedUser($pdo);
 
 try {
-    if ($role === 'administrator' || $role === 'director') {
-        // Alle personages (ook inactive/extra)
-        $sql = "
-            SELECT id, firstName, lastName, title, class
-            FROM tblCharacter
-            ORDER BY firstName, lastName
-        ";
-        $params = [];
-    } else {
-        // Participants: enkel actieve player characters
-        $sql = "
-            SELECT id, firstName, lastName, title, class
-            FROM tblCharacter
-            WHERE type = 'player' AND state = 'active'
-            ORDER BY firstName, lastName
-        ";
-        $params = [];
-    }
-
-    $rows = dbAll($pdo, $sql, $params);
-
-    $options = [];
-    foreach ($rows as $row) {
-        $display = '';
-        if ($row['class'] === 'upper class' && !empty($row['title'])) {
-            $display = trim($row['title'] . ' ' . $row['firstName'] . ' ' . $row['lastName']);
-        } else {
-            $display = trim($row['firstName'] . ' ' . $row['lastName']);
-        }
-        $options[] = [
-            'id' => (int)$row['id'],
-            'displayName' => $display,
-            'class' => (string) ($row['class'] ?? ''),
-            'recurringIncomeTotal' => getCharacterRecurringIncomeTotal($pdo, [
-                'id' => (int) $row['id'],
-                'class' => (string) ($row['class'] ?? ''),
-            ]),
-            'canBeLandlord' => canCharacterBeLandlord($pdo, [
-                'id' => (int) $row['id'],
-                'class' => (string) ($row['class'] ?? ''),
-            ]),
-        ];
-    }
-
-    echo json_encode($options);
+    $requestData = array_merge($_GET, aetherReadFormFields());
+    aetherValidateInput(
+        $requestData,
+        aetherCharacterRequestSchema('getCharacterTieOptions', $requestData)
+    );
+    aetherJsonResponse(aetherBuildCharacterTieOptions($pdo, $currentUser));
+} catch (AetherValidationException $e) {
+    aetherJsonValidationError($e->getValidationErrors());
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Kon character lijst voor ties niet ophalen.']);
+    error_log('getCharacterTieOptions.php failed: ' . $e->getMessage());
+    aetherJsonError(500, 'Kon character lijst voor ties niet ophalen.');
 }

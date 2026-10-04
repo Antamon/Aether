@@ -109,6 +109,10 @@ let saveCompanyPersonnelRequestInFlight = false;
 let saveCompanyPersonnelQueued = false;
 let saveCompanyPersonnelInFlightPromise = null;
 let companyPersonnelSpecialisationModalInstance = null;
+let companySnapshotEventOptions = null;
+let companySnapshotEventLoadError = false;
+let companyPersonnelDraft = null;
+let companyPersonnelDraftIndex = -1;
 
 window.addEventListener("load", () => {
     initCompanyPage();
@@ -127,11 +131,35 @@ async function initCompanyPage() {
         setupCompanyPageListeners();
         const params = new URLSearchParams(window.location.search);
         const selectedId = params.get("company");
-        await loadCompanyList(selectedId && /^[1-9]\d*$/.test(selectedId) ? Number(selectedId) : 0);
+        await Promise.all([
+            loadCompanySnapshotEventOptions(),
+            loadCompanyList(selectedId && /^[1-9]\d*$/.test(selectedId) ? Number(selectedId) : 0)
+        ]);
+        if (currentCompanyData?.id) renderCompanySnapshots(currentCompanyData);
         if (params.get("new") === "1") startCreatingCompany();
     } catch (err) {
         console.error("Fout bij initialiseren bedrijvenpagina:", err);
         window.location.href = "index.html";
+    }
+}
+
+async function loadCompanySnapshotEventOptions() {
+    try {
+        const events = await apiFetchJson("api/events/getEventList.php", {
+            method: "POST",
+            body: {}
+        });
+        if (!Array.isArray(events)) throw new Error("Ongeldige eventlijst ontvangen.");
+        companySnapshotEventOptions = events.map((event) => ({
+            idEvent: Number(event.id || 0),
+            title: String(event.title || ""),
+            dateStart: String(event.dateStart || ""),
+            dateEnd: String(event.dateEnd || "")
+        })).filter((event) => event.idEvent > 0);
+        companySnapshotEventLoadError = false;
+    } catch (error) {
+        console.error("Eventkeuze voor bedrijfssnapshots laden mislukt:", error);
+        companySnapshotEventLoadError = true;
     }
 }
 
@@ -146,35 +174,20 @@ function setupCompanyPageListeners() {
         });
     }
 
-    const stabilityInput = document.getElementById("companyStability");
-    if (stabilityInput) {
-        stabilityInput.addEventListener("input", () => {
-            updateSliderPresentation("stability");
-            markCompanyAutoSavePending();
-        });
-
-        stabilityInput.addEventListener("change", () => {
-            markCompanyAutoSavePending();
-            void flushCompanyAutoSave();
-        });
-    }
-
-    const profitabilityInput = document.getElementById("companyProfitability");
-    if (profitabilityInput) {
-        profitabilityInput.addEventListener("input", () => {
-            updateSliderPresentation("profitability");
-            markCompanyAutoSavePending();
-        });
-
-        profitabilityInput.addEventListener("change", () => {
-            markCompanyAutoSavePending();
-            void flushCompanyAutoSave();
-        });
+    for (const [id, type] of [["companyStability", "stability"], ["companyProfitability", "profitability"]]) {
+        const input = document.getElementById(id);
+        if (!input) continue;
+        input.addEventListener("input", () => updateSliderPresentation(type));
+        input.addEventListener("change", () => { void saveCompanyCurrentSliders(); });
     }
 
     const newCompanyButton = document.getElementById("newCompanyButton");
     if (newCompanyButton) {
         newCompanyButton.addEventListener("click", async () => {
+            if (aetherDataCard.hasActive()) {
+                showCompanyFeedback("Bewaar of annuleer eerst de geopende kaart.", "danger");
+                return;
+            }
             if (!isCreatingCompany) {
                 const canContinue = await flushCompanyAutoSave({ force: false });
                 if (!canContinue) {
@@ -205,7 +218,7 @@ function setupCompanyPageListeners() {
         });
     }
 
-    ["companyDescription", "companyFoundationDate", "companyValue"].forEach((fieldId) => {
+    ["companyDescription", "companyFoundationDate"].forEach((fieldId) => {
         const input = document.getElementById(fieldId);
         if (!input) return;
 
@@ -285,12 +298,17 @@ function setupCompanyPageListeners() {
     if (companyPersonnelCard) {
         companyPersonnelCard.addEventListener("click", handleCompanyPersonnelCardClick);
         companyPersonnelCard.addEventListener("change", handleCompanyPersonnelCardChange);
+        companyPersonnelCard.addEventListener("input", (event) => {
+            if (["salaryIncreasePercentage", "functionDescription"].includes(
+                event.target?.dataset?.companyPersonnelField)) {
+                handleCompanyPersonnelCardChange(event);
+            }
+        });
     }
 
     const companySnapshotsCard = document.getElementById("companySnapshotsCard");
     if (companySnapshotsCard) {
         companySnapshotsCard.addEventListener("click", handleCompanySnapshotsCardClick);
-        companySnapshotsCard.addEventListener("change", handleCompanySnapshotsCardChange);
     }
 
     const createCompanySnapshotButton = document.getElementById("createCompanySnapshotButton");
@@ -340,30 +358,11 @@ async function loadCompanyList(selectedCompanyId = 0) {
 function renderCompanyList() {
     const listEl = document.getElementById("companyList");
     if (!listEl) return;
-
-    listEl.innerHTML = "";
-
-    if (companies.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "text-muted small";
-        empty.textContent = "Nog geen bedrijven beschikbaar.";
-        listEl.appendChild(empty);
-        return;
-    }
-
-    companies.forEach((company) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "list-group-item list-group-item-action company-list-item";
-        button.textContent = company.companyName || `Bedrijf #${company.id}`;
-        button.dataset.idCompany = String(company.id || 0);
-
-        if (Number(company.id) === Number(currentCompanyId)) {
-            button.classList.add("active");
-            button.setAttribute("aria-current", "true");
-        }
-
-        button.addEventListener("click", async () => {
+    window.renderCompanySidebarCards(companies, listEl, async (company) => {
+            if (aetherDataCard.hasActive()) {
+                showCompanyFeedback("Bewaar of annuleer eerst de geopende kaart.", "danger");
+                return;
+            }
             if (!isCreatingCompany) {
                 const canContinue = await flushCompanyAutoSave({ force: false });
                 if (!canContinue) {
@@ -374,10 +373,7 @@ function renderCompanyList() {
             if (await loadCompany(Number(company.id || 0))) {
                 window.closeCompanySidebar?.();
             }
-        });
-
-        listEl.appendChild(button);
-    });
+    }, currentCompanyId);
 }
 
 async function loadCompany(idCompany) {
@@ -391,6 +387,11 @@ async function loadCompany(idCompany) {
             body: { id: Number(idCompany) }
         });
 
+        if (currentCompanyId !== Number(company?.id || 0)) {
+            aetherDataCard.reset();
+            companyPersonnelDraft = null;
+            companyPersonnelDraftIndex = -1;
+        }
         currentCompanyId = Number(company?.id || 0);
         currentCompanyData = company || null;
         setCompanyFormState(currentCompanyId > 0);
@@ -419,6 +420,12 @@ function populateCompanyForm(company) {
     const valueInput = document.getElementById("companyValue");
     const stabilityInput = document.getElementById("companyStability");
     const profitabilityInput = document.getElementById("companyProfitability");
+    const showSliders = (source) => {
+        if (stabilityInput) stabilityInput.value = String(normalizeSliderValue(source?.stability ?? 0));
+        if (profitabilityInput) profitabilityInput.value = String(normalizeSliderValue(source?.profitability ?? 0));
+        updateSliderPresentation("stability");
+        updateSliderPresentation("profitability");
+    };
 
     if (company?.isDraft) {
         currentCompanyData = company;
@@ -429,13 +436,10 @@ function populateCompanyForm(company) {
         if (nameInput) nameInput.value = company.companyName || "";
         if (descriptionInput) descriptionInput.value = company.description || "";
         if (foundationDateInput) foundationDateInput.value = company.foundationDate || getDefaultFoundationDate();
-        if (valueInput) valueInput.value = formatCompanyValueForInput(company.companyValue);
-        if (stabilityInput) stabilityInput.value = String(normalizeSliderValue(company.stability));
-        if (profitabilityInput) profitabilityInput.value = String(normalizeSliderValue(company.profitability));
+        if (valueInput) valueInput.textContent = formatCompanySnapshotCurrency(company.companyValue || 0);
+        showSliders(company);
         updateCompanyLogo(null, false);
         updateCompanyLogoActions(false, false);
-        updateSliderPresentation("stability");
-        updateSliderPresentation("profitability");
         updateCompanyTypePresentation();
         renderCompanyShareholders(null);
         renderCompanySnapshots(null);
@@ -453,13 +457,10 @@ function populateCompanyForm(company) {
         if (nameInput) nameInput.value = "";
         if (descriptionInput) descriptionInput.value = "";
         if (foundationDateInput) foundationDateInput.value = "";
-        if (valueInput) valueInput.value = formatCompanyValueForInput(0);
-        if (stabilityInput) stabilityInput.value = "0";
-        if (profitabilityInput) profitabilityInput.value = "0";
+        if (valueInput) valueInput.textContent = "—";
+        showSliders(null);
         updateCompanyLogo(null, false);
         updateCompanyLogoActions(false, false);
-        updateSliderPresentation("stability");
-        updateSliderPresentation("profitability");
         updateCompanyTypePresentation();
         renderCompanyShareholders(null);
         renderCompanySnapshots(null);
@@ -476,14 +477,11 @@ function populateCompanyForm(company) {
     if (nameInput) nameInput.value = company.companyName || "";
     if (descriptionInput) descriptionInput.value = company.description || "";
     if (foundationDateInput) foundationDateInput.value = company.foundationDate || "";
-    if (valueInput) valueInput.value = formatCompanyValueForInput(company.companyValue);
-    if (stabilityInput) stabilityInput.value = String(normalizeSliderValue(company.stability));
-    if (profitabilityInput) profitabilityInput.value = String(normalizeSliderValue(company.profitability));
+    if (valueInput) valueInput.textContent = formatCompanySnapshotCurrency(company.displayCompanyValue ?? company.companyValue);
+    showSliders(sortCompanySnapshotsByDate(company.snapshots).at(-1) || company.foundationSnapshot || company);
     updateCompanyLogo(company.logoUrl || null, Boolean(company.logoUrl));
     updateCompanyLogoActions(true, Boolean(company.logoUrl));
 
-    updateSliderPresentation("stability");
-    updateSliderPresentation("profitability");
     updateCompanyTypePresentation();
     renderCompanyShareholders(company);
     renderCompanySnapshots(company);
@@ -737,6 +735,10 @@ async function uploadCompanyLogo(file) {
         const result = await response.json();
         updateCompanyLogo(result?.logoUrl || null, Boolean(result?.logoUrl));
         updateCompanyLogoActions(true, Boolean(result?.logoUrl));
+        if (Number(currentCompanyData?.id) === id) currentCompanyData.logoUrl = result?.logoUrl || null;
+        const listedCompany = companies.find((company) => Number(company.id) === id);
+        if (listedCompany) listedCompany.logoUrl = result?.logoUrl || null;
+        renderCompanyList();
         showCompanyFeedback("Bedrijfslogo opgeslagen.", "success");
     } catch (err) {
         console.error("Fout bij opladen bedrijfslogo:", err);
@@ -764,6 +766,10 @@ async function deleteCompanyLogo() {
 
         updateCompanyLogo(null, false);
         updateCompanyLogoActions(true, false);
+        if (Number(currentCompanyData?.id) === id) currentCompanyData.logoUrl = null;
+        const listedCompany = companies.find((company) => Number(company.id) === id);
+        if (listedCompany) listedCompany.logoUrl = null;
+        renderCompanyList();
         showCompanyFeedback("Bedrijfslogo verwijderd.", "success");
     } catch (err) {
         console.error("Fout bij verwijderen bedrijfslogo:", err);
@@ -917,7 +923,7 @@ function updateCompanyTypePresentation() {
     const hasCompanyContext = Number(idInput.value || 0) > 0
         || isCreatingCompany
         || String(nameInput.value || "").trim() !== "";
-    const companyValue = parseCompanyValueInputValue(valueInput.value);
+    const companyValue = Number(currentCompanyData?.displayCompanyValue ?? currentCompanyData?.companyValue ?? 0);
     const companyType = companyValue === null ? null : getCompanyTypeDefinitionForValue(companyValue);
 
     if (!hasCompanyContext || !companyType) {
@@ -936,68 +942,10 @@ function updateCompanyTypePresentation() {
 
 function renderCompanyShareholders(company) {
     const card = document.getElementById("companyShareholdersCard");
-    const groupsHost = document.getElementById("companyShareholdersGroups");
-    const availableHost = document.getElementById("companyShareholdersAvailable");
-
-    if (!card || !groupsHost || !availableHost) {
-        return;
-    }
-
-    const hasCompany = Number(company?.id || 0) > 0 && !company?.isDraft;
-    if (!hasCompany) {
-        card.classList.add("d-none");
-        groupsHost.innerHTML = "";
-        availableHost.textContent = "0% beschikbaar";
-        return;
-    }
-
-    const groups = Array.isArray(company?.shareholderGroups) ? company.shareholderGroups : [];
-    const nonEmptyGroups = groups.filter((group) => Array.isArray(group?.shareholders) && group.shareholders.length > 0);
-
-    groupsHost.innerHTML = "";
-    card.classList.remove("d-none");
-    availableHost.textContent = `${Number(company?.availableSharePercentage || 0)}% beschikbaar`;
-
-    if (nonEmptyGroups.length === 0) {
-        const empty = document.createElement("p");
-        empty.className = "company-shareholders-empty mb-0";
-        empty.textContent = "Nog geen aandeelhouders gekoppeld.";
-        groupsHost.appendChild(empty);
-        return;
-    }
-
-    nonEmptyGroups.forEach((group) => {
-        const section = document.createElement("section");
-        section.className = "company-shareholders-group";
-
-        const title = document.createElement("h3");
-        title.className = "company-shareholders-group-title";
-        title.textContent = group.label || `${group.shareClass || ""}-aandelen`;
-        section.appendChild(title);
-
-        const list = document.createElement("div");
-        list.className = "company-shareholders-list";
-
-        group.shareholders.forEach((shareholder) => {
-            const item = document.createElement("div");
-            item.className = "company-shareholders-item";
-
-            const name = document.createElement("span");
-            name.className = "company-shareholders-name";
-            name.textContent = shareholder.displayName || `Personage #${shareholder.idCharacter || 0}`;
-            item.appendChild(name);
-
-            const percentage = document.createElement("span");
-            percentage.className = "company-shareholders-percentage";
-            percentage.textContent = `${Number(shareholder.percentage || 0)}%`;
-            item.appendChild(percentage);
-
-            list.appendChild(item);
-        });
-
-        section.appendChild(list);
-        groupsHost.appendChild(section);
-    });
+    if (!card) return;
+    const listing = document.getElementById("companyShareListing");
+    void aetherShareUi.attachCompany(card, company?.isDraft ? 0 : company?.id, company,
+        async () => { await loadCompany(Number(company.id)); }, listing);
 }
 
 function formatCompanySnapshotEventOptionLabel(option) {
@@ -1043,21 +991,10 @@ function getCompanySnapshotAppliedActionLabel(action) {
     return "";
 }
 
-function applyCompanySnapshotResponse(result, idCompany) {
-    if (result?.company && Number(result.company.id || 0) === idCompany) {
-        currentCompanyId = idCompany;
-        populateCompanyForm(result.company);
-        renderCompanyList();
-        return;
+async function applyCompanySnapshotResponse(result, idCompany) {
+    if (Number(currentCompanyId) === Number(idCompany)) {
+        await loadCompany(idCompany);
     }
-
-    if (currentCompanyData && Number(currentCompanyData.id || 0) === idCompany) {
-        currentCompanyData.availableSharePercentage = Number(result?.availableSharePercentage || 0);
-        currentCompanyData.snapshotEventOptions = Array.isArray(result?.snapshotEventOptions) ? result.snapshotEventOptions : [];
-        currentCompanyData.snapshots = Array.isArray(result?.snapshots) ? result.snapshots : [];
-    }
-
-    renderCompanySnapshots(currentCompanyData);
 }
 
 function sortCompanySnapshotsByDate(snapshots) {
@@ -1072,12 +1009,129 @@ function sortCompanySnapshotsByDate(snapshots) {
     });
 }
 
+function appendSnapshotDatum(parent, label, value) {
+    const row = document.createElement("div");
+    row.className = "share-ui-holding";
+    const name = document.createElement("span");
+    name.textContent = label;
+    const content = document.createElement("strong");
+    content.textContent = value == null || value === "" ? "Onbekend" : String(value);
+    row.append(name, content);
+    parent.appendChild(row);
+}
+
+function appendSnapshotInput(parent, key, label, value, options = {}) {
+    const wrap = document.createElement("label");
+    wrap.className = "form-label d-block mt-2";
+    wrap.textContent = label;
+    const input = document.createElement("input");
+    input.className = "form-control";
+    input.type = "number";
+    input.step = options.integer ? "1" : "0.01";
+    input.min = options.min ?? "0";
+    if (options.max !== undefined) input.max = String(options.max);
+    input.value = value == null ? "" : String(value);
+    input.dataset.snapshotEdit = key;
+    wrap.appendChild(input);
+    parent.appendChild(wrap);
+    return input;
+}
+
+function renderFoundationSnapshot(list, company) {
+    const foundation = company.foundationSnapshot;
+    const item = document.createElement("section");
+    item.className = "company-snapshot-item data-card";
+    const cardKey = `company:${company.id}:foundation`;
+    const editing = aetherDataCard.isEditing(cardKey);
+    item.classList.toggle("is-editing", editing);
+    const header = document.createElement("div");
+    header.className = "company-snapshot-header";
+    const titleWrap = document.createElement("div");
+    const title = document.createElement("h3");
+    title.className = "h5 mb-1";
+    title.textContent = "Oprichting";
+    const date = document.createElement("p");
+    date.className = "company-snapshot-subtitle";
+    date.textContent = foundation?.foundationDate || company.foundationDate || "Datum onbekend";
+    titleWrap.append(title, date);
+    header.appendChild(titleWrap);
+    item.appendChild(header);
+    const explanation = document.createElement("p");
+    explanation.className = "company-snapshot-subtitle mb-2";
+    explanation.textContent = "Startstand zonder winstberekening of dividend.";
+    item.appendChild(explanation);
+    if (!foundation) {
+        appendSnapshotDatum(item, "Gegevens", "Oprichtingssnapshot beschikbaar na migratie 0012");
+        list.appendChild(item);
+        return;
+    }
+    const values = [
+        ["initialCompanyValue", "Beginwaarde bedrijf", foundation.initialCompanyValue],
+        ["initialShareCount", "Aandelen bij oprichting", foundation.initialShareCount],
+        ["shareMarketPrice", "Initiële marktprijs per aandeel", foundation.shareMarketPrice],
+        ["anonymousShareCount", "Aandelen in anonieme handen", foundation.anonymousShareCount],
+        ["stability", "Begin stabiliteit", foundation.stability],
+        ["profitability", "Begin rendabiliteit", foundation.profitability],
+    ];
+    const inputs = new Map();
+    const grid = document.createElement("div");
+    grid.className = editing ? "row g-2" : "data-card-facts";
+    for (const [key, label, value] of values) {
+        if (!editing) {
+            aetherDataCard.fact(grid, label,
+                value != null && ["initialCompanyValue", "shareMarketPrice"].includes(key)
+                    ? formatCompanySnapshotCurrency(value) : value);
+            continue;
+        }
+        const col = document.createElement("div");
+        col.className = "col-12 col-xl-6";
+        inputs.set(key, appendSnapshotInput(col, key, label, value, {
+            integer: key.endsWith("Count") || key === "stability" || key === "profitability",
+            min: key === "stability" || key === "profitability" ? -7 : key === "initialShareCount" ? 1 : 0,
+            max: key === "stability" || key === "profitability" ? 7 : undefined,
+        }));
+        grid.appendChild(col);
+    }
+    item.appendChild(grid);
+    aetherDataCard.controls(header, {
+        key: cardKey,
+        canEdit: true,
+        saveLabel: "Bewaren",
+        onEdit: () => { if (aetherDataCard.open(cardKey)) refreshCompanyDataCards(company); },
+        onCancel: () => { aetherDataCard.close(cardKey); refreshCompanyDataCards(company); },
+        onSave: async () => {
+        const body = { idCompany: Number(company.id) };
+        for (const [key, input] of inputs) {
+            if (input.value.trim() === "" && key !== "initialCompanyValue" && key !== "initialShareCount") continue;
+            const n = Number(input.value);
+            if (input.value.trim() === "" || !Number.isFinite(n) || n < Number(input.min)
+                || (input.max && n > Number(input.max)) || (input.step === "1" && !Number.isInteger(n))) {
+                showCompanyFeedback(`Controleer ${input.parentElement?.firstChild?.textContent || key}.`, "danger");
+                return;
+            }
+            body[key] = key.endsWith("Count") || key === "stability" || key === "profitability" ? n : n.toFixed(2);
+        }
+        try {
+            await aetherShareUi.mutateCompany("setCompanyFoundation", body);
+            aetherDataCard.close(cardKey);
+            await loadCompany(Number(company.id));
+            showCompanyFeedback("Oprichting bewaard.", "success");
+        } catch (error) { showCompanyFeedback(aetherShareUi.errorMessage(error), "danger"); }
+        }
+    });
+    if (foundation.sourceCode === "reconstructed") {
+        appendSnapshotDatum(item, "Herkomst", "Gereconstrueerd uit de migratie; historische onbekende waarden blijven leeg");
+    }
+    list.appendChild(item);
+}
+
 function renderCompanySnapshots(company) {
     const card = document.getElementById("companySnapshotsCard");
     const eventSelect = document.getElementById("companySnapshotEventSelect");
     const list = document.getElementById("companySnapshotsList");
     const empty = document.getElementById("companySnapshotsEmpty");
     const createButton = document.getElementById("createCompanySnapshotButton");
+    const eventStatus = document.getElementById("companySnapshotEventStatus");
 
     if (!card || !eventSelect || !list || !empty || !createButton) {
         return;
@@ -1090,6 +1144,7 @@ function renderCompanySnapshots(company) {
         empty.classList.add("d-none");
         eventSelect.innerHTML = '<option value="0">Kies een event</option>';
         createButton.disabled = true;
+        eventStatus?.classList.add("d-none");
         return;
     }
 
@@ -1098,35 +1153,43 @@ function renderCompanySnapshots(company) {
 
     const snapshots = sortCompanySnapshotsByDate(company?.snapshots);
     const usedEventIds = snapshots.map((snapshot) => Number(snapshot?.idEvent || 0)).filter((idEvent) => idEvent > 0);
-    const eventOptions = (Array.isArray(company?.snapshotEventOptions) ? company.snapshotEventOptions : [])
-        .filter((option) => !usedEventIds.includes(Number(option?.idEvent || 0)));
+    const embeddedOptions = Array.isArray(company?.snapshotEventOptions) ? company.snapshotEventOptions : [];
+    const sourceOptions = companySnapshotEventOptions?.length ? companySnapshotEventOptions : embeddedOptions;
+    const remainingEvents = sourceOptions.filter((option) =>
+        !usedEventIds.includes(Number(option?.idEvent || 0)));
 
     eventSelect.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "0";
     placeholder.textContent = "Kies een event";
     eventSelect.appendChild(placeholder);
-    eventOptions.forEach((option) => {
+    remainingEvents.forEach((option) => {
         const optionEl = document.createElement("option");
         optionEl.value = String(option.idEvent || 0);
         optionEl.textContent = formatCompanySnapshotEventOptionLabel(option);
         eventSelect.appendChild(optionEl);
     });
-    createButton.disabled = eventOptions.length === 0;
-
-    list.innerHTML = "";
-    if (snapshots.length === 0) {
-        empty.classList.remove("d-none");
-        return;
+    createButton.disabled = remainingEvents.length === 0 || aetherDataCard.hasActive();
+    if (eventStatus) {
+        eventStatus.classList.toggle("d-none", remainingEvents.length > 0);
+        eventStatus.textContent = remainingEvents.length ? ""
+            : sourceOptions.length ? "Elk beschikbaar event heeft al een snapshot."
+            : companySnapshotEventLoadError ? "De eventlijst kon niet geladen worden. Vernieuw de pagina of controleer de event-API."
+            : "Er zijn nog geen events beschikbaar.";
     }
 
+    list.innerHTML = "";
     empty.classList.add("d-none");
+    renderFoundationSnapshot(list, company);
     snapshots.forEach((snapshot) => {
         const appliedAction = String(snapshot?.appliedAction || "none");
         const isApplied = appliedAction !== "" && appliedAction !== "none";
         const item = document.createElement("section");
-        item.className = "company-snapshot-item";
+        item.className = "company-snapshot-item data-card";
         item.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
+        const cardKey = `company:${company.id}:snapshot:${snapshot.idCompanySnapshot}`;
+        const editing = aetherDataCard.isEditing(cardKey);
+        item.classList.toggle("is-editing", editing);
 
         const header = document.createElement("div");
         header.className = "company-snapshot-header";
@@ -1142,7 +1205,9 @@ function renderCompanySnapshots(company) {
         subtitle.textContent = snapshot.dateStart || "";
         titleWrap.appendChild(subtitle);
         header.appendChild(titleWrap);
+        item.appendChild(header);
 
+        if (editing) {
         const buttonGroup = document.createElement("div");
         buttonGroup.className = "company-snapshot-actions";
 
@@ -1163,7 +1228,37 @@ function renderCompanySnapshots(company) {
         deleteButton.textContent = "Verwijderen";
         buttonGroup.appendChild(deleteButton);
         header.appendChild(buttonGroup);
-        item.appendChild(header);
+
+        const idSnapshot = Number(snapshot.idCompanySnapshot || 0);
+        const snapshotInputs = new Map();
+        const valueFields = document.createElement("div");
+        valueFields.className = "row g-2";
+        item.appendChild(valueFields);
+        const saveSnapshotField = async (body, button) => {
+            button.disabled = true;
+            try {
+                await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
+                    method: "POST",
+                    body: { action: "update", idCompany: Number(company.id), idCompanySnapshot: idSnapshot, ...body }
+                });
+                aetherDataCard.close(cardKey);
+                await loadCompany(Number(company.id));
+                showCompanyFeedback("Snapshot bijgewerkt.", "success");
+            } catch (error) { showCompanyFeedback(error?.message || "Kon de snapshot niet bewaren.", "danger"); button.disabled = false; }
+        };
+        const addEditableSnapshotValue = (key, label, value, options = {}) => {
+            const col = document.createElement("div");
+            col.className = "col-12 col-xl-6";
+            const field = appendSnapshotInput(col, key, label, value, options);
+            valueFields.appendChild(col);
+            snapshotInputs.set(key, { field, label, integer: Boolean(options.integer) });
+        };
+        addEditableSnapshotValue("companyValue", "Bedrijfswaarde", snapshot.companyValue);
+        addEditableSnapshotValue("issuedShareCount", "Uitgegeven aandelen", snapshot.issuedShareCount,
+            { integer: true, min: 1 });
+        addEditableSnapshotValue("anonymousShareCount", "Aandelen in anonieme handen", snapshot.anonymousShareCount,
+            { integer: true });
+        addEditableSnapshotValue("shareMarketPrice", "Marktprijs per aandeel", snapshot.shareMarketPrice);
 
         const fields = document.createElement("div");
         fields.className = "row g-3";
@@ -1183,9 +1278,6 @@ function renderCompanySnapshots(company) {
         stabilityInput.max = "7";
         stabilityInput.step = "1";
         stabilityInput.value = String(Number(snapshot.stability || 0));
-        stabilityInput.dataset.companySnapshotField = "stability";
-        stabilityInput.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-        stabilityInput.disabled = isApplied;
         stabilityRow.appendChild(stabilityInput);
         stabilityCol.appendChild(stabilityRow);
         fields.appendChild(stabilityCol);
@@ -1205,14 +1297,65 @@ function renderCompanySnapshots(company) {
         profitabilityInput.max = "7";
         profitabilityInput.step = "1";
         profitabilityInput.value = String(Number(snapshot.profitability || 0));
-        profitabilityInput.dataset.companySnapshotField = "profitability";
-        profitabilityInput.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-        profitabilityInput.disabled = isApplied;
         profitabilityRow.appendChild(profitabilityInput);
         profitabilityCol.appendChild(profitabilityRow);
         fields.appendChild(profitabilityCol);
 
         item.appendChild(fields);
+
+        const saveSnapshot = async (button) => {
+            const stability = Number(stabilityInput.value);
+            const profitability = Number(profitabilityInput.value);
+            if (![stability, profitability].every((value) => Number.isInteger(value) && value >= -7 && value <= 7)) {
+                showCompanyFeedback("Controleer stabiliteit en rendabiliteit.", "danger");
+                return;
+            }
+            const body = {};
+            if (stability !== Number(snapshot.stability)) body.stability = stability;
+            if (profitability !== Number(snapshot.profitability)) body.profitability = profitability;
+            for (const [key, { field, label, integer }] of snapshotInputs) {
+                if (field.value.trim() === "") continue;
+                const n = Number(field.value);
+                if (!Number.isFinite(n) || n < Number(field.min) || (integer && !Number.isInteger(n))) {
+                    showCompanyFeedback(`Controleer ${label.toLowerCase()}.`, "danger");
+                    return;
+                }
+                if (snapshot[key] == null || (integer ? n !== Number(snapshot[key])
+                    : n.toFixed(2) !== Number(snapshot[key]).toFixed(2))) {
+                    body[key] = integer ? n : n.toFixed(2);
+                }
+            }
+            if (!Object.keys(body).length) {
+                aetherDataCard.close(cardKey);
+                refreshCompanyDataCards(company);
+                return;
+            }
+            await saveSnapshotField(body, button);
+        };
+        aetherDataCard.controls(header, {
+            key: cardKey,
+            canEdit: true,
+            onCancel: () => { aetherDataCard.close(cardKey); refreshCompanyDataCards(company); },
+            onSave: saveSnapshot
+        });
+        } else {
+            const facts = document.createElement("div");
+            facts.className = "data-card-facts";
+            for (const [label, value] of [
+                ["Bedrijfswaarde", snapshot.companyValue == null ? null : formatCompanySnapshotCurrency(snapshot.companyValue)],
+                ["Uitgegeven aandelen", snapshot.issuedShareCount],
+                ["Aandelen in anonieme handen", snapshot.anonymousShareCount],
+                ["Marktprijs per aandeel", snapshot.shareMarketPrice == null ? null : formatCompanySnapshotCurrency(snapshot.shareMarketPrice)],
+                ["Stabiliteit", snapshot.stability],
+                ["Rendabiliteit", snapshot.profitability]
+            ]) aetherDataCard.fact(facts, label, value);
+            item.appendChild(facts);
+            aetherDataCard.controls(header, {
+                key: cardKey,
+                canEdit: true,
+                onEdit: () => { if (aetherDataCard.open(cardKey)) refreshCompanyDataCards(company); }
+            });
+        }
 
         const result = document.createElement("div");
         result.className = "company-snapshot-profit";
@@ -1225,7 +1368,7 @@ function renderCompanySnapshots(company) {
         const variationAmounts = getCompanySnapshotAdjustedVariationAmounts(snapshot);
         const resultLabel = document.createElement("div");
         resultLabel.className = "company-snapshot-profit-label";
-        resultLabel.textContent = "Winst/verlies periode";
+        resultLabel.textContent = isApplied ? "Historisch verwerkte winst/verlies" : "Winst/verlies periode";
         const resultValue = document.createElement("div");
         resultValue.className = "company-snapshot-profit-value";
         resultValue.textContent = formatCompanySnapshotCurrency(profitAmount);
@@ -1245,7 +1388,7 @@ function renderCompanySnapshots(company) {
 
         if (isApplied) {
             const appliedInfo = document.createElement("div");
-            appliedInfo.textContent = `Toegepast: ${getCompanySnapshotAppliedActionLabel(appliedAction)}`;
+            appliedInfo.textContent = `Toegepast: ${getCompanySnapshotAppliedActionLabel(appliedAction)}. Eerdere boekingen blijven bewaard bij correcties.`;
             actionSection.appendChild(appliedInfo);
         } else if (profitAmount < 0) {
             const lossButton = document.createElement("button");
@@ -1285,11 +1428,16 @@ function renderCompanySnapshots(company) {
             actionSection.appendChild(actionButtons);
         }
 
-        if (actionSection.childElementCount > 0) {
+        if ((editing || isApplied) && actionSection.childElementCount > 0) {
             item.appendChild(actionSection);
         }
         list.appendChild(item);
     });
+}
+
+function refreshCompanyDataCards(company = currentCompanyData) {
+    renderCompanySnapshots(company);
+    renderCompanyPersonnel(company);
 }
 
 function cloneCompanyPersonnelEntries(entries) {
@@ -1321,8 +1469,11 @@ function getCompanyPersonnelImportanceOptions() {
 function createEmptyCompanyPersonnelEntry() {
     return {
         idCharacter: 0,
+        functionDescription: "",
         importance: "Moderate",
         salaryIncreasePercentage: 0,
+        isBoardMember: false,
+        isCompanyLeader: false,
         skills: []
     };
 }
@@ -1347,6 +1498,12 @@ function getCompanyPersonnelCharacterLabel(idCharacter) {
 function getCompanyPersonnelCharacterProfessionLabel(idCharacter) {
     const option = getCompanyPersonnelCharacterOptions().find((entry) => Number(entry?.idCharacter || 0) === Number(idCharacter));
     return option?.professionLabel || "";
+}
+
+function isCompanyLeaderProfession(idCharacter) {
+    const option = getCompanyPersonnelCharacterOptions().find((entry) =>
+        Number(entry?.idCharacter || 0) === Number(idCharacter || 0));
+    return Boolean(option?.isCompanyLeaderProfession);
 }
 
 function getAvailableCharacterOptionsForPersonnelEntry(entryIndex) {
@@ -1418,20 +1575,31 @@ function renderCompanyPersonnel(company) {
     }
 
     card.classList.remove("d-none");
-    addButton.disabled = false;
+    addButton.disabled = aetherDataCard.hasActive();
     list.innerHTML = "";
 
-    const entries = Array.isArray(currentCompanyPersonnelState) ? currentCompanyPersonnelState : [];
+    const entries = Array.isArray(currentCompanyPersonnelState) ? [...currentCompanyPersonnelState] : [];
+    if (companyPersonnelDraft && companyPersonnelDraftIndex >= 0) {
+        entries[companyPersonnelDraftIndex] = companyPersonnelDraft;
+    }
     if (entries.length === 0) {
         empty.classList.remove("d-none");
         return;
     }
 
     empty.classList.add("d-none");
-    entries.forEach((entry, entryIndex) => {
+    const displayIndexes = entries.map((_, index) => index);
+    if (companyPersonnelDraft && companyPersonnelDraftIndex === currentCompanyPersonnelState.length) {
+        displayIndexes.unshift(displayIndexes.pop());
+    }
+    displayIndexes.forEach((entryIndex) => {
+        const entry = entries[entryIndex];
         const cardEl = document.createElement("section");
-        cardEl.className = "company-personnel-entry";
+        cardEl.className = "company-personnel-entry data-card";
         cardEl.dataset.personnelIndex = String(entryIndex);
+        const cardKey = `company:${company.id}:personnel:${entryIndex}`;
+        const editing = aetherDataCard.isEditing(cardKey);
+        cardEl.classList.toggle("is-editing", editing);
 
         const header = document.createElement("div");
         header.className = "company-personnel-entry-header";
@@ -1452,6 +1620,12 @@ function renderCompanyPersonnel(company) {
             subtitle.textContent = professionLabel;
             titleWrap.appendChild(subtitle);
         }
+        if (entry?.isCompanyLeader) {
+            const leaderInfo = document.createElement("p");
+            leaderInfo.className = "company-personnel-entry-subtitle";
+            leaderInfo.textContent = `Bedrijfsleider · basisloon Fr ${Number(entry.leaderMonthlyIncome || 0).toFixed(2)}/maand · ${Number(entry.leaderStatusPoints || 0)} statuspunten · personeelsvoorwaarde ${Number(entry.leaderPersonnelRequirement || 0)}`;
+            titleWrap.appendChild(leaderInfo);
+        }
         header.appendChild(titleWrap);
 
         const removeButton = document.createElement("button");
@@ -1460,9 +1634,43 @@ function renderCompanyPersonnel(company) {
         removeButton.dataset.action = "remove-company-personnel";
         removeButton.dataset.personnelIndex = String(entryIndex);
         removeButton.textContent = "Verwijderen";
-        header.appendChild(removeButton);
+        if (editing) header.appendChild(removeButton);
 
         cardEl.appendChild(header);
+
+        if (!editing) {
+            const facts = document.createElement("div");
+            facts.className = "data-card-facts mt-3";
+            const skill = entry?.skills?.[0];
+            aetherDataCard.fact(facts, "Functiebeschrijving", entry?.functionDescription);
+            aetherDataCard.fact(facts, "Belang", entry?.importance || "Moderate");
+            aetherDataCard.fact(facts, "Loonsverhoging", `${Number(entry?.salaryIncreasePercentage || 0).toFixed(2)}%`);
+            aetherDataCard.fact(facts, "Winstdruk per jaar", formatCompanySnapshotCurrency(Number(entry?.monthlySalaryIncreaseAmount || 0) * 12));
+            aetherDataCard.fact(facts, "Raad van bestuur", entry?.isBoardMember ? "Ja" : "Nee");
+            aetherDataCard.fact(facts, "Vaardigheid", skill?.skillName || findCompanyPersonnelSkillOption(skill?.idSkill)?.name || null);
+            aetherDataCard.fact(facts, "Vereist niveau", skill?.idSkill ? formatCompanyPersonnelSkillLevelLabel(skill.level) : null);
+            aetherDataCard.fact(facts, "Specialisaties", skill?.specialisations?.map((value) => value.name).filter(Boolean).join(", "));
+            cardEl.appendChild(facts);
+            aetherDataCard.controls(header, {
+                key: cardKey,
+                canEdit: true,
+                onEdit: () => {
+                    if (!aetherDataCard.open(cardKey)) return;
+                    companyPersonnelDraft = cloneCompanyPersonnelEntries([entry])[0];
+                    companyPersonnelDraftIndex = entryIndex;
+                    refreshCompanyDataCards(company);
+                }
+            });
+            list.appendChild(cardEl);
+            return;
+        }
+
+        aetherDataCard.controls(header, {
+            key: cardKey,
+            canEdit: true,
+            onSave: () => saveCompanyPersonnelDraft(entryIndex, cardKey),
+            onCancel: () => cancelCompanyPersonnelDraft(cardKey)
+        });
 
         const fieldsRow = document.createElement("div");
         fieldsRow.className = "row g-3";
@@ -1488,6 +1696,22 @@ function renderCompanyPersonnel(company) {
         });
         characterCol.appendChild(characterSelect);
         fieldsRow.appendChild(characterCol);
+
+        const functionCol = document.createElement("div");
+        functionCol.className = "col-12";
+        const functionLabel = document.createElement("label");
+        functionLabel.className = "form-label";
+        functionLabel.textContent = "Functiebeschrijving";
+        functionCol.appendChild(functionLabel);
+        const functionInput = document.createElement("textarea");
+        functionInput.className = "form-control";
+        functionInput.rows = 3;
+        functionInput.maxLength = 4000;
+        functionInput.value = String(entry?.functionDescription || "");
+        functionInput.dataset.companyPersonnelField = "functionDescription";
+        functionInput.dataset.personnelIndex = String(entryIndex);
+        functionCol.appendChild(functionInput);
+        fieldsRow.appendChild(functionCol);
 
         const importanceCol = document.createElement("div");
         importanceCol.className = "col-12 col-md-6";
@@ -1526,7 +1750,28 @@ function renderCompanyPersonnel(company) {
         salaryInput.dataset.companyPersonnelField = "salaryIncreasePercentage";
         salaryInput.dataset.personnelIndex = String(entryIndex);
         salaryCol.appendChild(salaryInput);
+        const pressure = document.createElement("small");
+        pressure.className = "text-muted d-block mt-1";
+        pressure.textContent = `Winstdruk: Fr ${(Number(entry?.monthlySalaryIncreaseAmount || 0) * 12).toFixed(2)} per jaar`;
+        salaryCol.appendChild(pressure);
         fieldsRow.appendChild(salaryCol);
+
+        const roleCol = document.createElement("div");
+        roleCol.className = "col-12 d-flex flex-wrap gap-3";
+        for (const [field, label] of [["isBoardMember", "Raad van bestuur"]]) {
+            const wrap = document.createElement("label");
+            wrap.className = "form-check";
+            const check = document.createElement("input");
+            check.type = "checkbox";
+            check.className = "form-check-input";
+            check.checked = Boolean(entry?.[field]);
+            check.disabled = field === "isBoardMember" && Boolean(entry?.isCompanyLeader);
+            check.dataset.companyPersonnelField = field;
+            check.dataset.personnelIndex = String(entryIndex);
+            wrap.append(check, document.createTextNode(` ${label}`));
+            roleCol.appendChild(wrap);
+        }
+        fieldsRow.appendChild(roleCol);
 
         cardEl.appendChild(fieldsRow);
 
@@ -1534,8 +1779,7 @@ function renderCompanyPersonnel(company) {
         if (skills.length === 0) {
             entry.skills = [createEmptyCompanyPersonnelSkill()];
         }
-
-        const skillEntry = entry.skills[0];
+        const skillEntry = entry.skills?.[0] || createEmptyCompanyPersonnelSkill();
         const skillSection = document.createElement("div");
         skillSection.className = "company-personnel-skills-section";
 
@@ -1572,7 +1816,7 @@ function renderCompanyPersonnel(company) {
         levelCol.className = "col-12 col-md-4";
         const levelLabel = document.createElement("label");
         levelLabel.className = "form-label";
-        levelLabel.textContent = "Bekwaamheid";
+        levelLabel.textContent = "Vereist niveau";
         levelCol.appendChild(levelLabel);
 
         const levelSelect = document.createElement("select");
@@ -1660,20 +1904,26 @@ function handleCompanyPersonnelCardChange(event) {
     }
 
     const personnelIndex = Number(target.dataset.personnelIndex || -1);
-    if (personnelIndex < 0 || !currentCompanyPersonnelState[personnelIndex]) {
+    if (personnelIndex < 0 || personnelIndex !== companyPersonnelDraftIndex || !companyPersonnelDraft) {
         return;
     }
 
-    const entry = currentCompanyPersonnelState[personnelIndex];
+    const entry = companyPersonnelDraft;
 
     if (field === "idCharacter") {
         entry.idCharacter = Math.max(0, Number(target.value || 0));
+        entry.isCompanyLeader = isCompanyLeaderProfession(entry.idCharacter);
+        if (entry.isCompanyLeader) entry.isBoardMember = true;
         renderCompanyPersonnel(currentCompanyData);
     } else if (field === "importance") {
         entry.importance = String(target.value || "Moderate");
+    } else if (field === "functionDescription") {
+        entry.functionDescription = String(target.value || "");
     } else if (field === "salaryIncreasePercentage") {
         const parsed = Number(String(target.value || "").replace(",", "."));
         entry.salaryIncreasePercentage = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    } else if (field === "isBoardMember") {
+        entry.isBoardMember = target.checked || Boolean(entry.isCompanyLeader);
     } else if (field === "skillId") {
         const skillIndex = Number(target.dataset.skillIndex || -1);
         if (skillIndex < 0 || !entry.skills?.[skillIndex]) {
@@ -1692,8 +1942,24 @@ function handleCompanyPersonnelCardChange(event) {
         entry.skills[skillIndex].level = Math.max(1, Math.min(3, Number(target.value || 1)));
     }
 
-    markCompanyPersonnelSavePending();
-    void flushCompanyAutoSave();
+}
+
+function cancelCompanyPersonnelDraft(cardKey) {
+    companyPersonnelDraft = null;
+    companyPersonnelDraftIndex = -1;
+    aetherDataCard.close(cardKey);
+    refreshCompanyDataCards(currentCompanyData);
+}
+
+async function saveCompanyPersonnelDraft(index, cardKey) {
+    if (!companyPersonnelDraft || index !== companyPersonnelDraftIndex) return false;
+    if (Number(companyPersonnelDraft.idCharacter || 0) <= 0) {
+        showCompanyFeedback("Kies eerst een personage.", "danger");
+        return false;
+    }
+    const entries = cloneCompanyPersonnelEntries(currentCompanyPersonnelState);
+    entries[index] = cloneCompanyPersonnelEntries([companyPersonnelDraft])[0];
+    return saveCompanyPersonnel({ entries, closeCardKey: cardKey });
 }
 
 function handleCompanyPersonnelCardClick(event) {
@@ -1712,26 +1978,33 @@ function handleCompanyPersonnelCardClick(event) {
     const specialisationIndex = Number(button.dataset.specialisationIndex || -1);
 
     if (action === "add-company-personnel") {
-        currentCompanyPersonnelState.push(createEmptyCompanyPersonnelEntry());
-        renderCompanyPersonnel(currentCompanyData);
-        markCompanyPersonnelSavePending();
+        const cardKey = `company:${currentCompanyData?.id}:personnel:${currentCompanyPersonnelState.length}`;
+        if (!aetherDataCard.open(cardKey)) return;
+        companyPersonnelDraftIndex = currentCompanyPersonnelState.length;
+        companyPersonnelDraft = createEmptyCompanyPersonnelEntry();
+        refreshCompanyDataCards(currentCompanyData);
         return;
     }
 
     if (action === "remove-company-personnel") {
         if (personnelIndex < 0) return;
-        currentCompanyPersonnelState.splice(personnelIndex, 1);
-        renderCompanyPersonnel(currentCompanyData);
-        markCompanyPersonnelSavePending();
-        void flushCompanyAutoSave();
+        if (personnelIndex !== companyPersonnelDraftIndex) return;
+        const cardKey = `company:${currentCompanyData?.id}:personnel:${personnelIndex}`;
+        if (personnelIndex >= currentCompanyPersonnelState.length) {
+            cancelCompanyPersonnelDraft(cardKey);
+            return;
+        }
+        const entries = cloneCompanyPersonnelEntries(currentCompanyPersonnelState);
+        entries.splice(personnelIndex, 1);
+        void saveCompanyPersonnel({ entries, closeCardKey: cardKey });
         return;
     }
 
-    if (personnelIndex < 0 || !currentCompanyPersonnelState[personnelIndex]) {
+    if (personnelIndex < 0 || personnelIndex !== companyPersonnelDraftIndex || !companyPersonnelDraft) {
         return;
     }
 
-    const entry = currentCompanyPersonnelState[personnelIndex];
+    const entry = companyPersonnelDraft;
 
     if (skillIndex < 0 || !entry.skills?.[skillIndex]) {
         return;
@@ -1743,8 +2016,6 @@ function handleCompanyPersonnelCardClick(event) {
         if (specialisationIndex < 0 || !skillEntry.specialisations?.[specialisationIndex]) return;
         skillEntry.specialisations.splice(specialisationIndex, 1);
         renderCompanyPersonnel(currentCompanyData);
-        markCompanyPersonnelSavePending();
-        void flushCompanyAutoSave();
         return;
     }
 
@@ -1775,7 +2046,7 @@ function openCompanyPersonnelSpecialisationModal(personnelIndex, skillIndex) {
         return;
     }
 
-    const entry = currentCompanyPersonnelState?.[personnelIndex];
+    const entry = personnelIndex === companyPersonnelDraftIndex ? companyPersonnelDraft : null;
     const skillEntry = entry?.skills?.[skillIndex];
     if (!skillEntry || Number(skillEntry.idSkill || 0) <= 0) {
         alert("Kies eerst een vaardigheid.");
@@ -1834,7 +2105,8 @@ function saveCompanyPersonnelSpecialisationFromModal() {
 
     const personnelIndex = Number(modalEl.dataset.personnelIndex || -1);
     const skillIndex = Number(modalEl.dataset.skillIndex || -1);
-    const skillEntry = currentCompanyPersonnelState?.[personnelIndex]?.skills?.[skillIndex];
+    const skillEntry = personnelIndex === companyPersonnelDraftIndex
+        ? companyPersonnelDraft?.skills?.[skillIndex] : null;
     if (!skillEntry) {
         return;
     }
@@ -1878,8 +2150,6 @@ function saveCompanyPersonnelSpecialisationFromModal() {
     }
 
     renderCompanyPersonnel(currentCompanyData);
-    markCompanyPersonnelSavePending();
-    void flushCompanyAutoSave();
     companyPersonnelSpecialisationModalInstance?.hide();
 }
 
@@ -1901,6 +2171,17 @@ async function createCompanySnapshot() {
         return;
     }
 
+    const eventOptions = companySnapshotEventOptions?.length
+        ? companySnapshotEventOptions : (currentCompanyData?.snapshotEventOptions || []);
+    const chosenEvent = eventOptions.find((option) => Number(option.idEvent) === idEvent);
+    const chosenDate = String(chosenEvent?.dateStart || "");
+    const orderedSnapshots = sortCompanySnapshotsByDate(currentCompanyData?.snapshots);
+    const previousSnapshot = (chosenDate ? orderedSnapshots.filter((snapshot) =>
+        String(snapshot.dateStart || "") < chosenDate
+        || (String(snapshot.dateStart || "") === chosenDate
+            && Number(snapshot.idEvent || 0) < idEvent)) : orderedSnapshots).at(-1);
+    const baseline = previousSnapshot || currentCompanyData?.foundationSnapshot || currentCompanyData;
+
     try {
         const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
@@ -1908,12 +2189,12 @@ async function createCompanySnapshot() {
                 action: "create",
                 idCompany,
                 idEvent,
-                stability: normalizeSliderValue(document.getElementById("companyStability")?.value),
-                profitability: normalizeSliderValue(document.getElementById("companyProfitability")?.value)
+                stability: normalizeSliderValue(baseline?.stability),
+                profitability: normalizeSliderValue(baseline?.profitability)
             }
         });
 
-        applyCompanySnapshotResponse(result, idCompany);
+        await applyCompanySnapshotResponse(result, idCompany);
         showCompanyFeedback("Snapshot opgeslagen.", "success");
     } catch (err) {
         console.error("Fout bij maken snapshot:", err);
@@ -1955,57 +2236,6 @@ function handleCompanySnapshotsCardClick(event) {
     }
 }
 
-function handleCompanySnapshotsCardChange(event) {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return;
-    }
-
-    if (!target.dataset.companySnapshotField) {
-        return;
-    }
-
-    const idCompanySnapshot = Number(target.dataset.idCompanySnapshot || 0);
-    if (idCompanySnapshot <= 0) {
-        return;
-    }
-
-    void updateCompanySnapshot(idCompanySnapshot);
-}
-
-async function updateCompanySnapshot(idCompanySnapshot) {
-    const idCompany = Number(document.getElementById("companyId")?.value || 0);
-    const stabilityInput = document.querySelector(`[data-company-snapshot-field="stability"][data-id-company-snapshot="${idCompanySnapshot}"]`);
-    const profitabilityInput = document.querySelector(`[data-company-snapshot-field="profitability"][data-id-company-snapshot="${idCompanySnapshot}"]`);
-    if (idCompany <= 0 || !(stabilityInput instanceof HTMLInputElement) || !(profitabilityInput instanceof HTMLInputElement)) {
-        return;
-    }
-
-    const canContinue = await flushCompanyAutoSave({ force: false });
-    if (canContinue === false) {
-        return;
-    }
-
-    try {
-        const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
-            method: "POST",
-            body: {
-                action: "update",
-                idCompany,
-                idCompanySnapshot,
-                stability: normalizeSliderValue(stabilityInput.value),
-                profitability: normalizeSliderValue(profitabilityInput.value)
-            }
-        });
-
-        applyCompanySnapshotResponse(result, idCompany);
-        showCompanyFeedback("Snapshot bijgewerkt.", "success");
-    } catch (err) {
-        console.error("Fout bij bijwerken snapshot:", err);
-        showCompanyFeedback(err?.message || "Kon de snapshot niet bewaren.", "danger");
-    }
-}
-
 async function recalculateCompanySnapshot(idCompanySnapshot) {
     const idCompany = Number(document.getElementById("companyId")?.value || 0);
     if (idCompany <= 0) {
@@ -2027,7 +2257,8 @@ async function recalculateCompanySnapshot(idCompanySnapshot) {
             }
         });
 
-        applyCompanySnapshotResponse(result, idCompany);
+        aetherDataCard.close(`company:${idCompany}:snapshot:${idCompanySnapshot}`);
+        await applyCompanySnapshotResponse(result, idCompany);
         showCompanyFeedback("Snapshot herberekend.", "success");
     } catch (err) {
         console.error("Fout bij herberekenen snapshot:", err);
@@ -2056,7 +2287,8 @@ async function deleteCompanySnapshot(idCompanySnapshot) {
             }
         });
 
-        applyCompanySnapshotResponse(result, idCompany);
+        aetherDataCard.close(`company:${idCompany}:snapshot:${idCompanySnapshot}`);
+        await applyCompanySnapshotResponse(result, idCompany);
         showCompanyFeedback("Snapshot verwijderd.", "success");
     } catch (err) {
         console.error("Fout bij verwijderen snapshot:", err);
@@ -2086,7 +2318,8 @@ async function applyCompanySnapshot(idCompanySnapshot, applyAction) {
             }
         });
 
-        applyCompanySnapshotResponse(result, idCompany);
+        aetherDataCard.close(`company:${idCompany}:snapshot:${idCompanySnapshot}`);
+        await applyCompanySnapshotResponse(result, idCompany);
         showCompanyFeedback("Snapshot toegepast.", "success");
     } catch (err) {
         console.error("Fout bij toepassen snapshot:", err);
@@ -2115,6 +2348,45 @@ function updateSliderPresentation(type) {
     );
 }
 
+async function saveCompanyCurrentSliders() {
+    const company = currentCompanyData;
+    const idCompany = Number(company?.id || 0);
+    if (!idCompany || isPopulatingCompanyForm) return;
+    const stability = normalizeSliderValue(document.getElementById("companyStability")?.value);
+    const profitability = normalizeSliderValue(document.getElementById("companyProfitability")?.value);
+    const latest = sortCompanySnapshotsByDate(company.snapshots).at(-1);
+    const currentStability = Number(latest?.stability ?? company.foundationSnapshot?.stability ?? company.stability ?? 0);
+    const currentProfitability = Number(latest?.profitability ?? company.foundationSnapshot?.profitability ?? company.profitability ?? 0);
+    const changes = {};
+    if (stability !== currentStability) changes.stability = stability;
+    if (profitability !== currentProfitability) changes.profitability = profitability;
+    if (Object.keys(changes).length === 0) return;
+    try {
+        if (latest) {
+            await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
+                method: "POST",
+                body: { action: "update", idCompany, idCompanySnapshot: Number(latest.idCompanySnapshot),
+                    ...changes }
+            });
+        } else if (company.foundationSnapshot) {
+            await aetherShareUi.mutateCompany("setCompanyFoundation", {
+                idCompany,
+                initialCompanyValue: Number(company.foundationSnapshot.initialCompanyValue || 0).toFixed(2),
+                initialShareCount: Number(company.foundationSnapshot.initialShareCount || 100),
+                stability, profitability
+            });
+        } else {
+            showCompanyFeedback("Voer eerst de snapshotmigratie uit.", "danger");
+            return;
+        }
+        await loadCompany(idCompany);
+        showCompanyFeedback("Snapshot bijgewerkt.", "success");
+    } catch (error) {
+        showCompanyFeedback(error?.message || aetherShareUi.errorMessage(error), "danger");
+        await loadCompany(idCompany);
+    }
+}
+
 async function saveCompany(options = {}) {
     if (saveCompanyRequestInFlight) {
         saveCompanyQueued = true;
@@ -2133,11 +2405,6 @@ async function saveCompany(options = {}) {
             const companyName = String(document.getElementById("companyName")?.value || "").trim();
             const description = String(document.getElementById("companyDescription")?.value || "").trim();
             const foundationDate = String(document.getElementById("companyFoundationDate")?.value || "").trim();
-            const companyValueRaw = String(document.getElementById("companyValue")?.value || "").trim();
-            const stability = normalizeSliderValue(document.getElementById("companyStability")?.value);
-            const profitability = normalizeSliderValue(document.getElementById("companyProfitability")?.value);
-
-            const companyValue = parseCompanyValueInputValue(companyValueRaw);
 
             if (id <= 0) {
                 if (isCreatingCompany) {
@@ -2158,21 +2425,13 @@ async function saveCompany(options = {}) {
                 return false;
             }
 
-            if (companyValueRaw === "" || companyValue === null) {
-                showCompanyFeedback("Geef een geldige waarde op.", "danger");
-                return false;
-            }
-
             await apiFetchFinancialJson("api/companies/updateCompany.php", {
                 method: "POST",
                 body: {
                     id,
                     companyName,
                     description,
-                    foundationDate,
-                    companyValue,
-                    stability,
-                    profitability
+                    foundationDate
                 }
             });
 
@@ -2217,7 +2476,9 @@ async function saveCompanyPersonnel(options = {}) {
         try {
             const {
                 successMessage = "Personeel opgeslagen.",
-                silentWhenUnavailable = false
+                silentWhenUnavailable = false,
+                entries = currentCompanyPersonnelState,
+                closeCardKey = null
             } = options;
             const idCompany = Number(document.getElementById("companyId")?.value || 0);
             if (idCompany <= 0) {
@@ -2231,11 +2492,33 @@ async function saveCompanyPersonnel(options = {}) {
                 method: "POST",
                 body: {
                     idCompany,
-                    personnel: currentCompanyPersonnelState
+                    personnel: entries.map((entry) => ({
+                        idCompanyPersonnel: entry.idCompanyPersonnel,
+                        idCharacter: entry.idCharacter,
+                        functionDescription: String(entry.functionDescription || ""),
+                        importance: entry.importance,
+                        salaryIncreasePercentage: Number(entry.salaryIncreasePercentage || 0).toFixed(2),
+                        isBoardMember: Boolean(entry.isBoardMember),
+                        skills: (entry.skills || []).map((skill) => ({
+                            idCompanyPersonnelSkill: skill.idCompanyPersonnelSkill,
+                            idSkill: skill.idSkill,
+                            level: skill.level,
+                            specialisations: (skill.specialisations || []).map((specialisation) => ({
+                                idSkillSpecialisation: specialisation.idSkillSpecialisation,
+                                name: specialisation.name,
+                                kind: specialisation.kind
+                            }))
+                        }))
+                    }))
                 }
             });
 
             currentCompanyPersonnelState = cloneCompanyPersonnelEntries(result?.personnelEntries);
+            if (closeCardKey) {
+                aetherDataCard.close(closeCardKey);
+                companyPersonnelDraft = null;
+                companyPersonnelDraftIndex = -1;
+            }
             if (currentCompanyData && Number(currentCompanyData.id || 0) === idCompany) {
                 currentCompanyData.personnelEntries = cloneCompanyPersonnelEntries(result?.personnelEntries);
                 currentCompanyData.snapshots = Array.isArray(result?.snapshots) ? result.snapshots : currentCompanyData.snapshots;

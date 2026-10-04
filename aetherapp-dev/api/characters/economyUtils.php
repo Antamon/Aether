@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/companyShareUtils.php';
+require_once __DIR__ . '/../companies/companyLeadershipRules.php';
+require_once __DIR__ . '/../shares/shareAccess.php';
 
 function getCurrentUserId(): int
 {
@@ -75,6 +77,7 @@ function getDisplayedCharacterBankAmount(PDO $pdo, array $character): float
 
 function calculateEconomyTraitIncomeAtRank(array $trait): ?float
 {
+    if (!empty($trait['legacyLeaderInactive'])) return null;
     if (!isset($trait['income']) || $trait['income'] === null || $trait['income'] === '') {
         return null;
     }
@@ -85,7 +88,7 @@ function calculateEconomyTraitIncomeAtRank(array $trait): ?float
     }
 
     $rankType = (string) ($trait['rankType'] ?? 'singular');
-    $rank = (int) ($trait['rank'] ?? 1);
+    $rank = (int) ($trait['incomeRank'] ?? $trait['rank'] ?? 1);
     $evolution = isset($trait['evolution']) ? (float) $trait['evolution'] : null;
     $hasEvolution = $evolution !== null && is_finite($evolution) && $evolution != 0.0;
 
@@ -272,6 +275,41 @@ function calculateCharacterSalaryIncreaseAmount(float $salaryIncreaseBaseIncome,
     return round($salaryIncreaseBaseIncome * ($salaryIncreasePercentage / 100), 2);
 }
 
+/** The same per-company bonus is used for character income and snapshot costs. */
+function getCharacterCompanySalaryIncreaseBreakdown(PDO $pdo, array $character, array $traitLinks,
+                                                     ?int $idCompany = null): array
+{
+    $idCharacter = (int) ($character['id'] ?? 0);
+    if ($idCharacter <= 0) return ['percentage' => 0.0, 'base' => 0.0, 'amount' => 0.0];
+    $sql = 'SELECT cp.idCompany, cp.salaryIncreasePercentage, co.companyValue';
+    $isLeader = aetherCompanyLeadershipAvailable($pdo)
+        && aetherCharacterHasCompanyLeaderProfession($pdo, $idCharacter);
+    $sql .= ' FROM tblCompanyPersonnel AS cp JOIN tblCompany AS co ON co.id = cp.idCompany
+               WHERE cp.idCharacter = :idCharacter';
+    $params = ['idCharacter' => $idCharacter];
+    if ($idCompany !== null) {
+        $sql .= ' AND cp.idCompany = :idCompany';
+        $params['idCompany'] = $idCompany;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $ordinaryBase = getCharacterSalaryIncreaseIncomeBaseFromTraitLinks($traitLinks, $character);
+    $totalPercentage = 0.0;
+    $totalBase = 0.0;
+    $totalAmount = 0.0;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $percentage = normalizeCharacterSalaryIncreasePercentage($row['salaryIncreasePercentage']);
+        $base = $isLeader
+            ? (float) aetherCompanyLeaderMonthlyIncome($row['companyValue'])
+            : $ordinaryBase;
+        $totalPercentage += $percentage;
+        $totalBase += $base;
+        $totalAmount += calculateCharacterSalaryIncreaseAmount($base, $percentage);
+    }
+    return ['percentage' => round($totalPercentage, 2), 'base' => round($totalBase, 2),
+            'amount' => round($totalAmount, 2)];
+}
+
 function getCharacterGrossRecurringIncomeBreakdown(PDO $pdo, array $character): array
 {
     $idCharacter = (int) ($character['id'] ?? 0);
@@ -287,12 +325,25 @@ function getCharacterGrossRecurringIncomeBreakdown(PDO $pdo, array $character): 
 
     $traitLinks = getCharacterTraitLinks($pdo, $idCharacter);
     $baseRecurringIncome = getCharacterRecurringIncomeTotalFromTraitLinks($traitLinks, $character);
-    $salaryIncreaseBaseIncome = getCharacterSalaryIncreaseIncomeBaseFromTraitLinks($traitLinks, $character);
-    $salaryIncreasePercentage = getCharacterCompanySalaryIncreasePercentage($pdo, $idCharacter);
-    $salaryIncreaseAmount = calculateCharacterSalaryIncreaseAmount(
-        $salaryIncreaseBaseIncome,
-        $salaryIncreasePercentage
-    );
+    $leaderRows = aetherCompanyLeaderRowsForCharacter($pdo, $idCharacter);
+    if (aetherCompanyLeadershipAvailable($pdo)) {
+        $seenLegacy = [];
+        foreach ($traitLinks as $trait) {
+            $traitId = (int) ($trait['idTrait'] ?? 0);
+            if (aetherIsLegacyCompanyLeaderTrait($trait) && !isset($seenLegacy[$traitId])) {
+                $seenLegacy[$traitId] = true;
+                $baseRecurringIncome -= (float) (calculateEconomyTraitIncomeAtRank($trait) ?? 0.0);
+            }
+        }
+        foreach ($leaderRows as $leader) {
+            $baseRecurringIncome += (float) aetherCompanyLeaderMonthlyIncome($leader['companyValue']);
+        }
+        $baseRecurringIncome = round($baseRecurringIncome, 2);
+    }
+    $salary = getCharacterCompanySalaryIncreaseBreakdown($pdo, $character, $traitLinks);
+    $salaryIncreaseBaseIncome = $salary['base'];
+    $salaryIncreasePercentage = $salary['percentage'];
+    $salaryIncreaseAmount = $salary['amount'];
 
     return [
         'baseRecurringIncome' => $baseRecurringIncome,
@@ -311,10 +362,7 @@ function getCharacterCompanySalaryIncreaseAmount(PDO $pdo, array $character, ?in
     }
 
     $traitLinks = getCharacterTraitLinks($pdo, $idCharacter);
-    $salaryIncreaseBaseIncome = getCharacterSalaryIncreaseIncomeBaseFromTraitLinks($traitLinks, $character);
-    $salaryIncreasePercentage = getCharacterCompanySalaryIncreasePercentage($pdo, $idCharacter, $idCompany);
-
-    return calculateCharacterSalaryIncreaseAmount($salaryIncreaseBaseIncome, $salaryIncreasePercentage);
+    return getCharacterCompanySalaryIncreaseBreakdown($pdo, $character, $traitLinks, $idCompany)['amount'];
 }
 
 function getCharacterUpperClassLivingStandardTier(PDO $pdo, array $character): int
@@ -387,6 +435,29 @@ function getCharacterVirtualCompanyShareLivingStandardIncome(PDO $pdo, int $idCh
         return 0.0;
     }
 
+    if (aetherShareLegacyWritesClosed($pdo)) {
+        $rows = dbAll($pdo,
+            'SELECT h.shareCount, c.companyValue, c.profitability,
+                    COALESCE((SELECT SUM(h2.shareCount) FROM tblCompanyShareHolding AS h2
+                               WHERE h2.idCompany = h.idCompany), 0)
+                    + COALESCE(a.shareCount, 0) AS soldShareCount
+               FROM tblCompanyShareHolding AS h
+               JOIN tblCompany AS c ON c.id = h.idCompany
+               LEFT JOIN tblCompanyAnonymousShares AS a ON a.idCompany = h.idCompany
+              WHERE h.idCharacter = :idCharacter',
+            ['idCharacter' => $idCharacter]);
+        $monthly = 0.0;
+        foreach ($rows as $row) {
+            $sold = (int) $row['soldShareCount'];
+            if ($sold <= 0) continue;
+            $profitability = max(-7, min(7, (int) $row['profitability']));
+            $profitabilityPercentage = max(-11.0, min(17.0, 3.0 + 2.0 * $profitability));
+            if ($profitabilityPercentage <= 0) continue;
+            $monthly += ((float) $row['companyValue'] * $profitabilityPercentage / 100.0)
+                * ((int) $row['shareCount'] / $sold) / 12.0;
+        }
+        return round($monthly, 2);
+    }
     try {
         $rows = dbAll(
             $pdo,
@@ -441,10 +512,19 @@ function getCharacterMiddleClassLivingStandardIncome(PDO $pdo, array $character)
 
     $traitLinks = getCharacterTraitLinks($pdo, $idCharacter);
     $professionIncome = getCharacterMiddleClassProfessionIncomeFromTraitLinks($traitLinks);
-    $salaryIncreaseAmount = calculateCharacterSalaryIncreaseAmount(
-        $professionIncome,
-        getCharacterCompanySalaryIncreasePercentage($pdo, $idCharacter)
-    );
+    $leaderRows = aetherCompanyLeaderRowsForCharacter($pdo, $idCharacter);
+    if (aetherCompanyLeadershipAvailable($pdo)) {
+        $seenLegacy = [];
+        foreach ($traitLinks as $trait) {
+            $traitId = (int) ($trait['idTrait'] ?? 0);
+            if (aetherIsLegacyCompanyLeaderTrait($trait) && !isset($seenLegacy[$traitId])) {
+                $seenLegacy[$traitId] = true;
+                $professionIncome -= (float) (calculateEconomyTraitIncomeAtRank($trait) ?? 0.0);
+            }
+        }
+        foreach ($leaderRows as $leader) $professionIncome += (float) aetherCompanyLeaderMonthlyIncome($leader['companyValue']);
+    }
+    $salaryIncreaseAmount = getCharacterCompanySalaryIncreaseBreakdown($pdo, $character, $traitLinks)['amount'];
     $householdStaffExpenseAmount = getCharacterConfirmedHouseholdStaffExpenseAmount($pdo, $character);
     $virtualShareIncome = getCharacterVirtualCompanyShareLivingStandardIncome($pdo, $idCharacter);
 

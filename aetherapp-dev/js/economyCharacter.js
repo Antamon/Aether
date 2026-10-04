@@ -785,6 +785,12 @@ function formatEconomyDate(dateValue) {
     return new Intl.DateTimeFormat("nl-BE").format(parsedDate);
 }
 
+function formatCharacterEconomySnapshotEventLabel(eventOption) {
+    const title = String(eventOption?.title || "").trim() || `Event #${eventOption?.id || 0}`;
+    const dateLabel = formatEconomyDate(eventOption?.dateStart);
+    return dateLabel ? `${title} (${dateLabel})` : title;
+}
+
 function formatCurrencyInputDisplayValue(value) {
     const amount = Number(value ?? 0);
     const resolvedAmount = Number.isFinite(amount) ? amount : 0;
@@ -1033,357 +1039,6 @@ function renderIncomeSection(host, character) {
     }
 
     host.appendChild(incomeCard.card);
-}
-
-function getCharacterCompanyShares(character) {
-    return Array.isArray(character?.companyShares) ? character.companyShares : [];
-}
-
-function getCharacterCompanySharePurchaseOptions(character) {
-    return Array.isArray(character?.companySharePurchaseOptions) ? character.companySharePurchaseOptions : [];
-}
-
-function getCompanyShareUnitPrice(value) {
-    const companyValue = Number(value ?? 0);
-    if (!Number.isFinite(companyValue) || companyValue <= 0) {
-        return 0;
-    }
-
-    return companyValue / 100;
-}
-
-function canDisplayCompanyShareCard(character, share) {
-    if (!character || !share) return false;
-
-    const hasAssignedCompany = Number(share.companyId || 0) > 0;
-    if (currentUser?.role === "administrator" || currentUser?.role === "director") {
-        return true;
-    }
-
-    if (hasAssignedCompany) {
-        return true;
-    }
-
-    return character.state === "draft" && character.type === "player";
-}
-
-function createCompanyShareCompanyOptions(share) {
-    const currentCompanyId = Number(share?.companyId || 0);
-    const currentCompanyName = String(share?.companyName || "").trim();
-    const options = Array.isArray(share?.availableCompanies)
-        ? [...share.availableCompanies]
-        : [];
-
-    if (currentCompanyId > 0 && !options.some((company) => Number(company?.id || 0) === currentCompanyId)) {
-        options.unshift({
-            id: currentCompanyId,
-            companyName: currentCompanyName || `Bedrijf #${currentCompanyId}`,
-            companyValue: Number(share?.companyValue ?? 0),
-            remainingSharePercentage: Number(share?.remainingSharePercentage ?? 0),
-            isUnavailableCurrent: true
-        });
-    }
-
-    return options;
-}
-
-function formatCompanyShareOptionLabel(company) {
-    const name = String(company?.companyName || "").trim() || `Bedrijf #${company?.id || 0}`;
-    const value = Number(company?.companyValue ?? 0);
-    const unitPrice = getCompanyShareUnitPrice(value);
-    const remainingSharePercentage = Number(company?.remainingSharePercentage ?? 0);
-    const label = `${name} - ${formatCharacterCurrency(unitPrice)} per 1%`;
-
-    if (company?.isUnavailableCurrent) {
-        return `${label} - huidige koppeling`;
-    }
-
-    return `${label} - nog ${remainingSharePercentage}% beschikbaar`;
-}
-
-function formatCompanySharePurchaseOptionLabel(option) {
-    const name = String(option?.companyName || "").trim() || `Bedrijf #${option?.idCompany || 0}`;
-    const unitPrice = Number(option?.unitPrice ?? 0);
-    const remainingSharePercentage = Number(option?.remainingSharePercentage ?? 0);
-    const shareClass = String(option?.shareClass || "").trim();
-
-    return `${name} - ${shareClass}-aandeel - ${formatCharacterCurrency(unitPrice)} per 1% - nog ${remainingSharePercentage}% beschikbaar`;
-}
-
-function formatCharacterEconomySnapshotEventLabel(eventOption) {
-    const title = String(eventOption?.title || "").trim() || `Event #${eventOption?.id || 0}`;
-    const dateLabel = formatEconomyDate(eventOption?.dateStart);
-    return dateLabel ? `${title} (${dateLabel})` : title;
-}
-
-function renderCompanySharesSection(host, character) {
-    const companyShares = getCharacterCompanyShares(character)
-        .filter((share) => canDisplayCompanyShareCard(character, share));
-    const purchaseOptions = getCharacterCompanySharePurchaseOptions(character);
-    const canShowPurchaseCard = character?.state !== "draft"
-        && (currentUser?.role === "administrator" || currentUser?.role === "director" || character?.type === "player");
-    const canRenderPurchaseCard = canShowPurchaseCard && purchaseOptions.length > 0;
-
-    if (!host || (companyShares.length === 0 && !canRenderPurchaseCard)) {
-        return;
-    }
-
-    companyShares.forEach((share) => {
-        const shareClassLabel = `${share.shareClass || "?"}-aandelen`;
-        const shareTitle = Number(share.companyId || 0) > 0
-            ? `${shareClassLabel} ${share.companyName || `Bedrijf #${share.companyId}`}`
-            : shareClassLabel;
-
-        const shareCard = buildEconomyCard(shareTitle);
-        shareCard.card.classList.add("economy-share-card");
-
-        const item = document.createElement("div");
-        item.className = "economy-share-item";
-
-        const header = document.createElement("div");
-        header.className = "economy-share-header d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2";
-
-        const titleWrap = document.createElement("div");
-        titleWrap.className = "economy-share-title-wrap";
-
-        const meta = document.createElement("p");
-        meta.className = "economy-share-subtitle text-muted mb-0";
-        meta.textContent = share.name || `${share.shareClass || ""}-aandeel`;
-        titleWrap.appendChild(meta);
-        header.appendChild(titleWrap);
-
-        const percentageBadge = document.createElement("span");
-        percentageBadge.className = "economy-share-badge badge text-bg-secondary fs-6";
-        percentageBadge.textContent = `${Number(share.percentage || 0)}%`;
-        header.appendChild(percentageBadge);
-        item.appendChild(header);
-
-        if (share.canManageAssignments) {
-            const fieldWrap = document.createElement("div");
-            fieldWrap.className = "mb-3";
-
-            const label = document.createElement("label");
-            label.className = "form-label";
-            label.textContent = "Gekoppeld bedrijf";
-            fieldWrap.appendChild(label);
-
-            const select = document.createElement("select");
-            select.className = "form-select";
-            select.dataset.role = "company-share-company-select";
-            select.dataset.idLinkCharacterTrait = String(share.idLinkCharacterTrait || 0);
-
-            const emptyOption = document.createElement("option");
-            emptyOption.value = "";
-            emptyOption.textContent = "Geen bedrijf gekoppeld";
-            select.appendChild(emptyOption);
-
-            createCompanyShareCompanyOptions(share).forEach((company) => {
-                const option = document.createElement("option");
-                option.value = String(company.id || 0);
-                option.textContent = formatCompanyShareOptionLabel(company);
-                option.selected = Number(company.id || 0) === Number(share.companyId || 0);
-                select.appendChild(option);
-            });
-
-            fieldWrap.appendChild(select);
-
-            if (!share.companyId && createCompanyShareCompanyOptions(share).length === 0) {
-                const help = document.createElement("div");
-                help.className = "form-text";
-                help.textContent = "Er zijn momenteel geen bedrijven beschikbaar die bij dit aandeeltype passen of nog voldoende vrije aandelen hebben.";
-                fieldWrap.appendChild(help);
-            }
-
-            item.appendChild(fieldWrap);
-        }
-
-        if (Number(share.companyId || 0) > 0) {
-            const metrics = document.createElement("div");
-            metrics.className = "economy-share-metrics";
-            addEconomyMetric(metrics, "Type bedrijf", String(share.companyTypeLabelResolved || share.companyTypeLabel || "-"));
-            addEconomyMetric(metrics, "Bedrijfswaarde", formatCharacterCurrency(share.companyValue || 0));
-            addEconomyMetric(metrics, "Aandelen op de markt", `${Number(share.remainingSharePercentage || 0)}%`);
-            item.appendChild(metrics);
-
-            const descriptionWrap = document.createElement("div");
-            descriptionWrap.className = "economy-share-description mb-3";
-
-            const descriptionLabel = document.createElement("div");
-            descriptionLabel.className = "economy-share-section-label text-muted mb-2";
-            descriptionLabel.textContent = "Beschrijving bedrijf";
-            descriptionWrap.appendChild(descriptionLabel);
-
-            const descriptionBody = document.createElement("div");
-            descriptionBody.className = "economy-share-description-body d-flex gap-3 align-items-start flex-wrap";
-
-            const logoWrap = document.createElement("div");
-            logoWrap.className = "economy-share-logo border rounded bg-light d-flex align-items-center justify-content-center overflow-hidden";
-
-            if (share.companyLogoUrl) {
-                const logo = document.createElement("img");
-                logo.src = share.companyLogoUrl;
-                logo.alt = `${share.companyName || "Bedrijf"} logo`;
-                logo.className = "w-100 h-100";
-                logo.style.objectFit = "contain";
-                logoWrap.appendChild(logo);
-            } else {
-                const placeholder = document.createElement("span");
-                placeholder.className = "small text-muted text-center px-2";
-                placeholder.textContent = "Geen logo";
-                logoWrap.appendChild(placeholder);
-            }
-
-            const descriptionText = document.createElement("div");
-            descriptionText.className = "economy-share-description-text flex-grow-1";
-            descriptionText.textContent = String(share.companyDescription || "").trim() || "Geen beschrijving beschikbaar.";
-
-            descriptionBody.appendChild(logoWrap);
-            descriptionBody.appendChild(descriptionText);
-            descriptionWrap.appendChild(descriptionBody);
-            item.appendChild(descriptionWrap);
-        }
-
-        const showTradingControls = character?.state !== "draft" && Number(share.companyId || 0) > 0;
-        if (showTradingControls) {
-            const pricing = document.createElement("div");
-            pricing.className = "economy-share-metrics economy-share-pricing";
-            addEconomyMetric(pricing, "Prijs per 1% aandeel", formatCharacterCurrency(share.nextPercentageCost || share.sellPercentageValue || 0));
-            item.appendChild(pricing);
-        }
-
-        if (showTradingControls && (share.canIncreaseRank || share.canDecreaseRank)) {
-            const actionWrap = document.createElement("div");
-            actionWrap.className = "economy-share-actions d-flex justify-content-between align-items-center gap-3 flex-wrap";
-
-            const help = document.createElement("div");
-            help.className = "economy-share-help text-muted";
-
-            const hasAssignedCompany = Number(share.companyId || 0) > 0;
-            const canIncreaseByCapacity = Number(share.remainingSharePercentage || 0) > Number(share.percentage || 0);
-            const canDecreaseByPercentage = Number(share.percentage || 0) > 0;
-            const canIncrease = hasAssignedCompany
-                && canIncreaseByCapacity
-                && Boolean(share.canAffordNextRank);
-            const canDecrease = hasAssignedCompany
-                && canDecreaseByPercentage;
-
-            if (!hasAssignedCompany) {
-                help.textContent = "Koppel eerst een bedrijf om dit aandeel te beheren.";
-            } else if (!canIncreaseByCapacity) {
-                help.textContent = "Dit bedrijf heeft geen vrije aandelen meer beschikbaar om bij te kopen.";
-            } else if (!share.canAffordNextRank) {
-                help.textContent = `Aandeel kopen is niet mogelijk: ${formatCharacterCurrency(share.nextPercentageCost || 0)} per 1% en onvoldoende saldo op de bankrekening.`;
-            } else {
-                help.textContent = `Aandeel kopen of verkopen gebeurt telkens per 1% voor ${formatCharacterCurrency(share.nextPercentageCost || share.sellPercentageValue || 0)}.`;
-            }
-            actionWrap.appendChild(help);
-
-            const buttonGroup = document.createElement("div");
-            buttonGroup.className = "economy-share-button-group d-flex align-items-center gap-2";
-
-            if (share.canDecreaseRank) {
-                const decreaseButton = document.createElement("button");
-                decreaseButton.type = "button";
-                decreaseButton.className = "btn btn-success";
-                decreaseButton.dataset.action = "decrease-company-share-rank";
-                decreaseButton.dataset.idLinkCharacterTrait = String(share.idLinkCharacterTrait || 0);
-                decreaseButton.disabled = !canDecrease;
-                decreaseButton.textContent = "Aandeel verkopen";
-                buttonGroup.appendChild(decreaseButton);
-            }
-
-            if (share.canIncreaseRank) {
-                const increaseButton = document.createElement("button");
-                increaseButton.type = "button";
-                increaseButton.className = "btn btn-success";
-                increaseButton.dataset.action = "increase-company-share-rank";
-                increaseButton.dataset.idLinkCharacterTrait = String(share.idLinkCharacterTrait || 0);
-                increaseButton.disabled = !canIncrease;
-                increaseButton.textContent = "Aandeel kopen";
-                buttonGroup.appendChild(increaseButton);
-            }
-
-            actionWrap.appendChild(buttonGroup);
-
-            item.appendChild(actionWrap);
-        }
-
-        shareCard.body.appendChild(item);
-        host.appendChild(shareCard.card);
-    });
-
-    if (!canRenderPurchaseCard) {
-        return;
-    }
-
-    const purchaseCard = buildEconomyCard("Nieuw aandeel kopen");
-    purchaseCard.card.classList.add("economy-share-card");
-
-    const form = document.createElement("div");
-    form.className = "economy-share-purchase";
-
-    const label = document.createElement("label");
-    label.className = "form-label";
-    label.textContent = "Beschikbare bedrijven";
-    label.setAttribute("for", "companySharePurchaseSelect");
-    form.appendChild(label);
-
-    const select = document.createElement("select");
-    select.className = "form-select";
-    select.id = "companySharePurchaseSelect";
-    select.dataset.role = "company-share-purchase-select";
-
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
-    emptyOption.textContent = "Kies een bedrijf en aandelentype";
-    select.appendChild(emptyOption);
-
-    purchaseOptions.forEach((option) => {
-        const optionEl = document.createElement("option");
-        optionEl.value = `${Number(option.idCompany || 0)}:${String(option.shareClass || "")}`;
-        optionEl.textContent = formatCompanySharePurchaseOptionLabel(option);
-        select.appendChild(optionEl);
-    });
-
-    select.disabled = false;
-    form.appendChild(select);
-
-    const help = document.createElement("div");
-    help.className = "form-text";
-    help.textContent = "Koop 1% in een bedrijf. De passende statuseigenschap wordt automatisch aan het personage toegevoegd.";
-    form.appendChild(help);
-
-    const buttonRow = document.createElement("div");
-    buttonRow.className = "mt-3";
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-success";
-    button.dataset.action = "buy-new-company-share";
-    button.disabled = false;
-    button.textContent = "Aandeel kopen";
-    buttonRow.appendChild(button);
-    form.appendChild(buttonRow);
-
-    purchaseCard.body.appendChild(form);
-    host.appendChild(purchaseCard.card);
-}
-
-function addEconomyMetric(host, label, value, valueClass = "") {
-    const row = document.createElement("div");
-    row.className = "d-flex justify-content-between align-items-center gap-3 mb-2";
-
-    const labelEl = document.createElement("span");
-    labelEl.className = "text-muted";
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-
-    const valueEl = document.createElement("span");
-    valueEl.className = `fw-semibold ${valueClass}`.trim();
-    valueEl.textContent = value;
-    row.appendChild(valueEl);
-
-    host.appendChild(row);
 }
 
 function renderCharacterEconomySnapshotsSection(host, character) {
@@ -1776,10 +1431,15 @@ function renderCharacterEconomyTab(character) {
     leftCol.appendChild(accountCard.card);
     renderCharacterSecuritiesSection(leftCol, character);
     renderCharacterEconomySnapshotsSection(rightCol, character);
-    renderCompanySharesSection(rightCol, character);
 
     container.appendChild(leftCol);
     container.appendChild(rightCol);
+    aetherShareUi.attachPortfolio(rightCol, character);
+    aetherShareMarketClient.attachEconomy(
+        rightCol, character,
+        typeof aetherCharacterActionsState === "object"
+            ? aetherCharacterActionsState.selectedEventId : 0
+    );
 }
 
 function bankAmountFromCharacter(character) {
@@ -1829,119 +1489,6 @@ async function saveSecuritiesBalance() {
     } catch (err) {
         console.error("Fout bij bewaren van saldo effectenportefeuille:", err);
         alert("Kon het saldo van de effectenportefeuille niet bewaren.");
-    }
-}
-
-async function saveCompanyShareAssignment(select) {
-    if (!select || !currentCharacter?.id) return;
-
-    const idLinkCharacterTrait = Number(select.dataset.idLinkCharacterTrait || 0);
-    if (idLinkCharacterTrait <= 0) return;
-
-    select.disabled = true;
-
-    try {
-        const selectedCompanyId = Number(select.value || 0);
-        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
-            method: "POST",
-            body: {
-                action: selectedCompanyId > 0 ? "assign_company" : "clear_company",
-                idLinkCharacterTrait,
-                idCompany: selectedCompanyId > 0 ? selectedCompanyId : null
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij koppelen van aandeel aan bedrijf:", err);
-        alert(getApiErrorMessage(err, "Kon het aandeel niet koppelen aan het gekozen bedrijf."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
-}
-
-async function increaseCompanyShareRank(button) {
-    if (!button || !currentCharacter?.id) return;
-
-    const idLinkCharacterTrait = Number(button.dataset.idLinkCharacterTrait || 0);
-    if (idLinkCharacterTrait <= 0) return;
-
-    button.disabled = true;
-
-    try {
-        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
-            method: "POST",
-            body: {
-                action: "increase_rank",
-                idLinkCharacterTrait
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij verhogen van aandelenpercentage:", err);
-        alert(getApiErrorMessage(err, "Kon het aandelenpercentage niet verhogen."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
-}
-
-async function decreaseCompanyShareRank(button) {
-    if (!button || !currentCharacter?.id) return;
-
-    const idLinkCharacterTrait = Number(button.dataset.idLinkCharacterTrait || 0);
-    if (idLinkCharacterTrait <= 0) return;
-
-    button.disabled = true;
-
-    try {
-        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
-            method: "POST",
-            body: {
-                action: "decrease_rank",
-                idLinkCharacterTrait
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij verlagen van aandelenpercentage:", err);
-        alert(getApiErrorMessage(err, "Kon het aandelenpercentage niet verlagen."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
-}
-
-async function buyNewCompanyShare(button) {
-    if (!button || !currentCharacter?.id) return;
-
-    const select = document.querySelector("[data-role='company-share-purchase-select']");
-    if (!select || select.disabled) return;
-
-    const [idCompanyRaw, shareClassRaw] = String(select.value || "").split(":");
-    const idCompany = Number(idCompanyRaw || 0);
-    const shareClass = String(shareClassRaw || "").trim();
-
-    if (idCompany <= 0 || (shareClass !== "A" && shareClass !== "B")) {
-        alert("Kies eerst een bedrijf en aandelentype.");
-        return;
-    }
-
-    button.disabled = true;
-    select.disabled = true;
-
-    try {
-        await apiFetchFinancialJson("api/characters/buyCompanyShare.php", {
-            method: "POST",
-            body: {
-                idCharacter: currentCharacter.id,
-                idCompany,
-                shareClass
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij kopen van nieuw aandeel:", err);
-        alert(getApiErrorMessage(err, "Kon het aandeel niet kopen."));
-        await getCharacter(currentCharacter.id, null, "economy");
     }
 }
 
@@ -2281,24 +1828,6 @@ function setupEconomySectionListeners() {
             return;
         }
 
-        const increaseShareButton = e.target.closest("button[data-action='increase-company-share-rank']");
-        if (increaseShareButton && !increaseShareButton.disabled) {
-            await increaseCompanyShareRank(increaseShareButton);
-            return;
-        }
-
-        const decreaseShareButton = e.target.closest("button[data-action='decrease-company-share-rank']");
-        if (decreaseShareButton && !decreaseShareButton.disabled) {
-            await decreaseCompanyShareRank(decreaseShareButton);
-            return;
-        }
-
-        const buyNewShareButton = e.target.closest("button[data-action='buy-new-company-share']");
-        if (buyNewShareButton && !buyNewShareButton.disabled) {
-            await buyNewCompanyShare(buyNewShareButton);
-            return;
-        }
-
         const transferButton = e.target.closest("button[data-action='create-bank-transfer']");
         if (transferButton && !transferButton.disabled) {
             await submitBankTransfer();
@@ -2364,12 +1893,6 @@ function setupEconomySectionListeners() {
     });
 
     document.addEventListener("change", async (e) => {
-        const shareCompanySelect = e.target.closest("select[data-role='company-share-company-select']");
-        if (shareCompanySelect && !shareCompanySelect.disabled) {
-            await saveCompanyShareAssignment(shareCompanySelect);
-            return;
-        }
-
         const securitiesManagerTypeSelect = e.target.closest("select[data-role='securities-manager-type']");
         if (securitiesManagerTypeSelect && !securitiesManagerTypeSelect.disabled) {
             const thirdManagerWrap = document.querySelector("[data-role='securities-third-manager-wrap']");
@@ -2451,29 +1974,17 @@ function showEconomyTab(character) {
     const sheetBody = document.getElementById("sheetBody");
     if (sheetBody) sheetBody.classList.remove("d-none");
 
-    const characterForm = document.getElementById("characterForm");
-    if (characterForm) characterForm.classList.add("d-none");
-    const skills = document.getElementById("skills");
-    if (skills) skills.classList.add("d-none");
-
-    const backgroundTab = document.getElementById("backgroundTab");
-    if (backgroundTab) backgroundTab.classList.add("d-none");
-    const diaryTab = document.getElementById("diaryTab");
-    if (diaryTab) diaryTab.classList.add("d-none");
-    const personalityTab = document.getElementById("personalityTab");
-    if (personalityTab) personalityTab.classList.add("d-none");
-    const actionsTab = document.getElementById("actionsTab");
-    if (actionsTab) actionsTab.classList.add("d-none");
-    const passportTab = document.getElementById("passportTab");
-    if (passportTab) passportTab.classList.add("d-none");
+    for (const id of ["characterForm", "skills", "backgroundTab", "diaryTab",
+        "personalityTab", "actionsTab", "passportTab"]) {
+        document.getElementById(id)?.classList.add("d-none");
+    }
 
     const economyTab = document.getElementById("economyTab");
     if (!economyTab) return;
-
     economyTab.classList.remove("d-none");
     economyTab.style.display = "block";
     economyTab.hidden = false;
-    economyTab.classList.remove("p-3");
+    economyTab.classList.add("p-3");
     economyTab.style.backgroundColor = "#fff";
     economyTab.style.minHeight = "300px";
 

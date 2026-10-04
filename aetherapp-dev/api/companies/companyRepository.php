@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../shares/shareAccess.php';
+
 function aetherCompanyList(PDO $pdo): array
 {
     $stmt = $pdo->prepare('SELECT id, companyName FROM tblCompany ORDER BY companyName ASC, id ASC');
@@ -19,14 +21,26 @@ function aetherCompanyInsert(PDO $pdo, string $name, string $foundationDate): in
 {
     $stmt = $pdo->prepare(
         'INSERT INTO tblCompany
-            (companyName, description, foundationDate, companyValue, stability, profitability)
-         VALUES (:companyName, :description, :foundationDate, :companyValue, :stability, :profitability)'
+            (companyName, description, foundationDate, companyValue, stability, profitability,
+             initialCompanyValue, initialShareCount, issuedShareCount)
+         VALUES (:companyName, :description, :foundationDate, :companyValue, :stability, :profitability,
+                 0.00, 100, 100)'
     );
     $stmt->execute([
         'companyName' => $name, 'description' => '', 'foundationDate' => $foundationDate,
         'companyValue' => '0.00', 'stability' => 0, 'profitability' => 0,
     ]);
-    return (int) $pdo->lastInsertId();
+    $id = (int) $pdo->lastInsertId();
+    $stmt = $pdo->prepare('INSERT INTO tblCompanyAnonymousShares (idCompany, shareCount) VALUES (:idCompany, 0)');
+    $stmt->execute(['idCompany' => $id]);
+    if (aetherCompanySnapshotHistoryAvailable($pdo)) {
+        $stmt = $pdo->prepare("INSERT INTO tblCompanyFoundationSnapshot
+            (idCompany, foundationDate, initialCompanyValue, initialShareCount,
+             shareMarketPrice, anonymousShareCount, stability, profitability, sourceCode)
+            VALUES (:idCompany, :foundationDate, 0.00, 100, 0.00, 0, 0, 0, 'recorded')");
+        $stmt->execute(['idCompany' => $id, 'foundationDate' => $foundationDate]);
+    }
+    return $id;
 }
 
 function aetherCompanyLockForUpdate(PDO $pdo, int $idCompany): ?array

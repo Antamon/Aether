@@ -24,6 +24,9 @@ async function aetherFetchCurrentUser() {
     }
 
     const user = await response.json();
+    if (typeof user.csrfToken === 'string' && user.csrfToken !== '') {
+        window.AETHER_CSRF_TOKEN = user.csrfToken;
+    }
     aetherCurrentUserForCreation = user;
     return user;
 }

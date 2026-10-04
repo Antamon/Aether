@@ -1,5 +1,9 @@
 # Aether-databasemigraties
 
+## Aandelenhervorming fase 2 (voorbereid op 30 september 2026)
+
+De huidige dev-resultaten en de uitvoering staan in [`docs/aandelen-fase2-migratie-en-rekenregels.md`](../../docs/aandelen-fase2-migratie-en-rekenregels.md). De migraties `0006_share_reform_schema`, `0007_share_reform_backfill` en `0008_share_domain_codes` zijn voorbereid, maar in deze sessie **niet** tegen MariaDB uitgevoerd. De gebruiker heeft op 1 oktober 2026 uitvoering op `oneiros_beaetherdev` na back-up toegestaan. `run_0006_to_0008_share_reform_phpmyadmin.sql` bundelt de voorcontroles, migraties en verificaties in één uitvoerbaar bestand en blokkeert de productiedatabase `oneiros_be_aether`. Upload dit pakket niet als productie-uitrol zolang de oude procentuele aandeelroutes nog schrijven.
+
 Deze bestanden zijn bedoeld voor handmatige uitvoering via phpMyAdmin of een gecontroleerde MariaDB-CLI. Er bestaat geen publiek migratie-endpoint.
 
 ## Productieschema versus dev (exportvergelijking 24 september 2026)
@@ -47,6 +51,90 @@ De phpMyAdminbundel gebruikt geen `SOURCE`, stored procedure of `information_sch
 De blokkades gebruiken een bewust ongeldige tabelnaam in dynamische SQL. Daardoor stopt MariaDB duidelijk wanneer prerequisites of de unieke sleutel niet kloppen, zonder `CREATE ROUTINE`-privilege. Voor de migratie zijn `CREATE`, `SELECT`, `INSERT` en `DELETE` op de geselecteerde testdatabase nodig. `PREPARE` heeft in MariaDB geen afzonderlijk objectprivilege, maar moet door de hostingverbinding worden toegelaten. De runtime heeft daarnaast `UPDATE` nodig. Er is geen `ALTER`, `DROP`, routine- of `information_schema`-privilege nodig voor de normale 0004-bundel.
 
 MariaDB-DDL kan impliciet committen. Geen van deze bestanden claimt transactionele rollback van `CREATE TABLE` of `ALTER TABLE`.
+
+## Aandelenhervorming 0006–0009
+
+`run_0006_to_0008_share_reform_phpmyadmin.sql` is op `oneiros_beaetherdev` uitgevoerd en daarna met `inspect_share_reform_phase2_result_readonly.sql` inhoudelijk gecontroleerd. De teruggekoppelde aantallen staan in `docs/aandelen-fase2-migratie-en-rekenregels.md`.
+
+`run_0009_to_0010_share_phase3_phpmyadmin.sql` is de volgende, afzonderlijke dev-stap. Zij eist de gecontroleerde 13-bedrijven/10-bezitrijen/9-statusrijen-bron, zet de negen historische portefeuilles onder Fr 600.000 op niveau 0 en voegt het type gerichte aandeelhoudersverkoop toe. Pas na registraties 0009 én 0010 zijn de nieuwe endpoints onder `api/shares/` beschikbaar. Volg `docs/aandelen-fase3-transactiekern.md` voor de runtime- en validatievoorwaarden.
+
+## Fase 5: bedrijfsleiding en personeelsrechten
+
+Voer op `oneiros_beaetherdev` na een back-up precies eenmaal
+`run_0011_company_leadership_phase5_phpmyadmin.sql` uit, vóór het uploaden van de
+fase-5-PHP/JS-bestanden. De bundel vereist 0006–0010, voegt de expliciete
+`isCompanyLeader`-markering toe en koppelt alleen ondubbelzinnige historische
+Bedrijfsleider-traits automatisch. Historische traitlinks blijven staan.
+De databasegebruiker heeft `CREATE TEMPORARY TABLES` en `ALTER` nodig; de
+tijdelijke kandidaatlijst wordt vóór de kolomwijziging opgebouwd.
+Controleer het eindresultaat: `databaseName=oneiros_beaetherdev`,
+`migrationPresent=1`, `invalidLeaders=0`, `companiesWithMultipleLeaders=0`.
+Die laatste nul was een controle van de toenmalige data, geen blijvende regel:
+meerdere bedrijfsleiders bij hetzelfde bedrijf zijn toegestaan.
+Beoordeel daarna eventuele oude
+Bedrijfsleider-traits zonder eenduidige personeelskoppeling in het beheer.
+
+De actuele applicatie bepaalt het bedrijfsleiderschap uit het gekoppelde beroep
+`Bedrijfsleider` (ook de historische varianten klein/groot). Het personeelsformulier
+heeft daarom geen apart leidersvinkje: een gekoppelde leider krijgt er wel een
+vaardigheid en vereist niveau, die meewegen in de snapshotberekening. Zonder
+personeelskoppeling levert het beroep geen bedrijfsleidersinkomen op.
+
+Met PHP CLI kunnen de zuivere rekenregels worden nagekeken via
+`php tests/share_phase5_rules.php`. De nieuwe gerichte personeelsroute is
+`api/companies/saveCompanyPersonnelAction.php`; de bedrijfsleider ziet alleen
+de toegestane velden op `leaderPersonnel.html`. De bestaande volledige
+personeelsroute blijft uitsluitend voor `director` en `administrator`.
+
+MariaDB kan `ALTER TABLE` impliciet committen. Herstel van een mislukte
+gedeeltelijke uitvoering vereist daarom inspectie van kolom en
+migratieregistratie voordat deze bundel opnieuw wordt gebruikt.
+
+## Fase 6: frontend
+
+Fase 6 gebruikt de bestaande migraties 0006–0011 en vereist geen nieuw SQL-bestand.
+De schermen en de nieuwe leesroute staan beschreven in
+`docs/aandelen-fase6-frontend.md`.
+
+## Fase 7: vrijgavecontrole
+
+`inspect_share_reform_phase7_readonly.sql` bevat uitsluitend SELECT-opdrachten voor
+de gekozen database. Het is geen migratie. Interpretatie van de resultaten,
+regressietests en de uitrolvolgorde staan in `docs/aandelen-fase7-vrijgave.md`.
+
+## Migratie 0012: oprichting en snapshotgeschiedenis
+
+Voer `run_0012_company_snapshot_history_phpmyadmin.sql` eenmaal uit op de
+geselecteerde database `oneiros_beaetherdev` voordat de nieuwe bedrijfspagina
+en PHP-bestanden online gaan. Maak eerst een databaseback-up. De eindrij moet
+`migrationPresent = 1` tonen en `foundationSnapshots` moet gelijk zijn aan
+`companies`. Oorspronkelijke bedrijfswaarde en het initiële aantal aandelen
+worden uit de bestaande bedrijfsgegevens overgenomen. Een onbekende historische
+marktprijs, stabiliteit, rendabiliteit of anonieme voorraad blijft `NULL`;
+de bedrijfspagina toont dan ‘Onbekend’. Nieuwe event-snapshots bewaren de
+bedrijfswaarde, uitgegeven en anonieme aandelen, marktprijs, stabiliteit en
+rendabiliteit. De initiële waarden staan alleen bij de oprichting. Bewerk
+oprichtingswaarden en event-snapshots via de
+bijbehorende kaarten op de bedrijfspagina.
+
+De bedrijfspagina toont onder de algemene gegevens twee kolommen: links
+stabiliteit, aandeelhouders en snapshots; rechts rendabiliteit en personeel.
+Directors en administrators kunnen elke event-snapshot en de oprichting later
+nog corrigeren. Een correctie aan een toegepaste snapshot laat reeds geboekte
+dividenden en winst/verlies ongewijzigd. Bij correctie van de recentste
+snapshot wordt een verschil in bedrijfswaarde of aandelenvoorraad ook in de
+actuele bedrijfsstand verwerkt; oudere snapshots wijzigen de actuele stand niet.
+De bedrijfspagina laadt de eventkeuze via de bestaande event-API. Ongebruikte
+events vóór de recentste bedrijfssnapshot blijven zichtbaar maar uitgeschakeld,
+omdat snapshots momenteel in eventvolgorde worden aangemaakt.
+
+## Migratie 0013: functiebeschrijving bedrijfspersoneel
+
+Voer `run_0013_company_personnel_function_description_phpmyadmin.sql` uit
+na migratie 0012 en vóór het uploaden van de bijbehorende PHP- en JS-code.
+De laatste resultaatrij moet `migrationPresent = 1` en `columnPresent = 1`
+tonen. De nieuwe kolom bewaart per personeelslid de beschrijving van diens
+functie binnen het bedrijf. Bestaande beschrijvingen beginnen leeg.
 
 ## Migratie 0005: unieke eventdeelname
 

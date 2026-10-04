@@ -6,36 +6,30 @@ require_once __DIR__ . '/../characters/characterPointUtils.php';
 require_once __DIR__ . '/../characters/characterMediaUtils.php';
 require_once __DIR__ . '/../characters/gossipKnowledgeUtils.php';
 require_once __DIR__ . '/../characters/characterSkillActionUtils.php';
+require_once __DIR__ . '/../auth/accessControl.php';
 
-function requirePrivilegedAdminAccess(PDO $pdo): array
+function requirePrivilegedAdminAccess(PDO $pdo, bool $requireCsrf = false): array
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    $currentUserId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
-    if ($currentUserId <= 0) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Geen gebruiker in sessie.']);
-        exit;
-    }
-
-    $currentUserRole = getCurrentUserRole($pdo);
-    if (!isPrivilegedUserRole($currentUserRole)) {
+    $user = aetherRequireAuthenticatedUser($pdo);
+    if (!aetherIsPrivilegedRole($user['role'])) {
         http_response_code(403);
         echo json_encode(['error' => 'Je hebt geen rechten om de adminpagina te beheren.']);
         exit;
     }
 
+    if ($requireCsrf) {
+        aetherRequireCsrfToken();
+    }
+
     return [
-        'idUser' => $currentUserId,
-        'role' => $currentUserRole,
+        'idUser' => $user['id'],
+        'role' => $user['role'],
     ];
 }
 
-function requireAdministratorAccess(PDO $pdo): array
+function requireAdministratorAccess(PDO $pdo, bool $requireCsrf = false): array
 {
-    $user = requirePrivilegedAdminAccess($pdo);
+    $user = requirePrivilegedAdminAccess($pdo, $requireCsrf);
     if (($user['role'] ?? '') !== 'administrator') {
         http_response_code(403);
         echo json_encode(['error' => 'Alleen administrators kunnen categorieën beheren.']);
@@ -173,16 +167,12 @@ function isSkillVisibilitySecret(PDO $pdo, mixed $value): bool
 
 function fetchAdminSkillTypeOptions(PDO $pdo): array
 {
-    try {
-        $rows = dbAll(
-            $pdo,
-            'SELECT id, code, name, description
-               FROM tblSkillType
-              ORDER BY name ASC, id ASC'
-        );
-    } catch (Throwable $e) {
-        return [];
-    }
+    $rows = dbAll(
+        $pdo,
+        'SELECT id, code, name, description
+           FROM tblSkillType
+          ORDER BY name ASC, id ASC'
+    );
 
     return array_map(static function (array $row): array {
         return [

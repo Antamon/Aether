@@ -338,7 +338,6 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
             await renderCharacterLivingStandardSection(data);
             await renderCharacterStaffSection(data);
             renderCharacterLanguagesSection(data);
-            renderCharacterEconomyTab(data);
 
             // Nieuwe skills mogen toegevoegd worden
             const selNew = document.getElementById("idNewSkill");
@@ -379,7 +378,6 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
             await renderCharacterLivingStandardSection(data);
             await renderCharacterStaffSection(data);
             renderCharacterLanguagesSection(data);
-            renderCharacterEconomyTab(data);
 
             // Nieuwe skills niet toe te voegen
             const selNew = document.getElementById("idNewSkill");

@@ -137,7 +137,7 @@ function calculateTraitIncomeAtRank(trait) {
     }
 
     const rankType = String(trait?.rankType || "singular");
-    const rank = Number(trait?.rank ?? 1);
+    const rank = Number(trait?.incomeRank ?? trait?.rank ?? 1);
     const evolution = Number(trait?.evolution);
     const hasEvolution = Number.isFinite(evolution) && evolution !== 0;
 
@@ -253,6 +253,12 @@ function setupTraitListeners() {
         const idCharacter = Number(document.getElementById("idCharacter")?.value || 0);
         if (!row || !idCharacter) return;
 
+        if (action === "trait-reset-profession-sector") {
+            delete professionSectorSelectionByCharacter[idCharacter];
+            renderLeftTraitModule(currentCharacter, canEditTraitsForCharacter(currentCharacter));
+            return;
+        }
+
         let idTrait = Number(row.dataset.idTrait || 0);
         if (action === "trait-add") {
             const select = row.querySelector("select");
@@ -331,7 +337,7 @@ function setupTraitListeners() {
 }
 
 function getUpperClassLeftTraitGroups(character, traitGroups) {
-    const groups = Array.isArray(traitGroups) ? traitGroups : [];
+    const groups = withoutLegacyShareTraits(traitGroups);
     if (character?.class !== "upper class") {
         return [];
     }
@@ -340,12 +346,20 @@ function getUpperClassLeftTraitGroups(character, traitGroups) {
 }
 
 function getMainTraitGroups(character, traitGroups) {
-    const groups = Array.isArray(traitGroups) ? traitGroups : [];
+    const groups = withoutLegacyShareTraits(traitGroups);
     if (character?.class !== "upper class") {
         return groups;
     }
 
     return groups.filter((group) => getTraitGroupSheetZone(group) !== "left");
+}
+
+function withoutLegacyShareTraits(traitGroups) {
+    return (Array.isArray(traitGroups) ? traitGroups : []).map((group) => ({
+        ...group,
+        linkedTraits: (group.linkedTraits || []).filter((trait) => !isCompanyShareTraitClient(trait)),
+        options: (group.options || []).filter((trait) => !isCompanyShareTraitClient(trait)),
+    })).filter((group) => group.linkedTraits.length || group.options.length);
 }
 
 function getProfessionGroups(character) {
@@ -584,6 +598,9 @@ function formatTraitOptionLabel(option) {
         return "";
     }
 
+    if (option?.leaderSemanticCode === "company_leader") {
+        return `${name} (${option?.leaderCompanyId ? Number(option.staffRequirements || 0) : "?"})`;
+    }
     return `${name} (${Number.isFinite(cost) ? cost : 0})`;
 }
 
@@ -657,12 +674,13 @@ function sortTraitOptions(options) {
 
 function createLinkedTraitRow(link, group, canEdit) {
     const row = document.createElement("div");
-    row.className = "input-group mb-2 trait-row";
+    row.className = `input-group mb-2 trait-row${link?.inactive ? " opacity-50" : ""}`;
+    if (link?.inactive) row.title = link.inactiveReason || "Deze beroepsrang is tijdelijk inactief.";
     row.dataset.idTrait = link.idTrait;
     row.dataset.linked = "true";
 
     const groupedTraitGroup = isGroupedTraitGroup(group);
-    const canManageThisTrait = canEdit && canManageTraitClient(link);
+    const canManageThisTrait = canEdit && !link?.inactive && canManageTraitClient(link);
     row.dataset.grouped = groupedTraitGroup ? "true" : "false";
 
     row.appendChild(createTraitBookButton(link.description));
@@ -671,7 +689,7 @@ function createLinkedTraitRow(link, group, canEdit) {
         row.appendChild(createTraitRankBadge(link));
     }
 
-    const selectOptions = groupedTraitGroup
+    let selectOptions = groupedTraitGroup
         ? sortTraitOptions(
             (group.options || []).filter((option) =>
                 Number(option.id) === Number(link.idTrait) ||
@@ -682,6 +700,18 @@ function createLinkedTraitRow(link, group, canEdit) {
             )
         )
         : [link];
+    if (link.leaderSemanticCode === "company_leader") {
+        selectOptions = selectOptions.map((option) => Number(option.id) === Number(link.idTrait)
+            ? { ...option, ...link, id: link.idTrait }
+            : option);
+    }
+    if (groupedTraitGroup && !selectOptions.some((option) => Number(option.id) === Number(link.idTrait))) {
+        selectOptions = [
+            { ...link, id: link.idTrait },
+            ...selectOptions.filter((option) =>
+                !(link.leaderSemanticCode === "company_leader" && option.leaderSemanticCode === "company_leader"))
+        ];
+    }
     const select = createTraitSelect(selectOptions, link.idTrait, !canManageThisTrait || !groupedTraitGroup);
     row.appendChild(select);
 
@@ -754,6 +784,18 @@ function createPendingTraitRow(group, canEdit) {
     btnAdd.dataset.action = "trait-add";
     btnAdd.innerHTML = `<i class="fa-solid fa-check"></i>`;
     row.appendChild(btnAdd);
+
+    if (getSelectedProfessionGroup(currentCharacter)
+        && (group.options || []).some((option) => option?.type === "profession")) {
+        const btnReset = document.createElement("button");
+        btnReset.type = "button";
+        btnReset.className = "btn btn-danger";
+        btnReset.dataset.action = "trait-reset-profession-sector";
+        btnReset.setAttribute("aria-label", "Kies een andere beroepssector");
+        btnReset.title = "Kies een andere beroepssector";
+        btnReset.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+        row.appendChild(btnReset);
+    }
 
     updatePendingTraitRow(row);
     return row;

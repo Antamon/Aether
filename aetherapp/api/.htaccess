@@ -1,0 +1,6 @@
+<IfModule mod_headers.c>
+    # API responses may contain session-bound or otherwise sensitive information.
+    Header always set Cache-Control "private, no-store, no-cache, must-revalidate, max-age=0"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+</IfModule>

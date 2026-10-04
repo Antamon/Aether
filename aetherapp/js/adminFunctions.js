@@ -818,7 +818,7 @@ function openAdminKnowledgeGossipModal(character) {
 
 async function saveAdminKnowledgeVisibility(idEvent, idCharacter, isVisible) {
     try {
-        await apiFetchJson("api/admin/saveKnowledgeVisibility.php", {
+        await apiFetchIdempotentJson("api/admin/saveKnowledgeVisibility.php", {
             method: "POST",
             body: {
                 idEvent: Number(idEvent),
@@ -837,7 +837,7 @@ async function saveAdminKnowledgeVisibility(idEvent, idCharacter, isVisible) {
 
 async function deleteAdminKnowledgeUnlock(idEvent, idSourceCharacter, idViewerCharacter) {
     try {
-        await apiFetchJson("api/admin/deleteKnowledgeUnlock.php", {
+        await apiFetchIdempotentJson("api/admin/deleteKnowledgeUnlock.php", {
             method: "POST",
             body: {
                 idEvent: Number(idEvent),
@@ -1383,7 +1383,7 @@ async function saveAdminSkill(options = {}) {
                 return false;
             }
 
-            const result = await apiFetchJson("api/admin/saveSkill.php", {
+            const result = await apiFetchIdempotentJson("api/admin/saveSkill.php", {
                 method: "POST",
                 body: {
                     idSkill,

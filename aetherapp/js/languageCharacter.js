@@ -244,22 +244,6 @@ function renderCharacterLanguagesSection(character) {
         }
     }
 
-    const languageList = languages.length > 0
-        ? `<ul class="list-unstyled mb-3">${languages.map((language) => `
-            <li class="d-flex justify-content-between align-items-center gap-3 mb-2">
-                <span>${language.name || ""}</span>
-                ${canManage ? `
-                    <button type="button"
-                            class="btn btn-sm btn-outline-danger"
-                            data-action="delete-character-language"
-                            data-id-character-language="${Number(language.id || 0)}">
-                        Verwijderen
-                    </button>
-                ` : ""}
-            </li>
-        `).join("")}</ul>`
-        : `<p class="text-muted mb-3">Nog geen extra schrijftalen gekozen.</p>`;
-
     const addButtonDisabled = !canManage || !summary.canAddLanguage;
     const addHelp = !summary.canAddLanguage && character?.type === "player"
         ? `<div class="form-text">Geen vrije taalslots meer en onvoldoende ervaringspunten voor een extra taal.</div>`
@@ -267,7 +251,7 @@ function renderCharacterLanguagesSection(character) {
 
     container.innerHTML = `
         <p class="text-muted mb-3">${introText}</p>
-        ${languageList}
+        <div data-role="character-language-list"></div>
         ${canManage ? `
             <div>
                 <button type="button"
@@ -280,6 +264,35 @@ function renderCharacterLanguagesSection(character) {
             </div>
         ` : ""}
     `;
+
+    const languageListHost = container.querySelector("[data-role='character-language-list']");
+    if (languages.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "text-muted mb-3";
+        empty.textContent = "Nog geen extra schrijftalen gekozen.";
+        languageListHost?.appendChild(empty);
+    } else {
+        const list = document.createElement("ul");
+        list.className = "list-unstyled mb-3";
+        languages.forEach((language) => {
+            const item = document.createElement("li");
+            item.className = "d-flex justify-content-between align-items-center gap-3 mb-2";
+            const name = document.createElement("span");
+            name.textContent = language.name || "";
+            item.appendChild(name);
+            if (canManage) {
+                const removeButton = document.createElement("button");
+                removeButton.type = "button";
+                removeButton.className = "btn btn-sm btn-outline-danger";
+                removeButton.dataset.action = "delete-character-language";
+                removeButton.dataset.idCharacterLanguage = String(Number(language.id || 0));
+                removeButton.textContent = "Verwijderen";
+                item.appendChild(removeButton);
+            }
+            list.appendChild(item);
+        });
+        languageListHost?.appendChild(list);
+    }
 
     const addButton = document.getElementById("addCharacterLanguageButton");
     if (addButton) {

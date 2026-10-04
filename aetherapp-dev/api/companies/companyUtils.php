@@ -6,7 +6,9 @@ require_once __DIR__ . '/../characters/characterPointUtils.php';
 require_once __DIR__ . '/../characters/economyUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/../shared/decimal.php';
+require_once __DIR__ . '/companyLeadershipRules.php';
 require_once __DIR__ . '/companyAccess.php';
+require_once __DIR__ . '/../shares/shareAccess.php';
 
 function normalizeCompanySliderValue(mixed $value): int
 {
@@ -68,7 +70,7 @@ function getCompanyTypeDefinitions(): array
 function getCompanyTypeByValue(mixed $value): array
 {
     try {
-        $companyValue = aetherNormalizeDecimal($value, 2);
+        $companyValue = aetherNormalizeCalculatedDecimal($value, 2);
     } catch (InvalidArgumentException) {
         $companyValue = '0.00';
     }
@@ -77,23 +79,7 @@ function getCompanyTypeByValue(mixed $value): array
     }
     $definitions = getCompanyTypeDefinitions();
 
-    if (aetherDecimalCompare($companyValue, '30000.00') <= 0) {
-        return $definitions['micro'];
-    }
-
-    if (aetherDecimalCompare($companyValue, '450000.00') <= 0) {
-        return $definitions['family'];
-    }
-
-    if (aetherDecimalCompare($companyValue, '6750000.00') <= 0) {
-        return $definitions['national'];
-    }
-
-    if (aetherDecimalCompare($companyValue, '101250000.00') <= 0) {
-        return $definitions['small_international'];
-    }
-
-    return $definitions['large_international'];
+    return $definitions[aetherCompanyLeaderTier($companyValue)['key']];
 }
 
 function enrichCompanyWithType(array $company): array
@@ -398,6 +384,7 @@ function getCompanySnapshotEventOptions(PDO $pdo): array
               ORDER BY dateStart ASC, id ASC'
         );
     } catch (Throwable $e) {
+        error_log('getCompanySnapshotEventOptions failed: ' . $e->getMessage());
         return [];
     }
 
@@ -436,12 +423,12 @@ function generateRandomCompanySnapshotAdjustmentFromBounds(
     mixed $lowerBoundPercentage,
     mixed $upperBoundPercentage
 ): string {
-    $normalizedCompanyValue = aetherNormalizeDecimal($companyValue, 2);
+    $normalizedCompanyValue = aetherNormalizeCalculatedDecimal($companyValue, 2);
     if (aetherDecimalCompare($normalizedCompanyValue, '0.00') < 0) {
         $normalizedCompanyValue = '0.00';
     }
-    $lowerPercentage = aetherNormalizeDecimal($lowerBoundPercentage, 2);
-    $upperPercentage = aetherNormalizeDecimal($upperBoundPercentage, 2);
+    $lowerPercentage = aetherNormalizeCalculatedDecimal($lowerBoundPercentage, 2);
+    $upperPercentage = aetherNormalizeCalculatedDecimal($upperBoundPercentage, 2);
     $lowerAmountInCents = aetherDecimalToMinorUnits(
         aetherDecimalMultiplyRatio($normalizedCompanyValue, aetherDecimalToMinorUnits($lowerPercentage), 10000)
     );
@@ -690,8 +677,8 @@ function applyCompanyPersonnelImpactToSnapshotAdjustment(
     mixed $rawAdjustmentAmount,
     mixed $personnelImpactPercentage
 ): array {
-    $normalizedRawAdjustmentAmount = aetherNormalizeDecimal($rawAdjustmentAmount, 2);
-    $normalizedPersonnelImpactPercentage = aetherNormalizeDecimal($personnelImpactPercentage, 2);
+    $normalizedRawAdjustmentAmount = aetherNormalizeCalculatedDecimal($rawAdjustmentAmount, 2);
+    $normalizedPersonnelImpactPercentage = aetherNormalizeCalculatedDecimal($personnelImpactPercentage, 2);
     $personnelAdjustmentAmount = '0.00';
 
     if (aetherDecimalCompare($normalizedPersonnelImpactPercentage, '0.00') > 0
@@ -728,7 +715,7 @@ function calculateCompanySnapshotFinancials(
     mixed $upperBoundPercentage = null
 ): array
 {
-    $normalizedCompanyValue = aetherNormalizeDecimal($companyValue, 2);
+    $normalizedCompanyValue = aetherNormalizeCalculatedDecimal($companyValue, 2);
     if (aetherDecimalCompare($normalizedCompanyValue, '0.00') < 0) {
         $normalizedCompanyValue = '0.00';
     }
@@ -745,7 +732,7 @@ function calculateCompanySnapshotFinancials(
         (int) $profitabilityPercentage,
         100
     );
-    $normalizedPersonnelSalaryIncreaseExpenseAmount = aetherNormalizeDecimal($personnelSalaryIncreaseExpenseAmount, 2);
+    $normalizedPersonnelSalaryIncreaseExpenseAmount = aetherNormalizeCalculatedDecimal($personnelSalaryIncreaseExpenseAmount, 2);
     if (aetherDecimalCompare($normalizedPersonnelSalaryIncreaseExpenseAmount, '0.00') < 0) {
         $normalizedPersonnelSalaryIncreaseExpenseAmount = '0.00';
     }
@@ -769,9 +756,9 @@ function calculateCompanySnapshotFinancials(
         'companyValue' => $normalizedCompanyValue,
         'profitabilityPercentage' => $profitabilityPercentage,
         'stabilityRangePercentage' => $stabilityRangePercentage,
-        'personnelImpactPercentage' => aetherNormalizeDecimal($personnelImpactPercentage, 2),
-        'stabilityLowerBoundPercentage' => aetherNormalizeDecimal($resolvedLowerBoundPercentage, 2),
-        'stabilityUpperBoundPercentage' => aetherNormalizeDecimal($resolvedUpperBoundPercentage, 2),
+        'personnelImpactPercentage' => aetherNormalizeCalculatedDecimal($personnelImpactPercentage, 2),
+        'stabilityLowerBoundPercentage' => aetherNormalizeCalculatedDecimal($resolvedLowerBoundPercentage, 2),
+        'stabilityUpperBoundPercentage' => aetherNormalizeCalculatedDecimal($resolvedUpperBoundPercentage, 2),
         'personnelSalaryIncreaseExpenseAmount' => $normalizedPersonnelSalaryIncreaseExpenseAmount,
         'baseProfitAmountBeforePersonnel' => $baseProfitAmountBeforePersonnel,
         'baseProfitAmount' => $baseProfitAmount,
@@ -788,6 +775,9 @@ function getCompanySnapshots(PDO $pdo, int $idCompany, bool $strict = false): ar
         return [];
     }
 
+    $historyColumns = aetherCompanySnapshotHistoryAvailable($pdo)
+        ? 'cs.issuedShareCount, cs.anonymousShareCount,'
+        : 'NULL AS issuedShareCount, NULL AS anonymousShareCount,';
     try {
         $rows = dbAll(
             $pdo,
@@ -795,6 +785,8 @@ function getCompanySnapshots(PDO $pdo, int $idCompany, bool $strict = false): ar
                 cs.id,
                 cs.idEvent,
                 cs.companyValue,
+                cs.shareMarketPrice,
+                ' . $historyColumns . '
                 cs.stability,
                 cs.profitability,
                 cs.appliedAction,
@@ -828,6 +820,9 @@ function getCompanySnapshots(PDO $pdo, int $idCompany, bool $strict = false): ar
             'dateStart' => (string) ($row['dateStart'] ?? ''),
             'dateEnd' => (string) ($row['dateEnd'] ?? ''),
             'companyValue' => round((float) ($row['companyValue'] ?? 0), 2),
+            'issuedShareCount' => $row['issuedShareCount'] === null ? null : (int) $row['issuedShareCount'],
+            'anonymousShareCount' => $row['anonymousShareCount'] === null ? null : (int) $row['anonymousShareCount'],
+            'shareMarketPrice' => $row['shareMarketPrice'] === null ? null : (float) $row['shareMarketPrice'],
             'stability' => normalizeCompanySliderValue($row['stability'] ?? 0),
             'profitability' => normalizeCompanySliderValue($row['profitability'] ?? 0),
             'appliedAction' => (string) ($row['appliedAction'] ?? 'none'),
@@ -840,6 +835,27 @@ function getCompanySnapshots(PDO $pdo, int $idCompany, bool $strict = false): ar
             'stabilityAdjustmentAmount' => round((float) ($row['stabilityAdjustmentAmount'] ?? 0), 2),
         ];
     }, $rows);
+}
+
+function getCompanyFoundationSnapshot(PDO $pdo, int $idCompany): ?array
+{
+    if (!aetherCompanySnapshotHistoryAvailable($pdo)) return null;
+    $stmt = $pdo->prepare('SELECT foundationDate, initialCompanyValue, initialShareCount,
+        shareMarketPrice, anonymousShareCount, stability, profitability, sourceCode
+        FROM tblCompanyFoundationSnapshot WHERE idCompany = :idCompany');
+    $stmt->execute(['idCompany' => $idCompany]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) return null;
+    return [
+        'foundationDate' => $row['foundationDate'],
+        'initialCompanyValue' => $row['initialCompanyValue'] === null ? null : (float) $row['initialCompanyValue'],
+        'initialShareCount' => $row['initialShareCount'] === null ? null : (int) $row['initialShareCount'],
+        'shareMarketPrice' => $row['shareMarketPrice'] === null ? null : (float) $row['shareMarketPrice'],
+        'anonymousShareCount' => $row['anonymousShareCount'] === null ? null : (int) $row['anonymousShareCount'],
+        'stability' => $row['stability'] === null ? null : (int) $row['stability'],
+        'profitability' => $row['profitability'] === null ? null : (int) $row['profitability'],
+        'sourceCode' => $row['sourceCode'],
+    ];
 }
 
 function getCompanyDetailData(PDO $pdo, int $idCompany): ?array
@@ -863,12 +879,20 @@ function getCompanyDetailData(PDO $pdo, int $idCompany): ?array
     $company['companyValue'] = round((float) ($company['companyValue'] ?? 0), 2);
     $company['stability'] = normalizeCompanySliderValue($company['stability'] ?? 0);
     $company['profitability'] = normalizeCompanySliderValue($company['profitability'] ?? 0);
-    $company = enrichCompanyWithType($company);
     $company['logoUrl'] = getCompanyLogoUrl((int) $company['id']);
     $company['shareholderGroups'] = getCompanyShareholderGroups($pdo, (int) $company['id']);
     $company['availableSharePercentage'] = getCompanyAvailableSharePercentage($pdo, (int) $company['id']);
     $company['snapshotEventOptions'] = getCompanySnapshotEventOptions($pdo);
+    $company['foundationSnapshot'] = getCompanyFoundationSnapshot($pdo, (int) $company['id']);
     $company['snapshots'] = getCompanySnapshots($pdo, (int) $company['id']);
+    $latestSnapshot = $company['snapshots'] === [] ? null : $company['snapshots'][count($company['snapshots']) - 1];
+    $company['displayCompanyValue'] = $latestSnapshot !== null
+        ? $latestSnapshot['companyValue']
+        : ($company['foundationSnapshot']['initialCompanyValue'] ?? $company['companyValue']);
+    $displayType = getCompanyTypeByValue($company['displayCompanyValue']);
+    $company['companyTypeKey'] = $displayType['key'];
+    $company['companyTypeLabel'] = $displayType['label'];
+    $company['companyTypeDescription'] = $displayType['description'];
     $company['personnelImportanceOptions'] = getCompanyPersonnelImportanceOptions();
     $company['personnelCharacterOptions'] = getCompanyPersonnelCharacterOptions($pdo);
     $company['personnelSkillOptions'] = getCompanyPersonnelSkillOptions($pdo);
@@ -877,27 +901,30 @@ function getCompanyDetailData(PDO $pdo, int $idCompany): ?array
     return $company;
 }
 
-function refreshCompanySnapshotsForCurrentPersonnel(PDO $pdo, int $idCompany): void
+function refreshCompanySnapshotsForCurrentPersonnel(PDO $pdo, int $idCompany, ?int $idSnapshot = null): void
 {
     if ($idCompany <= 0) {
         return;
     }
 
+    $snapshotFilter = $idSnapshot === null ? '' : ' AND id = :idSnapshot';
+    $params = ['idCompany' => $idCompany];
+    if ($idSnapshot !== null) $params['idSnapshot'] = $idSnapshot;
     try {
         $snapshots = dbAll(
             $pdo,
             'SELECT id, companyValue, stability, profitability, appliedAction
                FROM tblCompanySnapshot
-              WHERE idCompany = :idCompany',
-            ['idCompany' => $idCompany]
+              WHERE idCompany = :idCompany' . $snapshotFilter,
+            $params
         );
     } catch (Throwable $e) {
         $snapshots = dbAll(
             $pdo,
             'SELECT id, companyValue, stability, profitability
                FROM tblCompanySnapshot
-              WHERE idCompany = :idCompany',
-            ['idCompany' => $idCompany]
+              WHERE idCompany = :idCompany' . $snapshotFilter,
+            $params
         );
     }
 
@@ -1026,6 +1053,9 @@ function getCompanyPersonnelProfessionNamesByCharacter(PDO $pdo, array $characte
     foreach ($rows as $row) {
         $idCharacter = (int) ($row['idCharacter'] ?? 0);
         $name = trim((string) ($row['name'] ?? ''));
+        if (in_array($name, ['Bedrijfsleider klein', 'Bedrijfsleider groot'], true)) {
+            $name = 'Bedrijfsleider';
+        }
         if ($idCharacter <= 0 || $name === '') {
             continue;
         }
@@ -1124,6 +1154,8 @@ function getCompanyPersonnelCharacterOptions(PDO $pdo): array
             'displayName' => $presentation['displayName'],
             'nameLabel' => $presentation['nameLabel'],
             'professionLabel' => $presentation['professionLabel'],
+            'isCompanyLeaderProfession' => (string) ($row['class'] ?? '') === 'middle class'
+                && in_array('Bedrijfsleider', $professionNamesByCharacter[$idCharacter] ?? [], true),
             'class' => (string) ($row['class'] ?? ''),
             'type' => (string) ($row['type'] ?? ''),
             'state' => (string) ($row['state'] ?? ''),
@@ -1205,7 +1237,11 @@ function getCompanyPersonnelEntries(PDO $pdo, int $idCompany, bool $strict = fal
                 cp.id AS idCompanyPersonnel,
                 cp.idCharacter,
                 cp.importance,
+                cp.functionDescription,
                 cp.salaryIncreasePercentage,
+                cp.isBoardMember,
+                cp.isCompanyLeader,
+                co.companyValue AS employerCompanyValue,
                 c.firstName,
                 c.lastName,
                 c.title,
@@ -1218,6 +1254,7 @@ function getCompanyPersonnelEntries(PDO $pdo, int $idCompany, bool $strict = fal
                 ss.name AS specialisationName,
                 ss.kind AS specialisationKind
              FROM tblCompanyPersonnel AS cp
+             JOIN tblCompany AS co ON co.id = cp.idCompany
              JOIN tblCharacter AS c
                ON c.id = cp.idCharacter
              LEFT JOIN tblCompanyPersonnelSkill AS cps
@@ -1263,6 +1300,8 @@ function getCompanyPersonnelEntries(PDO $pdo, int $idCompany, bool $strict = fal
                 $professionNamesByCharacter[$idCharacter] ?? []
             );
 
+            $isLeader = (string) ($row['class'] ?? '') === 'middle class'
+                && in_array('Bedrijfsleider', $professionNamesByCharacter[$idCharacter] ?? [], true);
             $entries[$entryKey] = [
                 'idCompanyPersonnel' => $entryKey,
                 'idCharacter' => $idCharacter,
@@ -1270,7 +1309,18 @@ function getCompanyPersonnelEntries(PDO $pdo, int $idCompany, bool $strict = fal
                 'nameLabel' => $presentation['nameLabel'],
                 'professionLabel' => $presentation['professionLabel'],
                 'importance' => normalizeCompanyPersonnelImportance($row['importance'] ?? 'Moderate'),
+                'functionDescription' => (string) ($row['functionDescription'] ?? ''),
                 'salaryIncreasePercentage' => normalizeCompanyPersonnelSalaryIncreasePercentage($row['salaryIncreasePercentage'] ?? 0),
+                'isBoardMember' => (int) ($row['isBoardMember'] ?? 0) === 1,
+                'isCompanyLeader' => $isLeader,
+                'leaderMonthlyIncome' => $isLeader
+                    ? (float) aetherCompanyLeaderMonthlyIncome($row['employerCompanyValue']) : 0,
+                'leaderStatusPoints' => $isLeader
+                    ? aetherCompanyLeaderTier($row['employerCompanyValue'])['statusPoints'] : 0,
+                'leaderPersonnelRequirement' => $isLeader
+                    ? aetherCompanyLeaderTier($row['employerCompanyValue'])['personnelRequirement'] : 0,
+                'monthlySalaryIncreaseAmount' => getCharacterCompanySalaryIncreaseAmount(
+                    $pdo, ['id' => $idCharacter, 'class' => (string) ($row['class'] ?? '')], $idCompany),
                 'skills' => [],
             ];
         }
@@ -1309,6 +1359,12 @@ function getCompanyPersonnelEntries(PDO $pdo, int $idCompany, bool $strict = fal
         }, $entry['skills']));
         return $entry;
     }, $entries));
+
+    usort($normalizedEntries, static function (array $left, array $right): int {
+        $category = static fn(array $entry): int => !empty($entry['isCompanyLeader']) ? 0
+            : (!empty($entry['isBoardMember']) ? 1 : 2);
+        return $category($left) <=> $category($right);
+    });
 
     return $normalizedEntries;
 }

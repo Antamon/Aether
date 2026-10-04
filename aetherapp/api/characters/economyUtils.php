@@ -7,11 +7,7 @@ require_once __DIR__ . '/companyShareUtils.php';
 
 function getCurrentUserId(): int
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    return isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
+    return aetherEnsureSessionIdentity();
 }
 
 function canViewCharacterEconomy(array $character, string $role, int $userId): bool

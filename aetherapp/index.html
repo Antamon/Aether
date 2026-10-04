@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="../favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="asset.php?path=css/style.css">
     <title>Aether applicatie</title>
 </head>
-<body>
+<body data-sidebar-page="characters">
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4" data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
             <a class="navbar-brand" href="index.html">
                     <img src="img/aether-logo.png" alt="Bootstrap">
@@ -22,10 +25,10 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling" aria-current="page" href="#"><i class="fa-solid fa-user"></i> Personages</a>
+                        <a class="nav-link" id="characterSidebarNavTrigger" aria-controls="offcanvasScrolling" aria-expanded="false" aria-current="page" href="#"><i class="fa-solid fa-user"></i> Personages</a>
                     </li>
                     <li class="nav-item mr-2">
-                        <a class="nav-link" id="eventParticipation" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Deelnames</a>
+                        <a class="nav-link" id="eventParticipation" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Evenementen</a>
                     </li>
                     <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
                         <a class="nav-link" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
@@ -39,13 +42,7 @@
         </div>
     </nav>
 
-    <!-- Offcanvas search box -->
-    <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Zoek personage</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
+    <template id="characterSidebarContent">
             <p>Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.</p>
             <div class="mb-2 d-none" id="sidebarCharacterUserFilterWrapper">
                 <div id="sidebarCharacterUserFilter"></div>
@@ -73,16 +70,7 @@
             <!-- List with character names -->
             <div id="characterNames" class="my-2"></div>
             <a class="nav-link" id="startNewCharacter" aria-current="page" href="#"><i class="fa-solid fa-user-plus"></i> Nieuw personage</a>
-
-        </div>
-    </div>  
-    <!-- Offcanvas tab toggle -->
-    <div class="offcanvas-tab" id="offcanvasTabToggle">
-        <button class="btn tab-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
-            <i class="fa-solid fa-user-gear"></i>
-            <i class="fa-solid fa-caret-right"></i>
-        </button>
-    </div>
+    </template>
 
     <!-- Character form -->
     <input type="hidden" id="idCharacter">
@@ -188,12 +176,12 @@
     <div class="container d-none" id="pageNav"></div>
 
     <!-- Charactersheet body -->
-    <div class="container" id="sheetBody">
+    <div class="container aether-page" id="sheetBody">
         <div class="row">
             <!-- Start character form -->
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="characterForm">
-                    <div class="card character-sheet-card mb-4">
+                    <div class="card aether-panel character-sheet-card mb-4">
                         <div class="card-body">
                             <div class="character-sheet-header mb-3">
                                 <div class="character-portrait-panel">
@@ -295,13 +283,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card character-sheet-card mb-4">
+                    <div class="card aether-panel character-sheet-card mb-4">
                         <div class="card-body">
                             <h4 class="character-sheet-card-title">Gezondheid</h4>
                             <div id="healthSectionContent"></div>
                         </div>
                     </div>
-                        <div class="card character-sheet-card mb-4" id="leftInfoSections">
+                        <div class="card aether-panel character-sheet-card mb-4" id="leftInfoSections">
                         <div class="card-body">
                             <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
                             <div class="mb-4" id="livingStandardSectionContent"></div>
@@ -331,7 +319,7 @@
 
             <div class="col-lg-6 col-12">
                 <div class="d-none" id="skills">
-                    <div class="card character-sheet-card mb-4">
+                    <div class="card aether-panel character-sheet-card mb-4">
                         <div class="card-body">
                             <h4 class="character-sheet-card-title">Vaardigheden</h4>
                             <div class="accordion mb-3" id="accordionSkills"></div>
@@ -342,7 +330,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card character-sheet-card" id="traitsSection">
+                    <div class="card aether-panel character-sheet-card" id="traitsSection">
                         <div class="card-body">
                             <h4 class="character-sheet-card-title">Statuseigenschappen</h4>
                             <div id="traitsContent"></div>
@@ -376,6 +364,7 @@
         <div class="d-none w-100" id="passportTab">
             <div id="passportTabContent" class="mt-3"></div>
         </div>
+    </div>
     </div>
     </div>
 
@@ -627,20 +616,23 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
-    <script src="js/mainFunctions.js"></script>
-    <script src="js/characterState.js"></script>
-    <script src="js/characterUtils.js"></script>
-    <script src="js/apiCharacter.js"></script>
-    <script src="js/formCharacter.js"></script>
-    <script src="js/languageCharacter.js"></script>
-    <script src="js/economyCharacter.js"></script>
-    <script src="js/actionsCharacter.js"></script>
-    <script src="js/passportCharacter.js"></script>
-    <script src="js/diaryCharacter.js"></script>
-    <script src="js/backgroundCharacter.js"></script>
-    <script src="js/createCharacter.js"></script>
-    <script src="js/characterFunctions.js"></script>
-    <script src="js/navCharacter.js"></script>
-    <script src="js/skillsCharacter.js"></script>
-    <script src="js/traitsCharacter.js"></script>
+    <script src="asset.php?path=js/mainFunctions.js"></script>
+    <script src="asset.php?path=js/updateManager.js"></script>
+    <script src="asset.php?path=js/characterState.js"></script>
+    <script src="asset.php?path=js/characterUtils.js"></script>
+    <script src="asset.php?path=js/apiCharacter.js"></script>
+    <script src="asset.php?path=js/formCharacter.js"></script>
+    <script src="asset.php?path=js/languageCharacter.js"></script>
+    <script src="asset.php?path=js/economyCharacter.js"></script>
+    <script src="asset.php?path=js/actionsCharacter.js"></script>
+    <script src="asset.php?path=js/passportCharacter.js"></script>
+    <script src="asset.php?path=js/richTextCharacter.js"></script>
+    <script src="asset.php?path=js/diaryCharacter.js"></script>
+    <script src="asset.php?path=js/backgroundCharacter.js"></script>
+    <script src="asset.php?path=js/createCharacter.js"></script>
+    <script src="asset.php?path=js/aetherSidebars.js"></script>
+    <script src="asset.php?path=js/characterFunctions.js"></script>
+    <script src="asset.php?path=js/navCharacter.js"></script>
+    <script src="asset.php?path=js/skillsCharacter.js"></script>
+    <script src="asset.php?path=js/traitsCharacter.js"></script>
 </body>

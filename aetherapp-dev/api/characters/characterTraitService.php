@@ -5,6 +5,9 @@ require_once __DIR__ . '/characterPointUtils.php';
 require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/characterAccess.php';
 require_once __DIR__ . '/characterTraitRepository.php';
+require_once __DIR__ . '/../shares/shareAccess.php';
+require_once __DIR__ . '/../companies/companyLeadershipRules.php';
+require_once __DIR__ . '/../companies/companyUtils.php';
 
 final class AetherCharacterTraitException extends RuntimeException
 {
@@ -16,6 +19,54 @@ final class AetherCharacterTraitException extends RuntimeException
 function aetherCanCurrentUserManageTrait(array $trait, string $role): bool
 {
     return isPrivilegedUserRole($role) || !traitHasFlag($trait, 'secret');
+}
+
+function aetherCharacterTraitPurchaseCost(PDO $pdo, array $trait, int $rank): int
+{
+    return aetherCompanyLeadershipAvailable($pdo) && aetherIsLegacyCompanyLeaderTrait($trait)
+        ? 0 : calculateTraitPointCost($trait, $rank);
+}
+
+/** A new job invalidates company-specific assessments but leaves employment intact. */
+function aetherResetCompanyPersonnelForProfessionChange(PDO $pdo, int $characterId): void
+{
+    $stmt = $pdo->prepare('SELECT idCompany FROM tblCompanyPersonnel
+        WHERE idCharacter = :idCharacter FOR UPDATE');
+    $stmt->execute(['idCharacter' => $characterId]);
+    $companyIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    if ($companyIds === []) return;
+
+    $isLeader = aetherCharacterHasCompanyLeaderProfession($pdo, $characterId) ? 1 : 0;
+    if ($isLeader) {
+        if (count($companyIds) > 1) {
+            throw new AetherCharacterTraitException(409,
+                'Een bedrijfsleider kan maar aan één bedrijf verbonden zijn.');
+        }
+    }
+
+    $delete = $pdo->prepare('DELETE cpss FROM tblCompanyPersonnelSkillSpecialisation AS cpss
+        JOIN tblCompanyPersonnelSkill AS cps ON cps.id = cpss.idCompanyPersonnelSkill
+        JOIN tblCompanyPersonnel AS cp ON cp.id = cps.idCompanyPersonnel
+        WHERE cp.idCharacter = :idCharacter');
+    $delete->execute(['idCharacter' => $characterId]);
+    $delete = $pdo->prepare('DELETE cps FROM tblCompanyPersonnelSkill AS cps
+        JOIN tblCompanyPersonnel AS cp ON cp.id = cps.idCompanyPersonnel
+        WHERE cp.idCharacter = :idCharacter');
+    $delete->execute(['idCharacter' => $characterId]);
+
+    $update = $pdo->prepare("UPDATE tblCompanyPersonnel
+        SET importance = 'Negligible', functionDescription = NULL,
+            salaryIncreasePercentage = 0,
+            isBoardMember = :isBoardMember, isCompanyLeader = :isCompanyLeader
+        WHERE idCharacter = :idCharacter");
+    $update->execute([
+        'isBoardMember' => $isLeader,
+        'isCompanyLeader' => $isLeader,
+        'idCharacter' => $characterId,
+    ]);
+    foreach ($companyIds as $idCompany) {
+        refreshCompanySnapshotsForCurrentPersonnel($pdo, $idCompany);
+    }
 }
 
 /** @return array<string, string> */
@@ -54,6 +105,14 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
         }
     }
 
+    if ((isCompanyShareTrait($trait) || ($currentTrait !== null && isCompanyShareTrait($currentTrait)))
+        && aetherShareLegacyWritesClosed($pdo)) {
+        throw new AetherCharacterTraitException(
+            409,
+            'De oude procentuele aandeeltraits zijn afgesloten. Vernieuw de pagina.'
+        );
+    }
+
     $link = aetherFetchCharacterTraitLink($pdo, $characterId, $traitId);
     $rankType = (string) $trait['rankType'];
     $currentRank = $link !== null ? (int) $link['rankValue'] : 0;
@@ -67,7 +126,7 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
         'id' => $character['id'], 'type' => $character['type'], 'idUser' => $character['idUser'],
         'experienceToTrait' => $character['experienceToTrait'],
     ]);
-    $currentCost = $link !== null ? calculateTraitPointCost($trait, $currentRank) : 0;
+    $currentCost = $link !== null ? aetherCharacterTraitPurchaseCost($pdo, $trait, $currentRank) : 0;
 
     if ($action === 'add') {
         if ($link !== null) return ['error' => 'Trait is al gekoppeld.'];
@@ -83,10 +142,14 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
             return ['error' => 'Er is al een beroep gekoppeld aan dit personage.'];
         }
         $newRank = isCompanyShareTrait($trait) ? getCompanyShareDraftStep($trait) : 1;
-        if (!$canOverspend && calculateTraitPointCost($trait, $newRank) > $points['availableStatusPoints']) {
+        $newCost = aetherCharacterTraitPurchaseCost($pdo, $trait, $newRank);
+        if (!$canOverspend && $newCost > $points['availableStatusPoints']) {
             return ['error' => 'Onvoldoende statuspunten.'];
         }
         aetherInsertCharacterTraitLink($pdo, $characterId, $traitId, $newRank);
+        if ((string) $trait['type'] === 'profession') {
+            aetherResetCompanyPersonnelForProfessionChange($pdo, $characterId);
+        }
         return ['status' => 'ok'];
     }
 
@@ -103,15 +166,22 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
                 'isCompanyShare' => true, 'shareDraftStep' => $currentTrait['shareDraftStep'] ?? null,
             ]);
         }
-        $delta = calculateTraitPointCost($trait, $rank) - calculateTraitPointCost($currentTrait, $rank);
+        $delta = aetherCharacterTraitPurchaseCost($pdo, $trait, $rank)
+            - aetherCharacterTraitPurchaseCost($pdo, $currentTrait, $rank);
         if (!$canOverspend && $delta > $points['availableStatusPoints']) return ['error' => 'Onvoldoende statuspunten voor deze wijziging.'];
         aetherChangeCharacterTraitLink($pdo, (int) $currentLink['id'], $traitId);
+        if ((string) $trait['type'] === 'profession') {
+            aetherResetCompanyPersonnelForProfessionChange($pdo, $characterId);
+        }
         return ['status' => 'ok'];
     }
 
     if ($action === 'remove') {
         if ($link === null) return ['error' => 'Trait-link niet gevonden.'];
         aetherDeleteCharacterTraitLink($pdo, (int) $link['id']);
+        if ((string) $trait['type'] === 'profession') {
+            aetherResetCompanyPersonnelForProfessionChange($pdo, $characterId);
+        }
         return ['status' => 'ok'];
     }
 
@@ -130,7 +200,8 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
         }
         $newRank = $currentRank - $step;
     }
-    if (!$canOverspend && calculateTraitPointCost($trait, $newRank) - $currentCost > $points['availableStatusPoints']) {
+    if (!$canOverspend && aetherCharacterTraitPurchaseCost($pdo, $trait, $newRank)
+        - $currentCost > $points['availableStatusPoints']) {
         return ['error' => 'Onvoldoende statuspunten.'];
     }
 

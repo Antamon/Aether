@@ -211,7 +211,7 @@ function pageNav(userRole, character, activeTab = "sheet") {
 
                 const newState = e.target.value;
                 try {
-                    await apiFetchJson("api/characters/updateCharacter.php", {
+                    await apiFetchFinancialJson("api/characters/updateCharacter.php", {
                         method: "POST",
                         body: {
                             id: idCharacter,
@@ -228,17 +228,17 @@ function pageNav(userRole, character, activeTab = "sheet") {
         getUserList();
     } else {
         renderCharacterNav(false);
-        document.getElementById("nameParticipant").innerHTML = character.nameParticipant;
-        document.getElementById("type").innerHTML = character.type;
-        document.getElementById("state").innerHTML = character.state;
+        document.getElementById("nameParticipant").textContent = character.nameParticipant || "";
+        document.getElementById("type").textContent = character.type || "";
+        document.getElementById("state").textContent = character.state || "";
     }
 
     const lblExp = document.getElementById("lblExperiance");
     if (lblExp) {
         if (character.type === "player") {
-            lblExp.innerHTML = `${spentExperience} / ${maxExperience}`;
+            lblExp.textContent = `${spentExperience} / ${maxExperience}`;
         } else {
-            lblExp.innerHTML = `${usedExperience} (${expertise})`;
+            lblExp.textContent = `${usedExperience} (${expertise})`;
         }
     }
 
@@ -327,10 +327,7 @@ function setupNavTabHandlers(character) {
 }
 
 function closeOffcanvasIfOpen() {
-    const offcanvasEl = document.getElementById("offcanvasScrolling");
-    if (!offcanvasEl) return;
-    const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
-    if (offcanvasInstance) {
-        offcanvasInstance.hide();
+    if (typeof window.closeCharacterSidebar === "function") {
+        window.closeCharacterSidebar();
     }
 }

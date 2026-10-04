@@ -346,7 +346,7 @@ function renderSections(container, character, sections, metaMap, tabName) {
 
 function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     const wrapper = document.createElement("div");
-    wrapper.className = "mb-4 border rounded p-3 bg-white background-section";
+    wrapper.className = "aether-panel mb-4 background-section";
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-center mb-2";
@@ -367,90 +367,13 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
 
     const viewDiv = document.createElement("div");
     viewDiv.className = "p-3";
-    viewDiv.innerHTML = content || `<span class="text-muted">Geen tekst beschikbaar.</span>`;
+    renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
 
     // Editor
-    const editorWrap = document.createElement("div");
-    editorWrap.className = "d-none";
-
-    const toolbar = document.createElement("div");
-    toolbar.className = "btn-group mb-2 flex-wrap";
-    toolbar.innerHTML = `
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold"><i class="fa-solid fa-bold"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic"><i class="fa-solid fa-italic"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertUnorderedList"><i class="fa-solid fa-list-ul"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertOrderedList"><i class="fa-solid fa-list-ol"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h2">H2</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h3">H3</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h4">H4</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h5">H5</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="p">P</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat"><i class="fa-solid fa-eraser"></i></button>
-    `;
-
-    const editor = document.createElement("div");
-    editor.className = "form-control";
-    editor.contentEditable = "true";
-    editor.style.minHeight = "180px";
-    editor.innerHTML = content || "";
-
-    const refreshToolbarState = () => {
-        const sel = document.getSelection();
-        let inEditor = false;
-        if (sel && sel.anchorNode) {
-            let node = sel.anchorNode;
-            while (node) {
-                if (node === editor) {
-                    inEditor = true;
-                    break;
-                }
-                node = node.parentNode;
-            }
-        }
-        toolbar.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
-        if (!inEditor) return;
-
-        const boldActive = document.queryCommandState("bold");
-        const italicActive = document.queryCommandState("italic");
-        const listActive = document.queryCommandState("insertUnorderedList");
-        const olistActive = document.queryCommandState("insertOrderedList");
-        if (boldActive) toolbar.querySelector('[data-cmd="bold"]')?.classList.add("active");
-        if (italicActive) toolbar.querySelector('[data-cmd="italic"]')?.classList.add("active");
-        if (listActive) toolbar.querySelector('[data-cmd="insertUnorderedList"]')?.classList.add("active");
-        if (olistActive) toolbar.querySelector('[data-cmd="insertOrderedList"]')?.classList.add("active");
-
-        const blockTag = (() => {
-            const sel = document.getSelection();
-            if (!sel || !sel.anchorNode) return null;
-            let n = sel.anchorNode;
-            while (n && n !== editor) {
-                if (n.nodeType === 1) {
-                    const tag = n.nodeName.toLowerCase();
-                    if (["h2", "h3", "h4", "h5", "p", "div"].includes(tag)) return tag;
-                }
-                n = n.parentNode;
-            }
-            return null;
-        })();
-        if (blockTag) {
-            const btn = toolbar.querySelector(`[data-cmd="formatBlock"][data-value="${blockTag}"]`);
-            if (btn) btn.classList.add("active");
-        }
-    };
-
-    toolbar.querySelectorAll("button").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const cmd = btn.dataset.cmd;
-            const val = btn.dataset.value || null;
-            editor.focus();
-            document.execCommand(cmd, false, val);
-            refreshToolbarState();
-        });
-    });
-
-    ["keyup", "mouseup", "focus"].forEach(evt => {
-        editor.addEventListener(evt, refreshToolbarState);
-    });
+    const richEditor = createCharacterRichTextEditor(content, { minHeight: "180px" });
+    const editorWrap = richEditor.wrapper;
+    editorWrap.classList.add("d-none");
+    const editor = richEditor.editor;
 
     const actions = document.createElement("div");
     actions.className = "mt-2 d-flex gap-2";
@@ -465,8 +388,6 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     actions.appendChild(btnSave);
     actions.appendChild(btnCancel);
 
-    editorWrap.appendChild(toolbar);
-    editorWrap.appendChild(editor);
     editorWrap.appendChild(actions);
 
     // Wire buttons
@@ -479,17 +400,21 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     }
 
     btnCancel.addEventListener("click", () => {
-        editor.innerHTML = content || "";
+        richEditor.setHtml(content);
         editorWrap.classList.add("d-none");
         viewDiv.classList.remove("d-none");
     });
 
     btnSave.addEventListener("click", async () => {
-        const newContent = editor.innerHTML.trim();
+        const newContent = richEditor.getHtml();
         try {
-            await saveCharacterSection(character.id, sectionKey, newContent);
-            // update view
-            viewDiv.innerHTML = newContent || `<span class="text-muted">Geen tekst beschikbaar.</span>`;
+            const result = await saveCharacterSection(character.id, sectionKey, newContent);
+            if (typeof result?.content !== "string") {
+                throw new Error("De server gaf geen gesaniteerde rich text terug.");
+            }
+            content = result.content;
+            richEditor.setHtml(content);
+            renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
             editorWrap.classList.add("d-none");
             viewDiv.classList.remove("d-none");
         } catch (err) {
@@ -524,7 +449,7 @@ async function renderTies(container, character) {
     }
 
     const block = document.createElement("div");
-    block.className = "mb-4 border rounded p-3 bg-white background-section";
+    block.className = "aether-panel mb-4 background-section";
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-center mb-2";

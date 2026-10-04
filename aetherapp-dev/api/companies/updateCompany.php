@@ -9,6 +9,7 @@ require_once __DIR__ . '/../shared/request.php';
 require_once __DIR__ . '/../shared/response.php';
 require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../shared/idempotency.php';
+require_once __DIR__ . '/../shares/shareAccess.php';
 
 try {
     $pdo = getPDO();
@@ -16,6 +17,15 @@ try {
     $input = aetherValidateInput(aetherReadJsonObject(), aetherCompanyUpdateSchema());
     $id = (int) $input['id'];
     unset($input['id']);
+    if (array_key_exists('companyValue', $input) && aetherShareLegacyWritesClosed($pdo)) {
+        $stmt = $pdo->prepare('SELECT companyValue FROM tblCompany WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $currentValue = $stmt->fetchColumn();
+        if ($currentValue === false || aetherDecimalCompare((string) $currentValue, $input['companyValue']) !== 0) {
+            aetherJsonError(409, 'Gebruik het nieuwe endpoint voor de bedrijfswaarde. Vernieuw de pagina.');
+        }
+        unset($input['companyValue']);
+    }
     if ($input === []) throw new AetherCompanyException(400, 'Geen velden om bij te werken.');
     $requestKey = aetherRequireIdempotencyKey();
     $response = aetherRunIdempotentMutation(

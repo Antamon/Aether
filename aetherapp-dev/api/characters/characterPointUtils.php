@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/characterLanguageUtils.php';
 require_once __DIR__ . '/../auth/accessControl.php';
+require_once __DIR__ . '/../companies/companyLeadershipRules.php';
 
 function getCurrentUserRole(PDO $pdo): string
 {
@@ -98,9 +99,24 @@ function getCharacterPointSummary(PDO $pdo, array $character): array
     $usedSkillExperience = $isPlayer ? getCharacterSkillExperienceCost($pdo, (int) ($character['id'] ?? 0)) : 0;
     $baseStatusPoints = $isPlayer ? 8 : 0;
     $usedStatusPoints = 0;
+    $newShareStatus = aetherCharacterUsesNewShareStatus($pdo);
+    $leaderRows = aetherCompanyLeaderRowsForCharacter($pdo, (int) ($character['id'] ?? 0));
+    $leaderCostCounted = false;
     try {
         $linkedTraits = getCharacterTraitLinks($pdo, (int) ($character['id'] ?? 0));
         foreach ($linkedTraits as $linkedTrait) {
+            // Migrated A/B share traits remain as historical source rows. Their cost is
+            // replaced by the current portfolio level, never counted a second time.
+            if ($newShareStatus && isCompanyShareTrait($linkedTrait)) {
+                continue;
+            }
+            if (aetherCompanyLeadershipAvailable($pdo) && aetherIsLegacyCompanyLeaderTrait($linkedTrait)) {
+                if ($leaderRows !== [] && !$leaderCostCounted) {
+                    $usedStatusPoints += aetherCompanyLeaderTier($leaderRows[0]['companyValue'])['statusPoints'];
+                    $leaderCostCounted = true;
+                }
+                continue;
+            }
             $rankForCost = isset($linkedTrait['baseRank'])
                 ? (int) $linkedTrait['baseRank']
                 : (int) $linkedTrait['rank'];
@@ -108,6 +124,14 @@ function getCharacterPointSummary(PDO $pdo, array $character): array
         }
     } catch (Throwable $e) {
         $usedStatusPoints = 0;
+    }
+    if ($leaderRows !== [] && !$leaderCostCounted) {
+        $usedStatusPoints += aetherCompanyLeaderTier($leaderRows[0]['companyValue'])['statusPoints'];
+    }
+    if ($newShareStatus) {
+        $stmt = $pdo->prepare('SELECT usedStatusPoints FROM tblCharacterShareStatus WHERE idCharacter = :idCharacter');
+        $stmt->execute(['idCharacter' => (int) ($character['id'] ?? 0)]);
+        $usedStatusPoints += (int) ($stmt->fetchColumn() ?: 0);
     }
     $maxStatusPoints = $baseStatusPoints + ($convertedExperience * 2);
     $availableStatusPoints = max(0, $maxStatusPoints - $usedStatusPoints);
@@ -125,4 +149,11 @@ function getCharacterPointSummary(PDO $pdo, array $character): array
         'maxStatusPoints' => $maxStatusPoints,
         'availableStatusPoints' => $availableStatusPoints,
     ];
+}
+
+function aetherCharacterUsesNewShareStatus(PDO $pdo): bool
+{
+    $stmt = $pdo->prepare("SELECT 1 FROM tblSchemaMigration WHERE migrationCode = '0007_share_reform_backfill' LIMIT 1");
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
 }

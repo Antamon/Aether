@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/companyShareUtils.php';
 require_once __DIR__ . '/traitMetadataUtils.php';
+require_once __DIR__ . '/../companies/companyLeadershipRules.php';
 
 function isGroupedTrait(array $trait): bool
 {
@@ -197,7 +198,20 @@ function getTraitsForCharacterClass(PDO $pdo, string $characterClass, array $typ
 
     $rows = enrichTraitDefinitionRows($pdo, $rows);
 
-    return array_map(static fn(array $row): array => normalizeTraitDefinitionRow($row), $rows);
+    if (aetherCompanyLeadershipAvailable($pdo)) {
+        // The old small/large definitions represent one selectable profession.
+        $rows = array_values(array_filter($rows, static fn(array $row): bool =>
+            (string) ($row['name'] ?? '') !== 'Bedrijfsleider groot'));
+    }
+
+    return array_map(static function (array $row): array {
+        $trait = normalizeTraitDefinitionRow($row);
+        if (aetherIsLegacyCompanyLeaderTrait($trait)) {
+            $trait['name'] = 'Bedrijfsleider';
+            $trait['leaderSemanticCode'] = 'company_leader';
+        }
+        return $trait;
+    }, $rows);
 }
 
 function getCharacterTraitLinks(PDO $pdo, int $idCharacter, array $types = []): array
@@ -225,6 +239,7 @@ function getCharacterTraitLinks(PDO $pdo, int $idCharacter, array $types = []): 
                 t.evolution,
                 t.staffRequirements,
                 t.description,
+                dc.code AS domainCode,
                 lct.rankValue AS baseRankValue,
                 COALESCE(lctc.extraPercentage, 0) AS extraPercentage,
                 lctc.idCompany,
@@ -233,6 +248,8 @@ function getCharacterTraitLinks(PDO $pdo, int $idCharacter, array $types = []): 
              FROM tblLinkCharacterTrait AS lct
              JOIN tblTrait AS t
                    ON t.id = lct.idTrait
+             LEFT JOIN tblShareDomainCode AS dc
+                    ON dc.entityType = 'trait' AND dc.entityId = t.id
              LEFT JOIN tblLinkCharacterTraitCompany AS lctc
                     ON lctc.idLinkCharacterTrait = lct.id
              LEFT JOIN tblCompany AS c
@@ -264,6 +281,7 @@ function getCharacterTraitLinks(PDO $pdo, int $idCharacter, array $types = []): 
                     t.evolution,
                     t.staffRequirements,
                     t.description,
+                    NULL AS domainCode,
                     lct.rankValue AS baseRankValue,
                     0 AS extraPercentage,
                     NULL AS idCompany,
@@ -284,10 +302,16 @@ function getCharacterTraitLinks(PDO $pdo, int $idCharacter, array $types = []): 
 
     $rows = enrichTraitDefinitionRows($pdo, $rows);
 
-    return array_map(static function (array $row): array {
+    $isEmployed = $types === [] || in_array('profession', $types, true)
+        || in_array('status', $types, true)
+        ? aetherCharacterHasCompanyPersonnel($pdo, $idCharacter) : false;
+    $phase5Leadership = aetherCompanyLeadershipAvailable($pdo);
+    $leaderRows = $isEmployed ? aetherCompanyLeaderRowsForCharacter($pdo, $idCharacter) : [];
+    $links = array_map(static function (array $row) use ($isEmployed, $leaderRows, $phase5Leadership): array {
         $link = normalizeTraitDefinitionRow($row);
         $link['id'] = (int) ($row['id'] ?? 0);
         $link['idTrait'] = (int) ($row['idTrait'] ?? 0);
+        $link['domainCode'] = $row['domainCode'] ?? null;
 
         if (isCompanyShareTrait($link)) {
             $baseRank = getCompanyShareBaseRank([
@@ -311,9 +335,27 @@ function getCharacterTraitLinks(PDO $pdo, int $idCharacter, array $types = []): 
         $link['companyName'] = isset($row['companyName']) && $row['companyName'] !== null ? (string) $row['companyName'] : null;
         $link['companyValue'] = isset($row['companyValue']) && $row['companyValue'] !== null ? round((float) $row['companyValue'], 2) : null;
         $link['staffRequirements'] = getEffectiveTraitStaffRequirements($link, (int) ($link['rank'] ?? 0));
+        if ((string) ($link['type'] ?? '') === 'profession' && $isEmployed) {
+            $link['incomeRank'] = 1;
+        }
+        if ($phase5Leadership && aetherIsLegacyCompanyLeaderTrait($link)) {
+            $link['name'] = 'Bedrijfsleider';
+            $link['leaderSemanticCode'] = 'company_leader';
+            $link['income'] = null;
+            $link['staffRequirements'] = 0;
+            $link['cost'] = 0;
+            if ($leaderRows !== []) {
+                $tier = aetherCompanyLeaderTier($leaderRows[0]['companyValue']);
+                $link['leaderStatusPoints'] = $tier['statusPoints'];
+                $link['staffRequirements'] = $tier['personnelRequirement'];
+                $link['cost'] = $tier['statusPoints'];
+                $link['leaderCompanyId'] = (int) $leaderRows[0]['idCompany'];
+            }
+        }
 
         return $link;
     }, $rows);
+    return $links;
 }
 
 function buildCharacterTraitGroups(PDO $pdo, int $idCharacter, string $characterClass, array $types = ['status', 'quality']): array

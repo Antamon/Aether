@@ -36,8 +36,12 @@ function aetherCompanySnapshotSchema(array $input): array
         ],
         'update' => $schema + [
             'idCompanySnapshot' => ['type' => 'int', 'required' => true, 'min' => 1],
-            'stability' => ['type' => 'int', 'required' => false, 'min' => -7, 'max' => 7, 'default' => 0],
-            'profitability' => ['type' => 'int', 'required' => false, 'min' => -7, 'max' => 7, 'default' => 0],
+            'companyValue' => ['type' => 'decimal', 'min' => '0.00', 'max' => '9999999999.99'],
+            'issuedShareCount' => ['type' => 'int', 'min' => 1, 'max' => 1000000],
+            'anonymousShareCount' => ['type' => 'int', 'min' => 0, 'max' => 1000000],
+            'shareMarketPrice' => ['type' => 'decimal', 'min' => '0.00', 'max' => '9999999999.99'],
+            'stability' => ['type' => 'int', 'min' => -7, 'max' => 7],
+            'profitability' => ['type' => 'int', 'min' => -7, 'max' => 7],
         ],
         'recalculate', 'delete' => $schema + [
             'idCompanySnapshot' => ['type' => 'int', 'required' => true, 'min' => 1],

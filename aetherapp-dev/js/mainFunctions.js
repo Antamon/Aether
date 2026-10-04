@@ -135,6 +135,7 @@ async function apiFetchFinancialJson(endpoint, options = {}) {
     return apiFetchIdempotentJson(endpoint, options);
 }
 
+let aetherLeaderNavRequested = false;
 function syncPrivilegedNavbar(user) {
     [
         "navbarCompaniesItem",
@@ -145,6 +146,23 @@ function syncPrivilegedNavbar(user) {
             navItem.classList.toggle("d-none", !userHasPrivilegedRole(user));
         }
     });
+    if (!userHasPrivilegedRole(user) && user?.role === "participant" && !aetherLeaderNavRequested) {
+        aetherLeaderNavRequested = true;
+        void apiFetchJson("api/companies/getMyLeaderCompanies.php").then((result) => {
+            if (!Array.isArray(result?.companies) || result.companies.length === 0) return;
+            const anchor = document.getElementById("navbarCompaniesItem");
+            if (!anchor || document.getElementById("navbarLeaderPersonnelItem")) return;
+            const item = document.createElement("li");
+            item.className = "nav-item mr-2";
+            item.id = "navbarLeaderPersonnelItem";
+            const link = document.createElement("a");
+            link.className = "nav-link";
+            link.href = "leaderPersonnel.html";
+            link.textContent = "Personeel";
+            item.appendChild(link);
+            anchor.after(item);
+        }).catch(() => {});
+    }
 }
 
 // Login-check bij laden van de pagina

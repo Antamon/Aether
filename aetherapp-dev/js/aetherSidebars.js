@@ -58,7 +58,7 @@
                 <div id="characterNames" class="my-2"></div><a class="nav-link" id="startNewCharacter" href="index.html?new=1"><i class="fa-solid fa-user-plus"></i> Nieuw personage</a>`;
         }
         if (!template && config.key === "companies") {
-            scroll.innerHTML = `<div class="list-group company-list" id="companyList"></div>
+            scroll.innerHTML = `<div class="company-list" id="companyList"></div>
                 <div class="company-list-actions mt-3"><a class="btn btn-outline-primary w-100" href="companies.html?new=1">Nieuw bedrijf</a></div>`;
         }
         paper.append(scroll);
@@ -104,7 +104,10 @@
         try {
             const user = window.AETHER_CURRENT_USER || await apiFetchJson("getCurrentUser.php");
             if (key === "companies" && !userHasPrivilegedRole(user)) {
-                list.textContent = "U hebt geen toegang tot de bedrijvenlijst.";
+                const result = await apiFetchJson("api/companies/getMyLeaderCompanies.php");
+                renderNavigationCompanies(result?.companies || [], list, "leaderPersonnel.html");
+                list.nextElementSibling?.classList.add("d-none");
+                loadedLists.add(key);
                 return;
             }
             const items = await apiFetchJson(key === "characters"
@@ -187,17 +190,52 @@
         render();
     }
 
-    function renderNavigationCompanies(items, list) {
+    function renderCompanySidebarCards(items, list, onOpen, activeId = 0) {
         list.replaceChildren();
         if (!items.length) { list.textContent = "Nog geen bedrijven beschikbaar."; return; }
         for (const item of items) {
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "list-group-item list-group-item-action company-list-item";
-            button.textContent = item.companyName || `Bedrijf #${item.id}`;
-            button.addEventListener("click", () => { window.location.href = `companies.html?company=${encodeURIComponent(item.id)}`; });
+            button.className = "company-sidebar-card";
+            const name = String(item.companyName || `Bedrijf #${item.id}`);
+            button.setAttribute("aria-label", `Open ${name}`);
+            button.dataset.idCompany = String(item.id || 0);
+            if (Number(item.id) === Number(activeId)) {
+                button.classList.add("active");
+                button.setAttribute("aria-current", "true");
+            }
+            const imageFrame = document.createElement("span");
+            imageFrame.className = "company-sidebar-image-frame";
+            if (item.logoUrl) {
+                const image = document.createElement("img");
+                image.className = "company-sidebar-image";
+                image.src = String(item.logoUrl);
+                image.alt = "";
+                image.loading = "lazy";
+                image.addEventListener("error", () => {
+                    imageFrame.replaceChildren();
+                    imageFrame.classList.add("company-sidebar-image-placeholder");
+                    imageFrame.textContent = "Geen logo";
+                }, { once: true });
+                imageFrame.append(image);
+            } else {
+                imageFrame.classList.add("company-sidebar-image-placeholder");
+                imageFrame.textContent = "Geen logo";
+            }
+            const label = document.createElement("span");
+            label.className = "company-sidebar-name";
+            label.textContent = name;
+            button.append(imageFrame, label);
+            button.addEventListener("click", () => onOpen(item));
             list.append(button);
         }
+    }
+    window.renderCompanySidebarCards = renderCompanySidebarCards;
+
+    function renderNavigationCompanies(items, list, page = "companies.html") {
+        renderCompanySidebarCards(items, list, (item) => {
+            window.location.href = `${page}?company=${encodeURIComponent(item.id)}`;
+        });
     }
 
     function setOpen(key) {
