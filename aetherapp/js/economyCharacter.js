@@ -109,7 +109,7 @@ function formatEconomyPercentage(value) {
 function getSecuritiesManagerTypeOptions() {
     return [
         { value: "self", label: "Eigen beheer" },
-        { value: "bank", label: "De bank" },
+        { value: "bank", label: "De Bank" },
         { value: "third", label: "Een derde" }
     ];
 }
@@ -133,6 +133,11 @@ function updateSecuritiesRiskProfileDisplay(input) {
     const value = input.closest(".economy-securities-risk")?.querySelector("[data-role='securities-risk-profile-value']");
     if (value) value.textContent = label;
     input.setAttribute("aria-valuetext", label);
+    const expectedHost = input.closest(".economy-securities-settings")?.querySelector(".economy-securities-expected");
+    if (expectedHost) {
+        expectedHost.replaceChildren();
+        renderSecuritiesExpectedReturn(expectedHost, { ...character, securitiesRiskProfile: profile });
+    }
 }
 
 function getCharacterSecuritiesManagerDisplayName(character) {
@@ -182,6 +187,94 @@ function getApprovedSecuritiesWithdrawalSnapshots(character) {
     ));
 }
 
+function openSecuritiesManagerModal(character, trigger) {
+    if (!character?.canManageSecurities || character.id !== currentCharacter?.id) return;
+    const node = (tag, className = "", text) => {
+        const element = document.createElement(tag);
+        element.className = className;
+        if (text !== undefined) element.textContent = text;
+        return element;
+    };
+    const modal = node("div", "modal fade");
+    modal.tabIndex = -1;
+    modal.setAttribute("aria-labelledby", "securities-manager-modal-title");
+    const dialog = node("div", "modal-dialog modal-dialog-centered");
+    const content = node("div", "modal-content");
+    const header = node("div", "modal-header");
+    const title = node("h2", "modal-title h5", "Beheerder effectenportefeuille");
+    title.id = "securities-manager-modal-title";
+    header.append(title);
+    const body = node("div", "modal-body");
+    const managerLabel = node("label", "form-label", "Beheerder");
+    managerLabel.htmlFor = "securities-manager-type";
+    const managerSelect = node("select", "form-select");
+    managerSelect.id = "securities-manager-type";
+    for (const option of getSecuritiesManagerTypeOptions()) {
+        const item = node("option", "", option.label);
+        item.value = option.value;
+        managerSelect.append(item);
+    }
+    managerSelect.value = character.securitiesManagerType || "self";
+    const thirdWrap = node("div", "mt-3");
+    const thirdLabel = node("label", "form-label", "Externe beheerder");
+    thirdLabel.htmlFor = "securities-manager-character";
+    const thirdSelect = node("select", "form-select");
+    thirdSelect.id = "securities-manager-character";
+    const empty = node("option", "", "Kies een actief personage");
+    empty.value = "";
+    thirdSelect.append(empty);
+    for (const option of character.securitiesManagerOptions || []) {
+        const item = node("option", "", option.displayName || `Personage #${option.id}`);
+        item.value = String(option.id);
+        thirdSelect.append(item);
+    }
+    thirdSelect.value = String(character.securitiesManagerCharacterId || "");
+    thirdWrap.append(thirdLabel, thirdSelect);
+    const updateThird = () => { thirdWrap.hidden = managerSelect.value !== "third"; };
+    managerSelect.addEventListener("change", updateThird);
+    updateThird();
+    const error = node("p", "text-danger mt-3 mb-0");
+    error.setAttribute("role", "alert");
+    body.append(managerLabel, managerSelect, thirdWrap, error);
+    const save = AetherActionButtons.button({ icon: "fa-check", label: "Save" });
+    const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel" });
+    cancel.dataset.bsDismiss = "modal";
+    const footer = node("div", "modal-footer");
+    footer.append(AetherActionButtons.group([save, cancel]));
+    content.append(header, body, footer);
+    dialog.append(content);
+    modal.append(dialog);
+    document.body.append(modal);
+    const instance = new bootstrap.Modal(modal);
+    save.addEventListener("click", async () => {
+        error.textContent = "";
+        if (managerSelect.value === "third" && Number(thirdSelect.value) <= 0) {
+            error.textContent = "Kies een actief personage als beheerder.";
+            return;
+        }
+        save.disabled = true;
+        cancel.disabled = true;
+        try {
+            await saveSecuritiesSettings({
+                managerType: managerSelect.value,
+                managerCharacterId: managerSelect.value === "third" ? Number(thirdSelect.value) : null
+            });
+            instance.hide();
+        } catch (failure) {
+            error.textContent = getApiErrorMessage(failure, "Kon de beheerder niet bewaren.");
+        } finally {
+            save.disabled = false;
+            cancel.disabled = false;
+        }
+    });
+    modal.addEventListener("hidden.bs.modal", () => {
+        instance.dispose();
+        modal.remove();
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    }, { once: true });
+    instance.show();
+}
+
 function renderSecuritiesSettingsSection(host, character) {
     const canManage = Boolean(character?.canManageSecurities);
     const isDraft = String(character?.state || "") === "draft";
@@ -198,62 +291,44 @@ function renderSecuritiesSettingsSection(host, character) {
     }
 
     const managerRow = document.createElement("div");
-    managerRow.className = "mb-3";
+    managerRow.className = "economy-securities-manager mb-3";
 
-    const managerLabel = document.createElement("label");
-    managerLabel.className = "form-label";
+    const managerLabel = document.createElement("span");
     managerLabel.textContent = "Beheerder";
     managerRow.appendChild(managerLabel);
 
-    const managerSelect = document.createElement("select");
-    managerSelect.className = "form-select";
-    managerSelect.dataset.role = "securities-manager-type";
-    managerSelect.disabled = !canManage;
-    getSecuritiesManagerTypeOptions().forEach((option) => {
-        const optionEl = document.createElement("option");
-        optionEl.value = option.value;
-        optionEl.textContent = option.label;
-        optionEl.selected = option.value === String(character?.securitiesManagerType || "self");
-        managerSelect.appendChild(optionEl);
-    });
-    managerRow.appendChild(managerSelect);
-
-    const thirdManagerWrap = document.createElement("div");
-    thirdManagerWrap.className = "mt-3";
-    thirdManagerWrap.dataset.role = "securities-third-manager-wrap";
-    thirdManagerWrap.classList.toggle("d-none", String(character?.securitiesManagerType || "self") !== "third");
-
-    const thirdManagerLabel = document.createElement("label");
-    thirdManagerLabel.className = "form-label";
-    thirdManagerLabel.textContent = "Externe beheerder";
-    thirdManagerWrap.appendChild(thirdManagerLabel);
-
-    const thirdManagerSelect = document.createElement("select");
-    thirdManagerSelect.className = "form-select";
-    thirdManagerSelect.dataset.role = "securities-manager-character";
-    thirdManagerSelect.disabled = !canManage;
-
-    const emptyManagerOption = document.createElement("option");
-    emptyManagerOption.value = "";
-    emptyManagerOption.textContent = "Kies een actief personage";
-    thirdManagerSelect.appendChild(emptyManagerOption);
-
-    (Array.isArray(character?.securitiesManagerOptions) ? character.securitiesManagerOptions : []).forEach((option) => {
-        const optionEl = document.createElement("option");
-        optionEl.value = String(option.id || 0);
-        optionEl.textContent = option.displayName || `Personage #${option.id || 0}`;
-        optionEl.selected = Number(option.id || 0) === Number(character?.securitiesManagerCharacterId || 0);
-        thirdManagerSelect.appendChild(optionEl);
-    });
-
-    thirdManagerWrap.appendChild(thirdManagerSelect);
-    managerRow.appendChild(thirdManagerWrap);
+    const managerValue = document.createElement("span");
+    managerValue.className = "economy-securities-manager-value";
+    const managerName = document.createElement("span");
+    managerName.textContent = getCharacterSecuritiesManagerDisplayName(character);
+    managerValue.appendChild(managerName);
+    if (canManage) {
+        const edit = document.createElement("span");
+        edit.className = "economy-securities-manager-edit";
+        edit.tabIndex = 0;
+        edit.setAttribute("role", "button");
+        edit.setAttribute("aria-label", "Beheerder aanpassen");
+        edit.title = "Beheerder aanpassen";
+        const icon = document.createElement("i");
+        icon.className = "fa-solid fa-pen-nib";
+        icon.setAttribute("aria-hidden", "true");
+        edit.appendChild(icon);
+        edit.addEventListener("click", () => openSecuritiesManagerModal(character, edit));
+        edit.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openSecuritiesManagerModal(character, edit);
+            }
+        });
+        managerValue.appendChild(edit);
+    }
+    managerRow.appendChild(managerValue);
     settingsWrap.appendChild(managerRow);
 
     const riskRow = document.createElement("div");
     riskRow.className = "mb-3";
 
-    const riskLabel = document.createElement("label");
+    const riskLabel = document.createElement("div");
     riskLabel.className = "form-label";
     riskLabel.textContent = "Risicoprofiel";
     riskRow.appendChild(riskLabel);
@@ -267,41 +342,40 @@ function renderSecuritiesSettingsSection(host, character) {
     riskValue.textContent = getSecuritiesRiskProfileLabel(character, selectedRisk);
     riskLabel.appendChild(riskValue);
 
-    const riskSlider = document.createElement("input");
-    riskSlider.type = "range";
-    riskSlider.className = "form-range";
-    riskSlider.min = "1";
-    riskSlider.max = "5";
-    riskSlider.step = "1";
-    riskSlider.value = String(selectedRisk);
-    riskSlider.dataset.role = "securities-risk-profile";
-    riskSlider.disabled = !canManage;
-    riskSlider.setAttribute("aria-label", "Risicoprofiel effectenportefeuille");
-    riskSlider.setAttribute("aria-valuetext", riskValue.textContent);
-    riskRow.appendChild(riskSlider);
+    if (canManage) {
+        const riskSlider = document.createElement("input");
+        riskSlider.type = "range";
+        riskSlider.className = "form-range";
+        riskSlider.min = "1";
+        riskSlider.max = "5";
+        riskSlider.step = "1";
+        riskSlider.value = String(selectedRisk);
+        riskSlider.dataset.role = "securities-risk-profile";
+        riskSlider.setAttribute("aria-label", "Risicoprofiel effectenportefeuille");
+        riskSlider.setAttribute("aria-valuetext", riskValue.textContent);
+        riskRow.appendChild(riskSlider);
 
-    const scale = document.createElement("div");
-    scale.className = "economy-securities-risk-scale";
-    [1, 2, 3, 4, 5].forEach((riskProfile) => {
-        const marker = document.createElement("span");
-        marker.textContent = String(riskProfile);
-        marker.title = getSecuritiesRiskProfileLabel(character, riskProfile);
-        scale.appendChild(marker);
-    });
-    riskRow.appendChild(scale);
+        const scale = document.createElement("div");
+        scale.className = "economy-securities-risk-scale";
+        [1, 2, 3, 4, 5].forEach((riskProfile) => {
+            const marker = document.createElement("span");
+            marker.textContent = String(riskProfile);
+            marker.title = getSecuritiesRiskProfileLabel(character, riskProfile);
+            scale.appendChild(marker);
+        });
+        riskRow.appendChild(scale);
 
-    const riskHelp = document.createElement("div");
-    riskHelp.className = "text-muted small";
-    riskHelp.textContent = canManage
-        ? "De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event."
-        : "Deze waarde wordt gebruikt bij volgende economiesnapshots.";
-    riskRow.appendChild(riskHelp);
+        const riskHelp = document.createElement("div");
+        riskHelp.className = "text-muted small";
+        riskHelp.textContent = "De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event.";
+        riskRow.appendChild(riskHelp);
+    }
     settingsWrap.appendChild(riskRow);
 
-    const info = document.createElement("div");
-    info.className = "text-muted small";
-    info.textContent = `Huidig beleggingsniveau: ${Number(character?.securitiesManagerSkillLevel || 0)}.`;
-    settingsWrap.appendChild(info);
+    const expectedHost = document.createElement("div");
+    expectedHost.className = "economy-securities-expected";
+    renderSecuritiesExpectedReturn(expectedHost, character);
+    settingsWrap.appendChild(expectedHost);
 
     host.appendChild(settingsWrap);
 }
@@ -309,7 +383,7 @@ function renderSecuritiesSettingsSection(host, character) {
 function renderSecuritiesIntroduction(host) {
     const intro = document.createElement("p");
     intro.className = "text-muted mb-3";
-    intro.textContent = "Je effectenportefeuille stellen beleggingen die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.";
+    intro.textContent = "Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.";
     host.appendChild(intro);
 }
 
@@ -320,12 +394,9 @@ function renderSecuritiesProfileSummary(host, character) {
     }
 
     renderSecuritiesBalanceEditor(host, character, balance);
+}
 
-    const managerInfo = document.createElement("div");
-    managerInfo.className = "mb-1";
-    managerInfo.textContent = `Beheerder: ${getCharacterSecuritiesManagerDisplayName(character)}`;
-    host.appendChild(managerInfo);
-
+function renderSecuritiesExpectedReturn(host, character) {
     const expected = getCharacterSecuritiesExpectedReturnSummary(character);
     const expectedWrap = document.createElement("div");
     expectedWrap.className = "mb-3";
@@ -1506,43 +1577,25 @@ async function deleteCharacterEconomySnapshot(idSnapshot) {
     }
 }
 
-async function saveSecuritiesSettings() {
-    if (!currentCharacter?.id) return;
+async function saveSecuritiesSettings(overrides = {}) {
+    if (!currentCharacter?.id || !currentCharacter.canManageSecurities) return;
+    const characterId = currentCharacter.id;
+    const riskSlider = document.querySelector("[data-role='securities-risk-profile']");
+    const managerType = overrides.managerType ?? currentCharacter.securitiesManagerType ?? "self";
+    const riskProfile = Number(riskSlider?.value || currentCharacter.securitiesRiskProfile || 3);
+    const managerCharacterId = overrides.managerCharacterId ?? currentCharacter.securitiesManagerCharacterId;
+    await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
+        method: "POST",
+        body: {
+            action: "save_settings",
+            idCharacter: characterId,
+            managerType,
+            riskProfile,
+            managerCharacterId: managerType === "third" ? managerCharacterId : null
+        }
+    });
 
-    const managerTypeSelect = document.querySelector("[data-role='securities-manager-type']");
-    const riskProfileSelect = document.querySelector("[data-role='securities-risk-profile']");
-    const managerCharacterSelect = document.querySelector("[data-role='securities-manager-character']");
-
-    if (!managerTypeSelect || !riskProfileSelect) return;
-
-    const managerType = String(managerTypeSelect.value || "self");
-    const riskProfile = Number(riskProfileSelect.value || 3);
-    const managerCharacterId = managerType === "third"
-        ? Number(managerCharacterSelect?.value || 0)
-        : 0;
-
-    if (managerType === "third" && managerCharacterId <= 0) {
-        return;
-    }
-
-    try {
-        await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
-            method: "POST",
-            body: {
-                action: "save_settings",
-                idCharacter: currentCharacter.id,
-                managerType,
-                riskProfile,
-                managerCharacterId: managerType === "third" ? managerCharacterId : null
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij bewaren van effecteninstellingen:", err);
-        alert(getApiErrorMessage(err, "Kon de effecteninstellingen niet bewaren."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
+    if (currentCharacter?.id === characterId) await getCharacter(characterId, null, "economy");
 }
 
 async function depositSecuritiesBalance() {
@@ -1781,28 +1834,18 @@ function setupEconomySectionListeners() {
     });
 
     document.addEventListener("change", async (e) => {
-        const securitiesManagerTypeSelect = e.target.closest("select[data-role='securities-manager-type']");
-        if (securitiesManagerTypeSelect && !securitiesManagerTypeSelect.disabled) {
-            const thirdManagerWrap = document.querySelector("[data-role='securities-third-manager-wrap']");
-            if (thirdManagerWrap) {
-                thirdManagerWrap.classList.toggle("d-none", String(securitiesManagerTypeSelect.value || "self") !== "third");
-            }
-
-            if (String(securitiesManagerTypeSelect.value || "self") !== "third") {
-                await saveSecuritiesSettings();
-            }
-            return;
-        }
-
-        const securitiesManagerCharacterSelect = e.target.closest("select[data-role='securities-manager-character']");
-        if (securitiesManagerCharacterSelect && !securitiesManagerCharacterSelect.disabled) {
-            await saveSecuritiesSettings();
-            return;
-        }
-
         const securitiesRiskProfileSlider = e.target.closest("input[data-role='securities-risk-profile']");
         if (securitiesRiskProfileSlider && !securitiesRiskProfileSlider.disabled) {
-            await saveSecuritiesSettings();
+            securitiesRiskProfileSlider.disabled = true;
+            try {
+                await saveSecuritiesSettings();
+            } catch (failure) {
+                alert(getApiErrorMessage(failure, "Kon het risicoprofiel niet bewaren."));
+                securitiesRiskProfileSlider.value = String(currentCharacter?.securitiesRiskProfile || 3);
+                updateSecuritiesRiskProfileDisplay(securitiesRiskProfileSlider);
+            } finally {
+                securitiesRiskProfileSlider.disabled = false;
+            }
             return;
         }
 

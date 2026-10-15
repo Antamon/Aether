@@ -131,6 +131,93 @@ const aetherShareUi = (() => {
         return select;
     };
 
+    function companyGrid(host, companies, onOpen) {
+        const grid = element("div", "share-company-grid");
+        for (const company of companies) {
+            const tile = element("button", "share-company-tile");
+            tile.type = "button";
+            tile.setAttribute("aria-haspopup", "dialog");
+            const imageWrap = element("span", "share-company-logo");
+            const fallback = element("i", "fa-solid fa-building");
+            fallback.setAttribute("aria-hidden", "true");
+            imageWrap.appendChild(fallback);
+            if (company.logoUrl) {
+                const image = element("img", "");
+                image.alt = "";
+                image.loading = "lazy";
+                image.src = company.logoUrl;
+                image.addEventListener("error", () => { image.remove(); fallback.hidden = false; });
+                fallback.hidden = true;
+                imageWrap.appendChild(image);
+            }
+            tile.append(imageWrap, element("span", "share-company-name", company.companyName || `#${company.idCompany}`));
+            tile.addEventListener("click", () => onOpen(company, tile));
+            grid.appendChild(tile);
+        }
+        host.appendChild(grid);
+        return grid;
+    }
+
+    function companyDialog(company, trigger, renderBody) {
+        const dialog = element("dialog", "share-ui-dialog share-company-dialog");
+        const title = element("h3", "h4", company.companyName || `#${company.idCompany}`);
+        title.id = "share-company-dialog-title";
+        dialog.setAttribute("aria-labelledby", title.id);
+        const body = element("div", "share-company-dialog-body");
+        const close = action(tr("close"));
+        close.addEventListener("click", () => dialog.close());
+        dialog.append(title, body, AetherActionButtons.group([close]));
+        dialog.addEventListener("close", () => {
+            dialog.remove();
+            if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+        }, { once: true });
+        document.body.appendChild(dialog);
+        renderBody(body, () => dialog.close());
+        dialog.showModal();
+        return dialog;
+    }
+
+    function detailLine(host, label, value) {
+        const row = element("div", "share-detail-line mb-2");
+        row.append(element("span", "", label), element("span", "", value));
+        host.appendChild(row);
+    }
+
+    function showHolding(holding, character, reload, trigger, purchases) {
+        companyDialog(holding, trigger, (body, close) => {
+            detailLine(body, tr("quantity"), number(holding.shareCount));
+            const price = holding.marketUnitPrice;
+            detailLine(body, "Huidige marktwaarde per aandeel", price == null ? "—" : money(price));
+            detailLine(body, "Totale marktwaarde", price == null ? "—" : money(Number(price) * Number(holding.shareCount)));
+            detailLine(body, tr("intrinsic"), money(holding.intrinsicValue));
+            if (purchases.length) {
+                const history = element("details", "my-3");
+                history.appendChild(element("summary", "", tr("purchases")));
+                for (const purchase of purchases) {
+                    history.appendChild(element("p", "small mt-2", `${purchase.eventTitle || tr("eventUnknown")} · ${number(purchase.shareCount)} ${tr("shares")} · ${money(purchase.totalAmount)}`));
+                }
+                body.appendChild(history);
+            }
+            if (character.state !== "active" || !canTrade(character)) return;
+            body.appendChild(element("h4", "h5 mt-3", tr("sell")));
+            body.appendChild(element("p", "small text-muted", "Bied aandelen aan een ander personage aan. De verkoop wordt voltooid wanneer de ontvanger het aanbod koopt."));
+            const formHost = element("div", "mb-3", tr("loading"));
+            body.appendChild(formHost);
+            query("getShareRecipientOptions", "idCharacter", character.id).then(response => {
+                if (!formHost.isConnected) return;
+                renderOfferForm(formHost, response?.recipients || [], [{
+                    id: holding.idCompany, name: holding.companyName, max: holding.shareCount
+                }], async (companyId, recipientId, count, unitPrice) => {
+                    await post("createHolderOffer", { idCompany: companyId,
+                        idSellingCharacter: Number(character.id), idRecipientCharacter: recipientId,
+                        shareCount: count, unitPrice });
+                    close();
+                    await reload();
+                }, { defaultPrice: price });
+            }).catch(error => { formHost.textContent = errorMessage(error); });
+        });
+    }
+
     function attachPortfolio(host, character) {
         const id = Number(character?.id || 0);
         if (!host || !id) return;
@@ -178,20 +265,11 @@ const aetherShareUi = (() => {
     function renderPortfolio(card, data, created, character, reload) {
         card.replaceChildren(element("h3", "h4", tr("portfolio")));
         const status = data?.status || {};
-        const metrics = element("div", "share-ui-metrics");
-        metrics.append(metric(tr("intrinsic"), money(status.intrinsicPortfolioValue)),
-            metric(tr("level"), number(status.shareLevel)),
-            metric(tr("status"), number(status.usedStatusPoints)),
-            metric(tr("personnel"), number(status.personnelRequirement)));
-        card.appendChild(metrics);
+        detailLine(card, tr("intrinsic"), money(status.intrinsicPortfolioValue));
         const holdings = Array.isArray(data?.holdings) ? data.holdings : [];
         if (!holdings.length) card.appendChild(element("p", "text-muted mb-0", tr("emptyPortfolio")));
-        for (const holding of holdings) {
-            const row = element("div", "share-ui-holding");
-            row.append(element("strong", "", holding.companyName || `#${holding.idCompany}`),
-                element("span", "", `${number(holding.shareCount)} ${tr("shares")} · ${money(holding.intrinsicValue)}`));
-            card.appendChild(row);
-        }
+        companyGrid(card, holdings, (holding, trigger) => showHolding(holding, character, reload, trigger,
+            (data?.purchases || []).filter(purchase => Number(purchase.idCompany) === Number(holding.idCompany))));
         if (Array.isArray(data?.purchases) && data.purchases.length) {
             const history = element("details", "mt-3 share-ui-purchase-history");
             history.appendChild(element("summary", "", tr("purchases")));
@@ -226,28 +304,6 @@ const aetherShareUi = (() => {
             if (!offers.length) details.appendChild(element("p", "text-muted", tr("noOffers")));
             card.appendChild(details);
         }
-        if (character?.state === "active" && canTrade(character) && holdings.length) {
-            const details = element("details", "mt-3");
-            details.appendChild(element("summary", "", tr("sell")));
-            const target = element("div", "share-ui-offer-form mt-2");
-            details.appendChild(target);
-            card.appendChild(details);
-            details.addEventListener("toggle", async () => {
-                if (!details.open || target.dataset.loaded) return;
-                target.dataset.loaded = "1";
-                try {
-                    const response = await query("getShareRecipientOptions", "idCharacter", character.id);
-                    renderOfferForm(target, response?.recipients || [], holdings.map((row) => ({
-                        id: row.idCompany, name: row.companyName, max: row.shareCount,
-                    })), async (companyId, recipientId, count, price) => {
-                        await post("createHolderOffer", { idCompany: companyId,
-                            idSellingCharacter: Number(character.id), idRecipientCharacter: recipientId,
-                            shareCount: count, unitPrice: price });
-                        await reload();
-                    });
-                } catch (error) { target.textContent = errorMessage(error); }
-            });
-        }
         card.appendChild(element("div", "", "")).dataset.shareFeedback = "1";
     }
 
@@ -264,7 +320,19 @@ const aetherShareUi = (() => {
             : "Neem eerst de statuseigenschap Aandelen om tijdens Draft startkapitaal te gebruiken. Een eerder afgesloten budget wordt niet opnieuw beschikbaar."));
         const quotes = data.draftQuotes || [];
         if (!quotes.length) { card.append(element("p", "text-muted", "Geen bedrijfssnapshots met een marktprijs beschikbaar.")); return; }
-        const form = element("form", "share-ui-form-grid mt-2");
+        card.appendChild(element("h4", "h5 mt-3", "Beschikbare aandelen"));
+        const companies = [...new Map(quotes.map(quote => [Number(quote.idCompany), quote])).values()];
+        companyGrid(card, companies, (company, trigger) => companyDialog(company, trigger, (body, close) => {
+            renderDraftQuoteForm(body, data, character, async () => { close(); await reload(); },
+                quotes.filter(quote => Number(quote.idCompany) === Number(company.idCompany)));
+        }));
+    }
+
+    function renderDraftQuoteForm(card, data, character, reload, quotes) {
+        const budget = data.draftBudget;
+        const openBudget = budget && budget.closedAt === null;
+        card.appendChild(element("p", "small text-muted", "Je koopt aan de marktprijs van de gekozen snapshot. Het aankoopbedrag wordt van je beschikbare startkapitaal afgetrokken."));
+        const form = element("form", "share-ui-form-grid mt-2 mb-3");
         const wrap = element("label", "form-label", data.canChooseDraftSnapshot ? "Bedrijf en snapshot" : "Beschikbare aandelen");
         const select = element("select", "form-select"); select.setAttribute("aria-label", "Aandelen kopen tijdens Draft");
         quotes.forEach((quote, index) => select.add(new Option(
@@ -636,5 +704,5 @@ const aetherShareUi = (() => {
     window.addEventListener("focus", refreshVisiblePortfolio);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshVisiblePortfolio(); });
     return { attachPortfolio, attachCompany, refreshVisiblePortfolio, tr, money, errorMessage,
-        mutateCompany: post };
+        mutateCompany: post, companyGrid, companyDialog, detailLine };
 })();

@@ -1133,6 +1133,33 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   margin-top: 1rem;
 }
 
+#economyTab .economy-securities-manager {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+#economyTab .economy-securities-manager-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  text-align: right;
+  min-width: 0;
+}
+
+#economyTab .economy-securities-manager-edit {
+  flex-shrink: 0;
+  color: var(--primary-red);
+  cursor: pointer;
+}
+
+#economyTab .economy-securities-manager-edit:focus-visible {
+  outline: 2px solid var(--primary-red);
+  outline-offset: 3px;
+}
+
 #economyTab .economy-securities-risk .form-label {
   display: flex;
   justify-content: space-between;
@@ -2718,6 +2745,64 @@ a.event-character-link:focus-visible { outline: 2px solid var(--primary-red); ou
     gap: .5rem;
     padding: .55rem 0;
     border-bottom: 1px solid rgba(74, 48, 28, .2);
+}
+
+.share-detail-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.share-detail-line > :last-child { text-align: right; }
+.share-company-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.share-company-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .45rem;
+    min-width: 0;
+    padding: .5rem;
+    border: 1px solid rgba(100, 0, 0, .12);
+    border-radius: .85rem;
+    background: rgba(100, 0, 0, .03);
+    color: var(--primary-brown);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+.share-company-tile:hover,
+.share-company-tile:focus-visible {
+    border-color: var(--primary-red);
+    background: rgba(100, 0, 0, .09);
+}
+
+.share-company-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: .75rem;
+    overflow: hidden;
+}
+
+.share-company-logo img { width: 100%; height: 100%; object-fit: contain; }
+.share-company-logo > i { font-size: 2.5rem; }
+.share-company-name { min-height: 2.5rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.share-company-dialog-body { margin-bottom: 1rem; }
+@media (min-width: 992px) {
+    .share-company-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1600px) {
+    .share-company-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 .share-ui-form-grid {
     display: grid;

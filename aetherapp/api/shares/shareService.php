@@ -200,7 +200,10 @@ function aetherShareViewOffers(PDO $pdo, array $user, int $characterId, int $sel
     $stmt->execute(['idCharacter' => $characterId,
                     'purchaseEvent' => (int) ($currentEvent['id'] ?? 0),
                     'idEvent' => (int) ($currentEvent['id'] ?? 0)]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $offers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($offers as &$offer) $offer['logoUrl'] = getCompanyLogoUrl((int) $offer['idCompany']);
+    unset($offer);
+    return $offers;
 }
 
 function aetherShareViewCreatedOffers(PDO $pdo, array $user, int $characterId): array
@@ -232,12 +235,20 @@ function aetherShareViewPortfolio(PDO $pdo, array $user, int $characterId): arra
     }
     $stmt = $pdo->prepare('SELECT h.idCompany, c.companyName, h.shareCount,
                                  c.issuedShareCount, c.companyValue,
+                                 CASE WHEN EXISTS (SELECT 1 FROM tblCompanySnapshot s WHERE s.idCompany = c.id)
+                                   THEN (SELECT s.shareMarketPrice FROM tblCompanySnapshot s
+                                         JOIN tblEvent e ON e.id = s.idEvent WHERE s.idCompany = c.id
+                                         ORDER BY e.dateStart DESC, s.id DESC LIMIT 1)
+                                   ELSE (SELECT f.shareMarketPrice FROM tblCompanyFoundationSnapshot f WHERE f.idCompany = c.id)
+                                 END AS marketUnitPrice,
                                  ROUND(h.shareCount * c.companyValue / c.issuedShareCount, 2) AS intrinsicValue
                             FROM tblCompanyShareHolding h
                             JOIN tblCompany c ON c.id = h.idCompany
                            WHERE h.idCharacter = :idCharacter ORDER BY c.companyName, c.id');
     $stmt->execute(['idCharacter' => $characterId]);
     $holdings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($holdings as &$holding) $holding['logoUrl'] = getCompanyLogoUrl((int) $holding['idCompany']);
+    unset($holding);
     $stmt = $pdo->prepare('SELECT shareLevel, usedStatusPoints, personnelRequirement,
                                  intrinsicPortfolioValue, valuationVersion
                             FROM tblCharacterShareStatus WHERE idCharacter = :idCharacter');
@@ -267,6 +278,8 @@ function aetherShareViewPortfolio(PDO $pdo, array $user, int $characterId): arra
         $quotes = aetherShareDraftQuotes($pdo);
         $result['draftQuotes'] = array_values(array_filter($quotes, static fn(array $quote): bool =>
             ($result['canChooseDraftSnapshot'] || $quote['isCurrent']) && $quote['unitPrice'] !== null && aetherDecimalCompare((string) $quote['unitPrice'], '0.00') > 0));
+        foreach ($result['draftQuotes'] as &$quote) $quote['logoUrl'] = getCompanyLogoUrl((int) $quote['idCompany']);
+        unset($quote);
         $budget = $result['draftBudget'];
         $result['status']['shareLevel'] = $result['status']['usedStatusPoints'] = $budget && $budget['closedAt'] === null ? (int) $budget['purchasedLevel'] : 0;
         $result['status']['personnelRequirement'] = max(0, $result['status']['shareLevel'] - 2);

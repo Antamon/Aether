@@ -104,6 +104,7 @@ function checkPagination(root, columns) {
     context.renderSecuritiesSettingsSection(securitiesSettings, {...character,
         canManageSecurities: true,
         securitiesRiskProfile: 4,
+        securitiesManagerOptions: [{id: 22, displayName: 'Actieve beheerder'}],
         securitiesRiskProfileOptions: {4: {label: 'Dynamisch'}}
     });
     const riskSlider = securitiesSettings.querySelector("input");
@@ -111,6 +112,42 @@ function checkPagination(root, columns) {
     assert.equal(riskSlider.value, '4');
     assert(!riskSlider.disabled, 'The character owner may adjust the portfolio risk profile');
     assert.equal(securitiesSettings.querySelector("output").textContent, 'Dynamisch');
+    assert.equal(securitiesSettings.querySelectorAll('select').length, 0, 'Manager selectors belong in the modal');
+    const settings = securitiesSettings.querySelector('.economy-securities-settings');
+    assert(settings.children[1].classes.has('economy-securities-risk'));
+    assert(settings.children[2].classes.has('economy-securities-expected'), 'Expected return follows the risk profile directly');
+    const readonlySettings = host();
+    context.renderSecuritiesSettingsSection(readonlySettings, {...character, canManageSecurities: false});
+    assert.equal(readonlySettings.querySelectorAll('input').length, 0, 'Viewers must not see a disabled risk slider');
+    assert.equal(readonlySettings.querySelectorAll('button').length, 0, 'Viewers must not see manager edit controls');
+    assert(readonlySettings.querySelector('output'), 'Viewers still see the risk profile name');
+    context.currentCharacter = {...character, canManageSecurities: true, securitiesRiskProfile: 4,
+        securitiesManagerType: 'self', securitiesManagerOptions: [{id: 22, displayName: 'Actieve beheerder'}]};
+    context.document.querySelector = () => riskSlider;
+    const managerEdit = securitiesSettings.querySelector('.economy-securities-manager-edit');
+    managerEdit.listeners.click({currentTarget: managerEdit});
+    const managerModal = lastModal;
+    const [managerSelect, thirdSelect] = managerModal.querySelectorAll('select');
+    assert.equal(thirdSelect.children[1].textContent, 'Actieve beheerder');
+    const countBeforeSettings = writes.length;
+    managerSelect.value = 'third';
+    managerSelect.listeners.change();
+    assert.equal(thirdSelect.parent.hidden, false);
+    assert.equal(writes.length, countBeforeSettings, 'Changing a modal selection does not save before confirmation');
+    await buttonNamed(managerModal, 'Save').listeners.click();
+    assert.equal(writes.length, countBeforeSettings, 'A third-party manager must be selected before saving');
+    thirdSelect.value = '22';
+    await buttonNamed(managerModal, 'Save').listeners.click();
+    assert.equal(writes.at(-1).body.managerType, 'third');
+    assert.equal(writes.at(-1).body.managerCharacterId, 22);
+    assert.equal(writes.at(-1).body.riskProfile, 4, 'Changing manager preserves the selected risk profile');
+    assert(!managerModal.open && managerModal.disposed);
+    context.openSecuritiesManagerModal(context.currentCharacter, managerEdit);
+    const cancelModal = lastModal;
+    const countBeforeCancel = writes.length;
+    assert.equal(buttonNamed(cancelModal, 'Cancel').dataset.bsDismiss, 'modal');
+    cancelModal.listeners['hidden.bs.modal']();
+    assert.equal(writes.length, countBeforeCancel, 'Cancel discards unsaved manager changes');
     const trait = {id: 7, idTrait: 7, name: 'Roem', cost: 2, rank: 1, rankType: 'range_positive', traitFlags: {}};
     const group = {options: [trait], linkedTraits: [trait]};
     const labelRow = context.createLinkedTraitRow(trait, group, true, {nameAsLabel: true});

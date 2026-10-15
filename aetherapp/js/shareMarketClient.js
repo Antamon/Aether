@@ -364,8 +364,6 @@ const aetherShareMarketClient = (() => {
     }
 
     function renderEconomy(host) {
-        const requestedCounts = new Map([...host.querySelectorAll("input[data-offer-id]")]
-            .map((input) => [input.dataset.offerId, input.value]));
         host.replaceChildren();
         const title = document.createElement("h3");
         title.textContent = tr("offers");
@@ -406,37 +404,63 @@ const aetherShareMarketClient = (() => {
             host.appendChild(empty);
             return;
         }
+        const companies = [...new Map(offers.map(offer => [Number(offer.idCompany), offer])).values()];
+        const selectedCharacterId = characterId;
+        aetherShareUi.companyGrid(host, companies, (company, trigger) => {
+            aetherShareUi.companyDialog(company, trigger, (body, close) => {
+                renderOfferPurchases(body, offers.filter(offer => Number(offer.idCompany) === Number(company.idCompany)),
+                    event, selectedCharacterId, close);
+            });
+        });
+    }
+
+    function renderOfferPurchases(host, offers, event, selectedCharacterId, close) {
+        const instructions = document.createElement("p");
+        instructions.className = "small text-muted";
+        instructions.textContent = `${event.title} (${event.dateStart}). Kies het aantal aandelen dat je wilt kopen. Het aankoopbedrag wordt van de bankrekening afgetrokken. De voorraad wordt bij aankoop opnieuw gecontroleerd.`;
+        host.appendChild(instructions);
         for (const offer of offers) {
             const row = document.createElement("div");
-            row.className = "d-flex flex-wrap align-items-center gap-2 mb-2";
+            row.className = "data-card mb-3";
             const text = document.createElement("span");
             text.textContent = `${offer.companyName} · ${money(offer.unitPrice)} · ${tr("stock")}: ${offer.availableShareCount}`;
             const quantity = document.createElement("input");
             quantity.type = "number";
             quantity.min = "1";
             quantity.max = String(offer.availableShareCount);
-            const requested = Number(requestedCounts.get(String(offer.id)) || 1);
-            quantity.value = String(Math.max(1, Math.min(Number(offer.availableShareCount || 1),
-                Number.isInteger(requested) ? requested : 1)));
+            quantity.value = "1";
             quantity.dataset.offerId = String(offer.id);
             quantity.className = "form-control";
             quantity.style.width = "6rem";
             quantity.setAttribute("aria-label", tr("shares"));
+            const total = document.createElement("p");
+            total.className = "mt-2 mb-2";
+            const updateTotal = () => { total.textContent = `Totaal: ${money(Number(quantity.value) * Number(offer.unitPrice))}`; };
+            quantity.addEventListener("input", updateTotal);
+            updateTotal();
+            const errorMessage = document.createElement("p");
+            errorMessage.className = "text-danger small mt-2 mb-0";
+            errorMessage.setAttribute("role", "alert");
             const button = AetherActionButtons.button({ icon: "fa-cart-shopping", label: tr("buy") });
             button.disabled = Number(offer.availableShareCount) < 1;
             button.addEventListener("click", async () => {
                 const count = Number(quantity.value);
-                if (!Number.isInteger(count) || count < 1 || count > Number(offer.availableShareCount)) return;
+                if (!Number.isInteger(count) || count < 1 || count > Number(offer.availableShareCount)) {
+                    errorMessage.textContent = `Kies een geheel aantal van 1 tot ${offer.availableShareCount}.`;
+                    return;
+                }
                 button.disabled = true;
+                errorMessage.textContent = "";
                 try {
                     await apiFetchIdempotentJson("api/shares/buyOffer.php", {
-                        method: "POST", body: { idOffer: Number(offer.id), idCharacter: characterId,
+                        method: "POST", body: { idOffer: Number(offer.id), idCharacter: selectedCharacterId,
                             shareCount: count, idEvent: Number(event.id) },
                     });
+                    close();
                     await refresh(true);
-                    if (typeof getCharacter === "function") await getCharacter(characterId, null, "economy");
+                    if (typeof getCharacter === "function" && characterId === selectedCharacterId) await getCharacter(selectedCharacterId, null, "economy");
                 } catch (error) {
-                    alert(aetherShareUi.errorMessage(error));
+                    errorMessage.textContent = aetherShareUi.errorMessage(error);
                     await refresh(true);
                 } finally {
                     button.disabled = false;
@@ -445,7 +469,7 @@ const aetherShareMarketClient = (() => {
             const controls = document.createElement("div");
             controls.className = "input-group w-auto";
             controls.append(quantity, AetherActionButtons.group([button]));
-            row.append(text, controls);
+            row.append(text, total, controls, errorMessage);
             host.appendChild(row);
         }
     }
