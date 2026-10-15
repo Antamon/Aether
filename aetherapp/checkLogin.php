@@ -49,6 +49,9 @@ try {
     echo json_encode([
         'status' => 'ok',
         'user' => [
+            'id' => $user['id'],
+            'firstName' => $firstName,
+            'lastName' => $lastName,
             'displayName' => trim($firstName . ' ' . $lastName),
             'role' => $user['role'],
         ],

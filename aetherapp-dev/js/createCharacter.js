@@ -6,7 +6,7 @@ let aetherIsCreatingCharacter = false;
 let aetherCurrentUserForCreation = null;
 
 /**
- * Haal de huidige ingelogde user op via getCurrentUser.php
+ * Deel de huidige ingelogde user met de navigatie en pagina-initialisatie.
  * (id, firstName, lastName, role)
  */
 async function aetherFetchCurrentUser() {
@@ -14,16 +14,7 @@ async function aetherFetchCurrentUser() {
         return aetherCurrentUserForCreation;
     }
 
-    const response = await fetch('getCurrentUser.php', {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-    });
-
-    if (!response.ok) {
-        throw new Error('Kon huidige gebruiker niet ophalen.');
-    }
-
-    const user = await response.json();
+    const user = await aetherGetCurrentUser();
     if (typeof user.csrfToken === 'string' && user.csrfToken !== '') {
         window.AETHER_CSRF_TOKEN = user.csrfToken;
     }
@@ -41,16 +32,7 @@ async function aetherPopulateParticipantSelect() {
     host.innerHTML = '<div class="form-text">Ladenâ€¦</div>';
 
     try {
-        const response = await fetch('api/users/getUserList.php', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-        });
-
-        if (!response.ok) {
-            throw new Error('Kon userlijst niet laden.');
-        }
-
-        const users = await response.json();
+        const users = await apiFetchJson('api/users/getUserList.php');
 
         const select = document.createElement('select');
         select.id = 'listParticipant-input';
@@ -336,6 +318,16 @@ async function aetherStartNewCharacterFlow() {
     try {
         const user = await aetherFetchCurrentUser();
         aetherIsCreatingCharacter = true;
+        renderCharacterDeleteActions(null);
+
+        // Een eerder geopend personage vervangt het initiële formulier door de
+        // gegevenskaart. Voor een nieuw personage herstellen we de create-markup.
+        const formContainer = document.getElementById('characterForm');
+        if (formContainer && originalCharacterFormHtml !== null) {
+            formContainer.innerHTML = originalCharacterFormHtml;
+            setupCharacterFormListeners();
+            setupCharacterPortraitControls();
+        }
 
         await aetherRenderHeaderForNewCharacter(user);
         aetherPrepareCharacterFormForCreation();

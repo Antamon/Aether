@@ -1,7 +1,7 @@
 // Kleine, centrale helper om JSON van de server op te halen
 // - endpoint: bv. "checkLogin.php" of "api/events/getEventList.php"
 // - options: { method: 'POST', body: {...} }
-async function apiFetchJson(endpoint, options = {}) {
+async function aetherRequestJson(endpoint, options = {}) {
     const {
         method = "GET",
         body = null,
@@ -52,9 +52,73 @@ async function apiFetchJson(endpoint, options = {}) {
     }
 }
 
+// Deel alleen deze leesaanvragen binnen de huidige pagina. Nooit opslag op schijf.
+const aetherReadRequests = new Map();
+
+function aetherInvalidateReadRequests() {
+    aetherReadRequests.clear();
+}
+
+async function apiFetchJson(endpoint, options = {}) {
+    const path = String(endpoint).split("?")[0].replace(/^\.\//, "");
+    const method = String(options.method || "GET").toUpperCase();
+    const isRead = method === "GET" || /^api\/[^/]+\/get[^/]*\.php$/.test(path);
+    const ttl = path === "api/users/getUserList.php" && method === "GET" ? 300000
+        : path === "api/characters/getCharacterTies.php" && isRead ? 60000 : 0;
+    if (!isRead) {
+        // Ook omgekeerde relaties en personeelswijzigingen kunnen andere kaarten raken.
+        aetherInvalidateReadRequests();
+        try { return await aetherRequestJson(endpoint, options); }
+        finally { aetherInvalidateReadRequests(); }
+    }
+    if (!ttl) return aetherRequestJson(endpoint, options);
+
+    const key = JSON.stringify([endpoint, method, aetherStableJson(options.body ?? null), aetherStableJson(options.headers || {})]);
+    let entry = aetherReadRequests.get(key);
+    if (options.refresh || (entry && entry.expires <= Date.now())) {
+        aetherReadRequests.delete(key);
+        entry = null;
+    }
+    if (!entry) {
+        if (aetherReadRequests.size >= 100) aetherReadRequests.delete(aetherReadRequests.keys().next().value);
+        entry = { expires: Infinity, promise: null };
+        entry.promise = aetherRequestJson(endpoint, options).then((data) => {
+            entry.expires = Date.now() + ttl;
+            if (data === null && aetherReadRequests.get(key) === entry) aetherReadRequests.delete(key);
+            return data;
+        }).catch((error) => {
+            if (aetherReadRequests.get(key) === entry) aetherReadRequests.delete(key);
+            throw error;
+        });
+        aetherReadRequests.set(key, entry);
+    }
+    const data = await entry.promise;
+    // Een component mag het gedeelde antwoord niet wijzigen voor andere componenten.
+    return data === null ? null : JSON.parse(JSON.stringify(data));
+}
+
 // Globale plaats om basis-userinfo op te slaan (optioneel bruikbaar in andere files)
 window.AETHER_CURRENT_USER = null;
 window.AETHER_CSRF_TOKEN = null;
+
+let aetherCurrentUserRequest = null;
+function aetherGetCurrentUser() {
+    if (window.AETHER_CURRENT_USER) return Promise.resolve(window.AETHER_CURRENT_USER);
+    if (!aetherCurrentUserRequest) {
+        aetherCurrentUserRequest = apiFetchJson("checkLogin.php").then((data) => {
+            if (data?.status !== "ok" || !data.user) {
+                throw Object.assign(new Error("Geen geldige sessie."), { status: 401 });
+            }
+            const user = { ...data.user, csrfToken: data.csrfToken };
+            window.AETHER_CURRENT_USER = user;
+            return user;
+        }).catch((error) => {
+            aetherCurrentUserRequest = null;
+            throw error;
+        });
+    }
+    return aetherCurrentUserRequest;
+}
 
 function userHasPrivilegedRole(user) {
     const role = user?.role || "";
@@ -135,58 +199,21 @@ async function apiFetchFinancialJson(endpoint, options = {}) {
     return apiFetchIdempotentJson(endpoint, options);
 }
 
-let aetherLeaderNavRequested = false;
 function syncPrivilegedNavbar(user) {
-    [
-        "navbarCompaniesItem",
-        "navbarAdminItem"
-    ].forEach((id) => {
-        const navItem = document.getElementById(id);
-        if (navItem) {
-            navItem.classList.toggle("d-none", !userHasPrivilegedRole(user));
-        }
-    });
-    if (!userHasPrivilegedRole(user) && user?.role === "participant" && !aetherLeaderNavRequested) {
-        aetherLeaderNavRequested = true;
-        void apiFetchJson("api/companies/getMyLeaderCompanies.php").then((result) => {
-            if (!Array.isArray(result?.companies) || result.companies.length === 0) return;
-            const anchor = document.getElementById("navbarCompaniesItem");
-            if (!anchor || document.getElementById("navbarLeaderPersonnelItem")) return;
-            const item = document.createElement("li");
-            item.className = "nav-item mr-2";
-            item.id = "navbarLeaderPersonnelItem";
-            const link = document.createElement("a");
-            link.className = "nav-link";
-            link.href = "leaderPersonnel.html";
-            link.textContent = "Personeel";
-            item.appendChild(link);
-            anchor.after(item);
-        }).catch(() => {});
-    }
+    document.getElementById("navbarAdminItem")?.classList.toggle("d-none", !userHasPrivilegedRole(user));
 }
 
 // Login-check bij laden van de pagina
 async function checkLoginOnLoad() {
     try {
-        const data = await apiFetchJson("checkLogin.php");
-
-        if (!data || data.status !== "ok" || !data.user) {
-            // Niet (meer) ingelogd via Oneiros → terug naar hoofdsite
-            window.location.href = "../../../index.php";
-            return;
-        }
-
-        window.AETHER_CURRENT_USER = data.user;
-        if (typeof data.csrfToken === "string") {
-            window.AETHER_CSRF_TOKEN = data.csrfToken;
-        }
+        const user = await aetherGetCurrentUser();
 
         const navbarName = document.getElementById("navbarName");
         if (navbarName) {
-            navbarName.textContent = "Welkom " + data.user.displayName;
+            navbarName.textContent = "Welkom " + user.displayName;
         }
 
-        syncPrivilegedNavbar(data.user);
+        syncPrivilegedNavbar(user);
     } catch (error) {
         console.error("Fout bij sessiecontrole:", error);
         window.location.href = "../../../index.php";

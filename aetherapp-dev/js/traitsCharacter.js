@@ -15,7 +15,7 @@ async function submitTraitAction({ action, idCharacter, idTrait, idCurrentTrait 
 
     if (result?.error) {
         alert(result.error);
-        getCharacter(idCharacter, openCollapseId);
+        await refreshCharacterKeepingDetailsEditor(idCharacter, openCollapseId);
         return false;
     }
 
@@ -23,7 +23,7 @@ async function submitTraitAction({ action, idCharacter, idTrait, idCurrentTrait 
         delete professionSectorSelectionByCharacter[idCharacter];
     }
 
-    getCharacter(idCharacter, openCollapseId);
+    await refreshCharacterKeepingDetailsEditor(idCharacter, openCollapseId);
     return true;
 }
 
@@ -213,7 +213,7 @@ function createReadOnlyTraitBlock(link, options = {}) {
 
     if (link.rankType !== "singular") {
         const rank = document.createElement("span");
-        rank.className = "badge text-bg-secondary ms-2";
+        rank.className = "badge trait-rank ms-2";
         rank.textContent = formatTraitRankLabel(link);
         title.appendChild(rank);
     }
@@ -355,10 +355,12 @@ function getMainTraitGroups(character, traitGroups) {
 }
 
 function withoutLegacyShareTraits(traitGroups) {
+    const isCapital = trait => Boolean(trait?.traitFlags?.share_capital) || (trait?.traitFlagKeys || []).includes("share_capital");
     return (Array.isArray(traitGroups) ? traitGroups : []).map((group) => ({
         ...group,
         linkedTraits: (group.linkedTraits || []).filter((trait) => !isCompanyShareTraitClient(trait)),
-        options: (group.options || []).filter((trait) => !isCompanyShareTraitClient(trait)),
+        options: (group.options || []).filter((trait) => !isCompanyShareTraitClient(trait)
+            && (!isCapital(trait) || currentCharacter?.state === "draft")),
     })).filter((group) => group.linkedTraits.length || group.options.length);
 }
 
@@ -524,6 +526,7 @@ function renderProfessionLeftTraitModule(host, character, canEdit) {
 
     host.innerHTML = "";
     const { row, contentCol } = createLeftTraitModuleRow("Beroep");
+    row.classList.add("character-profession-fields");
     renderProfessionTraitModule(contentCol, character, canEdit);
     row.classList.toggle("d-none", contentCol.childElementCount === 0);
     host.appendChild(row);
@@ -534,9 +537,9 @@ function positionLeftTraitModuleHost(character) {
     const host = document.getElementById("leftTraitModuleHost");
     if (!host || !character) return;
 
-    const targetRow = character.class === "upper class"
+    const targetRow = document.getElementById("characterDetailsTraitPosition") || (character.class === "upper class"
         ? document.getElementById("classRow")
-        : document.getElementById("birthRow");
+        : document.getElementById("birthRow"));
 
     if (!targetRow?.parentElement) return;
     targetRow.insertAdjacentElement("afterend", host);
@@ -614,10 +617,21 @@ function createTraitOption(option, isSelected = false) {
     return el;
 }
 
-function createTraitBookButton(description) {
+function isProfessionTraitGroup(group) {
+    return (group?.options || []).some((option) => option?.type === "profession")
+        || (group?.linkedTraits || []).some((trait) => trait?.type === "profession");
+}
+
+function usesTraitActionButtons(group) {
+    return true;
+}
+
+function createTraitBookButton(description, useActionButton = false) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn btn-outline-secondary trait-book";
+    btn.className = useActionButton
+        ? "action-button trait-book profession-trait-book"
+        : "btn btn-outline-secondary trait-book";
     btn.setAttribute("data-bs-toggle", "popover");
     btn.setAttribute("data-bs-trigger", "focus");
     btn.setAttribute("data-bs-placement", "top");
@@ -672,18 +686,21 @@ function sortTraitOptions(options) {
     });
 }
 
-function createLinkedTraitRow(link, group, canEdit) {
+function createLinkedTraitRow(link, group, canEdit, { nameAsLabel = false } = {}) {
     const row = document.createElement("div");
-    row.className = `input-group mb-2 trait-row${link?.inactive ? " opacity-50" : ""}`;
+    const professionTrait = usesTraitActionButtons(group);
+    row.className = `input-group mb-2 trait-row${professionTrait ? " profession-trait-row" : ""}${link?.inactive ? " opacity-50" : ""}`;
     if (link?.inactive) row.title = link.inactiveReason || "Deze beroepsrang is tijdelijk inactief.";
     row.dataset.idTrait = link.idTrait;
     row.dataset.linked = "true";
 
     const groupedTraitGroup = isGroupedTraitGroup(group);
-    const canManageThisTrait = canEdit && !link?.inactive && canManageTraitClient(link);
+    const capitalTrait = Boolean(link?.traitFlags?.share_capital) || (link?.traitFlagKeys || []).includes("share_capital");
+    const canManageThisTrait = canEdit && !link?.inactive && canManageTraitClient(link)
+        && (!capitalTrait || currentCharacter?.state === "draft");
     row.dataset.grouped = groupedTraitGroup ? "true" : "false";
 
-    row.appendChild(createTraitBookButton(link.description));
+    row.appendChild(createTraitBookButton(link.description, professionTrait));
 
     if (link.rankType !== "singular") {
         row.appendChild(createTraitRankBadge(link));
@@ -712,35 +729,50 @@ function createLinkedTraitRow(link, group, canEdit) {
                 !(link.leaderSemanticCode === "company_leader" && option.leaderSemanticCode === "company_leader"))
         ];
     }
-    const select = createTraitSelect(selectOptions, link.idTrait, !canManageThisTrait || !groupedTraitGroup);
-    row.appendChild(select);
+    if (nameAsLabel) {
+        const label = document.createElement("span"); label.className = "input-group-text trait-name-label";
+        label.textContent = formatTraitOptionLabel(link); row.appendChild(label);
+    } else {
+        const select = createTraitSelect(selectOptions, link.idTrait, !canManageThisTrait || !groupedTraitGroup);
+        row.appendChild(select);
+    }
 
+    const rankButtons = [];
     if (canManageThisTrait && link.rankType !== "singular" && canEditTraitRankInTraitList(link)) {
         const btnDown = document.createElement("button");
         btnDown.type = "button";
-        btnDown.className = "btn btn-outline-secondary";
+        btnDown.className = professionTrait ? "action-button" : "btn btn-outline-secondary";
         btnDown.dataset.action = "trait-rank-down";
         btnDown.innerHTML = `<i class="fa-solid fa-minus"></i>`;
         if (link.rankType === "range_positive" && Number(link.rank) <= (isCompanyShareTraitClient(link) ? 10 : 1)) {
             btnDown.disabled = true;
         }
-        row.appendChild(btnDown);
+        rankButtons.push(btnDown);
 
         const btnUp = document.createElement("button");
         btnUp.type = "button";
-        btnUp.className = "btn btn-outline-secondary";
+        btnUp.className = professionTrait ? "action-button" : "btn btn-outline-secondary";
         btnUp.dataset.action = "trait-rank-up";
         btnUp.innerHTML = `<i class="fa-solid fa-plus"></i>`;
-        row.appendChild(btnUp);
+        rankButtons.push(btnUp);
     }
 
     if (canManageThisTrait) {
         const btnRemove = document.createElement("button");
         btnRemove.type = "button";
-        btnRemove.className = "btn btn-danger";
+        btnRemove.className = professionTrait ? "action-button profession-trait-remove" : "btn btn-danger";
         btnRemove.dataset.action = "trait-remove";
         btnRemove.innerHTML = `<i class="fa-solid fa-trash"></i>`;
-        row.appendChild(btnRemove);
+        rankButtons.push(btnRemove);
+    }
+
+    if (professionTrait && rankButtons.length > 0) {
+        const actions = document.createElement("div");
+        actions.className = "button-group profession-trait-actions";
+        actions.append(...rankButtons);
+        row.appendChild(actions);
+    } else {
+        row.append(...rankButtons);
     }
 
     return row;
@@ -767,34 +799,44 @@ function createPendingTraitRow(group, canEdit) {
         return null;
     }
 
+    const professionTrait = usesTraitActionButtons(group);
     const row = document.createElement("div");
-    row.className = "input-group mb-2 trait-row";
+    row.className = `input-group mb-2 trait-row${professionTrait ? " profession-trait-row" : ""}`;
     row.dataset.idTrait = availableOptions[0].id;
     row.dataset.linked = "false";
     row.dataset.grouped = isGroupedTraitGroup(group) ? "true" : "false";
 
-    row.appendChild(createTraitBookButton(availableOptions[0].description));
+    row.appendChild(createTraitBookButton(availableOptions[0].description, professionTrait));
 
     const select = createTraitSelect(availableOptions, availableOptions[0].id, !canEdit);
     row.appendChild(select);
 
     const btnAdd = document.createElement("button");
     btnAdd.type = "button";
-    btnAdd.className = "btn btn-success";
+    btnAdd.className = professionTrait ? "action-button" : "btn btn-success";
     btnAdd.dataset.action = "trait-add";
     btnAdd.innerHTML = `<i class="fa-solid fa-check"></i>`;
-    row.appendChild(btnAdd);
+    const actions = [btnAdd];
 
     if (getSelectedProfessionGroup(currentCharacter)
         && (group.options || []).some((option) => option?.type === "profession")) {
         const btnReset = document.createElement("button");
         btnReset.type = "button";
-        btnReset.className = "btn btn-danger";
+        btnReset.className = professionTrait ? "action-button profession-trait-remove" : "btn btn-danger";
         btnReset.dataset.action = "trait-reset-profession-sector";
         btnReset.setAttribute("aria-label", "Kies een andere beroepssector");
         btnReset.title = "Kies een andere beroepssector";
         btnReset.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
-        row.appendChild(btnReset);
+        actions.push(btnReset);
+    }
+
+    if (professionTrait) {
+        const actionGroup = document.createElement("div");
+        actionGroup.className = "button-group profession-trait-actions";
+        actionGroup.append(...actions);
+        row.appendChild(actionGroup);
+    } else {
+        row.append(...actions);
     }
 
     updatePendingTraitRow(row);
@@ -844,7 +886,7 @@ function renderTraitGroups(container, traitGroups, canEdit, emptyMessage = "Geen
         wrapper.appendChild(title);
 
         linkedTraits.forEach((link) => {
-            wrapper.appendChild(createLinkedTraitRow(link, group, canEdit));
+            wrapper.appendChild(createLinkedTraitRow(link, group, canEdit, { nameAsLabel: true }));
         });
 
         if (pendingRow) {

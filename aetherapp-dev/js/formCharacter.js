@@ -1,29 +1,8 @@
 // Form-related helpers: listeners, autosave, read-only render, editability toggles
 
 function setupCharacterFormListeners() {
-    // Alleen autosave; de create-flow listeners zitten in createCharacter.js
-    const velden = [
-        "firstName",
-        "lastName",
-        "class",
-        "birthDate",
-        "birthPlace",
-        "nationality",
-        "stateRegisterNumber",
-        "street",
-        "houseNumber",
-        "municipality",
-        "postalCode",
-        "title",
-        "maritalStatus"
-    ];
-
-    velden.forEach((veld) => {
-        const el = document.getElementById(veld);
-        if (el) {
-            el.addEventListener("change", handleAutoSaveField);
-        }
-    });
+    // De bestaande personagefiche bewaart de identiteitsgegevens expliciet via
+    // de Save-knop van haar gegevenskaart. De create-flow heeft eigen listeners.
 }
 
 function canEditHealthForCharacter(character) {
@@ -510,7 +489,8 @@ function syncCharacterLeftInfoSectionsVisibility() {
     const hasVisibleStaff = Boolean(staffTitle && !staffTitle.classList.contains("d-none"));
     const hasVisibleLanguages = Boolean(languagesTitle && !languagesTitle.classList.contains("d-none"));
 
-    card.classList.toggle("d-none", !hasVisibleLivingStandard && !hasVisibleStaff && !hasVisibleLanguages);
+    const hasHealthSection = Boolean(document.getElementById("healthSectionContent"));
+    card.classList.toggle("d-none", !hasHealthSection && !hasVisibleLivingStandard && !hasVisibleStaff && !hasVisibleLanguages);
 }
 
 function isStaffTieConfirmed(tie) {
@@ -728,11 +708,12 @@ function renderCharacterHealthSection(character) {
             controls.className = "d-flex flex-column align-items-end gap-1";
 
             const paidControls = document.createElement("div");
-            paidControls.className = "btn-group btn-group-sm";
+            paidControls.className = "button-group";
 
             const minusBtn = document.createElement("button");
             minusBtn.type = "button";
-            minusBtn.className = "btn btn-outline-secondary";
+            minusBtn.className = "action-button";
+            minusBtn.setAttribute("aria-label", `${rowConfig.label} verlagen`);
             minusBtn.dataset.action = "character-health-adjust";
             minusBtn.dataset.field = rowConfig.paidField;
             minusBtn.dataset.delta = "-1";
@@ -742,7 +723,8 @@ function renderCharacterHealthSection(character) {
 
             const plusBtn = document.createElement("button");
             plusBtn.type = "button";
-            plusBtn.className = "btn btn-outline-secondary";
+            plusBtn.className = "action-button";
+            plusBtn.setAttribute("aria-label", `${rowConfig.label} verhogen`);
             plusBtn.dataset.action = "character-health-adjust";
             plusBtn.dataset.field = rowConfig.paidField;
             plusBtn.dataset.delta = "1";
@@ -762,11 +744,12 @@ function renderCharacterHealthSection(character) {
                 freeControls.appendChild(freeLabel);
 
                 const freeButtons = document.createElement("div");
-                freeButtons.className = "btn-group btn-group-sm";
+                freeButtons.className = "button-group";
 
                 const freeMinusBtn = document.createElement("button");
                 freeMinusBtn.type = "button";
-                freeMinusBtn.className = "btn btn-outline-secondary";
+                freeMinusBtn.className = "action-button";
+                freeMinusBtn.setAttribute("aria-label", `${rowConfig.label} gratis verlagen`);
                 freeMinusBtn.dataset.action = "character-health-adjust";
                 freeMinusBtn.dataset.field = rowConfig.freeField;
                 freeMinusBtn.dataset.delta = "-1";
@@ -776,7 +759,8 @@ function renderCharacterHealthSection(character) {
 
                 const freePlusBtn = document.createElement("button");
                 freePlusBtn.type = "button";
-                freePlusBtn.className = "btn btn-outline-secondary";
+                freePlusBtn.className = "action-button";
+                freePlusBtn.setAttribute("aria-label", `${rowConfig.label} gratis verhogen`);
                 freePlusBtn.dataset.action = "character-health-adjust";
                 freePlusBtn.dataset.field = rowConfig.freeField;
                 freePlusBtn.dataset.delta = "1";
@@ -827,22 +811,80 @@ async function handleAutoSaveField(e) {
     }
 }
 
-function renderCharacterDetailsReadOnly(character) {
+function formatCharacterDetailsDate(value) {
+    const rawValue = String(value || "");
+    if (!rawValue || rawValue === "0001-01-01" || rawValue === "0000-00-00") return "";
+
+    const match = rawValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : rawValue;
+}
+
+function formatCharacterDetailsClass(value) {
+    return ({
+        "upper class": "Hogere klasse",
+        "middle class": "Middenklasse",
+        "lower class": "Lagere klasse"
+    })[value] || value || "-";
+}
+
+function formatCharacterDetailsMaritalStatus(value) {
+    return ({
+        Single: "Ongehuwd",
+        Married: "Gehuwd",
+        Widowed: "Weduwe/weduwnaar"
+    })[value] || value || "-";
+}
+
+function setCharacterDetailsDisplayValue(container, field, value) {
+    container.querySelectorAll(`[data-character-field="${field}"]`).forEach((element) => {
+        element.textContent = value || "-";
+    });
+}
+
+// Direct bewaarde traits mogen de open editor of onbewaarde tekst niet sluiten.
+async function refreshCharacterKeepingDetailsEditor(idCharacter, openCollapseId = null) {
+    const card = document.getElementById("characterDetailsCard");
+    const editing = Number(currentCharacter?.id) === Number(idCharacter)
+        && Boolean(card?.classList.contains("is-editing"));
+    const draft = {};
+    if (editing) {
+        card.querySelectorAll(".character-details-editor input[id], .character-details-editor select[id]").forEach((input) => {
+            // Alleen gewijzigde identiteitsvelden herstellen; serverwijzigingen
+            // (bv. een familieadres) blijven zichtbaar voor de overige velden.
+            if (input.id && input.value !== String(currentCharacter?.[input.id] ?? "")) {
+                draft[input.id] = input.value;
+            }
+        });
+    }
+
+    await getCharacter(idCharacter, openCollapseId);
+    if (!editing || Number(currentCharacter?.id) !== Number(idCharacter)) return;
+
+    const refreshedCard = document.getElementById("characterDetailsCard");
+    refreshedCard?.aetherSetEditing?.(true);
+    Object.entries(draft).forEach(([id, value]) => {
+        const input = document.getElementById(id);
+        if (input && refreshedCard?.contains(input)) input.value = value;
+    });
+}
+
+function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
     const container = document.getElementById("characterForm");
     if (!container) return;
 
-    // Simpele formatter voor geboortedatum (db-formaat -> gewoon tonen)
-    const birthDate = character.birthDate && character.birthDate !== "0001-01-01"
-        ? character.birthDate
-        : "";
-
     const streetLine = [character.street, character.houseNumber].filter(Boolean).join(" ");
     const cityLine = [character.postalCode, character.municipality].filter(Boolean).join(" ");
-    const birthLine = [character.birthPlace, birthDate].filter(Boolean).join(" / ");
+    const birthLine = [character.birthPlace, formatCharacterDetailsDate(character.birthDate)].filter(Boolean).join(" / ");
+    const hasLeftTraitModule = ["upper class", "middle class", "lower class"].includes(character.class);
 
     container.innerHTML = `
-        <div class="card aether-panel character-sheet-card mb-4">
+        <div class="card aether-panel character-sheet-card character-details-card mb-4" id="characterDetailsCard">
             <div class="card-body">
+                <div class="character-details-card-header">
+                    <h4 class="character-sheet-card-title mb-0">Personagegegevens</h4>
+                    <div class="button-group" id="characterDetailsActionGroup"></div>
+                </div>
+                <div class="character-details-display character-details-full-name" data-character-field="fullName"></div>
                 <div class="character-sheet-header mb-3">
                     <div class="character-portrait-panel">
                         <div class="character-portrait-frame">
@@ -854,68 +896,84 @@ function renderCharacterDetailsReadOnly(character) {
                             >
                             <div id="characterPortraitPlaceholder" class="character-portrait-placeholder">Geen portret</div>
                         </div>
-                        <div class="character-portrait-actions">
+                        <div class="character-portrait-actions d-none" id="characterPortraitActions">
                             <input type="file" id="characterPortraitFileInput" class="d-none" accept="image/*">
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="characterPortraitUploadButton">Portret opladen</button>
-                            <button type="button" class="btn btn-outline-danger btn-sm" id="characterPortraitDeleteButton">Verwijderen</button>
+                            <div class="button-group" id="characterPortraitActionGroup"></div>
                         </div>
                     </div>
-                    <div class="character-sheet-header-fields">
+                    <div class="character-sheet-header-fields character-details-display character-details-summary">
+                        <div class="character-details-summary-row"><span>Klasse</span><span data-character-field="class"></span></div>
+                        <div class="character-details-summary-row"><span>Burgerlijke staat</span><span data-character-field="maritalStatus"></span></div>
+                        <div id="characterDetailsSummaryTraits"></div>
+                        <div class="character-details-summary-row"><span>Nationaliteit</span><span data-character-field="nationality"></span></div>
+                        <div class="character-details-summary-row"><span>Geboren te / op</span><span data-character-field="birthLine"></span></div>
+                        <div class="character-details-summary-row"><span>Adres</span><div><div data-character-field="streetLine"></div><div data-character-field="cityLine"></div></div></div>
+                        <div class="character-details-summary-row"><span>Rijksregisternummer</span><span data-character-field="stateRegisterNumber"></span></div>
+                    </div>
+                    <div class="character-sheet-header-fields character-details-editor d-none">
                         <div class="mb-3 row" id="classRow">
-                            <div class="col-sm-4">Klasse</div>
-                            <div class="col-sm-8" data-character-field="class"></div>
+                            <label class="col-sm-4 col-form-label">Klasse</label>
+                            <div class="col-sm-8 character-details-display" data-character-field="class"></div>
+                            <div class="col-sm-8 character-details-editor d-none"><select class="form-select" id="class"><option value="">Kies een klasse</option><option value="upper class">Hogere klasse</option><option value="middle class">Middenklasse</option><option value="lower class">Lagere klasse</option></select></div>
                         </div>
                         <div class="mb-3 row">
-                            <div class="col-sm-4">Aanspreking</div>
-                            <div class="col-sm-8" data-character-field="title"></div>
+                            <label class="col-sm-4 col-form-label">Aanspreking</label>
+                            <div class="col-sm-8 character-details-display" data-character-field="title"></div>
+                            <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="title"></div>
                         </div>
                         <div class="mb-3 row">
-                            <label class="col-sm-4">Familienaam</label>
-                            <div class="col-sm-8" data-character-field="lastName"></div>
+                            <label class="col-sm-4 col-form-label">Familienaam</label>
+                            <div class="col-sm-8 character-details-display" data-character-field="lastName"></div>
+                            <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="lastName"></div>
                         </div>
                         <div class="mb-3 row">
-                            <label class="col-sm-4">Voornaam</label>
-                            <div class="col-sm-8" data-character-field="firstName"></div>
+                            <label class="col-sm-4 col-form-label">Voornaam</label>
+                            <div class="col-sm-8 character-details-display" data-character-field="firstName"></div>
+                            <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="firstName"></div>
                         </div>
                     </div>
                 </div>
+                <div class="character-details-editor d-none">
+                <div id="characterDetailsTraitPosition"></div>
+                ${hasLeftTraitModule ? `<div id="leftTraitModuleHost"></div>` : ""}
+                ${hasLeftTraitModule && canEditTraits ? `<p class="small text-muted mb-3">Wijzigingen aan beroep, adellijke titel en familie worden meteen bewaard, ook als je daarna Cancel kiest.</p>` : ""}
                 <div class="mb-3 row">
-                    <div class="col-sm-4">Straat en nummer</div>
-                    <div class="col-sm-6" data-character-field="streetLine"></div>
+                    <label class="col-sm-4 col-form-label">Straat en nummer</label>
+                    <div class="col-sm-8 character-details-display" data-character-field="streetLine"></div>
+                    <div class="col-sm-8 character-details-editor d-none"><div class="row g-2"><div class="col"><input type="text" class="form-control" id="street"></div><div class="col-3"><input type="text" class="form-control" id="houseNumber"></div></div></div>
                 </div>
                 <div class="mb-3 row">
-                    <div class="col-sm-4">Postcode en gemeente</div>
-                    <div class="col-sm-6" data-character-field="cityLine"></div>
+                    <label class="col-sm-4 col-form-label">Postcode en gemeente</label>
+                    <div class="col-sm-8 character-details-display" data-character-field="cityLine"></div>
+                    <div class="col-sm-8 character-details-editor d-none"><div class="row g-2"><div class="col-3"><input type="text" class="form-control" id="postalCode"></div><div class="col"><input type="text" class="form-control" id="municipality"></div></div></div>
                 </div>
                 <div class="mb-3 row">
-                    <div class="col-sm-4">Burgelijke staat</div>
-                    <div class="col-sm-6" data-character-field="maritalStatus"></div>
+                    <label class="col-sm-4 col-form-label">Burgerlijke staat</label>
+                    <div class="col-sm-8 character-details-display" data-character-field="maritalStatus"></div>
+                    <div class="col-sm-8 character-details-editor d-none"><select class="form-select" id="maritalStatus"><option value="">Kies een burgerlijke staat</option><option value="Single">Ongehuwd</option><option value="Married">Gehuwd</option><option value="Widowed">Weduwe/weduwnaar</option></select></div>
                 </div>
                 <div class="mb-3 row">
-                    <div class="col-sm-4">Nationaliteit</div>
-                    <div class="col-sm-6" data-character-field="nationality"></div>
+                    <label class="col-sm-4 col-form-label">Nationaliteit</label>
+                    <div class="col-sm-8 character-details-display" data-character-field="nationality"></div>
+                    <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="nationality"></div>
                 </div>
                 <div class="mb-3 row" id="birthRow">
-                    <div class="col-sm-4">Geboren te / op</div>
-                    <div class="col-sm-6" data-character-field="birthLine"></div>
+                    <label class="col-sm-4 col-form-label">Geboren te / op</label>
+                    <div class="col-sm-8 character-details-display" data-character-field="birthLine"></div>
+                    <div class="col-sm-8 character-details-editor d-none"><div class="row g-2"><div class="col"><input type="text" class="form-control" id="birthPlace"></div><div class="col"><input class="form-control" id="birthDate" type="date"></div></div></div>
                 </div>
-                ${(character.class === "upper class" || character.class === "middle class" || character.class === "lower class") ? `
-                <div id="leftTraitModuleHost"></div>
-                ` : ""}
                 <div class="mb-3 row">
-                    <div class="col-sm-4">Rijksregisternummer</div>
-                    <div class="col-sm-6" data-character-field="stateRegisterNumber"></div>
+                    <label class="col-sm-4 col-form-label">Rijksregisternummer</label>
+                    <div class="col-sm-8 character-details-display" data-character-field="stateRegisterNumber"></div>
+                    <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="stateRegisterNumber"></div>
+                </div>
                 </div>
             </div>
         </div>
-        <div class="card aether-panel character-sheet-card mb-4">
+        <div class="card aether-panel character-sheet-card mb-4" id="leftInfoSections">
             <div class="card-body">
                 <h4 class="character-sheet-card-title">Gezondheid</h4>
-                <div id="healthSectionContent"></div>
-            </div>
-        </div>
-        <div class="card aether-panel character-sheet-card" id="leftInfoSections">
-            <div class="card-body">
+                <div class="mb-4" id="healthSectionContent"></div>
                 <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
                 <div class="mb-4" id="livingStandardSectionContent"></div>
                 <h4 class="character-sheet-card-title" id="staffSectionTitle">Personeel</h4>
@@ -927,21 +985,108 @@ function renderCharacterDetailsReadOnly(character) {
     `;
 
     const textFields = {
-        class: character.class || "",
+        fullName: [character.title, character.firstName, character.lastName].filter(Boolean).join(" "),
+        class: formatCharacterDetailsClass(character.class),
         title: character.title || "",
         lastName: character.lastName || "",
         firstName: character.firstName || "",
         streetLine,
         cityLine,
-        maritalStatus: character.maritalStatus || "",
+        maritalStatus: formatCharacterDetailsMaritalStatus(character.maritalStatus),
         nationality: character.nationality || "",
         birthLine,
         stateRegisterNumber: character.stateRegisterNumber || ""
     };
-    Object.entries(textFields).forEach(([field, value]) => {
-        const element = container.querySelector(`[data-character-field="${field}"]`);
-        if (element) element.textContent = value;
+    Object.entries(textFields).forEach(([field, value]) => setCharacterDetailsDisplayValue(container, field, value));
+    const summaryTraits = container.querySelector("#characterDetailsSummaryTraits");
+    const summaryGroups = character.class === "upper class"
+        ? getUpperClassLeftTraitGroups(character, character.traitGroups || [])
+        : [{ leftModuleLabel: "Beroep", linkedTraits: getLinkedProfessionGroup(character)?.linkedTraits || [] }];
+    summaryGroups.forEach((group) => {
+        const row = document.createElement("div");
+        row.className = "character-details-summary-row";
+        const label = document.createElement("span");
+        label.textContent = getTraitGroupLeftModuleLabel(group);
+        const value = document.createElement("span");
+        value.textContent = (group.linkedTraits || []).map((trait) => trait.name || "").filter(Boolean).join(", ") || "-";
+        row.append(label, value);
+        summaryTraits?.append(row);
     });
+    // Dit veld staat eenmaal in index.html, buiten de opnieuw opgebouwde kaart.
+    const characterIdInput = document.getElementById("idCharacter");
+    if (characterIdInput) characterIdInput.value = character.id || "";
+
+    ["firstName", "lastName", "class", "birthDate", "birthPlace", "nationality", "stateRegisterNumber", "street", "houseNumber", "municipality", "postalCode", "title", "maritalStatus"]
+        .forEach((field) => {
+            const input = container.querySelector(`#${field}`);
+            if (input) input.value = character[field] ?? "";
+        });
+
+    const classInput = container.querySelector("#class");
+    if (classInput) classInput.disabled = !canEditClassForCharacter(character);
+
+    const portraitActionGroup = container.querySelector("#characterPortraitActionGroup");
+    if (canEdit && portraitActionGroup && typeof AetherActionButtons !== "undefined") {
+        const upload = AetherActionButtons.button({ icon: "fa-upload", label: "", title: "Portret opladen" });
+        upload.id = "characterPortraitUploadButton";
+        const remove = AetherActionButtons.button({ icon: "fa-trash", label: "", title: "Portret verwijderen" });
+        remove.id = "characterPortraitDeleteButton";
+        portraitActionGroup.append(upload, remove);
+    }
+
+    setupCharacterPortraitControls();
+
+    const card = container.querySelector("#characterDetailsCard");
+    const actionGroup = container.querySelector("#characterDetailsActionGroup");
+    const portraitActions = container.querySelector("#characterPortraitActions");
+    const setEditing = (editing) => {
+        card?.classList.toggle("is-editing", editing);
+        container.querySelectorAll(".character-details-display").forEach((element) => element.classList.toggle("d-none", editing));
+        container.querySelectorAll(".character-details-editor").forEach((element) => element.classList.toggle("d-none", !editing));
+        portraitActions?.classList.toggle("d-none", !editing || !canEdit);
+
+        if (actionGroup && canEdit && typeof AetherActionButtons !== "undefined") {
+            actionGroup.replaceChildren();
+            if (!editing) {
+                const edit = AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit", title: "Personagegegevens bewerken" });
+                edit.addEventListener("click", () => setEditing(true));
+                actionGroup.append(edit);
+            } else {
+                const save = AetherActionButtons.button({ icon: "fa-check", label: "Save", title: "Personagegegevens bewaren" });
+                const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel", title: "Wijzigingen annuleren" });
+                save.addEventListener("click", async () => {
+                    const fields = ["firstName", "lastName", "birthDate", "birthPlace", "nationality", "stateRegisterNumber", "street", "houseNumber", "municipality", "postalCode", "title", "maritalStatus"];
+                    const payload = { id: character.id };
+                    fields.forEach((field) => { payload[field] = container.querySelector(`#${field}`)?.value ?? ""; });
+                    if (canEditClassForCharacter(character)) payload.class = classInput?.value ?? character.class;
+
+                    save.disabled = true;
+                    try {
+                        await updateCharacter(payload);
+                        await getCharacter(character.id);
+                    } catch (error) {
+                        console.error("Kon de personagegegevens niet bewaren:", error);
+                        alert(error?.message || "Kon de personagegegevens niet bewaren.");
+                        save.disabled = false;
+                    }
+                });
+                cancel.addEventListener("click", () => getCharacter(character.id));
+                actionGroup.append(save, cancel);
+            }
+        }
+
+        if (typeof renderLeftTraitModule === "function") {
+            renderLeftTraitModule(character, Boolean(editing && canEditTraits));
+        }
+    };
+
+    if (card) card.aetherSetEditing = setEditing;
+    setEditing(false);
+}
+
+// Oudere aanroepen gebruiken dezelfde kaart in leesmodus.
+function renderCharacterDetailsReadOnly(character) {
+    renderCharacterDetailsCard(character, false, false);
 }
 
 function applyCharacterEditability(character, canEdit) {
@@ -965,6 +1110,9 @@ function applyCharacterEditability(character, canEdit) {
     formFields.forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
+        // De identiteitskaart beheert haar eigen edit/display-modus en de
+        // afzonderlijke bevoegdheid om de klasse te wijzigen.
+        if (el.closest("#characterDetailsCard")) return;
         if (canEdit) {
             el.removeAttribute("disabled");
             el.classList.remove("form-control-plaintext");

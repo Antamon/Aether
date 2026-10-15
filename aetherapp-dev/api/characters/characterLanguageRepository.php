@@ -4,7 +4,7 @@ declare(strict_types=1);
 /** @return array<string, mixed>|null */
 function aetherFetchLanguageCharacter(PDO $pdo, int $characterId): ?array
 {
-    $stmt = $pdo->prepare('SELECT id, idUser, type, `class`, experienceToTrait, physicalHealth, mentalHealth FROM tblCharacter WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, idUser, type, `class`, state, experienceToTrait, physicalHealth, mentalHealth FROM tblCharacter WHERE id = :id');
     $stmt->execute(['id' => $characterId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;

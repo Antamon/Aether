@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/eventAccess.php';
 require_once __DIR__ . '/eventRepository.php';
+require_once __DIR__ . '/eventMediaService.php';
 
 function aetherValidateEventDateOrder(string $dateStart, string $dateEnd): void
 {
@@ -24,6 +25,7 @@ function aetherGetEventList(PDO $pdo, array $currentUser, int $requestedUserId):
 
     $events = aetherFetchEventListForUser($pdo, $userId);
     foreach ($events as &$event) {
+        $event['imageUrl'] = aetherEventImageUrl((int) $event['id']);
         $event['participation'] = (bool) $event['participation'];
         if ($event['ep'] !== null) $event['ep'] = (int) $event['ep'];
     }

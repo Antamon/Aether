@@ -38,7 +38,7 @@ try {
     );
     $pdo->commit();
     aetherJsonResponse($response);
-} catch (AetherCharacterTraitException $e) {
+} catch (AetherCharacterTraitException|AetherShareException $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {

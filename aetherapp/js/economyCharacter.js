@@ -124,6 +124,17 @@ function getSecuritiesRiskProfileLabel(character, riskProfile) {
     return options?.[riskProfile]?.label || `Profiel ${riskProfile}`;
 }
 
+function updateSecuritiesRiskProfileDisplay(input) {
+    if (!input) return;
+
+    const profile = Math.max(1, Math.min(5, Number(input.value || 3)));
+    const character = currentCharacter || {};
+    const label = getSecuritiesRiskProfileLabel(character, profile);
+    const value = input.closest(".economy-securities-risk")?.querySelector("[data-role='securities-risk-profile-value']");
+    if (value) value.textContent = label;
+    input.setAttribute("aria-valuetext", label);
+}
+
 function getCharacterSecuritiesManagerDisplayName(character) {
     const managerType = String(character?.securitiesManagerType || "self");
     if (managerType === "bank") {
@@ -247,18 +258,44 @@ function renderSecuritiesSettingsSection(host, character) {
     riskLabel.textContent = "Risicoprofiel";
     riskRow.appendChild(riskLabel);
 
-    const riskSelect = document.createElement("select");
-    riskSelect.className = "form-select";
-    riskSelect.dataset.role = "securities-risk-profile";
-    riskSelect.disabled = !canManage;
+    const selectedRisk = Math.max(1, Math.min(5, Number(character?.securitiesRiskProfile || 3)));
+    riskRow.classList.add("economy-securities-risk");
+
+    const riskValue = document.createElement("output");
+    riskValue.className = "economy-securities-risk-value";
+    riskValue.dataset.role = "securities-risk-profile-value";
+    riskValue.textContent = getSecuritiesRiskProfileLabel(character, selectedRisk);
+    riskLabel.appendChild(riskValue);
+
+    const riskSlider = document.createElement("input");
+    riskSlider.type = "range";
+    riskSlider.className = "form-range";
+    riskSlider.min = "1";
+    riskSlider.max = "5";
+    riskSlider.step = "1";
+    riskSlider.value = String(selectedRisk);
+    riskSlider.dataset.role = "securities-risk-profile";
+    riskSlider.disabled = !canManage;
+    riskSlider.setAttribute("aria-label", "Risicoprofiel effectenportefeuille");
+    riskSlider.setAttribute("aria-valuetext", riskValue.textContent);
+    riskRow.appendChild(riskSlider);
+
+    const scale = document.createElement("div");
+    scale.className = "economy-securities-risk-scale";
     [1, 2, 3, 4, 5].forEach((riskProfile) => {
-        const optionEl = document.createElement("option");
-        optionEl.value = String(riskProfile);
-        optionEl.textContent = getSecuritiesRiskProfileLabel(character, riskProfile);
-        optionEl.selected = Number(character?.securitiesRiskProfile || 3) === riskProfile;
-        riskSelect.appendChild(optionEl);
+        const marker = document.createElement("span");
+        marker.textContent = String(riskProfile);
+        marker.title = getSecuritiesRiskProfileLabel(character, riskProfile);
+        scale.appendChild(marker);
     });
-    riskRow.appendChild(riskSelect);
+    riskRow.appendChild(scale);
+
+    const riskHelp = document.createElement("div");
+    riskHelp.className = "text-muted small";
+    riskHelp.textContent = canManage
+        ? "De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event."
+        : "Deze waarde wordt gebruikt bij volgende economiesnapshots.";
+    riskRow.appendChild(riskHelp);
     settingsWrap.appendChild(riskRow);
 
     const info = document.createElement("div");
@@ -272,7 +309,7 @@ function renderSecuritiesSettingsSection(host, character) {
 function renderSecuritiesIntroduction(host) {
     const intro = document.createElement("p");
     intro.className = "text-muted mb-3";
-    intro.textContent = "Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.";
+    intro.textContent = "Je effectenportefeuille stellen beleggingen die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.";
     host.appendChild(intro);
 }
 
@@ -288,11 +325,6 @@ function renderSecuritiesProfileSummary(host, character) {
     managerInfo.className = "mb-1";
     managerInfo.textContent = `Beheerder: ${getCharacterSecuritiesManagerDisplayName(character)}`;
     host.appendChild(managerInfo);
-
-    const riskInfo = document.createElement("div");
-    riskInfo.className = "mb-3";
-    riskInfo.textContent = `Risicoprofiel: ${getSecuritiesRiskProfileLabel(character, Number(character?.securitiesRiskProfile || 3))}`;
-    host.appendChild(riskInfo);
 
     const expected = getCharacterSecuritiesExpectedReturnSummary(character);
     const expectedWrap = document.createElement("div");
@@ -326,23 +358,17 @@ function renderSecuritiesActionButtons(host, character) {
     const balance = getDisplayedCharacterSecuritiesAmount(character);
     const approvedSnapshots = getApprovedSecuritiesWithdrawalSnapshots(character);
     const actionWrap = document.createElement("div");
-    actionWrap.className = "d-flex align-items-start gap-2 flex-wrap";
+    actionWrap.className = "button-group";
 
-    const depositButton = document.createElement("button");
-    depositButton.type = "button";
-    depositButton.className = "btn btn-success";
+    const depositButton = AetherActionButtons.button({ icon: "fa-arrow-down", label: "Geld storten" });
     depositButton.dataset.action = "open-securities-deposit-modal";
     depositButton.disabled = !canManage;
-    depositButton.textContent = "Geld storten";
     actionWrap.appendChild(depositButton);
 
     if (balance > 0) {
-        const withdrawButton = document.createElement("button");
-        withdrawButton.type = "button";
-        withdrawButton.className = "btn btn-success";
+        const withdrawButton = AetherActionButtons.button({ icon: "fa-arrow-up", label: "Geld opnemen" });
         withdrawButton.dataset.action = "open-securities-withdrawal-modal";
         withdrawButton.disabled = !canManage || approvedSnapshots.length === 0;
-        withdrawButton.textContent = "Geld opnemen";
         actionWrap.appendChild(withdrawButton);
     }
 
@@ -372,7 +398,7 @@ function ensureSecuritiesDepositModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Geld storten</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <p class="text-muted">Opgepast, geld dat je stort op je effectenportefeuille staat vast voor langere tijd. Jaarlijks (per event) kan je er tot 30 000Fr kosteloos afhalen. Voor hogere bedragen verlies je 25%.</p>
@@ -382,8 +408,10 @@ function ensureSecuritiesDepositModal() {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-success" data-action="confirm-securities-deposit">Geld storten</button>
+                        <div class="button-group">
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
+                        <button type="button" class="action-button" data-action="confirm-securities-deposit"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Geld storten</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -435,7 +463,7 @@ function ensureSecuritiesWithdrawalModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Geld opnemen</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -450,8 +478,10 @@ function ensureSecuritiesWithdrawalModal() {
                         <div class="small text-muted" data-role="securities-withdraw-warning"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-success" data-action="confirm-securities-withdrawal">Geld opnemen</button>
+                        <div class="button-group">
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
+                        <button type="button" class="action-button" data-action="confirm-securities-withdrawal"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Geld opnemen</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -572,7 +602,7 @@ function ensureBankTransferModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Overschrijving</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <div data-role="bank-transfer-form">
@@ -597,8 +627,10 @@ function ensureBankTransferModal() {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-success" data-action="create-bank-transfer">Overschrijving</button>
+                        <div class="button-group">
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
+                        <button type="button" class="action-button" data-action="create-bank-transfer"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Overschrijving</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -663,103 +695,66 @@ function openBankTransferModal() {
     bankTransferModalInstance?.show();
 }
 
-function renderSecuritiesSnapshotsSection(host, character) {
-    const snapshots = getCharacterSecuritiesSnapshots(character);
+function economyRowsNewestFirst(rows) {
+    return [...rows].sort((a, b) => String(b.transactionDate || "").localeCompare(String(a.transactionDate || ""))
+        || Number(b.id || 0) - Number(a.id || 0));
+}
 
-    if (snapshots.length === 0) {
-        return;
+function economyAmountCell(value) {
+    const amount = document.createElement("span");
+    amount.className = "fw-semibold " + (Number(value) < 0 ? "text-danger" : "text-success");
+    amount.textContent = formatCharacterCurrency(value);
+    return amount;
+}
+
+function economySnapshotFields(snapshot, character) {
+    const status = { none: "Niet van toepassing", pending: "Wacht op goedkeuring", approved: "Goedgekeurd" };
+    return [
+        ["Event", snapshot.eventTitle || "Event #" + snapshot.idEvent],
+        ["Datum", formatEconomyDate(snapshot.transactionDate)],
+        ["Inkomsten", formatCharacterCurrency(snapshot.amount || 0)],
+        ["Saldo effectenportefeuille", formatCharacterCurrency(snapshot.securitiesBalanceSnapshot || 0)],
+        ["Beheer", snapshot.securitiesManagerType === "none" ? "Niet van toepassing" : getSecuritiesManagerTypeLabel(snapshot.securitiesManagerType || "self")],
+        ["Beheerder", snapshot.securitiesManagerDisplayName || "—"],
+        ["Risicoprofiel", getSecuritiesRiskProfileLabel(character, Number(snapshot.securitiesRiskProfile || 3))],
+        ["Vaardigheidsniveau beheerder", snapshot.securitiesManagerSkillLevel || 0],
+        ["Basisrendement", formatEconomyPercentage(snapshot.securitiesBasePercentage || 0)],
+        ["Maximale afwijking", formatEconomyPercentage(snapshot.securitiesVariationLimitPercentage || 0)],
+        ["Afwijking", formatEconomyPercentage(snapshot.securitiesVariationPercentage || 0)],
+        ["Rendementspercentage", formatEconomyPercentage(snapshot.securitiesReturnPercentage || 0)],
+        ["Rendement", formatCharacterCurrency(snapshot.securitiesReturnAmount || 0)],
+        ["Status rendement", status[snapshot.securitiesStatus] || "Niet van toepassing"],
+        ["Opgenomen uit effectenportefeuille", formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalAmount || 0)],
+        ["Bijgeschreven op bankrekening", formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalBankAmount || snapshot.securitiesSnapshotWithdrawalAmount || 0)],
+        ["Einddatum event", formatEconomyDate(snapshot.eventDateEnd)],
+        ["Event afgelopen", snapshot.securitiesEventEnded ? "Ja" : "Nee"]
+    ];
+}
+
+function economySnapshotActions(snapshot, character, includeDelete = false) {
+    const actions = [];
+    if (snapshot.securitiesStatus === "pending" && character.canApproveSecuritiesSnapshots) {
+        actions.push({ icon: "fa-rotate", label: "Opnieuw genereren", run: () => rerollSecuritiesSnapshot(Number(snapshot.id)) },
+            { icon: "fa-check", label: "Goedkeuren", run: () => approveSecuritiesSnapshot(Number(snapshot.id)) });
     }
+    if (includeDelete && character.canCreateEconomySnapshots) {
+        actions.push({ icon: "fa-trash-can", label: "Verwijderen", run: () => deleteCharacterEconomySnapshot(Number(snapshot.id)) });
+    }
+    return actions;
+}
 
+function renderSecuritiesSnapshotsSection(host, character) {
+    const snapshots = economyRowsNewestFirst(getCharacterSecuritiesSnapshots(character));
+    if (!snapshots.length) return;
     appendEconomySubsectionTitle(host, "Rendementen");
-
-    const list = document.createElement("div");
-    list.className = "list-group list-group-flush";
-
-    snapshots.forEach((snapshot) => {
-        const item = document.createElement("div");
-        item.className = "list-group-item px-0";
-
-        const header = document.createElement("div");
-        header.className = "d-flex justify-content-between align-items-start gap-3 flex-wrap";
-
-        const titleWrap = document.createElement("div");
-        const title = document.createElement("div");
-        title.className = "fw-semibold";
-        title.textContent = String(snapshot?.eventTitle || "").trim() || `Event #${snapshot?.idEvent || 0}`;
-        titleWrap.appendChild(title);
-
-        const meta = document.createElement("div");
-        meta.className = "text-muted small";
-        meta.textContent = [
-            formatEconomyDate(snapshot?.transactionDate),
-            `${getSecuritiesManagerTypeLabel(String(snapshot?.securitiesManagerType || "self"))}`,
-            `${getSecuritiesRiskProfileLabel(character, Number(snapshot?.securitiesRiskProfile || 3))}`,
-            `Skill ${Number(snapshot?.securitiesManagerSkillLevel || 0)}`
-        ].filter(Boolean).join(" - ");
-        titleWrap.appendChild(meta);
-        header.appendChild(titleWrap);
-
-        const amount = document.createElement("div");
-        const returnAmount = Number(snapshot?.securitiesReturnAmount || 0);
-        amount.className = `fw-semibold ${returnAmount < 0 ? "text-danger" : "text-success"}`;
-        amount.textContent = formatCharacterCurrency(returnAmount);
-        header.appendChild(amount);
-        item.appendChild(header);
-
-        const details = document.createElement("div");
-        details.className = "economy-securities-snapshot-meta text-muted small mt-2";
-        const status = String(snapshot?.securitiesStatus || "none");
-        const parts = [
-            `Basistarief ${formatEconomyPercentage(snapshot?.securitiesBasePercentage || 0)}`,
-            `Variatie ${formatEconomyPercentage(snapshot?.securitiesVariationPercentage || 0)}`,
-            `Totaal ${formatEconomyPercentage(snapshot?.securitiesReturnPercentage || 0)}`
-        ];
-        if (status === "pending") {
-            parts.push("Wacht op goedkeuring");
-        } else if (status === "approved") {
-            parts.push("Goedgekeurd");
-        }
-        details.textContent = parts.join(" - ");
-        item.appendChild(details);
-
-        const snapshotWithdrawalAmount = Number(snapshot?.securitiesSnapshotWithdrawalAmount || 0);
-        if (snapshotWithdrawalAmount > 0) {
-            const withdrawalInfo = document.createElement("div");
-            withdrawalInfo.className = "small mt-2";
-            const creditedAmount = Number(snapshot?.securitiesSnapshotWithdrawalBankAmount || snapshotWithdrawalAmount);
-            withdrawalInfo.textContent = `Opname uit portefeuille: ${formatCharacterCurrency(snapshotWithdrawalAmount)}${creditedAmount !== snapshotWithdrawalAmount ? `, uitbetaald op bankrekening: ${formatCharacterCurrency(creditedAmount)}` : ""}`;
-            item.appendChild(withdrawalInfo);
-        }
-
-        const actions = document.createElement("div");
-        actions.className = "d-flex align-items-center gap-2 flex-wrap mt-3";
-
-        if (status === "pending" && character?.canApproveSecuritiesSnapshots) {
-            const rerollButton = document.createElement("button");
-            rerollButton.type = "button";
-            rerollButton.className = "btn btn-sm btn-success";
-            rerollButton.dataset.action = "reroll-securities-snapshot";
-            rerollButton.dataset.idSnapshot = String(snapshot?.id || 0);
-            rerollButton.textContent = "Opnieuw genereren";
-            actions.appendChild(rerollButton);
-
-            const approveButton = document.createElement("button");
-            approveButton.type = "button";
-            approveButton.className = "btn btn-sm btn-success";
-            approveButton.dataset.action = "approve-securities-snapshot";
-            approveButton.dataset.idSnapshot = String(snapshot?.id || 0);
-            approveButton.textContent = "Goedkeuren";
-            actions.appendChild(approveButton);
-        }
-
-        if (actions.childNodes.length > 0) {
-            item.appendChild(actions);
-        }
-
-        list.appendChild(item);
-    });
-
-    host.appendChild(list);
+    AetherDataTable.render(host, { label: "Rendementen", rows: snapshots, columns: [
+        { label: "Event", render: snapshot => snapshot.eventTitle || "Event #" + snapshot.idEvent },
+        { label: "Bedrag", className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.securitiesReturnAmount || 0) },
+        { label: "Info", className: "text-end", render: snapshot => AetherDataTable.infoButton({
+            title: "Rendement — " + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
+            fields: economySnapshotFields(snapshot, character), actions: economySnapshotActions(snapshot, character)
+        }) }
+    ] });
 }
 
 function renderCharacterSecuritiesSection(host, character) {
@@ -767,6 +762,7 @@ function renderCharacterSecuritiesSection(host, character) {
 
     const card = buildEconomyCard("Effectenportefeuille");
     renderSecuritiesIntroduction(card.body);
+    renderSecuritiesSettingsSection(card.body, character);
     renderSecuritiesProfileSummary(card.body, character);
     renderSecuritiesActionButtons(card.body, character);
     renderSecuritiesSnapshotsSection(card.body, character);
@@ -783,6 +779,12 @@ function formatEconomyDate(dateValue) {
     }
 
     return new Intl.DateTimeFormat("nl-BE").format(parsedDate);
+}
+
+function formatCharacterEconomySnapshotEventLabel(eventOption) {
+    const title = String(eventOption?.title || "").trim() || `Event #${eventOption?.id || 0}`;
+    const dateLabel = formatEconomyDate(eventOption?.dateStart);
+    return dateLabel ? `${title} (${dateLabel})` : title;
 }
 
 function formatCurrencyInputDisplayValue(value) {
@@ -1035,357 +1037,6 @@ function renderIncomeSection(host, character) {
     host.appendChild(incomeCard.card);
 }
 
-function getCharacterCompanyShares(character) {
-    return Array.isArray(character?.companyShares) ? character.companyShares : [];
-}
-
-function getCharacterCompanySharePurchaseOptions(character) {
-    return Array.isArray(character?.companySharePurchaseOptions) ? character.companySharePurchaseOptions : [];
-}
-
-function getCompanyShareUnitPrice(value) {
-    const companyValue = Number(value ?? 0);
-    if (!Number.isFinite(companyValue) || companyValue <= 0) {
-        return 0;
-    }
-
-    return companyValue / 100;
-}
-
-function canDisplayCompanyShareCard(character, share) {
-    if (!character || !share) return false;
-
-    const hasAssignedCompany = Number(share.companyId || 0) > 0;
-    if (currentUser?.role === "administrator" || currentUser?.role === "director") {
-        return true;
-    }
-
-    if (hasAssignedCompany) {
-        return true;
-    }
-
-    return character.state === "draft" && character.type === "player";
-}
-
-function createCompanyShareCompanyOptions(share) {
-    const currentCompanyId = Number(share?.companyId || 0);
-    const currentCompanyName = String(share?.companyName || "").trim();
-    const options = Array.isArray(share?.availableCompanies)
-        ? [...share.availableCompanies]
-        : [];
-
-    if (currentCompanyId > 0 && !options.some((company) => Number(company?.id || 0) === currentCompanyId)) {
-        options.unshift({
-            id: currentCompanyId,
-            companyName: currentCompanyName || `Bedrijf #${currentCompanyId}`,
-            companyValue: Number(share?.companyValue ?? 0),
-            remainingSharePercentage: Number(share?.remainingSharePercentage ?? 0),
-            isUnavailableCurrent: true
-        });
-    }
-
-    return options;
-}
-
-function formatCompanyShareOptionLabel(company) {
-    const name = String(company?.companyName || "").trim() || `Bedrijf #${company?.id || 0}`;
-    const value = Number(company?.companyValue ?? 0);
-    const unitPrice = getCompanyShareUnitPrice(value);
-    const remainingSharePercentage = Number(company?.remainingSharePercentage ?? 0);
-    const label = `${name} - ${formatCharacterCurrency(unitPrice)} per 1%`;
-
-    if (company?.isUnavailableCurrent) {
-        return `${label} - huidige koppeling`;
-    }
-
-    return `${label} - nog ${remainingSharePercentage}% beschikbaar`;
-}
-
-function formatCompanySharePurchaseOptionLabel(option) {
-    const name = String(option?.companyName || "").trim() || `Bedrijf #${option?.idCompany || 0}`;
-    const unitPrice = Number(option?.unitPrice ?? 0);
-    const remainingSharePercentage = Number(option?.remainingSharePercentage ?? 0);
-    const shareClass = String(option?.shareClass || "").trim();
-
-    return `${name} - ${shareClass}-aandeel - ${formatCharacterCurrency(unitPrice)} per 1% - nog ${remainingSharePercentage}% beschikbaar`;
-}
-
-function formatCharacterEconomySnapshotEventLabel(eventOption) {
-    const title = String(eventOption?.title || "").trim() || `Event #${eventOption?.id || 0}`;
-    const dateLabel = formatEconomyDate(eventOption?.dateStart);
-    return dateLabel ? `${title} (${dateLabel})` : title;
-}
-
-function renderCompanySharesSection(host, character) {
-    const companyShares = getCharacterCompanyShares(character)
-        .filter((share) => canDisplayCompanyShareCard(character, share));
-    const purchaseOptions = getCharacterCompanySharePurchaseOptions(character);
-    const canShowPurchaseCard = character?.state !== "draft"
-        && (currentUser?.role === "administrator" || currentUser?.role === "director" || character?.type === "player");
-    const canRenderPurchaseCard = canShowPurchaseCard && purchaseOptions.length > 0;
-
-    if (!host || (companyShares.length === 0 && !canRenderPurchaseCard)) {
-        return;
-    }
-
-    companyShares.forEach((share) => {
-        const shareClassLabel = `${share.shareClass || "?"}-aandelen`;
-        const shareTitle = Number(share.companyId || 0) > 0
-            ? `${shareClassLabel} ${share.companyName || `Bedrijf #${share.companyId}`}`
-            : shareClassLabel;
-
-        const shareCard = buildEconomyCard(shareTitle);
-        shareCard.card.classList.add("economy-share-card");
-
-        const item = document.createElement("div");
-        item.className = "economy-share-item";
-
-        const header = document.createElement("div");
-        header.className = "economy-share-header d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2";
-
-        const titleWrap = document.createElement("div");
-        titleWrap.className = "economy-share-title-wrap";
-
-        const meta = document.createElement("p");
-        meta.className = "economy-share-subtitle text-muted mb-0";
-        meta.textContent = share.name || `${share.shareClass || ""}-aandeel`;
-        titleWrap.appendChild(meta);
-        header.appendChild(titleWrap);
-
-        const percentageBadge = document.createElement("span");
-        percentageBadge.className = "economy-share-badge badge text-bg-secondary fs-6";
-        percentageBadge.textContent = `${Number(share.percentage || 0)}%`;
-        header.appendChild(percentageBadge);
-        item.appendChild(header);
-
-        if (share.canManageAssignments) {
-            const fieldWrap = document.createElement("div");
-            fieldWrap.className = "mb-3";
-
-            const label = document.createElement("label");
-            label.className = "form-label";
-            label.textContent = "Gekoppeld bedrijf";
-            fieldWrap.appendChild(label);
-
-            const select = document.createElement("select");
-            select.className = "form-select";
-            select.dataset.role = "company-share-company-select";
-            select.dataset.idLinkCharacterTrait = String(share.idLinkCharacterTrait || 0);
-
-            const emptyOption = document.createElement("option");
-            emptyOption.value = "";
-            emptyOption.textContent = "Geen bedrijf gekoppeld";
-            select.appendChild(emptyOption);
-
-            createCompanyShareCompanyOptions(share).forEach((company) => {
-                const option = document.createElement("option");
-                option.value = String(company.id || 0);
-                option.textContent = formatCompanyShareOptionLabel(company);
-                option.selected = Number(company.id || 0) === Number(share.companyId || 0);
-                select.appendChild(option);
-            });
-
-            fieldWrap.appendChild(select);
-
-            if (!share.companyId && createCompanyShareCompanyOptions(share).length === 0) {
-                const help = document.createElement("div");
-                help.className = "form-text";
-                help.textContent = "Er zijn momenteel geen bedrijven beschikbaar die bij dit aandeeltype passen of nog voldoende vrije aandelen hebben.";
-                fieldWrap.appendChild(help);
-            }
-
-            item.appendChild(fieldWrap);
-        }
-
-        if (Number(share.companyId || 0) > 0) {
-            const metrics = document.createElement("div");
-            metrics.className = "economy-share-metrics";
-            addEconomyMetric(metrics, "Type bedrijf", String(share.companyTypeLabelResolved || share.companyTypeLabel || "-"));
-            addEconomyMetric(metrics, "Bedrijfswaarde", formatCharacterCurrency(share.companyValue || 0));
-            addEconomyMetric(metrics, "Aandelen op de markt", `${Number(share.remainingSharePercentage || 0)}%`);
-            item.appendChild(metrics);
-
-            const descriptionWrap = document.createElement("div");
-            descriptionWrap.className = "economy-share-description mb-3";
-
-            const descriptionLabel = document.createElement("div");
-            descriptionLabel.className = "economy-share-section-label text-muted mb-2";
-            descriptionLabel.textContent = "Beschrijving bedrijf";
-            descriptionWrap.appendChild(descriptionLabel);
-
-            const descriptionBody = document.createElement("div");
-            descriptionBody.className = "economy-share-description-body d-flex gap-3 align-items-start flex-wrap";
-
-            const logoWrap = document.createElement("div");
-            logoWrap.className = "economy-share-logo border rounded bg-light d-flex align-items-center justify-content-center overflow-hidden";
-
-            if (share.companyLogoUrl) {
-                const logo = document.createElement("img");
-                logo.src = share.companyLogoUrl;
-                logo.alt = `${share.companyName || "Bedrijf"} logo`;
-                logo.className = "w-100 h-100";
-                logo.style.objectFit = "contain";
-                logoWrap.appendChild(logo);
-            } else {
-                const placeholder = document.createElement("span");
-                placeholder.className = "small text-muted text-center px-2";
-                placeholder.textContent = "Geen logo";
-                logoWrap.appendChild(placeholder);
-            }
-
-            const descriptionText = document.createElement("div");
-            descriptionText.className = "economy-share-description-text flex-grow-1";
-            descriptionText.textContent = String(share.companyDescription || "").trim() || "Geen beschrijving beschikbaar.";
-
-            descriptionBody.appendChild(logoWrap);
-            descriptionBody.appendChild(descriptionText);
-            descriptionWrap.appendChild(descriptionBody);
-            item.appendChild(descriptionWrap);
-        }
-
-        const showTradingControls = character?.state !== "draft" && Number(share.companyId || 0) > 0;
-        if (showTradingControls) {
-            const pricing = document.createElement("div");
-            pricing.className = "economy-share-metrics economy-share-pricing";
-            addEconomyMetric(pricing, "Prijs per 1% aandeel", formatCharacterCurrency(share.nextPercentageCost || share.sellPercentageValue || 0));
-            item.appendChild(pricing);
-        }
-
-        if (showTradingControls && (share.canIncreaseRank || share.canDecreaseRank)) {
-            const actionWrap = document.createElement("div");
-            actionWrap.className = "economy-share-actions d-flex justify-content-between align-items-center gap-3 flex-wrap";
-
-            const help = document.createElement("div");
-            help.className = "economy-share-help text-muted";
-
-            const hasAssignedCompany = Number(share.companyId || 0) > 0;
-            const canIncreaseByCapacity = Number(share.remainingSharePercentage || 0) > Number(share.percentage || 0);
-            const canDecreaseByPercentage = Number(share.percentage || 0) > 0;
-            const canIncrease = hasAssignedCompany
-                && canIncreaseByCapacity
-                && Boolean(share.canAffordNextRank);
-            const canDecrease = hasAssignedCompany
-                && canDecreaseByPercentage;
-
-            if (!hasAssignedCompany) {
-                help.textContent = "Koppel eerst een bedrijf om dit aandeel te beheren.";
-            } else if (!canIncreaseByCapacity) {
-                help.textContent = "Dit bedrijf heeft geen vrije aandelen meer beschikbaar om bij te kopen.";
-            } else if (!share.canAffordNextRank) {
-                help.textContent = `Aandeel kopen is niet mogelijk: ${formatCharacterCurrency(share.nextPercentageCost || 0)} per 1% en onvoldoende saldo op de bankrekening.`;
-            } else {
-                help.textContent = `Aandeel kopen of verkopen gebeurt telkens per 1% voor ${formatCharacterCurrency(share.nextPercentageCost || share.sellPercentageValue || 0)}.`;
-            }
-            actionWrap.appendChild(help);
-
-            const buttonGroup = document.createElement("div");
-            buttonGroup.className = "economy-share-button-group d-flex align-items-center gap-2";
-
-            if (share.canDecreaseRank) {
-                const decreaseButton = document.createElement("button");
-                decreaseButton.type = "button";
-                decreaseButton.className = "btn btn-success";
-                decreaseButton.dataset.action = "decrease-company-share-rank";
-                decreaseButton.dataset.idLinkCharacterTrait = String(share.idLinkCharacterTrait || 0);
-                decreaseButton.disabled = !canDecrease;
-                decreaseButton.textContent = "Aandeel verkopen";
-                buttonGroup.appendChild(decreaseButton);
-            }
-
-            if (share.canIncreaseRank) {
-                const increaseButton = document.createElement("button");
-                increaseButton.type = "button";
-                increaseButton.className = "btn btn-success";
-                increaseButton.dataset.action = "increase-company-share-rank";
-                increaseButton.dataset.idLinkCharacterTrait = String(share.idLinkCharacterTrait || 0);
-                increaseButton.disabled = !canIncrease;
-                increaseButton.textContent = "Aandeel kopen";
-                buttonGroup.appendChild(increaseButton);
-            }
-
-            actionWrap.appendChild(buttonGroup);
-
-            item.appendChild(actionWrap);
-        }
-
-        shareCard.body.appendChild(item);
-        host.appendChild(shareCard.card);
-    });
-
-    if (!canRenderPurchaseCard) {
-        return;
-    }
-
-    const purchaseCard = buildEconomyCard("Nieuw aandeel kopen");
-    purchaseCard.card.classList.add("economy-share-card");
-
-    const form = document.createElement("div");
-    form.className = "economy-share-purchase";
-
-    const label = document.createElement("label");
-    label.className = "form-label";
-    label.textContent = "Beschikbare bedrijven";
-    label.setAttribute("for", "companySharePurchaseSelect");
-    form.appendChild(label);
-
-    const select = document.createElement("select");
-    select.className = "form-select";
-    select.id = "companySharePurchaseSelect";
-    select.dataset.role = "company-share-purchase-select";
-
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
-    emptyOption.textContent = "Kies een bedrijf en aandelentype";
-    select.appendChild(emptyOption);
-
-    purchaseOptions.forEach((option) => {
-        const optionEl = document.createElement("option");
-        optionEl.value = `${Number(option.idCompany || 0)}:${String(option.shareClass || "")}`;
-        optionEl.textContent = formatCompanySharePurchaseOptionLabel(option);
-        select.appendChild(optionEl);
-    });
-
-    select.disabled = false;
-    form.appendChild(select);
-
-    const help = document.createElement("div");
-    help.className = "form-text";
-    help.textContent = "Koop 1% in een bedrijf. De passende statuseigenschap wordt automatisch aan het personage toegevoegd.";
-    form.appendChild(help);
-
-    const buttonRow = document.createElement("div");
-    buttonRow.className = "mt-3";
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-success";
-    button.dataset.action = "buy-new-company-share";
-    button.disabled = false;
-    button.textContent = "Aandeel kopen";
-    buttonRow.appendChild(button);
-    form.appendChild(buttonRow);
-
-    purchaseCard.body.appendChild(form);
-    host.appendChild(purchaseCard.card);
-}
-
-function addEconomyMetric(host, label, value, valueClass = "") {
-    const row = document.createElement("div");
-    row.className = "d-flex justify-content-between align-items-center gap-3 mb-2";
-
-    const labelEl = document.createElement("span");
-    labelEl.className = "text-muted";
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-
-    const valueEl = document.createElement("span");
-    valueEl.className = `fw-semibold ${valueClass}`.trim();
-    valueEl.textContent = value;
-    row.appendChild(valueEl);
-
-    host.appendChild(row);
-}
-
 function renderCharacterEconomySnapshotsSection(host, character) {
     if (!host || !character) return;
     const canCreateSnapshots = Boolean(character?.canCreateEconomySnapshots);
@@ -1441,16 +1092,19 @@ function renderCharacterEconomySnapshotsSection(host, character) {
     const actionCol = document.createElement("div");
     actionCol.className = "col-12 col-md-4";
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-success w-100";
+    const button = AetherActionButtons.button({ icon: "fa-camera", label: "Snapshot maken" });
     button.dataset.action = "create-character-economy-snapshot";
     button.disabled = eventOptions.length === 0;
-    button.textContent = "Snapshot maken";
-    actionCol.appendChild(button);
+    actionCol.appendChild(AetherActionButtons.group([button]));
     form.appendChild(actionCol);
 
     snapshotCard.body.appendChild(form);
+    const target = window.AETHER_EVENT_TARGET;
+    if (target?.kind === "snapshot" && target.character === Number(character.id)) {
+        if (eventOptions.some(event => Number(event.id) === target.event)) select.value = String(target.event);
+        window.AETHER_EVENT_TARGET = null;
+        requestAnimationFrame(() => { snapshotCard.card.scrollIntoView({ block: "center" }); select.focus({ preventScroll: true }); });
+    }
 
     if (snapshots.length === 0) {
         const empty = document.createElement("p");
@@ -1461,53 +1115,14 @@ function renderCharacterEconomySnapshotsSection(host, character) {
         return;
     }
 
-    const list = document.createElement("div");
-    list.className = "list-group list-group-flush";
-
-    snapshots.forEach((snapshot) => {
-        const item = document.createElement("div");
-        item.className = "list-group-item px-0";
-
-        const header = document.createElement("div");
-        header.className = "d-flex justify-content-between align-items-start gap-3 flex-wrap";
-
-        const titleWrap = document.createElement("div");
-
-        const title = document.createElement("div");
-        title.className = "fw-semibold";
-        title.textContent = String(snapshot.eventTitle || "").trim() || `Event #${snapshot.idEvent || 0}`;
-        titleWrap.appendChild(title);
-
-        const meta = document.createElement("div");
-        meta.className = "text-muted small";
-        meta.textContent = formatEconomyDate(snapshot.transactionDate);
-        titleWrap.appendChild(meta);
-
-        header.appendChild(titleWrap);
-
-        const amount = document.createElement("div");
-        amount.className = `fw-semibold ${Number(snapshot.amount || 0) < 0 ? "text-danger" : "text-success"}`;
-        amount.textContent = formatCharacterCurrency(snapshot.amount || 0);
-        header.appendChild(amount);
-
-        item.appendChild(header);
-
-        const actionRow = document.createElement("div");
-        actionRow.className = "mt-2";
-
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "btn btn-sm btn-danger";
-        deleteButton.dataset.action = "delete-character-economy-snapshot";
-        deleteButton.dataset.idSnapshot = String(snapshot.id || 0);
-        deleteButton.textContent = "Verwijderen";
-        actionRow.appendChild(deleteButton);
-
-        item.appendChild(actionRow);
-        list.appendChild(item);
-    });
-
-    snapshotCard.body.appendChild(list);
+    AetherDataTable.render(snapshotCard.body, { label: "Economische snapshots", rows: economyRowsNewestFirst(snapshots), columns: [
+        { label: "Event", render: snapshot => snapshot.eventTitle || "Event #" + snapshot.idEvent },
+        { label: "Bedrag", className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.amount || 0) },
+        { label: "Info", className: "text-end", render: snapshot => AetherDataTable.infoButton({
+            title: "Economische snapshot — " + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
+            fields: economySnapshotFields(snapshot, character), actions: economySnapshotActions(snapshot, character, true)
+        }) }
+    ] });
     host.appendChild(snapshotCard.card);
 }
 
@@ -1596,13 +1211,10 @@ function renderTransferSection(host, character, options = {}) {
     const actionWrap = document.createElement("div");
     actionWrap.className = "d-flex flex-column gap-2";
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-success align-self-start";
+    const button = AetherActionButtons.button({ icon: "fa-money-bill-transfer", label: "Overschrijving" });
     button.dataset.action = "open-bank-transfer-modal";
     button.disabled = isDraft || !canTransfer || transferTargets.length === 0;
-    button.textContent = "Overschrijving";
-    actionWrap.appendChild(button);
+    actionWrap.appendChild(AetherActionButtons.group([button]));
 
     if (isDraft) {
         const help = document.createElement("p");
@@ -1631,115 +1243,38 @@ function renderTransactionsSection(host, character, options = {}) {
     const embedded = options.embedded === true;
     const transactionCard = embedded ? null : buildEconomyCard("Verrichtingen");
     const targetHost = embedded ? host : transactionCard.body;
-    const transactions = Array.isArray(character?.bankTransactions) ? character.bankTransactions : [];
-    const canDeleteTransactions = Boolean(character?.canDeleteBankTransactions);
-    const hasAnyDeletableTransaction = canDeleteTransactions && transactions.some((transaction) => Boolean(transaction?.canDelete));
-
-    if (embedded) {
-        appendEconomySubsectionTitle(targetHost, "Verrichtingen");
+    const transactions = economyRowsNewestFirst(Array.isArray(character.bankTransactions) ? character.bankTransactions : []);
+    if (embedded) appendEconomySubsectionTitle(targetHost, "Verrichtingen");
+    if (!transactions.length) {
+        const empty = document.createElement("p"); empty.className = "text-muted mb-0";
+        empty.textContent = "Nog geen verrichtingen beschikbaar."; targetHost.append(empty);
+    } else {
+        const name = [character.title, character.firstName, character.lastName].filter(Boolean).join(" ") || "Dit personage";
+        const types = { bank_transfer: "Overschrijving", character_income_snapshot: "Inkomstensnapshot",
+            company_snapshot_dividend: "Bedrijfsdividend", character_securities_snapshot_return: "Rendement effectenportefeuille",
+            character_securities_snapshot_withdrawal: "Opname effectenportefeuille" };
+        AetherDataTable.render(targetHost, { label: "Verrichtingen", rows: transactions, columns: [
+            { label: "Datum", className: "text-nowrap", render: transaction => formatEconomyDate(transaction.transactionDate) },
+            { label: "Afzender / begunstigde", render: transaction => transaction.counterpartyName || "Onbekend" },
+            { label: "Bedrag", className: "text-end text-nowrap", render: transaction =>
+                economyAmountCell((transaction.direction === "outgoing" ? -1 : 1) * Math.abs(Number(transaction.amount || 0))) },
+            { label: "Info", className: "text-end", render: transaction => AetherDataTable.infoButton({
+                title: "Verrichting — " + formatEconomyDate(transaction.transactionDate),
+                fields: [
+                    ["Datum", formatEconomyDate(transaction.transactionDate)],
+                    ["Afzender", transaction.direction === "outgoing" ? name : transaction.counterpartyName || "Onbekend"],
+                    ["Begunstigde", transaction.direction === "outgoing" ? transaction.counterpartyName || "Onbekend" : name],
+                    ["Bedrag", formatCharacterCurrency(Math.abs(Number(transaction.amount || 0)))],
+                    ["Richting", transaction.direction === "outgoing" ? "Uitgaand" : "Inkomend"],
+                    ["Soort verrichting", types[transaction.type] || "Verrichting"],
+                    ["Mededeling", transaction.description]
+                ],
+                actions: character.canDeleteBankTransactions && transaction.canDelete
+                    ? [{ icon: "fa-trash-can", label: "Verwijderen", run: () => deleteBankTransaction(Number(transaction.id)) }] : []
+            }) }
+        ] });
     }
-
-    if (transactions.length === 0) {
-        const empty = document.createElement("p");
-        empty.className = "text-muted mb-0";
-        empty.textContent = "Nog geen verrichtingen beschikbaar.";
-        targetHost.appendChild(empty);
-        if (!embedded) {
-            host.appendChild(transactionCard.card);
-        }
-        return;
-    }
-
-    const tableWrap = document.createElement("div");
-    tableWrap.className = "economy-transactions-table";
-
-    const tableInner = document.createElement("div");
-    tableInner.className = "economy-transactions-table-inner";
-
-    const header = document.createElement("div");
-    header.className = "economy-transactions-header";
-    header.dataset.canDelete = hasAnyDeletableTransaction ? "true" : "false";
-
-    const headerLabels = ["Naam", "Datum", "Mededeling", "Bedrag"];
-    headerLabels.forEach((labelText) => {
-        const label = document.createElement("div");
-        label.className = "economy-transactions-header-label";
-        label.textContent = labelText;
-        header.appendChild(label);
-    });
-
-    if (hasAnyDeletableTransaction) {
-        const actionSpacer = document.createElement("div");
-        actionSpacer.className = "economy-transactions-header-spacer";
-        actionSpacer.setAttribute("aria-hidden", "true");
-        header.appendChild(actionSpacer);
-    }
-
-    const list = document.createElement("div");
-    list.className = "list-group list-group-flush";
-
-    transactions.forEach((transaction) => {
-        const item = document.createElement("div");
-        item.className = "list-group-item px-0";
-
-        const row = document.createElement("div");
-        row.className = "economy-transaction-row";
-        const rowCanDelete = canDeleteTransactions && Boolean(transaction?.canDelete);
-        row.dataset.canDelete = rowCanDelete ? "true" : "false";
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "economy-transaction-cell economy-transaction-cell--name";
-        nameEl.textContent = transaction.counterpartyName || "Onbekend personage";
-        row.appendChild(nameEl);
-
-        const dateEl = document.createElement("div");
-        dateEl.className = "economy-transaction-cell economy-transaction-cell--date";
-        dateEl.textContent = formatEconomyDate(transaction.transactionDate);
-        row.appendChild(dateEl);
-
-        const descriptionEl = document.createElement("div");
-        descriptionEl.className = "economy-transaction-cell economy-transaction-cell--description";
-        const isOutgoing = transaction.direction === "outgoing";
-        const signedAmountLabel = `${isOutgoing ? "-" : "+"}${formatCharacterCurrency(transaction.amount)}`;
-        descriptionEl.textContent = transaction.description || "";
-        row.appendChild(descriptionEl);
-
-        const amountEl = document.createElement("div");
-        amountEl.className = [
-            "economy-transaction-cell",
-            "economy-transaction-cell--amount",
-            isOutgoing ? "text-danger" : "text-success"
-        ].join(" ");
-        amountEl.textContent = signedAmountLabel;
-        row.appendChild(amountEl);
-
-        if (rowCanDelete) {
-            const actionCol = document.createElement("div");
-            actionCol.className = "economy-transaction-cell economy-transaction-cell--action";
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.type = "button";
-            deleteBtn.className = "btn btn-sm btn-danger";
-            deleteBtn.dataset.action = "delete-bank-transaction";
-            deleteBtn.dataset.idTransaction = String(transaction.id || 0);
-            deleteBtn.textContent = "Verwijderen";
-            actionCol.appendChild(deleteBtn);
-
-            row.appendChild(actionCol);
-        }
-
-        item.appendChild(row);
-        list.appendChild(item);
-    });
-
-    tableInner.appendChild(header);
-    tableInner.appendChild(list);
-    tableWrap.appendChild(tableInner);
-
-    targetHost.appendChild(tableWrap);
-    if (!embedded) {
-        host.appendChild(transactionCard.card);
-    }
+    if (!embedded) host.append(transactionCard.card);
 }
 
 function renderCharacterEconomyTab(character) {
@@ -1776,10 +1311,15 @@ function renderCharacterEconomyTab(character) {
     leftCol.appendChild(accountCard.card);
     renderCharacterSecuritiesSection(leftCol, character);
     renderCharacterEconomySnapshotsSection(rightCol, character);
-    renderCompanySharesSection(rightCol, character);
 
     container.appendChild(leftCol);
     container.appendChild(rightCol);
+    const portfolioCard = aetherShareUi.attachPortfolio(rightCol, character);
+    aetherShareMarketClient.attachEconomy(
+        portfolioCard, character,
+        typeof aetherCharacterActionsState === "object"
+            ? aetherCharacterActionsState.selectedEventId : 0
+    );
 }
 
 function bankAmountFromCharacter(character) {
@@ -1829,119 +1369,6 @@ async function saveSecuritiesBalance() {
     } catch (err) {
         console.error("Fout bij bewaren van saldo effectenportefeuille:", err);
         alert("Kon het saldo van de effectenportefeuille niet bewaren.");
-    }
-}
-
-async function saveCompanyShareAssignment(select) {
-    if (!select || !currentCharacter?.id) return;
-
-    const idLinkCharacterTrait = Number(select.dataset.idLinkCharacterTrait || 0);
-    if (idLinkCharacterTrait <= 0) return;
-
-    select.disabled = true;
-
-    try {
-        const selectedCompanyId = Number(select.value || 0);
-        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
-            method: "POST",
-            body: {
-                action: selectedCompanyId > 0 ? "assign_company" : "clear_company",
-                idLinkCharacterTrait,
-                idCompany: selectedCompanyId > 0 ? selectedCompanyId : null
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij koppelen van aandeel aan bedrijf:", err);
-        alert(getApiErrorMessage(err, "Kon het aandeel niet koppelen aan het gekozen bedrijf."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
-}
-
-async function increaseCompanyShareRank(button) {
-    if (!button || !currentCharacter?.id) return;
-
-    const idLinkCharacterTrait = Number(button.dataset.idLinkCharacterTrait || 0);
-    if (idLinkCharacterTrait <= 0) return;
-
-    button.disabled = true;
-
-    try {
-        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
-            method: "POST",
-            body: {
-                action: "increase_rank",
-                idLinkCharacterTrait
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij verhogen van aandelenpercentage:", err);
-        alert(getApiErrorMessage(err, "Kon het aandelenpercentage niet verhogen."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
-}
-
-async function decreaseCompanyShareRank(button) {
-    if (!button || !currentCharacter?.id) return;
-
-    const idLinkCharacterTrait = Number(button.dataset.idLinkCharacterTrait || 0);
-    if (idLinkCharacterTrait <= 0) return;
-
-    button.disabled = true;
-
-    try {
-        await apiFetchFinancialJson("api/characters/saveCompanyShare.php", {
-            method: "POST",
-            body: {
-                action: "decrease_rank",
-                idLinkCharacterTrait
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij verlagen van aandelenpercentage:", err);
-        alert(getApiErrorMessage(err, "Kon het aandelenpercentage niet verlagen."));
-        await getCharacter(currentCharacter.id, null, "economy");
-    }
-}
-
-async function buyNewCompanyShare(button) {
-    if (!button || !currentCharacter?.id) return;
-
-    const select = document.querySelector("[data-role='company-share-purchase-select']");
-    if (!select || select.disabled) return;
-
-    const [idCompanyRaw, shareClassRaw] = String(select.value || "").split(":");
-    const idCompany = Number(idCompanyRaw || 0);
-    const shareClass = String(shareClassRaw || "").trim();
-
-    if (idCompany <= 0 || (shareClass !== "A" && shareClass !== "B")) {
-        alert("Kies eerst een bedrijf en aandelentype.");
-        return;
-    }
-
-    button.disabled = true;
-    select.disabled = true;
-
-    try {
-        await apiFetchFinancialJson("api/characters/buyCompanyShare.php", {
-            method: "POST",
-            body: {
-                idCharacter: currentCharacter.id,
-                idCompany,
-                shareClass
-            }
-        });
-
-        await getCharacter(currentCharacter.id, null, "economy");
-    } catch (err) {
-        console.error("Fout bij kopen van nieuw aandeel:", err);
-        alert(getApiErrorMessage(err, "Kon het aandeel niet kopen."));
-        await getCharacter(currentCharacter.id, null, "economy");
     }
 }
 
@@ -2001,11 +1428,11 @@ async function submitBankTransfer() {
 }
 
 async function deleteBankTransaction(idTransaction) {
-    if (!currentCharacter?.id || idTransaction <= 0) return;
+    if (!currentCharacter?.id || idTransaction <= 0) return false;
 
     const shouldDelete = window.confirm("Deze verrichting verwijderen en het bedrag terugboeken?");
     if (!shouldDelete) {
-        return;
+        return false;
     }
 
     try {
@@ -2015,9 +1442,11 @@ async function deleteBankTransaction(idTransaction) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij verwijderen van verrichting:", err);
         alert("Kon de verrichting niet verwijderen.");
+        return false;
     }
 }
 
@@ -2054,11 +1483,11 @@ async function createCharacterEconomySnapshot(button) {
 }
 
 async function deleteCharacterEconomySnapshot(idSnapshot) {
-    if (!currentCharacter?.id || idSnapshot <= 0) return;
+    if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
     const shouldDelete = window.confirm("Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?");
     if (!shouldDelete) {
-        return;
+        return false;
     }
 
     try {
@@ -2068,10 +1497,12 @@ async function deleteCharacterEconomySnapshot(idSnapshot) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij verwijderen van economiesnapshot:", err);
         alert(getApiErrorMessage(err, "Kon de economiesnapshot niet verwijderen."));
         await getCharacter(currentCharacter.id, null, "economy");
+        return false;
     }
 }
 
@@ -2176,7 +1607,7 @@ async function withdrawSecuritiesBalance() {
 }
 
 async function rerollSecuritiesSnapshot(idSnapshot) {
-    if (!currentCharacter?.id || idSnapshot <= 0) return;
+    if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
     try {
         await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
@@ -2189,15 +1620,17 @@ async function rerollSecuritiesSnapshot(idSnapshot) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij opnieuw genereren van rendement:", err);
         alert(getApiErrorMessage(err, "Kon het rendement niet opnieuw genereren."));
         await getCharacter(currentCharacter.id, null, "economy");
+        return false;
     }
 }
 
 async function approveSecuritiesSnapshot(idSnapshot) {
-    if (!currentCharacter?.id || idSnapshot <= 0) return;
+    if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
     try {
         await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
@@ -2210,10 +1643,12 @@ async function approveSecuritiesSnapshot(idSnapshot) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij goedkeuren van rendement:", err);
         alert(getApiErrorMessage(err, "Kon het rendement niet goedkeuren."));
         await getCharacter(currentCharacter.id, null, "economy");
+        return false;
     }
 }
 
@@ -2278,24 +1713,6 @@ function setupEconomySectionListeners() {
         const openSecuritiesWithdrawalButton = e.target.closest("button[data-action='open-securities-withdrawal-modal']");
         if (openSecuritiesWithdrawalButton && !openSecuritiesWithdrawalButton.disabled) {
             openSecuritiesWithdrawalModal();
-            return;
-        }
-
-        const increaseShareButton = e.target.closest("button[data-action='increase-company-share-rank']");
-        if (increaseShareButton && !increaseShareButton.disabled) {
-            await increaseCompanyShareRank(increaseShareButton);
-            return;
-        }
-
-        const decreaseShareButton = e.target.closest("button[data-action='decrease-company-share-rank']");
-        if (decreaseShareButton && !decreaseShareButton.disabled) {
-            await decreaseCompanyShareRank(decreaseShareButton);
-            return;
-        }
-
-        const buyNewShareButton = e.target.closest("button[data-action='buy-new-company-share']");
-        if (buyNewShareButton && !buyNewShareButton.disabled) {
-            await buyNewCompanyShare(buyNewShareButton);
             return;
         }
 
@@ -2364,12 +1781,6 @@ function setupEconomySectionListeners() {
     });
 
     document.addEventListener("change", async (e) => {
-        const shareCompanySelect = e.target.closest("select[data-role='company-share-company-select']");
-        if (shareCompanySelect && !shareCompanySelect.disabled) {
-            await saveCompanyShareAssignment(shareCompanySelect);
-            return;
-        }
-
         const securitiesManagerTypeSelect = e.target.closest("select[data-role='securities-manager-type']");
         if (securitiesManagerTypeSelect && !securitiesManagerTypeSelect.disabled) {
             const thirdManagerWrap = document.querySelector("[data-role='securities-third-manager-wrap']");
@@ -2389,8 +1800,8 @@ function setupEconomySectionListeners() {
             return;
         }
 
-        const securitiesRiskProfileSelect = e.target.closest("select[data-role='securities-risk-profile']");
-        if (securitiesRiskProfileSelect && !securitiesRiskProfileSelect.disabled) {
+        const securitiesRiskProfileSlider = e.target.closest("input[data-role='securities-risk-profile']");
+        if (securitiesRiskProfileSlider && !securitiesRiskProfileSlider.disabled) {
             await saveSecuritiesSettings();
             return;
         }
@@ -2419,6 +1830,12 @@ function setupEconomySectionListeners() {
     });
 
     document.addEventListener("input", (e) => {
+        const securitiesRiskProfileSlider = e.target.closest("input[data-role='securities-risk-profile']");
+        if (securitiesRiskProfileSlider) {
+            updateSecuritiesRiskProfileDisplay(securitiesRiskProfileSlider);
+            return;
+        }
+
         const securitiesWithdrawalAmountInput = e.target.closest("[data-role='securities-withdraw-amount']");
         if (securitiesWithdrawalAmountInput) {
             updateSecuritiesWithdrawalModalState();
@@ -2451,29 +1868,17 @@ function showEconomyTab(character) {
     const sheetBody = document.getElementById("sheetBody");
     if (sheetBody) sheetBody.classList.remove("d-none");
 
-    const characterForm = document.getElementById("characterForm");
-    if (characterForm) characterForm.classList.add("d-none");
-    const skills = document.getElementById("skills");
-    if (skills) skills.classList.add("d-none");
-
-    const backgroundTab = document.getElementById("backgroundTab");
-    if (backgroundTab) backgroundTab.classList.add("d-none");
-    const diaryTab = document.getElementById("diaryTab");
-    if (diaryTab) diaryTab.classList.add("d-none");
-    const personalityTab = document.getElementById("personalityTab");
-    if (personalityTab) personalityTab.classList.add("d-none");
-    const actionsTab = document.getElementById("actionsTab");
-    if (actionsTab) actionsTab.classList.add("d-none");
-    const passportTab = document.getElementById("passportTab");
-    if (passportTab) passportTab.classList.add("d-none");
+    for (const id of ["characterForm", "skills", "backgroundTab", "diaryTab",
+        "personalityTab", "actionsTab", "passportTab"]) {
+        document.getElementById(id)?.classList.add("d-none");
+    }
 
     const economyTab = document.getElementById("economyTab");
     if (!economyTab) return;
-
     economyTab.classList.remove("d-none");
     economyTab.style.display = "block";
     economyTab.hidden = false;
-    economyTab.classList.remove("p-3");
+    economyTab.classList.add("p-3");
     economyTab.style.backgroundColor = "#fff";
     economyTab.style.minHeight = "300px";
 

@@ -208,6 +208,10 @@ function aetherApplyCharacterUpdate(
     }
     try {
         $rowCount = aetherUpdateCharacterRecord($pdo, $characterId, $fields);
+        if (($currentCharacter['state'] ?? '') === 'draft' && isset($fields['state']) && $fields['state'] !== 'draft'
+            && aetherCharacterUsesNewShareStatus($pdo)) {
+            aetherShareCloseDraftBudget($pdo, $characterId);
+        }
 
         if ($shouldSyncAddresses && aetherLandlordHasConfirmedHouseholdStaff($pdo, $characterId)) {
             try {

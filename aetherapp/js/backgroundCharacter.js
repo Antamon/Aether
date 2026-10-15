@@ -349,7 +349,7 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     wrapper.className = "aether-panel mb-4 background-section";
 
     const header = document.createElement("div");
-    header.className = "d-flex align-items-center mb-2";
+    header.className = "background-section-header";
 
     const h4 = document.createElement("h4");
     h4.className = "mb-0";
@@ -357,12 +357,28 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     header.appendChild(h4);
 
     let editBtn = null;
+    let btnSave = null;
+    let btnCancel = null;
+    let actionGroup = null;
     if (canEdit) {
-        editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.className = "btn btn-link ms-2 p-0";
-        editBtn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
-        header.appendChild(editBtn);
+        actionGroup = AetherActionButtons.group();
+        editBtn = AetherActionButtons.button({
+            icon: "fa-pen-nib",
+            label: "Edit",
+            ariaLabel: `${title} bewerken`
+        });
+        btnSave = AetherActionButtons.button({
+            icon: "fa-check",
+            label: "Save",
+            ariaLabel: `${title} bewaren`
+        });
+        btnCancel = AetherActionButtons.button({
+            icon: "fa-xmark",
+            label: "Cancel",
+            ariaLabel: `${title} wijzigen annuleren`
+        });
+        actionGroup.appendChild(editBtn);
+        header.appendChild(actionGroup);
     }
 
     const viewDiv = document.createElement("div");
@@ -375,53 +391,43 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
     editorWrap.classList.add("d-none");
     const editor = richEditor.editor;
 
-    const actions = document.createElement("div");
-    actions.className = "mt-2 d-flex gap-2";
-    const btnSave = document.createElement("button");
-    btnSave.className = "btn btn-sm btn-primary";
-    btnSave.textContent = "Save";
-
-    const btnCancel = document.createElement("button");
-    btnCancel.className = "btn btn-sm btn-outline-secondary";
-    btnCancel.textContent = "Cancel";
-
-    actions.appendChild(btnSave);
-    actions.appendChild(btnCancel);
-
-    editorWrap.appendChild(actions);
+    const setEditing = (editing) => {
+        if (actionGroup) actionGroup.replaceChildren(editing ? btnSave : editBtn, ...(editing ? [btnCancel] : []));
+        editorWrap.classList.toggle("d-none", !editing);
+        viewDiv.classList.toggle("d-none", editing);
+    };
 
     // Wire buttons
     if (editBtn) {
         editBtn.addEventListener("click", () => {
-            viewDiv.classList.add("d-none");
-            editorWrap.classList.remove("d-none");
+            setEditing(true);
             editor.focus();
         });
     }
 
-    btnCancel.addEventListener("click", () => {
-        richEditor.setHtml(content);
-        editorWrap.classList.add("d-none");
-        viewDiv.classList.remove("d-none");
-    });
-
-    btnSave.addEventListener("click", async () => {
-        const newContent = richEditor.getHtml();
-        try {
-            const result = await saveCharacterSection(character.id, sectionKey, newContent);
-            if (typeof result?.content !== "string") {
-                throw new Error("De server gaf geen gesaniteerde rich text terug.");
-            }
-            content = result.content;
+    if (canEdit) {
+        btnCancel.addEventListener("click", () => {
             richEditor.setHtml(content);
-            renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
-            editorWrap.classList.add("d-none");
-            viewDiv.classList.remove("d-none");
-        } catch (err) {
-            console.error("Fout bij opslaan sectie:", err);
-            alert("Opslaan mislukt.");
-        }
-    });
+            setEditing(false);
+        });
+
+        btnSave.addEventListener("click", async () => {
+            const newContent = richEditor.getHtml();
+            try {
+                const result = await saveCharacterSection(character.id, sectionKey, newContent);
+                if (typeof result?.content !== "string") {
+                    throw new Error("De server gaf geen gesaniteerde rich text terug.");
+                }
+                content = result.content;
+                richEditor.setHtml(content);
+                renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
+                setEditing(false);
+            } catch (err) {
+                console.error("Fout bij opslaan sectie:", err);
+                alert("Opslaan mislukt.");
+            }
+        });
+    }
 
     wrapper.appendChild(header);
     wrapper.appendChild(viewDiv);
@@ -452,19 +458,32 @@ async function renderTies(container, character) {
     block.className = "aether-panel mb-4 background-section";
 
     const header = document.createElement("div");
-    header.className = "d-flex align-items-center mb-2";
+    header.className = "background-section-header";
 
     const h4 = document.createElement("h4");
     h4.className = "mb-0";
     h4.textContent = "Ties";
     header.appendChild(h4);
 
-    const addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.className = "btn btn-sm btn-primary ms-2";
-    addBtn.textContent = "Add tie";
+    const actionGroup = AetherActionButtons.group();
+    const addBtn = AetherActionButtons.button({
+        icon: "fa-plus",
+        label: "Add tie",
+        ariaLabel: "Tie toevoegen"
+    });
+    const saveBtn = AetherActionButtons.button({
+        icon: "fa-check",
+        label: "Save",
+        ariaLabel: "Tie bewaren"
+    });
+    const cancelBtn = AetherActionButtons.button({
+        icon: "fa-xmark",
+        label: "Cancel",
+        ariaLabel: "Tie wijzigen annuleren"
+    });
     if (canEdit) {
-        header.appendChild(addBtn);
+        actionGroup.appendChild(addBtn);
+        header.appendChild(actionGroup);
     }
 
     block.appendChild(header);
@@ -505,19 +524,7 @@ async function renderTies(container, character) {
     helpCol.appendChild(tieTypeHelp);
     editorRow.appendChild(helpCol);
 
-    const actionsRow = document.createElement("div");
-    actionsRow.className = "d-flex gap-2 mb-3 d-none";
-    const saveBtn = document.createElement("button");
-    saveBtn.className = "btn btn-sm btn-primary";
-    saveBtn.textContent = "Save";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.className = "btn btn-sm btn-outline-secondary";
-    cancelBtn.textContent = "Cancel";
-    actionsRow.appendChild(saveBtn);
-    actionsRow.appendChild(cancelBtn);
-
     block.appendChild(editorRow);
-    block.appendChild(actionsRow);
 
     // List
     const list = document.createElement("div");
@@ -580,7 +587,7 @@ async function renderTies(container, character) {
     function hideEditor() {
         editTieId = null;
         editorRow.classList.add("d-none");
-        actionsRow.classList.add("d-none");
+        actionGroup.replaceChildren(addBtn);
         fillTypeOptions();
         fillOptions();
         updateTieTypeHelpText();
@@ -591,7 +598,7 @@ async function renderTies(container, character) {
     function showEditor(tie) {
         if (!canEdit) return;
         editorRow.classList.remove("d-none");
-        actionsRow.classList.remove("d-none");
+        actionGroup.replaceChildren(saveBtn, cancelBtn);
         editTieId = tie ? tie.id : null;
         fillTypeOptions();
         if (tie && ![...selType.options].some((option) => option.value === tie.relationType)) {

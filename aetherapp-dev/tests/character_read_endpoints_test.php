@@ -43,6 +43,10 @@ if (defined('AETHER_CHARACTER_READ_TEST_BOOTSTRAP')) {
             int $cursorOrientation = PDO::FETCH_ORI_NEXT,
             int $cursorOffset = 0
         ): mixed {
+            if (str_contains($this->query, 'AS hasShares')) {
+                return ['shareLevel' => $this->testPdo->scenario === 'shareholder_ranked' ? 3 : 0,
+                    'hasShares' => $this->testPdo->scenario === 'shareholder_empty' ? 0 : 1];
+            }
             if (str_contains($this->query, 'FROM tblUser')) {
                 $id = (int) ($this->parameters['id'] ?? $this->parameters[0] ?? 0);
                 $user = $this->testPdo->users[$id] ?? null;
@@ -65,6 +69,15 @@ if (defined('AETHER_CHARACTER_READ_TEST_BOOTSTRAP')) {
 
         public function fetchAll(int $mode = PDO::FETCH_DEFAULT, mixed ...$args): array
         {
+            if (str_starts_with($this->testPdo->scenario, 'shareholder_')) {
+                if (preg_match('/FROM\s+tblTrait\b/', $this->query)) return [[
+                    'id' => 105, 'name' => 'Aandelen', 'class' => 'all', 'type' => 'status',
+                    'isUnique' => 1, 'rankType' => 'range_positive', 'traitGroup' => 'Economie',
+                    'grouped' => 0, 'cost' => 1, 'income' => null, 'evolution' => null,
+                    'staffRequirements' => 0, 'description' => 'Aandelenkapitaal en portefeuillewaarde.',
+                ]];
+                if (str_contains($this->query, 'FROM tblTraitFlag')) return [['idTrait' => 105, 'flagKey' => 'share_capital']];
+            }
             if (str_contains($this->query, 'FROM tblLinkCharacterSkill AS lcs')
                 && str_contains($this->query, 's.visibility')) {
                 $skills = [
@@ -144,6 +157,10 @@ if (defined('AETHER_CHARACTER_READ_TEST_BOOTSTRAP')) {
         public function prepare(string $query, array $options = []): PDOStatement|false
         {
             return new CharacterReadTestStatement($this, $query);
+        }
+        public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+        {
+            $stmt = $this->prepare($query); $stmt->execute(); return $stmt;
         }
     }
 
@@ -342,6 +359,20 @@ try {
     assertCharacterRead(!str_contains($character['body'], 'Secret skill'), 'Geheime skill lekte naar participant');
     assertCharacterRead(($character['decoded']['nameParticipant'] ?? '') === 'Part Icipant', 'Participantnaam ontbreekt');
     assertCharacterRead($character['writes'] === 0, 'getCharacter deed een write');
+
+    foreach (['shareholder_zero' => 0, 'shareholder_ranked' => 3, 'shareholder_empty' => null] as $scenario => $expectedRank) {
+        $result = runCharacterReadScenario($routePaths['character'], 'character', $scenario, ['id' => 1]);
+        assertCharacterRead($result['status'] === 200 && $result['writes'] === 0, 'Aandeelhouder moet zonder writes gelezen worden');
+        $shareholders = [];
+        foreach ($result['decoded']['traitGroups'] ?? [] as $group) {
+            foreach ($group['linkedTraits'] ?? [] as $link) if (!empty($link['traitFlags']['share_capital'])) $shareholders[] = $link;
+        }
+        assertCharacterRead(count($shareholders) === ($expectedRank === null ? 0 : 1), "$scenario: aandeelhouder moet zichtbaar zijn op basis van bezit, ook bij rang 0");
+        if ($expectedRank !== null) {
+            assertCharacterRead($shareholders[0]['rank'] === $expectedRank && $shareholders[0]['name'] === 'Aandeelhouder', "$scenario: verkeerde naam of rang");
+            assertCharacterRead($shareholders[0]['staffRequirements'] === max(0, $expectedRank - 2), "$scenario: verkeerde personeelsvoorwaarde");
+        }
+    }
 
     foreach (['director', 'administrator'] as $roleScenario) {
         $result = runCharacterReadScenario($routePaths['character'], 'character', $roleScenario, ['id' => 2]);

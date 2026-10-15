@@ -2,6 +2,9 @@
 const aetherShareUi = (() => {
     const copy = {
         nl: {
+            purchases: "Aankopen per event", eventUnknown: "Event onbekend", addPurchase: "Aandelenaankoop toevoegen",
+            purchaseEvent: "Event van aankoop", purchaseDebits: "De aankoopprijs wordt van de bankrekening van het personage afgetrokken.",
+            setupPurchase: "Maak eerst een event en bedrijfsaandelen aan.",
             economyAction: "Economie",
             portfolio: "Aandelenportefeuille", emptyPortfolio: "Dit personage bezit nog geen aandelen.",
             intrinsic: "Intrinsieke bezitswaarde", level: "Aandelen-niveau", status: "Gebruikte statuspunten",
@@ -24,6 +27,9 @@ const aetherShareUi = (() => {
             forbidden: "Je hebt geen toegang tot deze aandelenactie.",
         },
         en: {
+            purchases: "Purchases by event", eventUnknown: "Unknown event", addPurchase: "Add share purchase",
+            purchaseEvent: "Purchase event", purchaseDebits: "The purchase price is deducted from the character's bank account.",
+            setupPurchase: "Create an event and company shares first.",
             economyAction: "Economy",
             portfolio: "Share portfolio", emptyPortfolio: "This character owns no shares yet.",
             intrinsic: "Intrinsic portfolio value", level: "Share level", status: "Status points used",
@@ -77,8 +83,12 @@ const aetherShareUi = (() => {
         return [wrap, input];
     };
     const action = (label, style = "btn-outline-primary") => {
-        const button = element("button", `btn ${style}`, label);
-        button.type = "button";
+        const icon = label === tr("save") ? "fa-check"
+            : label === tr("close") ? "fa-xmark"
+            : label === tr("revoke") ? "fa-ban" : "fa-plus";
+        const button = AetherActionButtons.button({ label, icon });
+        // Behoud plaatsingshulpen, zonder de oude Bootstrap-knopkleuren.
+        style.split(/\s+/).filter((name) => name && !name.startsWith("btn")).forEach((name) => button.classList.add(name));
         return button;
     };
     const feedback = (host, message, danger = false) => {
@@ -96,7 +106,7 @@ const aetherShareUi = (() => {
             code = response.errorCode || "";
             serverMessage = typeof response.error === "string" ? response.error : "";
         } catch (_) { /* A network error has no JSON body. */ }
-        if ([404, 409, 503].includes(Number(error?.status)) && serverMessage) return serverMessage;
+        if (([404, 409, 503].includes(Number(error?.status)) || code === "shares.event_closed") && serverMessage) return serverMessage;
         if (code === "shares.conflict" || error?.status === 409) return tr("conflict");
         if (code === "shares.forbidden" || error?.status === 403) return tr("forbidden");
         if (code === "shares.invalid_request" || error?.status === 400 || error?.status === 422) return tr("invalid");
@@ -121,26 +131,48 @@ const aetherShareUi = (() => {
         return select;
     };
 
-    async function attachPortfolio(host, character) {
+    function attachPortfolio(host, character) {
         const id = Number(character?.id || 0);
         if (!host || !id) return;
-        const card = element("section", "card aether-panel mt-3 p-3 share-ui-portfolio", tr("loading"));
+        const card = element("section", "card aether-panel shadow-sm mb-4 share-ui-portfolio");
+        const content = element("div", "share-ui-portfolio-content", tr("loading"));
+        card.appendChild(content);
         host.appendChild(card);
-        async function load() {
+        let renderedSignature = null;
+        let requestId = 0;
+        async function load(force = false) {
             if (!card.isConnected) return;
+            const currentRequest = ++requestId;
             try {
                 const [data, created] = await Promise.all([
                     query("getCharacterPortfolio", "idCharacter", id),
                     canTrade(character) ? query("getCreatedShareOffers", "idCharacter", id) : Promise.resolve(null),
                 ]);
-                if (card.isConnected) renderPortfolio(card, data, created, character, load);
+                if (!card.isConnected || currentRequest !== requestId) return;
+                // Background refreshes must never replace an open offer form or its draft.
+                if (!force && content.querySelector("details[open]")) return;
+                const signature = JSON.stringify([data, created]);
+                if (force || signature !== renderedSignature) {
+                    renderPortfolio(content, data, created, character, () => load(true));
+                    renderedSignature = signature;
+                    content.querySelectorAll("details").forEach((details) => {
+                        details.addEventListener("toggle", () => {
+                            if (!details.open && details.isConnected) void load();
+                        });
+                    });
+                }
             } catch (error) {
-                if (card.isConnected) card.textContent = errorMessage(error);
+                if (card.isConnected && currentRequest === requestId
+                    && !content.querySelector("details[open]")) {
+                    feedback(content, errorMessage(error), true);
+                    if (renderedSignature === null) content.textContent = errorMessage(error);
+                }
             }
         }
         void load();
         card.dataset.characterId = String(id);
         card.aetherRefresh = load;
+        return card;
     }
 
     function renderPortfolio(card, data, created, character, reload) {
@@ -160,6 +192,19 @@ const aetherShareUi = (() => {
                 element("span", "", `${number(holding.shareCount)} ${tr("shares")} · ${money(holding.intrinsicValue)}`));
             card.appendChild(row);
         }
+        if (Array.isArray(data?.purchases) && data.purchases.length) {
+            const history = element("details", "mt-3 share-ui-purchase-history");
+            history.appendChild(element("summary", "", tr("purchases")));
+            for (const purchase of data.purchases) {
+                const event = purchase.eventTitle
+                    ? `${purchase.eventTitle} (${purchase.eventDate})` : tr("eventUnknown");
+                history.appendChild(element("div", "share-ui-holding",
+                    `${event} · ${purchase.companyName} · ${number(purchase.shareCount)} ${tr("shares")} · ${money(purchase.totalAmount)}`));
+            }
+            card.appendChild(history);
+        }
+        if (character?.state === "draft") renderDraftPurchaseForm(card, data, character, reload);
+        else if (data?.canManagePurchases) renderPurchaseForm(card, data, character, reload);
         if (canTrade(character)) {
             const offers = Array.isArray(created?.offers) ? created.offers : [];
             const details = element("details", "mt-3");
@@ -175,7 +220,7 @@ const aetherShareUi = (() => {
                     try { await post("cancelOffer", { idOffer: Number(offer.id) }); await reload(); }
                     catch (error) { feedback(card, errorMessage(error), true); revoke.disabled = false; }
                 });
-                row.appendChild(revoke);
+                row.appendChild(AetherActionButtons.group([revoke]));
                 details.appendChild(row);
             }
             if (!offers.length) details.appendChild(element("p", "text-muted", tr("noOffers")));
@@ -206,6 +251,93 @@ const aetherShareUi = (() => {
         card.appendChild(element("div", "", "")).dataset.shareFeedback = "1";
     }
 
+    function renderDraftPurchaseForm(card, data, character, reload) {
+        const budget = data.draftBudget;
+        const openBudget = budget && budget.closedAt === null;
+        const metrics = element("div", "share-ui-metrics mt-3");
+        metrics.append(metric("Startkapitaal Aandelen", money(openBudget ? budget.budgetAmount : 0)),
+            metric("Besteed startkapitaal", money(budget?.spentAmount || 0)),
+            metric("Beschikbaar aankoopbedrag", money(openBudget ? budget.remainingAmount : 0)));
+        card.append(metrics);
+        card.append(element("p", "small text-muted mt-2", openBudget
+            ? "Alle beschikbare bedrijfsaandelen zijn zichtbaar tijdens Draft. Je betaalt de snapshotmarktprijs, zonder vaardigheidsaanpassing. Ongebruikt startkapitaal vervalt na Draft."
+            : "Neem eerst de statuseigenschap Aandelen om tijdens Draft startkapitaal te gebruiken. Een eerder afgesloten budget wordt niet opnieuw beschikbaar."));
+        const quotes = data.draftQuotes || [];
+        if (!quotes.length) { card.append(element("p", "text-muted", "Geen bedrijfssnapshots met een marktprijs beschikbaar.")); return; }
+        const form = element("form", "share-ui-form-grid mt-2");
+        const wrap = element("label", "form-label", data.canChooseDraftSnapshot ? "Bedrijf en snapshot" : "Beschikbare aandelen");
+        const select = element("select", "form-select"); select.setAttribute("aria-label", "Aandelen kopen tijdens Draft");
+        quotes.forEach((quote, index) => select.add(new Option(
+            `${quote.companyName} · ${quote.eventTitle || "Oprichting"}${quote.quoteDate ? ` (${quote.quoteDate})` : ""} · ${money(quote.unitPrice)} · ${number(quote.freeShareCount)} vrij`, index)));
+        select.value = "0"; wrap.append(select);
+        const [countWrap, count] = field(tr("quantity"), "1");
+        const total = element("p", "mb-0");
+        const save = action("Aandelen kopen"); save.type = "submit";
+        const update = () => {
+            const quote = quotes[Number(select.value)]; const quantity = integer(count.value);
+            total.textContent = quote && quantity ? `Aankoopbedrag: ${money(Number(quote.unitPrice) * quantity)}` : "";
+            save.disabled = !data.canBuyDraftShares || !openBudget || !quantity || !quote
+                || quantity > Number(quote.freeShareCount) || Number(quote.unitPrice) * quantity > Number(budget?.remainingAmount || 0);
+        };
+        select.addEventListener("change", update); count.addEventListener("input", update);
+        form.append(wrap, countWrap, total, AetherActionButtons.group([save]));
+        form.appendChild(element("div", "")).dataset.shareFeedback = "1";
+        form.addEventListener("submit", async event => {
+            event.preventDefault(); update(); if (save.disabled) return;
+            const quote = quotes[Number(select.value)]; save.disabled = true;
+            try {
+                await post("buyDraftShares", { idCharacter: Number(character.id), idCompany: Number(quote.idCompany),
+                    idSnapshot: Number(quote.idSnapshot), shareCount: integer(count.value) });
+                await reload();
+                if (typeof getCharacter === "function") await getCharacter(Number(character.id), null, "economy");
+            } catch (error) { feedback(form, errorMessage(error), true); update(); }
+        });
+        update(); card.append(form);
+    }
+
+    function renderPurchaseForm(card, data, character, reload) {
+        const details = element("details", "mt-3 share-ui-purchase-manager");
+        details.appendChild(element("summary", "", tr("addPurchase")));
+        card.appendChild(details);
+        const events = data.purchaseEvents || [];
+        const companies = data.purchaseCompanies || [];
+        if (!events.length || !companies.length) {
+            details.appendChild(element("p", "text-muted", tr("setupPurchase")));
+            return;
+        }
+        const form = element("form", "share-ui-form-grid mt-2");
+        const eventWrap = element("label", "form-label", tr("purchaseEvent"));
+        const eventSelect = element("select", "form-select");
+        for (const event of events) eventSelect.add(new Option(`${event.title} (${event.dateStart})`, event.id));
+        if (data.defaultPurchaseEventId) eventSelect.value = String(data.defaultPurchaseEventId);
+        eventWrap.appendChild(eventSelect);
+        const companyWrap = element("label", "form-label", tr("company"));
+        const companySelect = element("select", "form-select");
+        for (const company of companies) companySelect.add(new Option(company.companyName, company.id));
+        companyWrap.appendChild(companySelect);
+        const [countWrap, count] = field(tr("quantity"), "1");
+        const [priceWrap, price] = field(tr("price"), "", "decimal");
+        const save = action(tr("save")); save.type = "submit";
+        form.append(eventWrap, companyWrap, countWrap, priceWrap, AetherActionButtons.group([save]));
+        form.appendChild(element("div", "")).dataset.shareFeedback = "1";
+        details.append(element("p", "small text-muted mt-2", tr("purchaseDebits")), form);
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const quantity = integer(count.value), unitPrice = decimal(price.value);
+            if (!quantity || !unitPrice || Number(unitPrice) <= 0 || !eventSelect.value || !companySelect.value) {
+                feedback(form, tr("invalid"), true); return;
+            }
+            save.disabled = true;
+            try {
+                await post("addSharePurchase", { idCharacter: Number(character.id), idCompany: Number(companySelect.value),
+                    idEvent: Number(eventSelect.value), shareCount: quantity, unitPrice });
+                await reload();
+                if (typeof getCharacter === "function") await getCharacter(Number(character.id), null, "economy");
+            } catch (error) { feedback(form, errorMessage(error), true); }
+            finally { save.disabled = false; }
+        });
+    }
+
     function renderOfferForm(target, recipients, companies, submit, options = {}) {
         target.replaceChildren();
         if (!recipients.length) {
@@ -220,7 +352,7 @@ const aetherShareUi = (() => {
         const [priceWrap, price] = field(tr("price"), options.defaultPrice ?? "", "decimal");
         const submitButton = action(tr("create"), "btn-primary");
         const form = element("div", "share-ui-form-grid");
-        form.append(company, recipient, countWrap, priceWrap, submitButton);
+        form.append(company, recipient, countWrap, priceWrap, AetherActionButtons.group([submitButton]));
         target.appendChild(form);
         target.appendChild(element("div", "")).dataset.shareFeedback = "1";
         submitButton.addEventListener("click", async () => {
@@ -295,20 +427,29 @@ const aetherShareUi = (() => {
     function renderCompanyListing(host, data, reload) {
         host.replaceChildren();
         const listed = Number(data.company?.isShareListed) === 1;
-        if (!data.canManageShares) {
-            host.textContent = listed ? "Ja" : "Nee";
-            return;
-        }
-        const label = element("label", "form-check-label");
-        const input = element("input", "form-check-input me-2");
+        const label = element("label", "company-listing-switch");
+        const input = element("input", "company-listing-switch-input");
         input.type = "checkbox";
         input.checked = listed;
-        label.append(input, document.createTextNode(listed ? "Ja" : "Nee"));
-        host.appendChild(label);
+        input.disabled = !data.canManageShares;
+        input.setAttribute("aria-label", "Beursgenoteerd");
+        const slider = element("span", "company-listing-switch-slider");
+        slider.setAttribute("aria-hidden", "true");
+        label.append(input, slider);
+        const status = element("span", "company-listing-status", listed ? "Ja" : "Nee");
+        status.setAttribute("aria-live", "polite");
+        host.append(label, status);
+        if (!data.canManageShares) return;
         input.addEventListener("change", async () => {
             input.disabled = true;
+            status.textContent = input.checked ? "Ja" : "Nee";
             try { await post("setShareListing", { idCompany: Number(data.company.id), isShareListed: input.checked }); await reload(); }
-            catch (error) { input.checked = listed; input.disabled = false; host.appendChild(element("p", "text-danger", errorMessage(error))); }
+            catch (error) {
+                input.checked = listed;
+                input.disabled = false;
+                status.textContent = listed ? "Ja" : "Nee";
+                host.appendChild(element("p", "text-danger mb-0", errorMessage(error)));
+            }
         });
     }
 
@@ -321,7 +462,7 @@ const aetherShareUi = (() => {
         });
         const save = action(tr("save"));
         save.type = "submit";
-        form.appendChild(save);
+        form.appendChild(AetherActionButtons.group([save]));
         form.appendChild(element("div", "")).dataset.shareFeedback = "1";
         const details = element("details", "share-ui-manager-section mt-2");
         details.append(element("summary", "", label), form);
@@ -346,7 +487,7 @@ const aetherShareUi = (() => {
         control.append(input, document.createTextNode(label));
         const save = action(tr("save"));
         save.type = "submit";
-        form.append(control, save);
+        form.append(control, AetherActionButtons.group([save]));
         form.appendChild(element("div", "")).dataset.shareFeedback = "1";
         parent.appendChild(form);
         form.addEventListener("submit", async (event) => {
@@ -397,7 +538,7 @@ const aetherShareUi = (() => {
 
     function renderPrivateOffer(host, data, reload, companyData) {
         const open = action(tr("privateOffer"), "btn-outline-primary mt-3");
-        host.appendChild(open);
+        host.appendChild(AetherActionButtons.group([open]));
         const dialog = element("dialog", "share-ui-dialog");
         dialog.appendChild(element("h4", "h5", tr("privateOffer")));
         const seller = element("select", "form-select mb-3");
@@ -423,7 +564,7 @@ const aetherShareUi = (() => {
         dialog.appendChild(ownOffers);
         const close = action(tr("close"), "btn-outline-secondary mt-3");
         close.addEventListener("click", () => dialog.close());
-        dialog.appendChild(close);
+        dialog.appendChild(AetherActionButtons.group([close]));
         host.appendChild(dialog);
         async function loadRecipients() {
             if (!snapshots.length) {
@@ -470,7 +611,7 @@ const aetherShareUi = (() => {
                         try { await post("cancelOffer", { idOffer: Number(offer.id) }); dialog.close(); await reload(); }
                         catch (error) { feedback(ownOffers, errorMessage(error), true); revoke.disabled = false; }
                     });
-                    row.appendChild(revoke);
+                    row.appendChild(AetherActionButtons.group([revoke]));
                     ownOffers.appendChild(row);
                 }
                 ownOffers.appendChild(element("div", "")).dataset.shareFeedback = "1";

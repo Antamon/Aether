@@ -254,12 +254,14 @@ function renderCharacterLanguagesSection(character) {
         <div data-role="character-language-list"></div>
         ${canManage ? `
             <div>
+                <div class="button-group">
                 <button type="button"
-                        class="btn btn-primary btn-sm"
+                        class="action-button"
                         id="addCharacterLanguageButton"
                         ${addButtonDisabled ? "disabled" : ""}>
-                    Nieuwe taal
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuwe taal
                 </button>
+                </div>
                 ${addHelp}
             </div>
         ` : ""}
@@ -273,21 +275,18 @@ function renderCharacterLanguagesSection(character) {
         languageListHost?.appendChild(empty);
     } else {
         const list = document.createElement("ul");
-        list.className = "list-unstyled mb-3";
+        list.className = "list-unstyled mb-3 character-language-grid";
         languages.forEach((language) => {
             const item = document.createElement("li");
-            item.className = "d-flex justify-content-between align-items-center gap-3 mb-2";
+            item.className = "d-flex justify-content-between align-items-center gap-2";
             const name = document.createElement("span");
             name.textContent = language.name || "";
             item.appendChild(name);
             if (canManage) {
-                const removeButton = document.createElement("button");
-                removeButton.type = "button";
-                removeButton.className = "btn btn-sm btn-outline-danger";
+                const removeButton = AetherActionButtons.button({ icon: "fa-trash", title: "Taal verwijderen", ariaLabel: "Taal verwijderen" });
                 removeButton.dataset.action = "delete-character-language";
                 removeButton.dataset.idCharacterLanguage = String(Number(language.id || 0));
-                removeButton.textContent = "Verwijderen";
-                item.appendChild(removeButton);
+                item.appendChild(AetherActionButtons.group([removeButton]));
             }
             list.appendChild(item);
         });

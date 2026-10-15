@@ -285,18 +285,15 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     // Bestaande specialisaties
     normalSpecs.forEach(spec => {
         const specGroup = document.createElement("div");
-        specGroup.classList.add("spec-group", "me-2", "mb-2");
+        specGroup.classList.add("spec-group", "button-group", "me-2", "mb-2");
         specGroup.dataset.specId = spec.id;
         specGroup.dataset.skillId = skill.id;
 
         const badge = document.createElement("div");
-        badge.classList.add("input-group-text", "btn-outline-secondary");
+        badge.classList.add("input-group-text");
         badge.textContent = spec.name;
 
-        const delBtn = document.createElement("button");
-        delBtn.type = "button";
-        delBtn.classList.add("btn", "btn-danger");
-        delBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+        const delBtn = AetherActionButtons.button({ icon: "fa-trash", title: "Specialisatie verwijderen", ariaLabel: "Specialisatie verwijderen" });
         delBtn.dataset.action = "spec-delete";
         delBtn.dataset.specId = spec.id;
         delBtn.dataset.skillId = skill.id;
@@ -319,10 +316,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     }
 
     // “+” knop om specialisatie toe te voegen
-    const addSpecBtn = document.createElement("button");
-    addSpecBtn.type = "button";
-    addSpecBtn.classList.add("btn", "btn-primary", "btn-sm", "mb-2");
-    addSpecBtn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+    const addSpecBtn = AetherActionButtons.button({ icon: "fa-plus", title: "Specialisatie toevoegen", ariaLabel: "Specialisatie toevoegen" });
     addSpecBtn.dataset.action = "spec-add";
     addSpecBtn.dataset.skillId = skill.id;
 
@@ -336,7 +330,9 @@ function addSkillAccordionItem(skill, usedExperience, character) {
         );
     }
 
-    specWrapper.appendChild(addSpecBtn);
+    const addSpecGroup = AetherActionButtons.group([addSpecBtn]);
+    addSpecGroup.classList.add("mb-2");
+    specWrapper.appendChild(addSpecGroup);
 
     body.appendChild(specWrapper);
 
@@ -369,16 +365,13 @@ function addSkillAccordionItem(skill, usedExperience, character) {
 
     // --- Learn / Unlearn / Delete buttons ---
     const btnGroup = document.createElement("div");
-    btnGroup.classList.add("btn-group", "mt-3");
+    btnGroup.classList.add("button-group", "mt-3");
     btnGroup.setAttribute("role", "group");
 
     // --- Learn button ---
-    const btnUp = document.createElement("button");
-    btnUp.type = "button";
-    btnUp.classList.add("btn", "btn-primary");
+    const btnUp = AetherActionButtons.button({ icon: "fa-caret-up", label: "Learn" });
     btnUp.dataset.action = "up";
     btnUp.dataset.skill = skill.id;
-    btnUp.innerHTML = `<i class="fa-solid fa-caret-up"></i> Learn`;
 
     // disable bij max niveau
     if (level >= 3) {
@@ -387,12 +380,9 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     }
 
     // --- Unlearn button ---
-    const btnDown = document.createElement("button");
-    btnDown.type = "button";
-    btnDown.classList.add("btn", "btn-primary");
+    const btnDown = AetherActionButtons.button({ icon: "fa-caret-down", label: "Unlearn" });
     btnDown.dataset.action = "down";
     btnDown.dataset.skill = skill.id;
-    btnDown.innerHTML = `<i class="fa-solid fa-caret-down"></i> Unlearn`;
 
     // disable bij niveau 0
     if (level <= 0) {
@@ -401,12 +391,9 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     }
 
     // --- Delete button ---
-    const btnDelete = document.createElement("button");
-    btnDelete.type = "button";
-    btnDelete.classList.add("btn", "btn-danger");
+    const btnDelete = AetherActionButtons.button({ icon: "fa-trash", label: "Delete" });
     btnDelete.dataset.action = "delete";
     btnDelete.dataset.skill = skill.id;
-    btnDelete.innerHTML = `<i class="fa-solid fa-trash" aria-hidden="true"></i> Delete`;
 
     btnGroup.appendChild(btnUp);
     btnGroup.appendChild(btnDown);

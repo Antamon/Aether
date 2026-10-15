@@ -5,7 +5,7 @@
 
     const sidebars = [
         { key: "characters", title: "Characters", icon: "tabPersonages.svg", page: "index.html", panelId: "offcanvasScrolling", tabId: "offcanvasTabToggle", templateId: "characterSidebarContent" },
-        { key: "events", title: "Evenementen", icon: "tabEvenementen.svg", page: "eventParticipation.html" },
+        { key: "events", title: "Evenementen", icon: "tabEvenementen.svg", page: "eventParticipation.html", templateId: "eventSidebarContent" },
         { key: "companies", title: "Bedrijven", icon: "tabBedrijven.svg", page: "companies.html", templateId: "companySidebarContent" },
         { key: "admin", title: "Admin", icon: "tabAdmin.svg", page: "admin.html" }
     ];
@@ -58,8 +58,20 @@
                 <div id="characterNames" class="my-2"></div><a class="nav-link" id="startNewCharacter" href="index.html?new=1"><i class="fa-solid fa-user-plus"></i> Nieuw personage</a>`;
         }
         if (!template && config.key === "companies") {
-            scroll.innerHTML = `<div class="list-group company-list" id="companyList"></div>
-                <div class="company-list-actions mt-3"><a class="btn btn-outline-primary w-100" href="companies.html?new=1">Nieuw bedrijf</a></div>`;
+            scroll.innerHTML = `<div class="company-list" id="companyList"></div>
+                <div class="company-list-actions button-group mt-3 w-100"><a class="action-button w-100 text-decoration-none" href="companies.html?new=1"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuw bedrijf</a></div>`;
+        }
+        if (!template && config.key === "events") {
+            const filter = document.createElement("div");
+            filter.className = "mb-3 d-none"; filter.id = "participantFilterWrapper";
+            const label = document.createElement("label"); label.className = "form-label";
+            label.htmlFor = "eventParticipantSelect"; label.textContent = "Deelnames van deelnemer";
+            const choices = document.createElement("div"); choices.id = "eventParticipantFilterChoices";
+            filter.append(label, choices); scroll.append(filter);
+            const list = document.createElement("div");
+            list.id = "eventSidebarList";
+            list.className = "company-list event-sidebar-list";
+            scroll.append(list);
         }
         paper.append(scroll);
         panel.append(header, paper);
@@ -97,14 +109,28 @@
 
     async function loadNavigationList(key) {
         if (key === currentPage) return;
-        if (key !== "characters" && key !== "companies") return;
-        const list = document.getElementById(key === "characters" ? "characterNames" : "companyList");
+        if (!["characters", "companies", "events"].includes(key)) return;
+        const list = document.getElementById(key === "characters" ? "characterNames" : key === "events" ? "eventSidebarList" : "companyList");
         if (!list) return;
         list.textContent = "Laden…";
         try {
-            const user = window.AETHER_CURRENT_USER || await apiFetchJson("getCurrentUser.php");
+            const user = await aetherGetCurrentUser();
+            if (key === "events") {
+                const [items] = await Promise.all([
+                    apiFetchJson("api/events/getEventList.php", { method: "POST", body: {} }),
+                    setupEventParticipantFilter(id => { window.location.href = `eventParticipation.html?participant=${encodeURIComponent(id)}`; }, "", user)
+                ]);
+                renderEventSidebarCards(items, list, event => {
+                    window.location.href = `eventParticipation.html?event=${encodeURIComponent(event.id)}`;
+                });
+                loadedLists.add(key);
+                return;
+            }
             if (key === "companies" && !userHasPrivilegedRole(user)) {
-                list.textContent = "U hebt geen toegang tot de bedrijvenlijst.";
+                const result = await apiFetchJson("api/companies/getMyLeaderCompanies.php");
+                renderNavigationCompanies(result?.companies || [], list, "leaderPersonnel.html");
+                list.nextElementSibling?.classList.add("d-none");
+                loadedLists.add(key);
                 return;
             }
             const items = await apiFetchJson(key === "characters"
@@ -152,52 +178,130 @@
                     || Number(item.idUser) === Number(userFilter.value)));
             if (!filtered.length) { list.textContent = "Geen personages gevonden voor deze filters."; return; }
             for (const item of filtered) {
-                const card = document.createElement("div");
-                card.className = "character-sidebar-card";
-                const portrait = document.createElement("div");
-                portrait.className = "character-sidebar-portrait-frame";
-                const name = [item.firstName, item.lastName].filter(Boolean).join(" ") || `Personage #${item.id}`;
-                if (item.portraitUrl) {
-                    const image = document.createElement("img");
-                    image.className = "character-sidebar-portrait-image";
-                    image.src = item.portraitUrl;
-                    image.alt = name;
-                    portrait.append(image);
-                } else {
-                    portrait.textContent = "Geen pasfoto";
-                    portrait.classList.add("character-sidebar-portrait-placeholder");
-                }
-                const label = document.createElement("div");
-                label.className = "character-sidebar-name";
-                label.textContent = name;
-                const actions = document.createElement("div");
-                actions.className = "character-sidebar-actions";
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "btn btn-outline-primary btn-sm character-sidebar-action";
-                button.setAttribute("aria-label", `Bekijk ${name}`);
-                button.innerHTML = '<i class="fa-solid fa-eye"></i>';
-                button.addEventListener("click", () => { window.location.href = `index.html?character=${encodeURIComponent(item.id)}`; });
-                actions.append(button);
-                card.append(portrait, label, actions);
-                list.append(card);
+                list.append(createCharacterSidebarCard(item, () => {
+                    window.location.href = `index.html?character=${encodeURIComponent(item.id)}`;
+                }));
             }
         };
         for (const filter of [userFilter, type, status, classFilter]) filter?.addEventListener("change", render);
         render();
     }
 
-    function renderNavigationCompanies(items, list) {
+    function createCharacterSidebarCard(item, onOpen, activeId = 0) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "company-sidebar-card character-sidebar-card";
+        const name = [item.firstName, item.lastName].filter(Boolean).join(" ") || `Personage #${item.id}`;
+        button.setAttribute("aria-label", `Open ${name}`);
+        button.dataset.idCharacter = String(item.id || 0);
+        if (Number(item.id) === Number(activeId)) {
+            button.classList.add("active");
+            button.setAttribute("aria-current", "true");
+        }
+        const imageFrame = document.createElement("span");
+        imageFrame.className = "company-sidebar-image-frame character-sidebar-portrait-frame";
+        const showPlaceholder = () => {
+            imageFrame.replaceChildren();
+            imageFrame.classList.add("character-sidebar-portrait-placeholder");
+            imageFrame.textContent = "Geen pasfoto";
+        };
+        if (item.portraitUrl) {
+            const image = document.createElement("img");
+            image.className = "company-sidebar-image character-sidebar-portrait-image";
+            image.src = String(item.portraitUrl);
+            image.alt = "";
+            image.loading = "lazy";
+            image.addEventListener("error", showPlaceholder, { once: true });
+            imageFrame.append(image);
+        } else showPlaceholder();
+        const label = document.createElement("span");
+        label.className = "company-sidebar-name character-sidebar-name";
+        label.textContent = name;
+        button.append(imageFrame, label);
+        button.addEventListener("click", () => onOpen(item));
+        return button;
+    }
+    window.createCharacterSidebarCard = createCharacterSidebarCard;
+
+    function renderCompanySidebarCards(items, list, onOpen, activeId = 0) {
         list.replaceChildren();
         if (!items.length) { list.textContent = "Nog geen bedrijven beschikbaar."; return; }
         for (const item of items) {
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "list-group-item list-group-item-action company-list-item";
-            button.textContent = item.companyName || `Bedrijf #${item.id}`;
-            button.addEventListener("click", () => { window.location.href = `companies.html?company=${encodeURIComponent(item.id)}`; });
+            button.className = "company-sidebar-card";
+            const name = String(item.companyName || `Bedrijf #${item.id}`);
+            button.setAttribute("aria-label", `Open ${name}`);
+            button.dataset.idCompany = String(item.id || 0);
+            if (Number(item.id) === Number(activeId)) {
+                button.classList.add("active");
+                button.setAttribute("aria-current", "true");
+            }
+            const imageFrame = document.createElement("span");
+            imageFrame.className = "company-sidebar-image-frame";
+            if (item.logoUrl) {
+                const image = document.createElement("img");
+                image.className = "company-sidebar-image";
+                image.src = String(item.logoUrl);
+                image.alt = "";
+                image.loading = "lazy";
+                image.addEventListener("error", () => {
+                    imageFrame.replaceChildren();
+                    imageFrame.classList.add("company-sidebar-image-placeholder");
+                    imageFrame.textContent = "Geen logo";
+                }, { once: true });
+                imageFrame.append(image);
+            } else {
+                imageFrame.classList.add("company-sidebar-image-placeholder");
+                imageFrame.textContent = "Geen logo";
+            }
+            const label = document.createElement("span");
+            label.className = "company-sidebar-name";
+            label.textContent = name;
+            button.append(imageFrame, label);
+            button.addEventListener("click", () => onOpen(item));
             list.append(button);
         }
+    }
+    window.renderCompanySidebarCards = renderCompanySidebarCards;
+
+    function renderEventSidebarCards(items, list, onOpen, activeId = 0) {
+        if (!list) return;
+        renderCompanySidebarCards(items.map(event => ({ ...event, companyName: event.title, logoUrl: event.imageUrl })), list, onOpen, activeId);
+        if (!items.length) { list.textContent = "Nog geen events beschikbaar."; return; }
+        for (const card of list.children) {
+            card.classList.add("event-sidebar-card");
+            const placeholder = card.querySelector(".company-sidebar-image-placeholder");
+            if (placeholder) placeholder.textContent = "Geen afbeelding";
+        }
+    }
+    window.renderEventSidebarCards = renderEventSidebarCards;
+
+    async function setupEventParticipantFilter(onChoose, selectedId = "", user = null) {
+        const wrapper = document.getElementById("participantFilterWrapper");
+        const host = document.getElementById("eventParticipantFilterChoices");
+        if (!wrapper || !host) return;
+        try {
+            if (!userHasPrivilegedRole(user || await aetherGetCurrentUser())) return;
+            const users = await apiFetchJson("api/users/getUserList.php");
+            const options = Object.values(users || {}).map(user => ({ id: user.id,
+                text: user.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || `Deelnemer #${user.id}`
+            })).sort((a, b) => a.text.localeCompare(b.text));
+            const select = document.createElement("select"); select.id = "eventParticipantSelect";
+            select.className = "form-select"; select.setAttribute("aria-label", "Deelnames van deelnemer");
+            const prompt = document.createElement("option"); prompt.value = ""; prompt.textContent = "Kies een deelnemer"; select.append(prompt);
+            for (const user of options) { const option = document.createElement("option"); option.value = String(user.id); option.textContent = user.text; select.append(option); }
+            select.value = selectedId ? String(selectedId) : "";
+            select.addEventListener("change", () => { if (select.value) onChoose(select.value); });
+            host.replaceChildren(select); wrapper.classList.remove("d-none");
+        } catch (error) { console.error("Deelnemerskeuze laden mislukt:", error); }
+    }
+    window.setupEventParticipantFilter = setupEventParticipantFilter;
+
+    function renderNavigationCompanies(items, list, page = "companies.html") {
+        renderCompanySidebarCards(items, list, (item) => {
+            window.location.href = `${page}?company=${encodeURIComponent(item.id)}`;
+        });
     }
 
     function setOpen(key) {
@@ -219,6 +323,18 @@
     function positionBelowNavbar() {
         const bottom = Math.max(0, navbar.getBoundingClientRect().bottom);
         deck.style.setProperty("--aether-navbar-bottom", `${bottom}px`);
+        // Keep the character header inside the thin part of the proportional topbar.
+        // Use the sheet container as the anchor even while pageNav is hidden/loading.
+        const pageNav = document.getElementById("pageNav");
+        const sheet = document.getElementById("sheetBody");
+        if (pageNav && sheet) {
+            const bounds = sheet.getBoundingClientRect();
+            const artwork = navbar.getBoundingClientRect();
+            const availableWidth = artwork.left + artwork.width * 0.75 - bounds.left - 16;
+            pageNav.style.setProperty("--aether-page-nav-left", `${bounds.left}px`);
+            pageNav.style.setProperty("--aether-page-nav-width", `${Math.max(0, availableWidth)}px`);
+            pageNav.style.setProperty("--aether-page-nav-container-width", `${bounds.width}px`);
+        }
     }
 
     sidebars.forEach(createSidebar);
@@ -245,9 +361,13 @@
 
     window.closeCharacterSidebar = () => { if (activeKey === "characters") setOpen(null); };
     window.closeCompanySidebar = () => { if (activeKey === "companies") setOpen(null); };
+    window.closeEventSidebar = () => { if (activeKey === "events") setOpen(null); };
     positionBelowNavbar();
     const requested = new URLSearchParams(window.location.search).get("sidebar");
     const selectingCompany = new URLSearchParams(window.location.search).has("company")
         || new URLSearchParams(window.location.search).has("new");
-    setOpen(requested === currentPage || (!requested && currentPage === "companies" && !selectingCompany) ? currentPage : null);
+    const selectingEvent = new URLSearchParams(window.location.search).has("event")
+        || new URLSearchParams(window.location.search).has("participant");
+    setOpen(requested === currentPage || (!requested && (currentPage === "companies" && !selectingCompany
+        || currentPage === "events" && !selectingEvent)) ? currentPage : null);
 })();

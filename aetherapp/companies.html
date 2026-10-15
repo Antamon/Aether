@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,13 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="asset.php?path=css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=a9b6a4b315701e4c">
     <title>Bedrijven - Aether applicatie</title>
 </head>
 <body data-sidebar-page="companies">
     <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html">
+            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina">
                 <img src="img/aether-logo.png" alt="Bootstrap">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,15 +22,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item mr-2">
-                        <a class="nav-link" aria-current="page" href="index.html"><i class="fa-solid fa-user"></i> Personages</a>
-                    </li>
-                    <li class="nav-item mr-2">
-                        <a class="nav-link" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Evenementen</a>
-                    </li>
-                    <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
-                        <a class="nav-link active" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
-                    </li>
                     <li class="nav-item mr-2 d-none" id="navbarAdminItem">
                         <a class="nav-link" id="adminPage" aria-current="page" href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
                     </li>
@@ -41,9 +32,9 @@
     </nav>
 
     <template id="companySidebarContent">
-        <div class="list-group company-list" id="companyList"></div>
+        <div class="company-list" id="companyList"></div>
         <div class="company-list-actions mt-3">
-            <button type="button" class="btn btn-outline-primary w-100" id="newCompanyButton">Nieuw bedrijf</button>
+            <div class="button-group w-100"><button type="button" class="action-button w-100" id="newCompanyButton"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuw bedrijf</button></div>
         </div>
     </template>
 
@@ -60,7 +51,7 @@
                             <div class="alert py-2 px-3 mb-0 d-none" id="companyFeedback" role="status"></div>
                         </div>
 
-                        <form id="companyForm" novalidate>
+                        <form id="companyForm" class="d-none" novalidate>
                             <input type="hidden" id="companyId">
                             <input type="file" id="companyLogoFileInput" class="d-none" accept="image/png,image/jpeg,image/webp,image/gif">
 
@@ -71,9 +62,9 @@
                                         <div class="company-logo-placeholder" id="companyLogoPlaceholder">Geen logo</div>
                                     </div>
 
-                                    <div class="company-logo-actions">
-                                        <button type="button" class="btn btn-outline-primary" id="companyLogoUploadButton">Logo opladen</button>
-                                        <button type="button" class="btn btn-outline-secondary" id="companyLogoDeleteButton">Logo verwijderen</button>
+                                    <div class="company-logo-actions button-group">
+                                        <button type="button" class="action-button" id="companyLogoUploadButton"><i class="fa-solid fa-upload" aria-hidden="true"></i> Logo opladen</button>
+                                        <button type="button" class="action-button" id="companyLogoDeleteButton"><i class="fa-solid fa-trash" aria-hidden="true"></i> Logo verwijderen</button>
                                     </div>
                                 </div>
 
@@ -93,9 +84,17 @@
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
+                                        <span class="col-sm-4 aether-field-label">Type bedrijf</span>
+                                        <div class="col-sm-8 d-flex align-items-center gap-2" id="companyTypeCard">
+                                            <span id="companyTypeLabel">—</span>
+                                            <i id="companyTypeInfoButton" class="fa-solid fa-circle-info company-type-info-icon" data-bs-toggle="modal" data-bs-target="#companyTypeInfoModal" role="button" tabindex="0" aria-label="Meer informatie over dit bedrijfstype" title="Meer informatie over dit bedrijfstype"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="company-inline-field row g-2 align-items-center">
                                         <label class="col-sm-4 col-form-label aether-field-label" for="companyValue">Bedrijfswaarde</label>
                                         <div class="col-sm-8">
-                                            <input type="text" inputmode="decimal" class="form-control" id="companyValue" data-currency-input="true" required>
+                                            <span id="companyValue" class="d-inline-block py-2">—</span>
                                         </div>
                                     </div>
 
@@ -106,18 +105,16 @@
                                         </div>
                                     </div>
 
-                                    <div class="company-type-card aether-inset d-none" id="companyTypeCard">
-                                        <div class="company-type-card-label">Type bedrijf</div>
-                                        <h3 class="h5 mb-2" id="companyTypeLabel"></h3>
-                                        <p class="company-type-card-range mb-2" id="companyTypeRange"></p>
-                                        <p class="mb-0" id="companyTypeDescription"></p>
+                                    <div class="company-inline-field row g-2 align-items-center">
+                                        <span class="col-sm-4 aether-field-label">Beursgenoteerd</span>
+                                        <div class="col-sm-8" id="companyShareListing"></div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="row g-3 mt-1">
                                 <div class="col-12 col-lg-6">
-                                    <div class="company-slider-card aether-inset">
+                                    <div class="company-slider-card aether-inset mb-3">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
                                             <label class="form-label mb-0" for="companyStability">Stabiliteit</label>
                                             <span class="badge text-bg-light company-slider-value" id="companyStabilityValue">0</span>
@@ -125,25 +122,18 @@
                                         <input type="range" class="form-range" id="companyStability" min="-7" max="7" step="1" value="0">
                                         <p class="company-slider-help mb-0" id="companyStabilityHelp"></p>
                                     </div>
-
-                                    <div class="company-shareholders-card aether-inset d-none mt-3" id="companyShareholdersCard">
-                                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-                                            <div class="company-shareholders-card-label mb-0">Aandeelhouders</div>
-                                            <div class="company-shareholders-available" id="companyShareholdersAvailable">0% beschikbaar</div>
-                                        </div>
-                                        <div id="companyShareholdersGroups"></div>
-                                    </div>
-
-                                    <div class="company-snapshots-card aether-inset d-none mt-3" id="companySnapshotsCard">
+                                    <div class="company-shareholders-card aether-inset d-none mb-3" id="companyShareholdersCard"></div>
+                                    <div class="company-snapshots-card aether-inset d-none" id="companySnapshotsCard">
                                         <div class="company-shareholders-card-label">Snapshots</div>
                                         <div class="company-snapshots-create row g-2 mb-3">
                                             <div class="col-12 col-md-8">
                                                 <select class="form-select" id="companySnapshotEventSelect">
                                                     <option value="0">Kies een event</option>
                                                 </select>
+                                                <p class="small text-muted mt-1 mb-0 d-none" id="companySnapshotEventStatus"></p>
                                             </div>
                                             <div class="col-12 col-md-4 d-grid">
-                                                <button type="button" class="btn btn-outline-primary" id="createCompanySnapshotButton">Snapshot maken</button>
+                                                <div class="button-group"><button type="button" class="action-button" id="createCompanySnapshotButton"><i class="fa-solid fa-camera" aria-hidden="true"></i> Snapshot maken</button></div>
                                             </div>
                                         </div>
                                         <div class="company-snapshots-list" id="companySnapshotsList"></div>
@@ -152,7 +142,7 @@
                                 </div>
 
                                 <div class="col-12 col-lg-6">
-                                    <div class="company-slider-card aether-inset">
+                                    <div class="company-slider-card aether-inset mb-3">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
                                             <label class="form-label mb-0" for="companyProfitability">Rendabiliteit</label>
                                             <span class="badge text-bg-light company-slider-value" id="companyProfitabilityValue">0</span>
@@ -160,14 +150,13 @@
                                         <input type="range" class="form-range" id="companyProfitability" min="-7" max="7" step="1" value="0">
                                         <p class="company-slider-help mb-0" id="companyProfitabilityHelp"></p>
                                     </div>
-
-                                    <div class="company-personnel-card aether-inset d-none mt-3" id="companyPersonnelCard">
+                                    <div class="company-personnel-card aether-inset d-none" id="companyPersonnelCard">
                                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                                             <div>
                                                 <div class="company-personnel-card-label">Personeel</div>
                                                 <p class="company-personnel-card-help mb-0">Voeg personeelsleden toe aan het bedrijf. Stel minimumvaardigheden in voor de functie. Het wel of niet halen van die vereisten, zal een positieve of negatieve invloed hebben op de bedrijfswinsten. Belangrijke personeelsleden hebben meer inpact dat onbelangrijke personeelsleden</p>
                                             </div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" id="addCompanyPersonnelButton" data-action="add-company-personnel">Personeelslid toevoegen</button>
+                                            <div class="button-group"><button type="button" class="action-button" id="addCompanyPersonnelButton" data-action="add-company-personnel"><i class="fa-solid fa-plus" aria-hidden="true"></i> Personeelslid toevoegen</button></div>
                                         </div>
 
                                         <div class="company-personnel-list" id="companyPersonnelList"></div>
@@ -183,12 +172,19 @@
         </div>
     </main>
 
+    <div class="modal fade" id="companyTypeInfoModal" tabindex="-1" aria-labelledby="companyTypeInfoTitle" aria-hidden="true">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title fs-5" id="companyTypeInfoTitle">Type bedrijf</h2><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
+            <div class="modal-body"><p id="companyTypeRange"></p><p id="companyTypeDescription" class="mb-0"></p></div>
+        </div></div>
+    </div>
+
     <div class="modal fade" id="companyPersonnelSpecialisationModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h2 class="modal-title fs-3">Add specialisation</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                 </div>
                 <div class="modal-body">
                     <ul class="nav nav-tabs mb-3" id="companyPersonnelSpecTab" role="tablist">
@@ -212,8 +208,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="companyPersonnelSpecSaveBtn">Safe</button>
+                    <div class="button-group">
+                        <button type="button" class="action-button" id="companyPersonnelSpecSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -221,9 +219,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
-    <script src="asset.php?path=js/mainFunctions.js"></script>
-    <script src="asset.php?path=js/updateManager.js"></script>
-    <script src="asset.php?path=js/aetherSidebars.js"></script>
-    <script src="asset.php?path=js/companyFunctions.js"></script>
+    <script src="js/performance.js?v=39da1fe1368d5dac"></script>
+    <script src="js/mainFunctions.js?v=f3db4bd7cb4060d8"></script>
+    <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
+    <script src="js/aetherSidebars.js?v=b1f8f20e0076ee18"></script>
+    <script src="js/actionButtons.js?v=b4df11b598cd6c2e"></script>
+    <script src="js/shareInterface.js?v=9097b4a6a201256a"></script>
+    <script src="js/dataCard.js?v=f7e48488b0af3f4f"></script>
+    <script src="js/companyFunctions.js?v=781954c03996383a"></script>
 </body>
 </html>

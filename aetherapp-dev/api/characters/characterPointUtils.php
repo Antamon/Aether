@@ -107,7 +107,7 @@ function getCharacterPointSummary(PDO $pdo, array $character): array
         foreach ($linkedTraits as $linkedTrait) {
             // Migrated A/B share traits remain as historical source rows. Their cost is
             // replaced by the current portfolio level, never counted a second time.
-            if ($newShareStatus && isCompanyShareTrait($linkedTrait)) {
+            if ($newShareStatus && (isCompanyShareTrait($linkedTrait) || aetherIsShareCapitalTrait($linkedTrait))) {
                 continue;
             }
             if (aetherCompanyLeadershipAvailable($pdo) && aetherIsLegacyCompanyLeaderTrait($linkedTrait)) {
@@ -129,7 +129,9 @@ function getCharacterPointSummary(PDO $pdo, array $character): array
         $usedStatusPoints += aetherCompanyLeaderTier($leaderRows[0]['companyValue'])['statusPoints'];
     }
     if ($newShareStatus) {
-        $stmt = $pdo->prepare('SELECT usedStatusPoints FROM tblCharacterShareStatus WHERE idCharacter = :idCharacter');
+        $stmt = $pdo->prepare(($character['state'] ?? '') === 'draft'
+            ? 'SELECT purchasedLevel FROM tblCharacterShareDraftBudget WHERE idCharacter = :idCharacter AND closedAt IS NULL'
+            : 'SELECT usedStatusPoints FROM tblCharacterShareStatus WHERE idCharacter = :idCharacter');
         $stmt->execute(['idCharacter' => (int) ($character['id'] ?? 0)]);
         $usedStatusPoints += (int) ($stmt->fetchColumn() ?: 0);
     }

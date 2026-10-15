@@ -84,55 +84,45 @@ async function loadDiaryEntries(container, character) {
 function renderDiaryEntries(container, character, entries, availableEvents) {
     container.innerHTML = "";
     const rights = canEditDiary(character);
-
-    if (!entries || entries.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "text-muted mb-3";
-        empty.textContent = "No diary entries yet.";
-        container.appendChild(empty);
-    } else {
-        entries.forEach(entry => {
-            container.appendChild(renderDiaryEntry(entry, rights, character));
-        });
-    }
+    const panel = document.createElement("div");
+    panel.className = "aether-panel diary-panel";
+    container.appendChild(panel);
 
     // Add new entry selector
     const addWrapper = document.createElement("div");
-    addWrapper.className = "border-top pt-3 mt-3";
+    addWrapper.className = "mb-4";
     const row = document.createElement("div");
-    row.className = "row g-2 align-items-center";
+    row.className = "input-group";
 
-    const colSelect = document.createElement("div");
-    colSelect.className = "col-lg-8 col-12";
     const sel = document.createElement("select");
     sel.className = "form-select";
+    sel.setAttribute("aria-label", "Select event");
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Select event";
     sel.appendChild(placeholder);
-    (availableEvents || []).forEach(ev => {
+    sortDiaryEventsNewestFirst(availableEvents || []).forEach(ev => {
         const opt = document.createElement("option");
         opt.value = ev.id;
         opt.textContent = ev.title;
         sel.appendChild(opt);
     });
-    colSelect.appendChild(sel);
 
     const colBtn = document.createElement("div");
-    colBtn.className = "col-lg-4 col-12";
-    const btn = document.createElement("button");
-    btn.className = "btn btn-primary w-100";
-    btn.textContent = "Add diary";
+    colBtn.className = "button-group";
+    const btn = AetherActionButtons.button({ icon: "fa-plus", label: "Add diary", disabled: true });
     colBtn.appendChild(btn);
 
-    row.appendChild(colSelect);
+    row.appendChild(sel);
     row.appendChild(colBtn);
     addWrapper.appendChild(row);
 
     if (rights.all || rights.achievementsOnly) {
+        sel.addEventListener("change", () => { btn.disabled = !sel.value; });
         btn.addEventListener("click", async () => {
             const idEvent = sel.value ? Number(sel.value) : 0;
             if (!idEvent) return;
+            btn.disabled = true;
             try {
                 await saveCharacterDiary({
                     idCharacter: character.id,
@@ -147,36 +137,69 @@ function renderDiaryEntries(container, character, entries, availableEvents) {
             } catch (err) {
                 console.error("Fout bij toevoegen diary:", err);
                 alert("Kon diary entry niet toevoegen.");
+            } finally {
+                btn.disabled = !sel.value;
             }
         });
     } else {
         btn.disabled = true;
     }
 
-    container.appendChild(addWrapper);
+    panel.appendChild(addWrapper);
+    const target = window.AETHER_EVENT_TARGET;
+    const targeted = target?.kind === "gossip" && target.character === Number(character.id) && (rights.all || rights.achievementsOnly);
+    if (targeted && !entries.some(entry => Number(entry.idEvent) === target.event)) {
+        const event = availableEvents.find(event => Number(event.id) === target.event);
+        if (event && rights.all) {
+            entries = [{ idEvent: event.id, eventTitle: event.title, dateStart: event.dateStart, goals: "", achievements: "", gossip1: "", gossip2: "", gossip3: "" }, ...entries];
+            sel.querySelector(`option[value="${event.id}"]`)?.remove();
+        } else if (event) {
+            const notice = document.createElement("p"); notice.className = "data-card";
+            notice.textContent = `Gossip voor "${event.title}" is nog niet ingevuld. Alleen een admin of director kan de gossip van deze figurantenrol aanpassen.`;
+            panel.appendChild(notice); window.AETHER_EVENT_TARGET = null;
+            requestAnimationFrame(() => notice.scrollIntoView({ block: "center" }));
+        }
+    }
+    if (!entries || entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "text-muted";
+        empty.textContent = "No diary entries yet.";
+        panel.appendChild(empty);
+    } else {
+        sortDiaryEventsNewestFirst(entries).forEach(entry => {
+            const openGossip = targeted && Number(entry.idEvent) === target.event;
+            const card = renderDiaryEntry(entry, rights, character, openGossip && rights.all);
+            panel.appendChild(card);
+            if (openGossip) {
+                window.AETHER_EVENT_TARGET = null;
+                requestAnimationFrame(() => { card.scrollIntoView({ block: "center" }); card.querySelector("textarea[data-gossip]:not(.d-none)")?.focus({ preventScroll: true }); });
+            }
+        });
+    }
 }
 
-function renderDiaryEntry(entry, rights, character) {
+function sortDiaryEventsNewestFirst(events) {
+    return [...events].sort((a, b) => String(b.dateStart || "").localeCompare(String(a.dateStart || ""))
+        || Number(b.idEvent ?? b.id ?? 0) - Number(a.idEvent ?? a.id ?? 0));
+}
+
+function renderDiaryEntry(entry, rights, character, openGossip = false) {
     const canEditAll = rights.all;
     const canEditAchievementsOnly = rights.achievementsOnly;
 
     const wrap = document.createElement("div");
-    wrap.className = "aether-panel mb-4 diary-entry";
+    wrap.className = "data-card mb-3 diary-entry";
 
     const header = document.createElement("div");
-    header.className = "d-flex align-items-center justify-content-center mb-2 position-relative";
+    header.className = "diary-entry-header mb-3";
     const title = document.createElement("h5");
-    title.className = "mb-0 text-center";
+    title.className = "mb-0";
     title.textContent = entry.eventTitle || "Event";
     header.appendChild(title);
 
     let editBtn = null;
     if (canEditAll || canEditAchievementsOnly) {
-        editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.className = "btn btn-link p-0 position-absolute end-0 top-0";
-        editBtn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
-        header.appendChild(editBtn);
+        editBtn = AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit" });
     }
 
     wrap.appendChild(header);
@@ -199,9 +222,10 @@ function renderDiaryEntry(entry, rights, character) {
         lbl.className = "fw-bold";
         lbl.textContent = g.label;
         const view = document.createElement("div");
-        view.className = "border rounded p-2 bg-light";
+        view.className = "diary-view-body";
         view.textContent = entry[g.key] || "";
         const ta = document.createElement("textarea");
+        ta.dataset.gossip = g.key;
         ta.className = "form-control form-control-sm d-none";
         ta.value = entry[g.key] || "";
         gossipInputs[g.key] = { view, input: ta };
@@ -216,16 +240,10 @@ function renderDiaryEntry(entry, rights, character) {
     wrap.appendChild(gossipRow);
 
     const actions = document.createElement("div");
-    actions.className = "mt-3 d-none gap-2";
-    const btnSave = document.createElement("button");
-    btnSave.className = "btn btn-sm btn-primary";
-    btnSave.textContent = "Save";
-    const btnCancel = document.createElement("button");
-    btnCancel.className = "btn btn-sm btn-outline-secondary";
-    btnCancel.textContent = "Cancel";
-    actions.appendChild(btnSave);
-    actions.appendChild(btnCancel);
-    wrap.appendChild(actions);
+    actions.className = "button-group";
+    const btnSave = AetherActionButtons.button({ icon: "fa-check", label: "Save" });
+    const btnCancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel" });
+    if (editBtn) header.appendChild(actions);
 
     const exitEditMode = () => {
         goalsSection.edit.wrapper.classList.add("d-none");
@@ -236,7 +254,8 @@ function renderDiaryEntry(entry, rights, character) {
             input.classList.add("d-none");
             view.classList.remove("d-none");
         });
-        actions.classList.add("d-none");
+        wrap.classList.remove("is-editing");
+        actions.replaceChildren(...(editBtn ? [editBtn] : []));
     };
 
     const enterEditMode = () => {
@@ -249,7 +268,8 @@ function renderDiaryEntry(entry, rights, character) {
             input.classList.toggle("d-none", !canEditGossip);
             view.classList.toggle("d-none", canEditGossip);
         });
-        actions.classList.remove("d-none");
+        wrap.classList.add("is-editing");
+        actions.replaceChildren(btnSave, btnCancel);
     };
 
     if (editBtn) {
@@ -257,6 +277,7 @@ function renderDiaryEntry(entry, rights, character) {
     }
 
     btnCancel.addEventListener("click", () => {
+        if (!entry.id) { void loadDiaryEntries(document.getElementById("diaryContent"), character); return; }
         goalsSection.edit.setHtml(entry.goals || "");
         achievementsSection.edit.setHtml(entry.achievements || "");
         Object.entries(gossipInputs).forEach(([key, obj]) => {
@@ -285,10 +306,12 @@ function renderDiaryEntry(entry, rights, character) {
             payload.gossip3 = entry.gossip3 || "";
         }
 
+        btnSave.disabled = true;
+        btnCancel.disabled = true;
         try {
             const res = await saveCharacterDiary(payload);
             const updated = Array.isArray(res?.entries)
-                ? res.entries.find(item => Number(item.id) === Number(entry.id))
+                ? res.entries.find(item => entry.id ? Number(item.id) === Number(entry.id) : Number(item.idEvent) === Number(entry.idEvent))
                 : null;
             if (!updated) {
                 throw new Error("De server gaf geen gesaniteerde diary terug.");
@@ -305,11 +328,15 @@ function renderDiaryEntry(entry, rights, character) {
         } catch (err) {
             console.error("Fout bij opslaan diary:", err);
             alert("Opslaan van diary mislukt.");
+        } finally {
+            btnSave.disabled = false;
+            btnCancel.disabled = false;
         }
     });
 
     // default view mode
     exitEditMode();
+    if (openGossip && canEditAll) enterEditMode();
 
     return wrap;
 }
@@ -323,7 +350,7 @@ function createDiarySection(label, html) {
     lbl.textContent = label;
 
     const body = document.createElement("div");
-    body.className = "border rounded p-2 bg-light diary-view-body";
+    body.className = "diary-view-body";
     renderCharacterRichText(body, html);
 
     const edit = createCharacterRichTextEditor(html, { minHeight: "140px" });

@@ -15,6 +15,13 @@ if (defined('AETHER_EVENT_ENDPOINT_TEST_BOOTSTRAP')) {
             $this->params = $params ?? [];
             $this->affected = 0;
             $sql = $this->sql();
+            if (str_starts_with($sql, 'INSERT INTO tblLinkEventCharacter')) {
+                $this->pdo->write($sql, $this->params);
+                $this->pdo->links[$this->params['idEvent'] . ':' . $this->params['idCharacter']] = true;
+            } elseif (str_starts_with($sql, 'DELETE FROM tblLinkEventCharacter')) {
+                $this->pdo->write($sql, $this->params);
+                unset($this->pdo->links[$this->params['idEvent'] . ':' . $this->params['idCharacter']]);
+            }
             if ($this->pdo->scenario === 'server_error' && str_contains($sql, 'FROM tblEvent AS e')) {
                 throw new PDOException('SQLSTATE[42S02]: secret_event_table');
             }
@@ -58,6 +65,14 @@ if (defined('AETHER_EVENT_ENDPOINT_TEST_BOOTSTRAP')) {
         public function fetch(int $mode = PDO::FETCH_DEFAULT, int $cursorOrientation = PDO::FETCH_ORI_NEXT, int $cursorOffset = 0): mixed
         {
             $sql = $this->sql();
+            if (str_contains($sql, 'FROM tblLinkEventCharacter l JOIN')) {
+                $event = $this->pdo->events[$this->params['idEvent']] ?? null;
+                $character = $this->pdo->characters[$this->params['idCharacter']] ?? null;
+                return $event && $character && isset($this->pdo->links[$this->params['idEvent'] . ':' . $this->params['idCharacter']])
+                    ? ['firstName' => $character['firstName'], 'lastName' => $character['lastName'], 'eventTitle' => $event['title']] : false;
+            }
+            if (str_contains($sql, 'FROM tblCharacterDiary') || str_contains($sql, 'FROM tblCharacterEconomySnapshot')) return false;
+            if (str_contains($sql, 'FROM tblCharacter WHERE')) return $this->pdo->characters[$this->params['id']] ?? false;
             if (str_contains($sql, 'FROM tblUser') && str_contains($sql, 'username')) {
                 return $this->pdo->users[(int) ($this->params['id'] ?? 0)] ?? false;
             }
@@ -107,6 +122,13 @@ if (defined('AETHER_EVENT_ENDPOINT_TEST_BOOTSTRAP')) {
         public int $lastInsertIdValue = 0;
         public int $writes = 0;
         public array $writeLog = [];
+        public array $characters = [];
+        public array $links = [];
+        private ?array $transaction = null;
+        public function beginTransaction(): bool { $this->transaction = [$this->links, $this->writes, $this->writeLog]; return true; }
+        public function commit(): bool { $this->transaction = null; return true; }
+        public function rollBack(): bool { if ($this->transaction !== null) [$this->links, $this->writes, $this->writeLog] = $this->transaction; $this->transaction = null; return true; }
+        public function inTransaction(): bool { return $this->transaction !== null; }
 
         public function __construct(public string $scenario, array $state)
         {
@@ -123,6 +145,7 @@ if (defined('AETHER_EVENT_ENDPOINT_TEST_BOOTSTRAP')) {
         {
             return [
                 'users' => $this->users, 'events' => $this->events, 'participations' => $this->participations,
+                'characters' => $this->characters, 'links' => $this->links,
                 'nextEventId' => $this->nextEventId, 'nextParticipationId' => $this->nextParticipationId,
             ];
         }
@@ -213,6 +236,7 @@ $routes = [
     'create' => $fixture . '/api/events/newEvent.php',
     'update' => $fixture . '/api/events/updateEvent.php',
     'participation' => $fixture . '/api/events/updateParticipation.php',
+    'details' => $fixture . '/api/events/eventDetails.php',
 ];
 $initial = [
     'users' => [
@@ -225,15 +249,37 @@ $initial = [
     ],
     'participations' => ['7:10' => ['id' => 50, 'idEvent' => 7, 'idUser' => 10]],
     'nextEventId' => 8, 'nextParticipationId' => 51,
+    'characters' => [
+        1 => ['id' => 1, 'idUser' => 10, 'type' => 'player', 'state' => 'active', 'firstName' => 'Ada', 'lastName' => 'A'],
+        2 => ['id' => 2, 'idUser' => 10, 'type' => 'extra', 'state' => 'active', 'firstName' => 'Extra', 'lastName' => 'B'],
+        3 => ['id' => 3, 'idUser' => 20, 'type' => 'player', 'state' => 'active', 'firstName' => 'Other', 'lastName' => 'C'],
+        4 => ['id' => 4, 'idUser' => 10, 'type' => 'player', 'state' => 'draft', 'firstName' => 'Draft', 'lastName' => 'D'],
+    ],
+    'links' => ['7:1' => true],
 ];
 
 try {
     $state = $stateFiles[] = eventState($initial);
     $ownList = runEventRoute($routes['list'], 'participant', ['idUser' => 0], $state);
     eventAssert($ownList['status'] === 200 && array_keys($ownList['decoded'][0] ?? []) === [
-        'id', 'type', 'title', 'description', 'dateStart', 'dateEnd', 'venue', 'ep', 'participation',
+        'id', 'type', 'title', 'description', 'dateStart', 'dateEnd', 'venue', 'ep', 'participation', 'imageUrl',
     ], 'Eventlijstresponse wijzigde');
     eventAssert(($ownList['decoded'][0]['participation'] ?? false) === true, 'Eigen deelname ontbreekt');
+    eventAssert($ownList['decoded'][0]['imageUrl'] === null, 'Event zonder afbeelding kreeg een ongeldige URL');
+    $selfLink = runEventRoute($routes['details'], 'participant', ['action' => 'link', 'idEvent' => 7, 'idCharacter' => 1, 'linked' => true], $stateFiles[] = eventState($initial));
+    eventAssert($selfLink['status'] === 200 && $selfLink['decoded']['ok'], 'Participant kan eigen speler koppelen');
+    foreach ([2, 3, 4] as $idCharacter) eventError(runEventRoute($routes['details'], 'participant', ['action' => 'link', 'idEvent' => 7, 'idCharacter' => $idCharacter, 'linked' => true], $stateFiles[] = eventState($initial)), 403, 0, 'participant koppelt figurant, andere eigenaar of Draft');
+    eventError(runEventRoute($routes['details'], 'participant', ['action' => 'link', 'idEvent' => 7, 'idCharacter' => 1, 'linked' => false], $stateFiles[] = eventState($initial)), 403, 0, 'participant ontkoppelt personage');
+    eventError(runEventRoute($routes['details'], 'missing_csrf', ['action' => 'link', 'idEvent' => 7, 'idCharacter' => 1, 'linked' => true], $stateFiles[] = eventState($initial)), 403, 0, 'koppelen zonder CSRF');
+    $missingSnapshot = runEventRoute($routes['details'], 'participant', ['action' => 'snapshot', 'idEvent' => 7, 'idCharacter' => 1], $stateFiles[] = eventState($initial));
+    eventAssert($missingSnapshot['status'] === 200 && $missingSnapshot['decoded']['details'] === null && str_contains($missingSnapshot['decoded']['message'], 'Financiële toestand nog niet aangepast'), 'Eigen ontbrekende snapshot geeft modalmelding');
+    foreach (['gossip', 'snapshot'] as $kind) {
+        eventError(runEventRoute($routes['details'], 'participant', ['action' => $kind, 'idEvent' => 7, 'idCharacter' => 3], $stateFiles[] = eventState($initial)), 403, 0, 'participant leest private eventgegevens van een ander');
+        eventError(runEventRoute($routes['details'], 'administrator', ['action' => $kind, 'idEvent' => 7], $stateFiles[] = eventState($initial)), 422, 0, 'modalread zonder personage');
+    }
+    eventError(runEventRoute($routes['details'], 'missing_csrf', ['action' => 'deleteImage', 'idEvent' => 7], $stateFiles[] = eventState($initial)), 403, 0, 'eventafbeelding zonder CSRF');
+    eventError(runEventRoute($routes['details'], 'unauthenticated', ['idEvent' => 7], $stateFiles[] = eventState($initial)), 401, 0, 'anonieme eventdetails');
+    eventError(runEventRoute($routes['details'], 'administrator', ['idEvent' => 7, 'unexpected' => true], $stateFiles[] = eventState($initial)), 422, 0, 'eventdetails onbekend veld');
     eventAssert(($ownList['decoded'][0]['title'] ?? '') === '<img src=x onerror=alert(1)>', 'Gewone eventtekst werd server-side als HTML veranderd');
 
     $otherListState = $stateFiles[] = eventState($initial);

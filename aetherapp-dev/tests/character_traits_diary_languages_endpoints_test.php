@@ -11,7 +11,13 @@ if (defined('AETHER_CHARACTER_WRITES_TEST_BOOTSTRAP')) {
         {
             $this->params = $params ?? [];
             $sql = $this->sql();
-            if (str_starts_with($sql, 'INSERT INTO tblLinkCharacterTrait')) {
+            if (str_starts_with($sql, 'INSERT INTO tblCharacterShareDraftBudget')) {
+                $this->pdo->write($sql, $this->params);
+                $id = (int) $this->params['idCharacter'];
+                $this->pdo->budgets[$id] = array_merge($this->pdo->budgets[$id] ?? ['spentAmount' => '0.00', 'closedAt' => null], ['purchasedLevel' => $this->params['level'], 'budgetAmount' => $this->params['amount']]);
+            } elseif (str_starts_with($sql, 'DELETE FROM tblCharacterShareDraftBudget')) {
+                $this->pdo->write($sql, $this->params); unset($this->pdo->budgets[(int) $this->params['idCharacter']]);
+            } elseif (str_starts_with($sql, 'INSERT INTO tblLinkCharacterTrait')) {
                 $this->pdo->write($sql, $this->params);
                 if ($this->pdo->scenario === 'trait_server_error') throw new PDOException('SQLSTATE secret_trait_table');
                 $this->pdo->traitLinks[(int) $this->params['idCharacter']][(int) $this->params['idTrait']] = ['id' => 99, 'rankValue' => (int) $this->params['rankValue']];
@@ -48,6 +54,7 @@ if (defined('AETHER_CHARACTER_WRITES_TEST_BOOTSTRAP')) {
             $sql = $this->sql();
             if (str_contains($sql, 'FROM tblUser')) return $this->pdo->users[(int)($this->params['id'] ?? 0)] ?? false;
             if (str_contains($sql, 'FROM tblCharacterLanguage')) return in_array((int)$this->params['idLanguage'],$this->pdo->characterLanguages[(int)$this->params['idCharacter']]??[],true) ? ['id'=>1] : false;
+            if (str_contains($sql, 'FROM tblCharacterShareDraftBudget')) return $this->pdo->budgets[(int) $this->params['idCharacter']] ?? false;
             if (str_contains($sql, 'FROM tblCharacter') && !str_contains($sql, 'Diary')) return $this->pdo->characters[(int)($this->params['id'] ?? 0)] ?? false;
             if (str_contains($sql, 'FROM tblLinkCharacterTrait') && !str_contains($sql, 'JOIN')) return $this->pdo->traitLinks[(int)$this->params['idCharacter']][(int)$this->params['idTrait']] ?? false;
             if (str_contains($sql, "t.`type` = 'profession'")) return false;
@@ -90,11 +97,20 @@ if (defined('AETHER_CHARACTER_WRITES_TEST_BOOTSTRAP')) {
         public int $writeAttempts = 0;
         public int $committedWrites = 0;
         private ?array $snapshot = null;
-        public function __construct(public string $scenario) {}
+        public array $budgets = [];
+        public function __construct(public string $scenario) {
+            $this->traits[105] = ['id' => 105, 'name' => 'Aandelen', 'class' => 'all', 'type' => 'status', 'rankType' => 'range_positive', 'isUnique' => 1, 'grouped' => false, 'traitFlags' => ['share_capital' => true]];
+            if ($scenario === 'capital_linked') {
+                $this->traitLinks[1][105] = ['id' => 43, 'rankValue' => 3];
+                $this->budgets[1] = ['purchasedLevel' => 3, 'budgetAmount' => '2500000.00', 'spentAmount' => '1500000.00', 'closedAt' => null];
+            }
+        }
         public function prepare(string $query, array $options = []): PDOStatement|false { return new CharacterWritesTestStatement($this,$query); }
-        public function beginTransaction(): bool { $this->snapshot=[$this->traitLinks,$this->diaries,$this->languages,$this->characterLanguages,$this->committedWrites]; return true; }
+        public function exec(string $statement): int|false { return 0; }
+        public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false { $stmt = $this->prepare($query); $stmt->execute(); return $stmt; }
+        public function beginTransaction(): bool { $this->snapshot=[$this->traitLinks,$this->diaries,$this->languages,$this->characterLanguages,$this->committedWrites,$this->budgets]; return true; }
         public function commit(): bool { $this->snapshot=null; return true; }
-        public function rollBack(): bool { if ($this->snapshot) [$this->traitLinks,$this->diaries,$this->languages,$this->characterLanguages,$this->committedWrites]=$this->snapshot; $this->snapshot=null; return true; }
+        public function rollBack(): bool { if ($this->snapshot) [$this->traitLinks,$this->diaries,$this->languages,$this->characterLanguages,$this->committedWrites,$this->budgets]=$this->snapshot; $this->snapshot=null; return true; }
         public function inTransaction(): bool { return $this->snapshot!==null; }
         public function lastInsertId(?string $name = null): string|false { return (string)$this->lastId; }
         public function write(string $sql,array $params): void { $this->writeAttempts++; $this->committedWrites++; $this->lastSql=$sql; $this->lastParams=$params; }
@@ -125,6 +141,7 @@ function isPrivilegedUserRole(string $role):bool{return in_array($role,['directo
 PHP);
 file_put_contents($fixture.'/api/characters/traitUtils.php', <<<'PHP'
 <?php
+require_once __DIR__ . '/../shares/shareDraftBudget.php';
 function getTraitDefinition(PDO $pdo,int $id):?array{return $pdo->traits[$id]??null;}
 function traitHasFlag(array $trait,string $flag):bool{return !empty($trait[$flag]);}
 function isGroupedTrait(array $trait):bool{return !empty($trait['grouped']);}
@@ -135,6 +152,7 @@ function isCompanyShareTrait(array $trait):bool{return false;}
 function getCompanyShareBaseRank(array $trait):int{return (int)$trait['baseRank'];}
 function getCompanyShareDraftStep(array $trait):int{return 1;}
 PHP);
+file_put_contents($fixture.'/api/companies/companyUtils.php', '<?php');
 file_put_contents($fixture.'/api/characters/characterLanguageUtils.php', <<<'PHP'
 <?php
 function characterLanguageSchemaReady(PDO $pdo):bool{return $pdo->scenario!=='language_schema_missing';}
@@ -155,6 +173,11 @@ function runRoute(string $route,string $scenario,array|string $request):array{gl
 function expect(string $route,string $scenario,array|string $request,int $status,int $writes):array{$r=runRoute($route,$scenario,$request);check(($r['state']['status']??0)===$status,"$route/$scenario status; body={$r['body']} stderr={$r['err']}");check(($r['state']['writes']??-1)===$writes,"$route/$scenario writes; body={$r['body']}");check($r['exit']===0,"$route/$scenario exit: {$r['err']}");return $r;}
 
 try{
+    expect('updateTrait.php','success',['action'=>'add','idCharacter'=>1,'idTrait'=>105],200,2);
+    expect('updateTrait.php','capital_linked',['action'=>'rank_up','idCharacter'=>1,'idTrait'=>105],200,2);
+    expect('updateTrait.php','capital_linked',['action'=>'rank_down','idCharacter'=>1,'idTrait'=>105],409,0);
+    expect('updateTrait.php','capital_linked',['action'=>'remove','idCharacter'=>1,'idTrait'=>105],409,0);
+    expect('updateTrait.php','administrator',['action'=>'add','idCharacter'=>4,'idTrait'=>105],409,0);
     $r=expect('updateTrait.php','success',['action'=>'rank_up','idCharacter'=>1,'idTrait'=>101,'idCurrentTrait'=>0],200,1);check($r['json']===['status'=>'ok'],'trait success response');check(($r['state']['params']??[])===['rankValue'=>2,'id'=>41],'trait prepared parameters');
     $r=expect('updateTrait.php','success',['action'=>'change','idCharacter'=>1,'idTrait'=>103,'idCurrentTrait'=>104],200,1);check(($r['state']['params']??[])===['idTrait'=>103,'id'=>42],'trait change prepared parameters');
     expect('updateTrait.php','success',['action'=>'remove','idCharacter'=>1,'idTrait'=>101,'idCurrentTrait'=>0],200,1);

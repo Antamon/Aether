@@ -22,6 +22,12 @@ try {
     aetherRequireCsrfToken();
     if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
     $schemas = [
+        'draft_purchase' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idSnapshot' => ['type' => 'int', 'min' => 0],
+            'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
+        ],
         'foundation' => [
             'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
             'initialCompanyValue' => ['type' => 'decimal', 'required' => true, 'min' => '0.00', 'max' => '9999999999.99'],
@@ -62,7 +68,14 @@ try {
             'idOffer' => ['type' => 'int', 'required' => true, 'min' => 1],
             'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
             'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
-            'idEvent' => ['type' => 'int', 'min' => 1],
+            'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+        ],
+        'add_purchase' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
+            'unitPrice' => ['type' => 'decimal', 'required' => true, 'minExclusive' => '0.00', 'max' => '9999999999.99'],
         ],
         'market_search' => [
             'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
@@ -112,10 +125,12 @@ try {
     $input = aetherValidateInput(aetherReadJsonObject(), $schema);
     $key = aetherRequireIdempotencyKey();
     $response = match ($aetherShareAction) {
+        'draft_purchase' => aetherShareBuyDraft($pdo, $currentUser, $input, $key),
         'private_offer' => aetherShareCreatePrivateOffer($pdo, $currentUser, $input, $key),
         'holder_offer' => aetherShareCreateHolderOffer($pdo, $currentUser, $input, $key),
         'cancel_offer' => aetherShareCancelOffer($pdo, $currentUser, $input, $key),
         'buy_offer' => aetherShareBuyOffer($pdo, $currentUser, $input, $key),
+        'add_purchase' => aetherShareAddPurchase($pdo, $currentUser, $input, $key),
         'market_search' => aetherShareSearch($pdo, $currentUser, $input, $key),
         'share_discovery' => aetherShareShareDiscovery($pdo, $currentUser, $input, $key),
         'assessment_update' => aetherShareUpdateAssessment($pdo, $currentUser, $input, $key),

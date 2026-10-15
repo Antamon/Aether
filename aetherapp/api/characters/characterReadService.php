@@ -75,6 +75,25 @@ function aetherBuildCharacterReadModel(PDO $pdo, array $currentUser, array $char
         (string) ($character['class'] ?? ''),
         ['profession']
     );
+    if ($character['state'] !== 'draft') {
+        foreach ($character['traitGroups'] as &$group) {
+            $capitalOptions = array_values(array_filter($group['options'], 'aetherIsShareCapitalTrait'));
+            if (!$capitalOptions || array_filter($group['linkedTraits'], 'aetherIsShareCapitalTrait')) continue;
+            $stmt = $pdo->prepare('SELECT COALESCE(s.shareLevel, 0) AS shareLevel,
+                EXISTS (SELECT 1 FROM tblCompanyShareHolding h WHERE h.idCharacter = c.id AND h.shareCount > 0) AS hasShares
+                FROM tblCharacter c LEFT JOIN tblCharacterShareStatus s ON s.idCharacter = c.id
+                WHERE c.id = :idCharacter');
+            $stmt->execute(['idCharacter' => $characterId]);
+            $shareStatus = $stmt->fetch(PDO::FETCH_ASSOC);
+            $level = (int) ($shareStatus['shareLevel'] ?? 0);
+            if ($level > 0 || !empty($shareStatus['hasShares'])) $group['linkedTraits'][] = array_merge($capitalOptions[0], [
+                'name' => 'Aandeelhouder',
+                'idTrait' => $capitalOptions[0]['id'], 'rank' => $level, 'baseRank' => $level,
+                'staffRequirements' => max(0, $level - 2),
+            ]);
+        }
+        unset($group);
+    }
 
     $pointSummary = getCharacterPointSummary($pdo, $character);
     $character['experience'] = $pointSummary['experienceBudget'];

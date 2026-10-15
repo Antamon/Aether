@@ -95,19 +95,20 @@ const aetherShareMarketClient = (() => {
     }
 
     function searchSelectedEvent() {
-        if (characterId <= 0 || eventId <= 0) return Promise.resolve(null);
-        const key = `${characterId}:${eventId}`;
+        const purchaseEventId = Number(data?.currentEvent?.id || eventId);
+        if (characterId <= 0 || purchaseEventId <= 0 || data?.canTradeAtEvent === false) return Promise.resolve(null);
+        const key = `${characterId}:${purchaseEventId}`;
         if (searchPromise && searchPromiseKey === key) return searchPromise;
         const requestedId = characterId;
-        const requestedEventId = eventId;
+        const requestedEventId = purchaseEventId;
         const task = apiFetchIdempotentJson("api/shares/searchShareMarket.php", {
             method: "POST", body: { idCharacter: requestedId, idEvent: requestedEventId },
         }).then(async (result) => {
             searchError = false;
-            if (requestedId === characterId && requestedEventId === eventId) await refresh(true);
+            if (requestedId === characterId && requestedEventId === Number(data?.currentEvent?.id || eventId)) await refresh(true);
             return result;
         }).catch((error) => {
-            if (requestedId === characterId && requestedEventId === eventId) {
+            if (requestedId === characterId && requestedEventId === Number(data?.currentEvent?.id || eventId)) {
                 searchError = true;
                 render();
             }
@@ -146,12 +147,12 @@ const aetherShareMarketClient = (() => {
     }
 
     function attachEconomy(container, character, selectedEventId = 0) {
-        if (character?.state !== "active" || !canTrade(character)) return;
+        if (!container || character?.state !== "active" || !canTrade(character)) return;
         const host = document.createElement("section");
-        host.className = "data-card share-market-card mt-3";
+        host.className = "share-market-offers mt-4";
         host.dataset.shareMarketHost = "economy";
         container.appendChild(host);
-        begin(character.id, selectedEventId);
+        begin(character.id, userHasPrivilegedRole(getCurrentUser()) ? selectedEventId : 0);
         render();
     }
 
@@ -274,7 +275,7 @@ const aetherShareMarketClient = (() => {
                 + `${Number(eventSearch.discoveredCompanies || 0)} ${tr("discovered")}.`;
             host.appendChild(progress);
         }
-        if (event) {
+        if (event && data?.canTradeAtEvent !== false) {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "btn btn-outline-primary align-self-start mb-3";
@@ -319,7 +320,7 @@ const aetherShareMarketClient = (() => {
             host.appendChild(list);
         }
         for (const find of finds) {
-            if (!find.idOffer || find.sharedRecipientId || find.statusCode !== "open" || !recipients?.length) continue;
+            if (data?.canTradeAtEvent === false || !find.idOffer || find.sharedRecipientId || find.statusCode !== "open" || !recipients?.length) continue;
             const row = document.createElement("div");
             row.className = "d-flex flex-wrap align-items-center gap-2 mb-2";
             const name = document.createElement("span");
@@ -349,7 +350,7 @@ const aetherShareMarketClient = (() => {
                 try {
                     await apiFetchIdempotentJson("api/shares/shareSearchDiscovery.php", {
                         method: "POST", body: { idOffer: Number(find.idOffer), idRecipientCharacter,
-                            idEvent: eventId },
+                            idEvent: Number(event.id) },
                     });
                     await refresh(true);
                 } catch (error) {
@@ -369,6 +370,35 @@ const aetherShareMarketClient = (() => {
         const title = document.createElement("h3");
         title.textContent = tr("offers");
         host.appendChild(title);
+        const event = data?.currentEvent;
+        if (data?.canEditAssessments) {
+            const label = document.createElement("label");
+            label.className = "form-label d-block";
+            label.textContent = "Event";
+            const select = document.createElement("select");
+            select.className = "form-select mb-3";
+            select.setAttribute("aria-label", "Event voor aandelenaankoop");
+            for (const item of data?.events || []) {
+                const option = document.createElement("option");
+                option.value = String(item.id);
+                option.textContent = `${item.title} (${item.dateStart})`;
+                select.appendChild(option);
+            }
+            select.value = event ? String(event.id) : "";
+            select.addEventListener("change", () => begin(characterId, Number(select.value)));
+            label.appendChild(select);
+            host.appendChild(label);
+        } else {
+            const caption = document.createElement("p");
+            caption.textContent = event ? `${event.title} (${event.dateStart})` : tr("noEvent");
+            host.appendChild(caption);
+        }
+        if (!event || data?.canTradeAtEvent === false) {
+            const empty = document.createElement("p");
+            empty.textContent = tr("noEvent");
+            host.appendChild(empty);
+            return;
+        }
         const offers = data?.offers || [];
         if (!offers.length) {
             const empty = document.createElement("p");
@@ -392,10 +422,7 @@ const aetherShareMarketClient = (() => {
             quantity.className = "form-control";
             quantity.style.width = "6rem";
             quantity.setAttribute("aria-label", tr("shares"));
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "btn btn-success";
-            button.textContent = tr("buy");
+            const button = AetherActionButtons.button({ icon: "fa-cart-shopping", label: tr("buy") });
             button.disabled = Number(offer.availableShareCount) < 1;
             button.addEventListener("click", async () => {
                 const count = Number(quantity.value);
@@ -404,7 +431,7 @@ const aetherShareMarketClient = (() => {
                 try {
                     await apiFetchIdempotentJson("api/shares/buyOffer.php", {
                         method: "POST", body: { idOffer: Number(offer.id), idCharacter: characterId,
-                            shareCount: count, ...(offer.sourceCode === "search" ? { idEvent: eventId } : {}) },
+                            shareCount: count, idEvent: Number(event.id) },
                     });
                     await refresh(true);
                     if (typeof getCharacter === "function") await getCharacter(characterId, null, "economy");
@@ -415,7 +442,10 @@ const aetherShareMarketClient = (() => {
                     button.disabled = false;
                 }
             });
-            row.append(text, quantity, button);
+            const controls = document.createElement("div");
+            controls.className = "input-group w-auto";
+            controls.append(quantity, AetherActionButtons.group([button]));
+            row.append(text, controls);
             host.appendChild(row);
         }
     }

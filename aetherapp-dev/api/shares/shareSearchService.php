@@ -60,6 +60,9 @@ function aetherShareSearch(PDO $pdo, array $user, array $input, string $key): ar
                 $event = aetherShareSelectedMarketEvent($pdo, (int) ($input['idEvent'] ?? 0));
                 if (!$event) throw new AetherShareException(404, 'Event niet gevonden.', 'shares.no_market_event');
                 $eventId = (int) $event['id'];
+                if (!aetherShareCanUseMarketEvent($user, $eventId, aetherShareDefaultMarketEvent($pdo))) {
+                    throw new AetherShareException(403, 'Dit event is niet beschikbaar voor aandelenzoekacties.', 'shares.event_closed');
+                }
                 $companyIds = aetherShareMarketCompanyIds($pdo, $eventId, $characterId);
                 $companies = [];
                 foreach ($companyIds as $id) $companies += aetherSharesLockCompany($pdo, $id);
@@ -123,7 +126,7 @@ function aetherShareSearch(PDO $pdo, array $user, array $input, string $key): ar
                         $stmt->execute(['idOffer' => $offerId, 'idCharacter' => $characterId]);
                     }
                 }
-                aetherShareRequireMarketEvent($pdo, $eventId);
+                aetherShareRequireMarketEvent($pdo, $eventId, $user);
                 return ['idEvent' => $eventId, 'assessmentsAdded' => $added];
             },
             static function () use ($pdo, $user, $characterId): void {
@@ -172,7 +175,7 @@ function aetherShareShareDiscovery(PDO $pdo, array $user, array $input, string $
             if ((int) ($input['idEvent'] ?? 0) !== (int) $offer['idEvent']) {
                 throw new AetherShareException(409, 'Deze vondst hoort bij een ander event.');
             }
-            aetherShareRequireMarketEvent($pdo, (int) $offer['idEvent']);
+            aetherShareRequireMarketEvent($pdo, (int) $offer['idEvent'], $user);
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM tblShareOfferRecipient
                                    WHERE idOffer = :idOffer AND recipientKind = 'shared'");
             $stmt->execute(['idOffer' => $offerId]);
@@ -267,6 +270,7 @@ function aetherShareViewSearch(PDO $pdo, array $user, int $characterId, int $sel
         unset($assessment);
     }
     return ['currentEvent' => $current, 'events' => $events,
+            'canTradeAtEvent' => aetherShareCanUseMarketEvent($user, (int) ($current['id'] ?? 0), aetherShareDefaultMarketEvent($pdo)),
             'discoveries' => $discoveries, 'assessments' => $assessments,
             'canEditAssessments' => aetherCanManageShareCompany($user),
             'offers' => aetherShareViewOffers($pdo, $user, $characterId, (int) ($current['id'] ?? 0))];

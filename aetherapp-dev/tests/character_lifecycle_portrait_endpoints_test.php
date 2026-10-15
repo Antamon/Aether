@@ -42,7 +42,12 @@ if (defined('AETHER_LIFECYCLE_PORTRAIT_TEST_BOOTSTRAP')) {
             if (str_contains($sql, 'FROM tblCharacter')) return $this->pdo->characters[(int) ($this->params['id'] ?? 0)] ?? false;
             return false;
         }
-        public function fetchAll(int $mode = PDO::FETCH_DEFAULT, mixed ...$args): array { return []; }
+        public function fetchAll(int $mode = PDO::FETCH_DEFAULT, mixed ...$args): array {
+            if ($this->pdo->scenario === 'cached_response' && str_contains($this->sql(), 'FROM tblApiIdempotency')) {
+                return [['id' => 99, 'responseJson' => '{"snapshot":{"idCharacter":1,"name":"Eigen Speler"}}']];
+            }
+            return [];
+        }
         public function fetchColumn(int $column = 0): mixed { $row=$this->fetch(); return $row===false?false:array_values($row)[$column]??false; }
         public function rowCount(): int { return $this->rowCountValue; }
     }
@@ -78,12 +83,18 @@ if (defined('AETHER_LIFECYCLE_PORTRAIT_TEST_BOOTSTRAP')) {
 
     $scenario=(string)($argv[1]??'success');
     $pdo=new LifecyclePortraitPdo($scenario);
-    $uid=match($scenario){'unauthenticated'=>999,'director'=>20,'administrator'=>30,default=>10};
+    $uid=match($scenario){'unauthenticated'=>999,'director','director_active'=>20,'administrator'=>30,default=>10};
     session_start();
     $_SESSION=['user'=>['id'=>$uid,'role'=>$scenario==='forged_role'?'administrator':'participant'],'aetherCsrfToken'=>'expected-token'];
     if($scenario!=='missing_csrf')$_SERVER['HTTP_X_CSRF_TOKEN']=$scenario==='invalid_csrf'?'bad-token':'expected-token';
 
     $route=basename((string)($_SERVER['SCRIPT_FILENAME']??''));
+    if ($route === 'deleteCharacter.php') {
+        $pdo->characters[1]['state'] = match ($scenario) {
+            'active_character', 'director_active' => 'active', 'inactive_character' => 'inactive',
+            'deceased_character' => 'deceased', default => 'draft',
+        };
+    }
     $createdUpload=null;
     if($route==='uploadCharacterPortrait.php'){
         $_POST=['id'=>in_array($scenario,['foreign_character','forged_role'],true)?'2':($scenario==='own_extra'?'3':'1')];
@@ -141,7 +152,7 @@ file_put_contents($fixture.'/db.php',"<?php\ndefine('AETHER_LIFECYCLE_PORTRAIT_T
 $failures=[];
 function lifecycleCheck(bool $condition,string $message):void{global$failures;if(!$condition)$failures[]=$message;}
 function resetPortraitFixture(string $fixture,bool $withOwn=true):void{$dir=$fixture.'/img/portret';foreach(new DirectoryIterator($dir)as$i){if($i->isDot()||$i->getFilename()==='.quarantine')continue;if($i->isFile()||$i->isLink())unlink($i->getPathname());}$q=$dir.'/.quarantine';foreach(new DirectoryIterator($q)as$i){if($i->isDot()||$i->getFilename()==='.htaccess')continue;if($i->isFile())unlink($i->getPathname());}if($withOwn)file_put_contents($dir.'/1.png','old portrait');file_put_contents($dir.'/2.png','other portrait');file_put_contents($dir.'/999.png','unrelated portrait');file_put_contents($dir.'/default.png','default image');file_put_contents($dir.'/1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png.php','dangerous unrelated');}
-function runLifecycleRoute(string $fixture,string $route,string $scenario,array|string $request=[],bool $withOwn=true):array{resetPortraitFixture($fixture,$withOwn);$p=proc_open([PHP_BINARY,$fixture.'/api/characters/'.$route,$scenario],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);if(!is_resource($p))throw new RuntimeException('route start failed');fwrite($pipes[0],is_string($request)?$request:json_encode($request));fclose($pipes[0]);$body=stream_get_contents($pipes[1]);fclose($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[2]);$exit=proc_close($p);preg_match('/__LIFECYCLE_STATE__:(\{.*\})/',$err,$m);return['body'=>$body,'json'=>json_decode($body,true),'state'=>isset($m[1])?json_decode($m[1],true):null,'exit'=>$exit,'err'=>$err];}
+function runLifecycleRoute(string $fixture,string $route,string $scenario,array|string $request=[],bool $withOwn=true):array{resetPortraitFixture($fixture,$withOwn);$p=proc_open([PHP_BINARY,$fixture.'/api/characters/'.$route,$scenario],[0=>['pipe','r'],1=>['file',$fixture.'/route.out','w'],2=>['file',$fixture.'/route.err','w']],$pipes);if(!is_resource($p))throw new RuntimeException('route start failed');fwrite($pipes[0],is_string($request)?$request:json_encode($request));fclose($pipes[0]);$exit=proc_close($p);$body=(string)file_get_contents($fixture.'/route.out');$err=(string)file_get_contents($fixture.'/route.err');preg_match('/__LIFECYCLE_STATE__:(\{.*\})/',$err,$m);return['body'=>$body,'json'=>json_decode($body,true),'state'=>isset($m[1])?json_decode($m[1],true):null,'exit'=>$exit,'err'=>$err];}
 function expectLifecycle(string $fixture,string $route,string $scenario,array|string $request,int $status,int $writes=0,bool $withOwn=true):array{$r=runLifecycleRoute($fixture,$route,$scenario,$request,$withOwn);lifecycleCheck(($r['state']['status']??0)===$status,"$route/$scenario status; body={$r['body']} stderr={$r['err']}");lifecycleCheck(($r['state']['writes']??-1)===$writes,"$route/$scenario writes");lifecycleCheck($r['exit']===0,"$route/$scenario exit");if($status>=400&&$withOwn){foreach(['1.png','2.png','999.png','default.png','1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png.php']as$file){lifecycleCheck(in_array($file,$r['state']['files']??[],true),"$route/$scenario preserves $file on failure");}}return$r;}
 
 try{
@@ -179,10 +190,26 @@ try{
     $r=expectLifecycle($fixture,'deleteCharacterPortrait.php','portrait_rename_error',['id'=>1],500);lifecycleCheck(in_array('1.png',$r['state']['files'],true),'failed staging restores portrait');lifecycleCheck(!str_contains($r['body'],'quarantaine'),'delete generic 500');
     $r=expectLifecycle($fixture,'deleteCharacterPortrait.php','cleanup_error',['id'=>1],200);lifecycleCheck(!in_array('1.png',$r['state']['files'],true)&&count(array_filter($r['state']['files'],static fn(string$f):bool=>str_starts_with($f,'.quarantine/')))>=2,'cleanup failure leaves only inaccessible quarantine data');
 
-    $r=expectLifecycle($fixture,'deleteCharacter.php','success',['id'=>1],200,12);lifecycleCheck($r['json']===['success'=>true,'id'=>1,'name'=>'Eigen Speler'],'character delete response');lifecycleCheck(!isset($r['state']['characters']['1'])&&isset($r['state']['characters']['2']),'only selected character deleted');lifecycleCheck(($r['state']['characters']['2']['securitiesManagerType']??null)==='self'&&array_key_exists('securitiesManagerCharacterId',$r['state']['characters']['2'])&&$r['state']['characters']['2']['securitiesManagerCharacterId']===null,'live securities-manager reference reset');lifecycleCheck(!in_array('1.png',$r['state']['files'],true)&&in_array('2.png',$r['state']['files'],true)&&in_array('999.png',$r['state']['files'],true),'character portrait cleanup scope');lifecycleCheck(count($r['state']['deleteOrder'])===12,'all manual, reference and character mutations executed');
-    $expectedMutations=['tblCompanySnapshotPayout','tblCharacterBankTransaction','tblCharacterSecuritiesTransaction','tblCharacterEconomySnapshot','tblCompanyPersonnelSkillSpecialisation','tblCompanyPersonnelSkill cps','tblCompanyPersonnel WHERE','tblLinkCharacterTraitCompany','tblLinkCharacterSkill','tblCharacterLanguage','UPDATE tblCharacter SET securitiesManagerType','DELETE FROM tblCharacter WHERE'];foreach($expectedMutations as$i=>$fragment){lifecycleCheck(str_contains((string)($r['state']['deleteOrder'][$i]??''),$fragment),"character delete mutation order $fragment");lifecycleCheck(in_array(1,array_values($r['state']['writeParams'][$i]??[]),true),"character delete prepared id $fragment");}
-    expectLifecycle($fixture,'deleteCharacter.php','director',['id'=>2],200,12);
-    expectLifecycle($fixture,'deleteCharacter.php','administrator',['id'=>2],200,12);
+    $r=expectLifecycle($fixture,'deleteCharacter.php','success',['id'=>1],200,36);lifecycleCheck($r['json']===['success'=>true,'id'=>1,'name'=>'Eigen Speler'],'character delete response');lifecycleCheck(!isset($r['state']['characters']['1'])&&isset($r['state']['characters']['2']),'only selected character deleted');lifecycleCheck(($r['state']['characters']['2']['securitiesManagerType']??null)==='self'&&array_key_exists('securitiesManagerCharacterId',$r['state']['characters']['2'])&&$r['state']['characters']['2']['securitiesManagerCharacterId']===null,'live securities-manager reference reset');lifecycleCheck(!in_array('1.png',$r['state']['files'],true)&&in_array('2.png',$r['state']['files'],true)&&in_array('999.png',$r['state']['files'],true),'character portrait cleanup scope');lifecycleCheck(count($r['state']['deleteOrder'])===36,'all manual, reference and character mutations executed');
+    $expectedMutations=['tblCompanySnapshotPayout','tblCharacterBankTransaction','tblCharacterSecuritiesTransaction','tblCharacterEconomySnapshot','tblCompanyPersonnelSkillSpecialisation','tblCompanyPersonnelSkill cps','tblCompanyPersonnel WHERE','tblLinkCharacterTraitCompany','tblLinkCharacterSkill','tblCharacterLanguage','UPDATE tblCharacter SET securitiesManagerType','DELETE FROM tblCharacter WHERE'];$previous = -1; foreach($expectedMutations as$fragment){$index = null; foreach($r['state']['deleteOrder'] as$i=>$sql){if($i > $previous && str_contains($sql,$fragment)){$index=$i;break;}} lifecycleCheck($index !== null,"character delete mutation order $fragment"); if($index !== null){lifecycleCheck(in_array(1,array_values($r['state']['writeParams'][$index]??[]),true),"character delete prepared id $fragment");$previous=$index;}}
+    expectLifecycle($fixture,'deleteCharacter.php','director',['id'=>2],200,36);
+    expectLifecycle($fixture,'deleteCharacter.php','administrator',['id'=>2],200,36);
+    expectLifecycle($fixture,'deleteCharacter.php','active_character',['id'=>1],409);
+    expectLifecycle($fixture,'deleteCharacter.php','director_active',['id'=>1],409);
+    expectLifecycle($fixture,'deleteCharacter.php','inactive_character',['id'=>1],200,36);
+    expectLifecycle($fixture,'deleteCharacter.php','deceased_character',['id'=>1],200,36);
+    $cached=expectLifecycle($fixture,'deleteCharacter.php','cached_response',['id'=>1],200,37);
+    lifecycleCheck(str_contains(implode("\n", $cached['state']['deleteOrder']), 'UPDATE tblApiIdempotency SET responseJson'), 'personal cached responses scrubbed');
+    lifecycleCheck(!str_contains(implode("\n", $cached['state']['deleteOrder']), 'DELETE FROM tblApiIdempotency'), 'financial request keys remain protected against replay');
+    foreach (['tblCompanyShareTransaction', 'tblShareOfferRecipient', 'tblShareOffer o',
+        'tblShareSearchAssessment', 'tblShareSearch', 'tblCompanyShareHolding',
+        'tblCharacterShareStatus', 'tblCharacterShareDraftBudget', 'tblLegacyShareMigrationSource',
+        'tblLegacyShareOrphanArchive', 'tblCharacterDiary', 'tblCharacterDiaryVisibility',
+        'tblCharacterSection', 'tblCharacterTie', 'tblCharacterSpecialisation',
+        'tblCharacterEventGossipUnlock', 'tblCharacterEventGossipAttempt',
+        'tblCharacterSkillActionUse', 'tblCharacterSkillActionState', 'tblLinkCharacterTrait'] as $table) {
+        lifecycleCheck(str_contains(implode("\n", $r['state']['deleteOrder']), $table), "cleanup includes $table");
+    }
     expectLifecycle($fixture,'deleteCharacter.php','foreign_character',['id'=>2],403);
     expectLifecycle($fixture,'deleteCharacter.php','forged_role',['id'=>2],403);
     expectLifecycle($fixture,'deleteCharacter.php','unknown_character',['id'=>999],404);
@@ -195,7 +222,7 @@ try{
     expectLifecycle($fixture,'deleteCharacter.php','success',['id'=>1,'path'=>'../../default.png'],422);
     $r=expectLifecycle($fixture,'deleteCharacter.php','database_mid_error',['id'=>1],500);lifecycleCheck(($r['state']['rollbacks']??0)===1&&($r['state']['writes']??-1)===0&&isset($r['state']['characters']['1']),'database rollback restores character');lifecycleCheck(in_array('1.png',$r['state']['files'],true),'database rollback restores portrait');lifecycleCheck(!str_contains($r['body'],'SQLSTATE')&&!str_contains($r['body'],'secret_company'),'character generic 500');
     $r=expectLifecycle($fixture,'deleteCharacter.php','lifecycle_rename_error',['id'=>1],500);lifecycleCheck(($r['state']['attempts']??-1)===0&&in_array('1.png',$r['state']['files'],true),'filesystem staging failure precedes DB writes');
-    $r=expectLifecycle($fixture,'deleteCharacter.php','cleanup_error',['id'=>1],200,12);lifecycleCheck(!isset($r['state']['characters']['1'])&&!in_array('1.png',$r['state']['files'],true),'post-commit cleanup failure keeps deletion consistent');
+    $r=expectLifecycle($fixture,'deleteCharacter.php','cleanup_error',['id'=>1],200,36);lifecycleCheck(!isset($r['state']['characters']['1'])&&!in_array('1.png',$r['state']['files'],true),'post-commit cleanup failure keeps deletion consistent');
 
     foreach(['uploadCharacterPortrait.php','deleteCharacterPortrait.php','deleteCharacter.php']as$route){$source=file_get_contents($root.'/api/characters/'.$route);lifecycleCheck(substr_count((string)$source,"\n")<60,"$route thin endpoint");lifecycleCheck(!str_contains((string)$source,'session_start()'),"$route no duplicate session");lifecycleCheck(str_contains((string)$source,'aetherValidateInput('),"$route schema validation");}
     $front=file_get_contents($root.'/js/characterFunctions.js');$api=file_get_contents($root.'/js/apiCharacter.js');lifecycleCheck(str_contains((string)$front,'new FormData()')&&str_contains((string)$front,'formData.append("portrait", file)')&&str_contains((string)$front,'uploadCharacterPortrait.php'),'multipart frontend contract');lifecycleCheck(str_contains((string)$api,'deleteCharacter.php')&&str_contains((string)$api,'body: { id }'),'delete frontend contract');

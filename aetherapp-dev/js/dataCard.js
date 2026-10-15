@@ -12,22 +12,17 @@ const aetherDataCard = (() => {
     function reset() { activeKey = null; }
     function hasActive() { return activeKey !== null; }
 
-    function button(label, className, onClick) {
-        const element = document.createElement("button");
-        element.type = "button";
-        element.className = className;
-        element.textContent = label;
-        element.addEventListener("click", onClick);
-        return element;
+    function button(label, icon, onClick) {
+        return AetherActionButtons.button({ label, icon, onClick });
     }
 
     function controls(header, { key, canEdit = false, onEdit, onSave, onCancel, saveLabel = "Bewaren" }) {
         const actions = document.createElement("div");
-        actions.className = "data-card-actions";
+        actions.className = "data-card-actions button-group";
         if (!canEdit) return actions;
         if (isEditing(key)) {
-            const cancel = button("Annuleren", "btn btn-outline-secondary btn-sm", onCancel);
-            const save = button(saveLabel, "btn btn-primary btn-sm", async () => {
+            const cancel = button("Cancel", "fa-xmark", onCancel);
+            const save = button(saveLabel === "Bewaren" ? "Save" : saveLabel, "fa-check", async () => {
                 save.disabled = true;
                 cancel.disabled = true;
                 try { await onSave(save); } finally {
@@ -39,7 +34,7 @@ const aetherDataCard = (() => {
             });
             actions.append(save, cancel);
         } else {
-            const edit = button("✎", "btn btn-outline-secondary btn-sm data-card-edit-button", onEdit);
+            const edit = button("Edit", "fa-pen-nib", onEdit);
             edit.setAttribute("aria-label", "Bewerken");
             edit.title = "Bewerken";
             edit.disabled = activeKey !== null;

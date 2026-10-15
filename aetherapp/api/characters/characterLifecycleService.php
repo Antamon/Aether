@@ -24,6 +24,9 @@ function aetherDeleteCharacter(PDO $pdo, array $currentUser, int $characterId): 
         if (!aetherCanEditCharacter($currentUser, $character)) {
             throw new AetherCharacterLifecycleException(403, 'Geen toestemming om dit personage te verwijderen.');
         }
+        if (!in_array((string) ($character['state'] ?? ''), ['draft', 'inactive', 'deceased'], true)) {
+            throw new AetherCharacterLifecycleException(409, 'Alleen personages in Draft, Inactive of Deceased kunnen verwijderd worden.');
+        }
         $stagedPortraits = aetherStageCharacterPortraitPaths(
             aetherGetCharacterPortraitPaths($characterId),
             $characterId

@@ -19,7 +19,7 @@ function aetherFetchCharacterSkillLink(PDO $pdo, int $characterId, int $skillId)
 function aetherFetchCharacterSkillPointRecord(PDO $pdo, int $characterId): ?array
 {
     $stmt = $pdo->prepare(
-        'SELECT id, type, idUser, experienceToTrait, physicalHealth, mentalHealth
+        'SELECT id, type, state, idUser, experienceToTrait, physicalHealth, mentalHealth
            FROM tblCharacter
           WHERE id = ?'
     );

@@ -5,6 +5,7 @@ require_once __DIR__ . '/shareAccess.php';
 require_once __DIR__ . '/shareRules.php';
 require_once __DIR__ . '/shareMarketEvent.php';
 require_once __DIR__ . '/shareRepository.php';
+require_once __DIR__ . '/shareDraftService.php';
 require_once __DIR__ . '/../characters/characterFinanceRepository.php';
 require_once __DIR__ . '/../companies/companyLeadershipRules.php';
 require_once __DIR__ . '/../companies/companyUtils.php';
@@ -189,6 +190,7 @@ function aetherShareViewOffers(PDO $pdo, array $user, int $characterId, int $sel
                             LEFT JOIN tblCompanyAnonymousShares a ON a.idCompany = c.id
                            WHERE r.idCharacter = :idCharacter AND o.statusCode = 'open'
                              AND (o.expiresAt IS NULL OR o.expiresAt > NOW())
+                             AND (o.idEvent IS NULL OR o.idEvent = :purchaseEvent)
                              AND (o.sourceCode <> 'search' OR
                                   (o.idEvent = :idEvent AND c.isShareListed = 1
                                    AND snapshotQuote.idCompany = c.id
@@ -196,6 +198,7 @@ function aetherShareViewOffers(PDO $pdo, array $user, int $characterId, int $sel
                                    AND snapshotQuote.shareMarketPrice > 0))
                            ORDER BY o.id DESC");
     $stmt->execute(['idCharacter' => $characterId,
+                    'purchaseEvent' => (int) ($currentEvent['id'] ?? 0),
                     'idEvent' => (int) ($currentEvent['id'] ?? 0)]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -243,7 +246,40 @@ function aetherShareViewPortfolio(PDO $pdo, array $user, int $characterId): arra
         'shareLevel' => 0, 'usedStatusPoints' => 0, 'personnelRequirement' => 0,
         'intrinsicPortfolioValue' => '0.00', 'valuationVersion' => 0,
     ];
-    return ['holdings' => $holdings, 'status' => $status];
+    $stmt = $pdo->prepare("SELECT t.id, t.idCompany, c.companyName, t.idEvent,
+                                 e.title AS eventTitle, e.dateStart AS eventDate,
+                                 t.shareCount, t.unitPrice, t.totalAmount, t.createdAt
+                            FROM tblCompanyShareTransaction t
+                            JOIN tblCompany c ON c.id = t.idCompany
+                            LEFT JOIN tblEvent e ON e.id = t.idEvent
+                           WHERE t.idCharacter = :idCharacter
+                             AND t.operationCode IN ('buy_free', 'buy_from_holder')
+                           ORDER BY e.dateStart DESC, t.id DESC");
+    $stmt->execute(['idCharacter' => $characterId]);
+    $result = ['holdings' => $holdings, 'status' => $status,
+               'purchases' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+               'canManagePurchases' => aetherCanManageShareCompany($user)];
+    if ($character['state'] === 'draft') {
+        $result['canManagePurchases'] = false;
+        $result['draftBudget'] = aetherShareDraftBudget($pdo, $characterId);
+        $result['canBuyDraftShares'] = aetherCanTradeForCharacter($user, $character);
+        $result['canChooseDraftSnapshot'] = aetherCanManageShareCompany($user);
+        $quotes = aetherShareDraftQuotes($pdo);
+        $result['draftQuotes'] = array_values(array_filter($quotes, static fn(array $quote): bool =>
+            ($result['canChooseDraftSnapshot'] || $quote['isCurrent']) && $quote['unitPrice'] !== null && aetherDecimalCompare((string) $quote['unitPrice'], '0.00') > 0));
+        $budget = $result['draftBudget'];
+        $result['status']['shareLevel'] = $result['status']['usedStatusPoints'] = $budget && $budget['closedAt'] === null ? (int) $budget['purchasedLevel'] : 0;
+        $result['status']['personnelRequirement'] = max(0, $result['status']['shareLevel'] - 2);
+    }
+    if ($result['canManagePurchases']) {
+        $result['purchaseEvents'] = $pdo->query('SELECT id, title, dateStart, dateEnd FROM tblEvent
+                                                ORDER BY dateStart DESC, id DESC')->fetchAll(PDO::FETCH_ASSOC);
+        $result['defaultPurchaseEventId'] = (int) (aetherShareChooseMarketEvent($result['purchaseEvents'])['id'] ?? 0);
+        $result['purchaseCompanies'] = $pdo->query('SELECT id, companyName FROM tblCompany
+            WHERE initialShareCount IS NOT NULL AND issuedShareCount > 0
+            ORDER BY companyName, id')->fetchAll(PDO::FETCH_ASSOC);
+    }
+    return $result;
 }
 
 function aetherShareCreatePrivateOffer(PDO $pdo, array $user, array $input, string $key): array
@@ -430,11 +466,16 @@ function aetherShareBuyOffer(PDO $pdo, array $user, array $input, string $key): 
             if (!in_array($offer['sourceCode'], ['private_board', 'holder_sale', 'search'], true)) {
                 throw new AetherShareException(409, 'Dit aanbodtype is niet koopbaar.');
             }
+            $purchaseEventId = (int) ($input['idEvent'] ?? 0);
+            if ($purchaseEventId <= 0 || ((int) ($offer['idEvent'] ?? 0) > 0
+                && $purchaseEventId !== (int) $offer['idEvent'])) {
+                throw new AetherShareException(409, 'Kies het event dat bij dit aanbod hoort.');
+            }
+            aetherShareRequireMarketEvent($pdo, $purchaseEventId, $user);
             if ($offer['sourceCode'] === 'search') {
                 if ((int) ($input['idEvent'] ?? 0) !== (int) $offer['idEvent']) {
                     throw new AetherShareException(409, 'Dit aanbod hoort bij een ander event.');
                 }
-                aetherShareRequireMarketEvent($pdo, (int) $offer['idEvent']);
                 if ((int) $company['isShareListed'] !== 1) {
                     throw new AetherShareException(409, 'Het bedrijf is niet meer beursgenoteerd.');
                 }
@@ -497,7 +538,7 @@ function aetherShareBuyOffer(PDO $pdo, array $user, array $input, string $key): 
             $transactionId = aetherShareInsertTransaction($pdo, [
                 'idCompany' => $companyId, 'idCharacter' => $buyerId,
                 'idCounterpartyCharacter' => $offer['sourceCode'] === 'holder_sale' ? $sellerId : null,
-                'idOffer' => $offerId, 'idEvent' => $offer['idEvent'], 'actorUserId' => (int) $user['id'],
+                'idOffer' => $offerId, 'idEvent' => $purchaseEventId, 'actorUserId' => (int) $user['id'],
                 'operationCode' => $offer['sourceCode'] === 'holder_sale' ? 'buy_from_holder' : 'buy_free',
                 'shareCount' => $quantity,
                 'unitPrice' => $offer['unitPrice'], 'totalAmount' => $total,
@@ -510,6 +551,7 @@ function aetherShareBuyOffer(PDO $pdo, array $user, array $input, string $key): 
             }
             aetherShareRevalue($pdo, $affected);
             return ['transactionId' => $transactionId, 'idOffer' => $offerId,
+                    'idEvent' => $purchaseEventId,
                     'shareCount' => $quantity, 'totalAmount' => $total,
                     'companyValue' => $after,
                     'freeShares' => $stock['free'] - ($offer['sourceCode'] !== 'holder_sale' ? $quantity : 0)];
@@ -522,6 +564,64 @@ function aetherShareBuyOffer(PDO $pdo, array $user, array $input, string $key): 
             }
             if (!aetherShareOfferRecipient($pdo, (int) $input['idOffer'], (int) $input['idCharacter'])) {
                 throw new AetherShareException(403, 'Dit aanbod is niet voor dit personage.');
+            }
+        });
+}
+
+/** Record a purchase on behalf of a character, including a historical event. */
+function aetherShareAddPurchase(PDO $pdo, array $user, array $input, string $key): array
+{
+    aetherShareRequireManager($user);
+    return aetherShareMutation($pdo, $user, 'purchase.add', $key, $input,
+        static function (array $companies) use ($pdo, $user, $input, $key): array {
+            aetherShareRequireManager($user);
+            $companyId = (int) $input['idCompany'];
+            $buyerId = (int) $input['idCharacter'];
+            $eventId = (int) $input['idEvent'];
+            $quantity = (int) $input['shareCount'];
+            $company = aetherShareRequireCompany($companies, $companyId);
+            $affected = array_values(array_unique([...aetherShareHolderIds($pdo, $companyId), $buyerId]));
+            $characters = aetherFinanceLockCharacters($pdo, $affected);
+            // Historical purchases may concern a character that is no longer active.
+            $buyer = aetherShareRequireCharacter($characters, $buyerId, $user, false);
+            if ($buyer['state'] === 'draft') throw new AetherShareException(409, 'Gebruik het Draft-aandelenkapitaal om aandelen te kopen.');
+            aetherShareRequireMarketEvent($pdo, $eventId, $user);
+            $stock = aetherShareStock($pdo, $companyId, (int) $company['issuedShareCount']);
+            if ($quantity > $stock['free']) throw new AetherShareException(409, 'Onvoldoende vrije aandelen.');
+            $total = aetherSharePurchaseTotal((string) $input['unitPrice'], $quantity);
+            if (aetherDecimalCompare((string) ($buyer['bankaccount'] ?? '0.00'), $total) < 0) {
+                throw new AetherShareException(409, 'Onvoldoende saldo op de bankrekening.');
+            }
+            $before = aetherNormalizeDecimal((string) $company['companyValue']);
+            $after = aetherDecimalAdd($before, $total);
+            if (aetherDecimalCompare($after, '9999999999.99') > 0) {
+                throw new AetherShareException(409, 'De bedrijfswaarde overschrijdt het toegestane bereik.');
+            }
+            aetherFinanceAdjustBankBalance($pdo, $buyerId, '-' . $total);
+            aetherShareAddHolding($pdo, $companyId, $buyerId, $quantity);
+            $stmt = $pdo->prepare('UPDATE tblCompany SET companyValue = :value WHERE id = :id');
+            $stmt->execute(['value' => $after, 'id' => $companyId]);
+            $transactionId = aetherShareInsertTransaction($pdo, [
+                'idCompany' => $companyId, 'idCharacter' => $buyerId,
+                'idCounterpartyCharacter' => null, 'idOffer' => null, 'idEvent' => $eventId,
+                'actorUserId' => (int) $user['id'], 'operationCode' => 'buy_free',
+                'shareCount' => $quantity, 'unitPrice' => $input['unitPrice'], 'totalAmount' => $total,
+                'companyValueBefore' => $before, 'companyValueAfter' => $after,
+                'requestKey' => $key, 'detailsJson' => '{"managerPurchase":true}',
+            ]);
+            aetherShareInsertValueHistory($pdo, $companyId, $transactionId, (int) $user['id'],
+                'free_share_purchase', $before, $after);
+            aetherShareRevalue($pdo, $affected);
+            return ['transactionId' => $transactionId, 'idEvent' => $eventId,
+                    'shareCount' => $quantity, 'totalAmount' => $total,
+                    'companyValue' => $after, 'freeShares' => $stock['free'] - $quantity];
+        },
+        static function (array $companies) use ($pdo, $user, $input): void {
+            aetherShareRequireManager($user);
+            aetherShareRequireCompany($companies, (int) $input['idCompany']);
+            $character = aetherFetchCharacterAccessRecord($pdo, (int) $input['idCharacter']);
+            if (!$character || !aetherCanTradeForCharacter($user, $character)) {
+                throw new AetherShareException(403, 'Geen rechten voor dit personage.');
             }
         });
 }

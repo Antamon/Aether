@@ -184,10 +184,8 @@ async function initCharacterPage() {
         window.AETHER_CURRENT_USER = currentUser;
 
         setupCharacterSidebarFilters();
-        await initCharacterSidebarUserFilter();
-
-        // Lijst met personages
-        await characterList();
+        // Onafhankelijke lijsten tegelijk laden; beide gebruiken dezelfde sessie.
+        await Promise.all([initCharacterSidebarUserFilter(), characterList()]);
 
         // Eventlisteners & autosave instellen
         setupCharacterFormListeners();
@@ -210,7 +208,12 @@ async function initCharacterPage() {
         if (selectedId && /^[1-9]\d*$/.test(selectedId)) {
             document.getElementById("characterForm")?.classList.remove("d-none");
             document.getElementById("skills")?.classList.remove("d-none");
-            await getCharacter(Number(selectedId));
+            const tab = ["diary", "economy"].includes(params.get("tab")) ? params.get("tab") : "sheet";
+            const eventId = params.get("event");
+            if (/^[1-9]\d*$/.test(eventId || "") && ((tab === "diary" && params.get("focus") === "gossip") || (tab === "economy" && params.get("focus") === "snapshot"))) {
+                window.AETHER_EVENT_TARGET = { character: Number(selectedId), event: Number(eventId), kind: params.get("focus") };
+            }
+            await getCharacter(Number(selectedId), null, tab);
         } else if (params.get("new") === "1") {
             await aetherStartNewCharacterFlow();
         }
@@ -241,6 +244,7 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
 
         // Navigatie bovenaan
         pageNav(currentUser.role, data, activeTab);
+        renderCharacterDeleteActions(data);
 
         // Bepalen of dit personage bewerkbaar is voor de huidige user
         const role = currentUser?.role || "";
@@ -267,58 +271,23 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
         if (formEl) formEl.classList.remove("d-none");
         const skillsEl = document.getElementById("skills");
         if (skillsEl) skillsEl.classList.remove("d-none");
-        const idInput = document.getElementById("idCharacter");
-        if (idInput) idInput.value = data["id"];
-        applyCharacterPortraitState(data);
-
         const formContainer = document.getElementById("characterForm");
         let accordionSkills = document.getElementById("accordionSkills");
         let traitsContent = document.getElementById("traitsContent");
 
+        // De identiteitsgegevens zijn voor iedereen dezelfde gegevenskaart. Wie
+        // schrijfrechten heeft, opent enkel die kaart in bewerkmodus.
+        renderCharacterDetailsCard(data, canEdit, canEditTraits);
+        applyCharacterPortraitState(data);
+
         // --- EDITABLE MODE (admin of owner-player) ---
         if (canEdit) {
-            // Originele form-markup terugzetten (indien overschreven)
-            if (originalCharacterFormHtml !== null) {
-                formContainer.innerHTML = originalCharacterFormHtml;
-                // Events opnieuw koppelen aan inputs
-                setupCharacterFormListeners();
-                setupCharacterPortraitControls();
-            }
-
             if (skillsEl && getOriginalSkillsHtml() !== null) {
                 skillsEl.innerHTML = getOriginalSkillsHtml();
             }
 
-            applyCharacterPortraitState(data);
-
             accordionSkills = document.getElementById("accordionSkills");
             traitsContent = document.getElementById("traitsContent");
-
-            // Velden invullen
-            const velden = [
-                "firstName",
-                "lastName",
-                "class",
-                "birthDate",
-                "birthPlace",
-                "nationality",
-                "stateRegisterNumber",
-                "street",
-                "houseNumber",
-                "municipality",
-                "postalCode",
-                "title",
-                "maritalStatus"
-            ];
-
-            velden.forEach((veld) => {
-                const el = document.getElementById(veld);
-                if (el) {
-                    el.value = data[veld] ?? "";
-                }
-            });
-
-            syncClassFieldPresentation(data);
 
             // Skills: normale accordion met knoppen
             if (accordionSkills) {
@@ -332,7 +301,6 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
 
             const mainTraitGroups = getMainTraitGroups(data, data.traitGroups || []);
 
-            renderLeftTraitModule(data, canEditTraits);
             renderTraitGroups(traitsContent, mainTraitGroups, canEditTraits);
             renderCharacterHealthSection(data);
             await renderCharacterLivingStandardSection(data);
@@ -361,10 +329,6 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
             accordionSkills = document.getElementById("accordionSkills");
             traitsContent = document.getElementById("traitsContent");
 
-            // Karaktergegevens in tekst-layout weergeven
-            renderCharacterDetailsReadOnly(data);
-            applyCharacterPortraitState(data);
-
             // Skills als leesbare lijst
             if (accordionSkills) {
             renderSkillsReadOnly(accordionSkills, data.skills || []);
@@ -372,7 +336,6 @@ async function getCharacter(id, openCollapseId = null, activeTab = "sheet") {
 
             const mainTraitGroups = getMainTraitGroups(data, data.traitGroups || []);
 
-            renderLeftTraitModule(data, canEditTraits);
             renderTraitGroups(traitsContent, mainTraitGroups, canEditTraits);
             renderCharacterHealthSection(data);
             await renderCharacterLivingStandardSection(data);
@@ -516,7 +479,7 @@ function getCharacterSidebarDisplayName(character) {
 }
 
 function canDeleteCharacterFromSidebar(character) {
-    if (!currentUser || !character) {
+    if (!currentUser || !character || !["draft", "inactive", "deceased"].includes(character.state)) {
         return false;
     }
 
@@ -528,6 +491,22 @@ function canDeleteCharacterFromSidebar(character) {
     return role === "participant"
         && character.type === "player"
         && Number(character.idUser) === Number(currentUser.id);
+}
+
+function renderCharacterDeleteActions(character) {
+    const host = document.getElementById("characterDeleteActions");
+    if (!host) return;
+    host.replaceChildren();
+    const allowed = canDeleteCharacterFromSidebar(character);
+    host.classList.toggle("d-none", !allowed);
+    if (!allowed) return;
+    const button = AetherActionButtons.button({
+        icon: "fa-trash", label: "Delete character",
+        onClick: () => handleSidebarCharacterDelete(character.id)
+    });
+    const group = AetherActionButtons.group([button]);
+    group.classList.add("mb-3");
+    host.append(group);
 }
 
 function isCharacterSidebarItemUnassigned(character) {
@@ -570,6 +549,7 @@ function filterCharacterSidebarItems(characters) {
 
 function clearCharacterWorkspace() {
     currentCharacter = null;
+    renderCharacterDeleteActions(null);
 
     const idInput = document.getElementById("idCharacter");
     if (idInput) {
@@ -591,6 +571,9 @@ function clearCharacterWorkspace() {
     if (skills) {
         skills.classList.add("d-none");
     }
+    ["backgroundTab", "diaryTab", "personalityTab", "economyTab", "actionsTab", "passportTab"].forEach((id) => {
+        document.getElementById(id)?.classList.add("d-none");
+    });
 }
 
 function closeCharacterSidebarIfOpen() {
@@ -604,7 +587,8 @@ function closeCharacterSidebarIfOpen() {
 }
 
 async function handleSidebarCharacterDelete(idCharacter) {
-    const character = characterSidebarItems.find((item) => Number(item.id) === Number(idCharacter));
+    const character = Number(currentCharacter?.id) === Number(idCharacter) ? currentCharacter
+        : characterSidebarItems.find((item) => Number(item.id) === Number(idCharacter));
     const displayName = getCharacterSidebarDisplayName(character) || "dit personage";
     const confirmed = window.confirm(`Weet u zeker dat u ${displayName} definitief wilt verwijderen?`);
 
@@ -645,69 +629,14 @@ function renderCharacterSidebarList() {
     }
 
     filteredCharacters.forEach((character) => {
-        const card = document.createElement("div");
-        card.className = "character-sidebar-card";
-
-        const portraitWrap = document.createElement("div");
-        portraitWrap.className = "character-sidebar-portrait-frame";
-
-        const portraitUrl = String(character?.portraitUrl || "").trim();
-        const displayName = getCharacterSidebarDisplayName(character) || `Personage #${character.id}`;
-
-        if (portraitUrl !== "") {
-            const portrait = document.createElement("img");
-            portrait.className = "character-sidebar-portrait-image";
-            portrait.src = portraitUrl;
-            portrait.alt = displayName;
-            portraitWrap.appendChild(portrait);
-        } else {
-            const portraitPlaceholder = document.createElement("div");
-            portraitPlaceholder.className = "character-sidebar-portrait-placeholder";
-            portraitPlaceholder.textContent = "Geen pasfoto";
-            portraitWrap.appendChild(portraitPlaceholder);
-        }
-
-        const name = document.createElement("div");
-        name.className = "character-sidebar-name";
-        name.textContent = displayName;
-
-        const actions = document.createElement("div");
-        actions.className = "character-sidebar-actions";
-
-        const viewButton = document.createElement("button");
-        viewButton.type = "button";
-        viewButton.className = "btn btn-outline-primary btn-sm character-sidebar-action";
-        viewButton.dataset.idcharacter = character.id;
-        viewButton.setAttribute("aria-label", `Bekijk ${displayName}`);
-        viewButton.innerHTML = '<i class="fa-solid fa-eye"></i>';
-        viewButton.addEventListener("click", async () => {
+        const card = window.createCharacterSidebarCard(character, async () => {
             const characterForm = document.getElementById("characterForm");
             const skills = document.getElementById("skills");
             if (characterForm) characterForm.classList.remove("d-none");
             if (skills) skills.classList.remove("d-none");
             closeCharacterSidebarIfOpen();
             await getCharacter(character.id);
-        });
-
-        actions.appendChild(viewButton);
-        if (canDeleteCharacterFromSidebar(character)) {
-            const deleteButton = document.createElement("button");
-            deleteButton.type = "button";
-            deleteButton.className = "btn btn-outline-danger btn-sm character-sidebar-action";
-            deleteButton.dataset.idcharacter = character.id;
-            deleteButton.setAttribute("aria-label", `Verwijder ${displayName}`);
-            deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
-            deleteButton.addEventListener("click", (event) => {
-                event.preventDefault();
-                handleSidebarCharacterDelete(character.id);
-            });
-
-            actions.appendChild(deleteButton);
-        }
-
-        card.appendChild(portraitWrap);
-        card.appendChild(name);
-        card.appendChild(actions);
+        }, currentCharacter?.id);
         nameList.appendChild(card);
     });
 }

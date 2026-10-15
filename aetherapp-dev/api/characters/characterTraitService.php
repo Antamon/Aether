@@ -89,6 +89,10 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
     if (!aetherCanCurrentUserManageTrait($trait, $role)) {
         throw new AetherCharacterTraitException(403, 'Je hebt geen rechten om deze trait aan te passen.');
     }
+    $capitalTrait = aetherIsShareCapitalTrait($trait);
+    if ($capitalTrait && (string) $character['state'] !== 'draft') {
+        throw new AetherCharacterTraitException(409, 'Na Draft wordt Aandelen automatisch uit de portefeuillewaarde berekend.');
+    }
     if ((string) $trait['class'] !== 'all' && (string) $trait['class'] !== (string) $character['class']) {
         throw new AetherCharacterTraitException(400, 'Deze trait is niet beschikbaar voor deze klasse.');
     }
@@ -125,6 +129,7 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
     $points = getCharacterPointSummary($pdo, [
         'id' => $character['id'], 'type' => $character['type'], 'idUser' => $character['idUser'],
         'experienceToTrait' => $character['experienceToTrait'],
+        'state' => $character['state'],
     ]);
     $currentCost = $link !== null ? aetherCharacterTraitPurchaseCost($pdo, $trait, $currentRank) : 0;
 
@@ -146,6 +151,7 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
         if (!$canOverspend && $newCost > $points['availableStatusPoints']) {
             return ['error' => 'Onvoldoende statuspunten.'];
         }
+        if ($capitalTrait) aetherShareSetDraftLevel($pdo, $characterId, $newRank);
         aetherInsertCharacterTraitLink($pdo, $characterId, $traitId, $newRank);
         if ((string) $trait['type'] === 'profession') {
             aetherResetCompanyPersonnelForProfessionChange($pdo, $characterId);
@@ -178,6 +184,7 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
 
     if ($action === 'remove') {
         if ($link === null) return ['error' => 'Trait-link niet gevonden.'];
+        if ($capitalTrait) aetherShareSetDraftLevel($pdo, $characterId, 0);
         aetherDeleteCharacterTraitLink($pdo, (int) $link['id']);
         if ((string) $trait['type'] === 'profession') {
             aetherResetCompanyPersonnelForProfessionChange($pdo, $characterId);
@@ -225,6 +232,7 @@ function aetherUpdateCharacterTrait(PDO $pdo, array $currentUser, int $character
         }
     }
 
+    if ($capitalTrait) aetherShareSetDraftLevel($pdo, $characterId, $newRank);
     aetherUpdateCharacterTraitRank($pdo, (int) $link['id'], $newRank);
     return ['status' => 'ok'];
 }

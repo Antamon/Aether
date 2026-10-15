@@ -1,7 +1,7 @@
 // API helpers voor character-gerelateerde calls
 
 async function fetchCurrentUser() {
-    return apiFetchJson("getCurrentUser.php", { method: "GET" });
+    return aetherGetCurrentUser();
 }
 
 async function fetchCharacter(id) {

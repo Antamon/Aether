@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="asset.php?path=css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=a9b6a4b315701e4c">
     <title>Aether applicatie</title>
 </head>
 <body data-sidebar-page="events">
@@ -16,7 +16,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html">
+            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina">
                     <img src="img/aether-logo.png" alt="Bootstrap">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,15 +24,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item mr-2">
-                        <a class="nav-link" id="startNewCharacter" aria-current="page" href="index.html"><i class="fa-solid fa-user"></i> Personages</a>
-                    </li>
-                    <li class="nav-item mr-2">
-                        <a class="nav-link" id="eventParticipation" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Evenementen</a>
-                    </li>
-                    <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
-                        <a class="nav-link" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
-                    </li>
                     <li class="nav-item mr-2 d-none" id="navbarAdminItem">
                         <a class="nav-link" id="adminPage" aria-current="page" href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
                     </li>
@@ -42,72 +33,39 @@
         </div>
     </nav>
 
+    <template id="eventSidebarContent">
+        <div class="mb-3 d-none" id="participantFilterWrapper">
+            <label class="form-label" for="eventParticipantSelect">Deelnames van deelnemer</label>
+            <div id="eventParticipantFilterChoices"></div>
+        </div>
+        <div class="company-list event-sidebar-list" id="eventSidebarList"></div>
+        <div class="button-group mt-3 d-none" id="eventCreateActions"><button class="action-button" type="button" id="eventCreateButton"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuw event</button></div>
+    </template>
     <main class="container aether-page event-page">
-        <h1 class="mb-3" id="titleParticipant"></h1>
-        <!-- Participant selection box -->
-        <div class="row mb-3 d-none" id="participantFilterWrapper">
-            <div id="listParticipant"></div>
-        </div>
-        <!-- Event participation table -->
-        <div class="row g-4">
-            <div class="col-12">
-                <div class="card aether-panel shadow-sm">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <!-- Event participation table header -->
-                            <table class="table table-striped align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="col"></th>
-                                        <th class="col">Titel</th>
-                                        <th class="col-4">beschrijving</th>
-                                        <th class="col">Datum</th>
-                                        <th class="col">Locatie</th>
-                                        <th class="col text-center">EP</th>
-                                        <th class="col text-center">Deelname</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="eventList"></tbody>
-                                <tfoot class="d-none" id="eventNew">
-                                    <tr>
-                                        <td>
-                                            <select class="form-select" id="newType">
-                                                <option value="weekend">weekend</option>
-                                                <option value="mini">mini</option>
-                                            </select>
-                                        </td>
-                                        <td><input type="text" class="form-control" id="newTitle" aria-label="Titel"></td>
-                                        <td><input type="text" class="form-control" id="newDescription" aria-label="Beschrijving"></td>
-                                        <td>
-                                            <input type="date" class="form-control mb-1" id="newDateStart" aria-label="Begindatum">
-                                            <input type="date" class="form-control" id="newDateEnd" aria-label="Einddatum">
-                                        </td>
-                                        <td><input type="text" class="form-control" id="newVenue" aria-label="Locatie"></td>
-                                        <td><input type="text" class="form-control" id="newExperience" aria-label="Ervaringspunten"></td>
-                                        <td class="text-center text-nowrap">
-                                            <i class="fa-solid fa-check me-2" id="eventNewSubmit"></i>
-                                            <i class="fa-solid fa-xmark" id="eventNewCancel"></i>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+        <div class="alert alert-danger d-none" id="eventFeedback" role="alert"></div>
+        <div id="eventDetailsView" class="d-none"></div>
+        <section class="aether-panel d-none" id="eventParticipationView">
+            <h1 class="h3 mb-3" id="titleParticipant">Mijn deelnames</h1>
+            <div class="table-responsive">
+                <table class="table aether-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Type</th><th scope="col">Titel</th><th scope="col">Beschrijving</th>
+                            <th scope="col">Datum</th><th scope="col">Locatie</th><th scope="col">EP</th><th scope="col">Deelname</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventList"></tbody>
+                </table>
             </div>
-            <!-- Buttons new event -->
-            <div class="col-12 d-flex justify-content-center d-none" id="eventNewButtonGroup">
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-primary" id="eventNewButton"><i class="fa-solid fa-plus"></i> Nieuw event</button>
-                </div>
-            </div>               
-        </div>
+        </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
-    <script src="asset.php?path=js/mainFunctions.js"></script>
-    <script src="asset.php?path=js/updateManager.js"></script>
-    <script src="asset.php?path=js/aetherSidebars.js"></script>
-    <script src="asset.php?path=js/eventFunctions.js"></script>
+    <script src="js/mainFunctions.js?v=f3db4bd7cb4060d8"></script>
+    <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
+    <script src="js/actionButtons.js?v=b4df11b598cd6c2e"></script>
+    <script src="js/aetherSidebars.js?v=b1f8f20e0076ee18"></script>
+    <script src="js/eventFunctions.js?v=67db78bb33ee6e45"></script>
+    <script src="js/eventDetails.js?v=bf4d167e391ce13c"></script>
 </body>
 </html>

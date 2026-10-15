@@ -24,7 +24,7 @@ window.addEventListener("load", () => {
 
 async function initAdminPage() {
     try {
-        adminCurrentUser = window.AETHER_CURRENT_USER || await apiFetchJson("getCurrentUser.php");
+        adminCurrentUser = await aetherGetCurrentUser();
         if (!adminCurrentUser || !userHasPrivilegedRole(adminCurrentUser)) {
             window.location.href = "index.html";
             return;

@@ -124,6 +124,17 @@ function getSecuritiesRiskProfileLabel(character, riskProfile) {
     return options?.[riskProfile]?.label || `Profiel ${riskProfile}`;
 }
 
+function updateSecuritiesRiskProfileDisplay(input) {
+    if (!input) return;
+
+    const profile = Math.max(1, Math.min(5, Number(input.value || 3)));
+    const character = currentCharacter || {};
+    const label = getSecuritiesRiskProfileLabel(character, profile);
+    const value = input.closest(".economy-securities-risk")?.querySelector("[data-role='securities-risk-profile-value']");
+    if (value) value.textContent = label;
+    input.setAttribute("aria-valuetext", label);
+}
+
 function getCharacterSecuritiesManagerDisplayName(character) {
     const managerType = String(character?.securitiesManagerType || "self");
     if (managerType === "bank") {
@@ -247,18 +258,44 @@ function renderSecuritiesSettingsSection(host, character) {
     riskLabel.textContent = "Risicoprofiel";
     riskRow.appendChild(riskLabel);
 
-    const riskSelect = document.createElement("select");
-    riskSelect.className = "form-select";
-    riskSelect.dataset.role = "securities-risk-profile";
-    riskSelect.disabled = !canManage;
+    const selectedRisk = Math.max(1, Math.min(5, Number(character?.securitiesRiskProfile || 3)));
+    riskRow.classList.add("economy-securities-risk");
+
+    const riskValue = document.createElement("output");
+    riskValue.className = "economy-securities-risk-value";
+    riskValue.dataset.role = "securities-risk-profile-value";
+    riskValue.textContent = getSecuritiesRiskProfileLabel(character, selectedRisk);
+    riskLabel.appendChild(riskValue);
+
+    const riskSlider = document.createElement("input");
+    riskSlider.type = "range";
+    riskSlider.className = "form-range";
+    riskSlider.min = "1";
+    riskSlider.max = "5";
+    riskSlider.step = "1";
+    riskSlider.value = String(selectedRisk);
+    riskSlider.dataset.role = "securities-risk-profile";
+    riskSlider.disabled = !canManage;
+    riskSlider.setAttribute("aria-label", "Risicoprofiel effectenportefeuille");
+    riskSlider.setAttribute("aria-valuetext", riskValue.textContent);
+    riskRow.appendChild(riskSlider);
+
+    const scale = document.createElement("div");
+    scale.className = "economy-securities-risk-scale";
     [1, 2, 3, 4, 5].forEach((riskProfile) => {
-        const optionEl = document.createElement("option");
-        optionEl.value = String(riskProfile);
-        optionEl.textContent = getSecuritiesRiskProfileLabel(character, riskProfile);
-        optionEl.selected = Number(character?.securitiesRiskProfile || 3) === riskProfile;
-        riskSelect.appendChild(optionEl);
+        const marker = document.createElement("span");
+        marker.textContent = String(riskProfile);
+        marker.title = getSecuritiesRiskProfileLabel(character, riskProfile);
+        scale.appendChild(marker);
     });
-    riskRow.appendChild(riskSelect);
+    riskRow.appendChild(scale);
+
+    const riskHelp = document.createElement("div");
+    riskHelp.className = "text-muted small";
+    riskHelp.textContent = canManage
+        ? "De gekozen waarde wordt gebruikt bij volgende economiesnapshots. Bestaande snapshots behouden hun eigen risicoprofiel."
+        : "Deze waarde wordt gebruikt bij volgende economiesnapshots.";
+    riskRow.appendChild(riskHelp);
     settingsWrap.appendChild(riskRow);
 
     const info = document.createElement("div");
@@ -288,11 +325,6 @@ function renderSecuritiesProfileSummary(host, character) {
     managerInfo.className = "mb-1";
     managerInfo.textContent = `Beheerder: ${getCharacterSecuritiesManagerDisplayName(character)}`;
     host.appendChild(managerInfo);
-
-    const riskInfo = document.createElement("div");
-    riskInfo.className = "mb-3";
-    riskInfo.textContent = `Risicoprofiel: ${getSecuritiesRiskProfileLabel(character, Number(character?.securitiesRiskProfile || 3))}`;
-    host.appendChild(riskInfo);
 
     const expected = getCharacterSecuritiesExpectedReturnSummary(character);
     const expectedWrap = document.createElement("div");
@@ -326,23 +358,17 @@ function renderSecuritiesActionButtons(host, character) {
     const balance = getDisplayedCharacterSecuritiesAmount(character);
     const approvedSnapshots = getApprovedSecuritiesWithdrawalSnapshots(character);
     const actionWrap = document.createElement("div");
-    actionWrap.className = "d-flex align-items-start gap-2 flex-wrap";
+    actionWrap.className = "button-group";
 
-    const depositButton = document.createElement("button");
-    depositButton.type = "button";
-    depositButton.className = "btn btn-success";
+    const depositButton = AetherActionButtons.button({ icon: "fa-arrow-down", label: "Geld storten" });
     depositButton.dataset.action = "open-securities-deposit-modal";
     depositButton.disabled = !canManage;
-    depositButton.textContent = "Geld storten";
     actionWrap.appendChild(depositButton);
 
     if (balance > 0) {
-        const withdrawButton = document.createElement("button");
-        withdrawButton.type = "button";
-        withdrawButton.className = "btn btn-success";
+        const withdrawButton = AetherActionButtons.button({ icon: "fa-arrow-up", label: "Geld opnemen" });
         withdrawButton.dataset.action = "open-securities-withdrawal-modal";
         withdrawButton.disabled = !canManage || approvedSnapshots.length === 0;
-        withdrawButton.textContent = "Geld opnemen";
         actionWrap.appendChild(withdrawButton);
     }
 
@@ -372,7 +398,7 @@ function ensureSecuritiesDepositModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Geld storten</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <p class="text-muted">Opgepast, geld dat je stort op je effectenportefeuille staat vast voor langere tijd. Jaarlijks (per event) kan je er tot 30 000Fr kosteloos afhalen. Voor hogere bedragen verlies je 25%.</p>
@@ -382,8 +408,10 @@ function ensureSecuritiesDepositModal() {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-success" data-action="confirm-securities-deposit">Geld storten</button>
+                        <div class="button-group">
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
+                        <button type="button" class="action-button" data-action="confirm-securities-deposit"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Geld storten</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -435,7 +463,7 @@ function ensureSecuritiesWithdrawalModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Geld opnemen</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -450,8 +478,10 @@ function ensureSecuritiesWithdrawalModal() {
                         <div class="small text-muted" data-role="securities-withdraw-warning"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-success" data-action="confirm-securities-withdrawal">Geld opnemen</button>
+                        <div class="button-group">
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
+                        <button type="button" class="action-button" data-action="confirm-securities-withdrawal"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Geld opnemen</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -572,7 +602,7 @@ function ensureBankTransferModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Overschrijving</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <div data-role="bank-transfer-form">
@@ -597,8 +627,10 @@ function ensureBankTransferModal() {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-success" data-action="create-bank-transfer">Overschrijving</button>
+                        <div class="button-group">
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
+                        <button type="button" class="action-button" data-action="create-bank-transfer"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Overschrijving</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -663,103 +695,66 @@ function openBankTransferModal() {
     bankTransferModalInstance?.show();
 }
 
-function renderSecuritiesSnapshotsSection(host, character) {
-    const snapshots = getCharacterSecuritiesSnapshots(character);
+function economyRowsNewestFirst(rows) {
+    return [...rows].sort((a, b) => String(b.transactionDate || "").localeCompare(String(a.transactionDate || ""))
+        || Number(b.id || 0) - Number(a.id || 0));
+}
 
-    if (snapshots.length === 0) {
-        return;
+function economyAmountCell(value) {
+    const amount = document.createElement("span");
+    amount.className = "fw-semibold " + (Number(value) < 0 ? "text-danger" : "text-success");
+    amount.textContent = formatCharacterCurrency(value);
+    return amount;
+}
+
+function economySnapshotFields(snapshot, character) {
+    const status = { none: "Niet van toepassing", pending: "Wacht op goedkeuring", approved: "Goedgekeurd" };
+    return [
+        ["Event", snapshot.eventTitle || "Event #" + snapshot.idEvent],
+        ["Datum", formatEconomyDate(snapshot.transactionDate)],
+        ["Inkomsten", formatCharacterCurrency(snapshot.amount || 0)],
+        ["Saldo effectenportefeuille", formatCharacterCurrency(snapshot.securitiesBalanceSnapshot || 0)],
+        ["Beheer", snapshot.securitiesManagerType === "none" ? "Niet van toepassing" : getSecuritiesManagerTypeLabel(snapshot.securitiesManagerType || "self")],
+        ["Beheerder", snapshot.securitiesManagerDisplayName || "—"],
+        ["Risicoprofiel", getSecuritiesRiskProfileLabel(character, Number(snapshot.securitiesRiskProfile || 3))],
+        ["Vaardigheidsniveau beheerder", snapshot.securitiesManagerSkillLevel || 0],
+        ["Basisrendement", formatEconomyPercentage(snapshot.securitiesBasePercentage || 0)],
+        ["Maximale afwijking", formatEconomyPercentage(snapshot.securitiesVariationLimitPercentage || 0)],
+        ["Afwijking", formatEconomyPercentage(snapshot.securitiesVariationPercentage || 0)],
+        ["Rendementspercentage", formatEconomyPercentage(snapshot.securitiesReturnPercentage || 0)],
+        ["Rendement", formatCharacterCurrency(snapshot.securitiesReturnAmount || 0)],
+        ["Status rendement", status[snapshot.securitiesStatus] || "Niet van toepassing"],
+        ["Opgenomen uit effectenportefeuille", formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalAmount || 0)],
+        ["Bijgeschreven op bankrekening", formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalBankAmount || snapshot.securitiesSnapshotWithdrawalAmount || 0)],
+        ["Einddatum event", formatEconomyDate(snapshot.eventDateEnd)],
+        ["Event afgelopen", snapshot.securitiesEventEnded ? "Ja" : "Nee"]
+    ];
+}
+
+function economySnapshotActions(snapshot, character, includeDelete = false) {
+    const actions = [];
+    if (snapshot.securitiesStatus === "pending" && character.canApproveSecuritiesSnapshots) {
+        actions.push({ icon: "fa-rotate", label: "Opnieuw genereren", run: () => rerollSecuritiesSnapshot(Number(snapshot.id)) },
+            { icon: "fa-check", label: "Goedkeuren", run: () => approveSecuritiesSnapshot(Number(snapshot.id)) });
     }
+    if (includeDelete && character.canCreateEconomySnapshots) {
+        actions.push({ icon: "fa-trash-can", label: "Verwijderen", run: () => deleteCharacterEconomySnapshot(Number(snapshot.id)) });
+    }
+    return actions;
+}
 
+function renderSecuritiesSnapshotsSection(host, character) {
+    const snapshots = economyRowsNewestFirst(getCharacterSecuritiesSnapshots(character));
+    if (!snapshots.length) return;
     appendEconomySubsectionTitle(host, "Rendementen");
-
-    const list = document.createElement("div");
-    list.className = "list-group list-group-flush";
-
-    snapshots.forEach((snapshot) => {
-        const item = document.createElement("div");
-        item.className = "list-group-item px-0";
-
-        const header = document.createElement("div");
-        header.className = "d-flex justify-content-between align-items-start gap-3 flex-wrap";
-
-        const titleWrap = document.createElement("div");
-        const title = document.createElement("div");
-        title.className = "fw-semibold";
-        title.textContent = String(snapshot?.eventTitle || "").trim() || `Event #${snapshot?.idEvent || 0}`;
-        titleWrap.appendChild(title);
-
-        const meta = document.createElement("div");
-        meta.className = "text-muted small";
-        meta.textContent = [
-            formatEconomyDate(snapshot?.transactionDate),
-            `${getSecuritiesManagerTypeLabel(String(snapshot?.securitiesManagerType || "self"))}`,
-            `${getSecuritiesRiskProfileLabel(character, Number(snapshot?.securitiesRiskProfile || 3))}`,
-            `Skill ${Number(snapshot?.securitiesManagerSkillLevel || 0)}`
-        ].filter(Boolean).join(" - ");
-        titleWrap.appendChild(meta);
-        header.appendChild(titleWrap);
-
-        const amount = document.createElement("div");
-        const returnAmount = Number(snapshot?.securitiesReturnAmount || 0);
-        amount.className = `fw-semibold ${returnAmount < 0 ? "text-danger" : "text-success"}`;
-        amount.textContent = formatCharacterCurrency(returnAmount);
-        header.appendChild(amount);
-        item.appendChild(header);
-
-        const details = document.createElement("div");
-        details.className = "economy-securities-snapshot-meta text-muted small mt-2";
-        const status = String(snapshot?.securitiesStatus || "none");
-        const parts = [
-            `Basistarief ${formatEconomyPercentage(snapshot?.securitiesBasePercentage || 0)}`,
-            `Variatie ${formatEconomyPercentage(snapshot?.securitiesVariationPercentage || 0)}`,
-            `Totaal ${formatEconomyPercentage(snapshot?.securitiesReturnPercentage || 0)}`
-        ];
-        if (status === "pending") {
-            parts.push("Wacht op goedkeuring");
-        } else if (status === "approved") {
-            parts.push("Goedgekeurd");
-        }
-        details.textContent = parts.join(" - ");
-        item.appendChild(details);
-
-        const snapshotWithdrawalAmount = Number(snapshot?.securitiesSnapshotWithdrawalAmount || 0);
-        if (snapshotWithdrawalAmount > 0) {
-            const withdrawalInfo = document.createElement("div");
-            withdrawalInfo.className = "small mt-2";
-            const creditedAmount = Number(snapshot?.securitiesSnapshotWithdrawalBankAmount || snapshotWithdrawalAmount);
-            withdrawalInfo.textContent = `Opname uit portefeuille: ${formatCharacterCurrency(snapshotWithdrawalAmount)}${creditedAmount !== snapshotWithdrawalAmount ? `, uitbetaald op bankrekening: ${formatCharacterCurrency(creditedAmount)}` : ""}`;
-            item.appendChild(withdrawalInfo);
-        }
-
-        const actions = document.createElement("div");
-        actions.className = "d-flex align-items-center gap-2 flex-wrap mt-3";
-
-        if (status === "pending" && character?.canApproveSecuritiesSnapshots) {
-            const rerollButton = document.createElement("button");
-            rerollButton.type = "button";
-            rerollButton.className = "btn btn-sm btn-success";
-            rerollButton.dataset.action = "reroll-securities-snapshot";
-            rerollButton.dataset.idSnapshot = String(snapshot?.id || 0);
-            rerollButton.textContent = "Opnieuw genereren";
-            actions.appendChild(rerollButton);
-
-            const approveButton = document.createElement("button");
-            approveButton.type = "button";
-            approveButton.className = "btn btn-sm btn-success";
-            approveButton.dataset.action = "approve-securities-snapshot";
-            approveButton.dataset.idSnapshot = String(snapshot?.id || 0);
-            approveButton.textContent = "Goedkeuren";
-            actions.appendChild(approveButton);
-        }
-
-        if (actions.childNodes.length > 0) {
-            item.appendChild(actions);
-        }
-
-        list.appendChild(item);
-    });
-
-    host.appendChild(list);
+    AetherDataTable.render(host, { label: "Rendementen", rows: snapshots, columns: [
+        { label: "Event", render: snapshot => snapshot.eventTitle || "Event #" + snapshot.idEvent },
+        { label: "Bedrag", className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.securitiesReturnAmount || 0) },
+        { label: "Info", className: "text-end", render: snapshot => AetherDataTable.infoButton({
+            title: "Rendement — " + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
+            fields: economySnapshotFields(snapshot, character), actions: economySnapshotActions(snapshot, character)
+        }) }
+    ] });
 }
 
 function renderCharacterSecuritiesSection(host, character) {
@@ -767,6 +762,7 @@ function renderCharacterSecuritiesSection(host, character) {
 
     const card = buildEconomyCard("Effectenportefeuille");
     renderSecuritiesIntroduction(card.body);
+    renderSecuritiesSettingsSection(card.body, character);
     renderSecuritiesProfileSummary(card.body, character);
     renderSecuritiesActionButtons(card.body, character);
     renderSecuritiesSnapshotsSection(card.body, character);
@@ -1096,16 +1092,19 @@ function renderCharacterEconomySnapshotsSection(host, character) {
     const actionCol = document.createElement("div");
     actionCol.className = "col-12 col-md-4";
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-success w-100";
+    const button = AetherActionButtons.button({ icon: "fa-camera", label: "Snapshot maken" });
     button.dataset.action = "create-character-economy-snapshot";
     button.disabled = eventOptions.length === 0;
-    button.textContent = "Snapshot maken";
-    actionCol.appendChild(button);
+    actionCol.appendChild(AetherActionButtons.group([button]));
     form.appendChild(actionCol);
 
     snapshotCard.body.appendChild(form);
+    const target = window.AETHER_EVENT_TARGET;
+    if (target?.kind === "snapshot" && target.character === Number(character.id)) {
+        if (eventOptions.some(event => Number(event.id) === target.event)) select.value = String(target.event);
+        window.AETHER_EVENT_TARGET = null;
+        requestAnimationFrame(() => { snapshotCard.card.scrollIntoView({ block: "center" }); select.focus({ preventScroll: true }); });
+    }
 
     if (snapshots.length === 0) {
         const empty = document.createElement("p");
@@ -1116,53 +1115,14 @@ function renderCharacterEconomySnapshotsSection(host, character) {
         return;
     }
 
-    const list = document.createElement("div");
-    list.className = "list-group list-group-flush";
-
-    snapshots.forEach((snapshot) => {
-        const item = document.createElement("div");
-        item.className = "list-group-item px-0";
-
-        const header = document.createElement("div");
-        header.className = "d-flex justify-content-between align-items-start gap-3 flex-wrap";
-
-        const titleWrap = document.createElement("div");
-
-        const title = document.createElement("div");
-        title.className = "fw-semibold";
-        title.textContent = String(snapshot.eventTitle || "").trim() || `Event #${snapshot.idEvent || 0}`;
-        titleWrap.appendChild(title);
-
-        const meta = document.createElement("div");
-        meta.className = "text-muted small";
-        meta.textContent = formatEconomyDate(snapshot.transactionDate);
-        titleWrap.appendChild(meta);
-
-        header.appendChild(titleWrap);
-
-        const amount = document.createElement("div");
-        amount.className = `fw-semibold ${Number(snapshot.amount || 0) < 0 ? "text-danger" : "text-success"}`;
-        amount.textContent = formatCharacterCurrency(snapshot.amount || 0);
-        header.appendChild(amount);
-
-        item.appendChild(header);
-
-        const actionRow = document.createElement("div");
-        actionRow.className = "mt-2";
-
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "btn btn-sm btn-danger";
-        deleteButton.dataset.action = "delete-character-economy-snapshot";
-        deleteButton.dataset.idSnapshot = String(snapshot.id || 0);
-        deleteButton.textContent = "Verwijderen";
-        actionRow.appendChild(deleteButton);
-
-        item.appendChild(actionRow);
-        list.appendChild(item);
-    });
-
-    snapshotCard.body.appendChild(list);
+    AetherDataTable.render(snapshotCard.body, { label: "Economische snapshots", rows: economyRowsNewestFirst(snapshots), columns: [
+        { label: "Event", render: snapshot => snapshot.eventTitle || "Event #" + snapshot.idEvent },
+        { label: "Bedrag", className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.amount || 0) },
+        { label: "Info", className: "text-end", render: snapshot => AetherDataTable.infoButton({
+            title: "Economische snapshot — " + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
+            fields: economySnapshotFields(snapshot, character), actions: economySnapshotActions(snapshot, character, true)
+        }) }
+    ] });
     host.appendChild(snapshotCard.card);
 }
 
@@ -1251,13 +1211,10 @@ function renderTransferSection(host, character, options = {}) {
     const actionWrap = document.createElement("div");
     actionWrap.className = "d-flex flex-column gap-2";
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-success align-self-start";
+    const button = AetherActionButtons.button({ icon: "fa-money-bill-transfer", label: "Overschrijving" });
     button.dataset.action = "open-bank-transfer-modal";
     button.disabled = isDraft || !canTransfer || transferTargets.length === 0;
-    button.textContent = "Overschrijving";
-    actionWrap.appendChild(button);
+    actionWrap.appendChild(AetherActionButtons.group([button]));
 
     if (isDraft) {
         const help = document.createElement("p");
@@ -1286,115 +1243,38 @@ function renderTransactionsSection(host, character, options = {}) {
     const embedded = options.embedded === true;
     const transactionCard = embedded ? null : buildEconomyCard("Verrichtingen");
     const targetHost = embedded ? host : transactionCard.body;
-    const transactions = Array.isArray(character?.bankTransactions) ? character.bankTransactions : [];
-    const canDeleteTransactions = Boolean(character?.canDeleteBankTransactions);
-    const hasAnyDeletableTransaction = canDeleteTransactions && transactions.some((transaction) => Boolean(transaction?.canDelete));
-
-    if (embedded) {
-        appendEconomySubsectionTitle(targetHost, "Verrichtingen");
+    const transactions = economyRowsNewestFirst(Array.isArray(character.bankTransactions) ? character.bankTransactions : []);
+    if (embedded) appendEconomySubsectionTitle(targetHost, "Verrichtingen");
+    if (!transactions.length) {
+        const empty = document.createElement("p"); empty.className = "text-muted mb-0";
+        empty.textContent = "Nog geen verrichtingen beschikbaar."; targetHost.append(empty);
+    } else {
+        const name = [character.title, character.firstName, character.lastName].filter(Boolean).join(" ") || "Dit personage";
+        const types = { bank_transfer: "Overschrijving", character_income_snapshot: "Inkomstensnapshot",
+            company_snapshot_dividend: "Bedrijfsdividend", character_securities_snapshot_return: "Rendement effectenportefeuille",
+            character_securities_snapshot_withdrawal: "Opname effectenportefeuille" };
+        AetherDataTable.render(targetHost, { label: "Verrichtingen", rows: transactions, columns: [
+            { label: "Datum", className: "text-nowrap", render: transaction => formatEconomyDate(transaction.transactionDate) },
+            { label: "Afzender / begunstigde", render: transaction => transaction.counterpartyName || "Onbekend" },
+            { label: "Bedrag", className: "text-end text-nowrap", render: transaction =>
+                economyAmountCell((transaction.direction === "outgoing" ? -1 : 1) * Math.abs(Number(transaction.amount || 0))) },
+            { label: "Info", className: "text-end", render: transaction => AetherDataTable.infoButton({
+                title: "Verrichting — " + formatEconomyDate(transaction.transactionDate),
+                fields: [
+                    ["Datum", formatEconomyDate(transaction.transactionDate)],
+                    ["Afzender", transaction.direction === "outgoing" ? name : transaction.counterpartyName || "Onbekend"],
+                    ["Begunstigde", transaction.direction === "outgoing" ? transaction.counterpartyName || "Onbekend" : name],
+                    ["Bedrag", formatCharacterCurrency(Math.abs(Number(transaction.amount || 0)))],
+                    ["Richting", transaction.direction === "outgoing" ? "Uitgaand" : "Inkomend"],
+                    ["Soort verrichting", types[transaction.type] || "Verrichting"],
+                    ["Mededeling", transaction.description]
+                ],
+                actions: character.canDeleteBankTransactions && transaction.canDelete
+                    ? [{ icon: "fa-trash-can", label: "Verwijderen", run: () => deleteBankTransaction(Number(transaction.id)) }] : []
+            }) }
+        ] });
     }
-
-    if (transactions.length === 0) {
-        const empty = document.createElement("p");
-        empty.className = "text-muted mb-0";
-        empty.textContent = "Nog geen verrichtingen beschikbaar.";
-        targetHost.appendChild(empty);
-        if (!embedded) {
-            host.appendChild(transactionCard.card);
-        }
-        return;
-    }
-
-    const tableWrap = document.createElement("div");
-    tableWrap.className = "economy-transactions-table";
-
-    const tableInner = document.createElement("div");
-    tableInner.className = "economy-transactions-table-inner";
-
-    const header = document.createElement("div");
-    header.className = "economy-transactions-header";
-    header.dataset.canDelete = hasAnyDeletableTransaction ? "true" : "false";
-
-    const headerLabels = ["Naam", "Datum", "Mededeling", "Bedrag"];
-    headerLabels.forEach((labelText) => {
-        const label = document.createElement("div");
-        label.className = "economy-transactions-header-label";
-        label.textContent = labelText;
-        header.appendChild(label);
-    });
-
-    if (hasAnyDeletableTransaction) {
-        const actionSpacer = document.createElement("div");
-        actionSpacer.className = "economy-transactions-header-spacer";
-        actionSpacer.setAttribute("aria-hidden", "true");
-        header.appendChild(actionSpacer);
-    }
-
-    const list = document.createElement("div");
-    list.className = "list-group list-group-flush";
-
-    transactions.forEach((transaction) => {
-        const item = document.createElement("div");
-        item.className = "list-group-item px-0";
-
-        const row = document.createElement("div");
-        row.className = "economy-transaction-row";
-        const rowCanDelete = canDeleteTransactions && Boolean(transaction?.canDelete);
-        row.dataset.canDelete = rowCanDelete ? "true" : "false";
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "economy-transaction-cell economy-transaction-cell--name";
-        nameEl.textContent = transaction.counterpartyName || "Onbekend personage";
-        row.appendChild(nameEl);
-
-        const dateEl = document.createElement("div");
-        dateEl.className = "economy-transaction-cell economy-transaction-cell--date";
-        dateEl.textContent = formatEconomyDate(transaction.transactionDate);
-        row.appendChild(dateEl);
-
-        const descriptionEl = document.createElement("div");
-        descriptionEl.className = "economy-transaction-cell economy-transaction-cell--description";
-        const isOutgoing = transaction.direction === "outgoing";
-        const signedAmountLabel = `${isOutgoing ? "-" : "+"}${formatCharacterCurrency(transaction.amount)}`;
-        descriptionEl.textContent = transaction.description || "";
-        row.appendChild(descriptionEl);
-
-        const amountEl = document.createElement("div");
-        amountEl.className = [
-            "economy-transaction-cell",
-            "economy-transaction-cell--amount",
-            isOutgoing ? "text-danger" : "text-success"
-        ].join(" ");
-        amountEl.textContent = signedAmountLabel;
-        row.appendChild(amountEl);
-
-        if (rowCanDelete) {
-            const actionCol = document.createElement("div");
-            actionCol.className = "economy-transaction-cell economy-transaction-cell--action";
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.type = "button";
-            deleteBtn.className = "btn btn-sm btn-danger";
-            deleteBtn.dataset.action = "delete-bank-transaction";
-            deleteBtn.dataset.idTransaction = String(transaction.id || 0);
-            deleteBtn.textContent = "Verwijderen";
-            actionCol.appendChild(deleteBtn);
-
-            row.appendChild(actionCol);
-        }
-
-        item.appendChild(row);
-        list.appendChild(item);
-    });
-
-    tableInner.appendChild(header);
-    tableInner.appendChild(list);
-    tableWrap.appendChild(tableInner);
-
-    targetHost.appendChild(tableWrap);
-    if (!embedded) {
-        host.appendChild(transactionCard.card);
-    }
+    if (!embedded) host.append(transactionCard.card);
 }
 
 function renderCharacterEconomyTab(character) {
@@ -1434,9 +1314,9 @@ function renderCharacterEconomyTab(character) {
 
     container.appendChild(leftCol);
     container.appendChild(rightCol);
-    aetherShareUi.attachPortfolio(rightCol, character);
+    const portfolioCard = aetherShareUi.attachPortfolio(rightCol, character);
     aetherShareMarketClient.attachEconomy(
-        rightCol, character,
+        portfolioCard, character,
         typeof aetherCharacterActionsState === "object"
             ? aetherCharacterActionsState.selectedEventId : 0
     );
@@ -1548,11 +1428,11 @@ async function submitBankTransfer() {
 }
 
 async function deleteBankTransaction(idTransaction) {
-    if (!currentCharacter?.id || idTransaction <= 0) return;
+    if (!currentCharacter?.id || idTransaction <= 0) return false;
 
     const shouldDelete = window.confirm("Deze verrichting verwijderen en het bedrag terugboeken?");
     if (!shouldDelete) {
-        return;
+        return false;
     }
 
     try {
@@ -1562,9 +1442,11 @@ async function deleteBankTransaction(idTransaction) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij verwijderen van verrichting:", err);
         alert("Kon de verrichting niet verwijderen.");
+        return false;
     }
 }
 
@@ -1601,11 +1483,11 @@ async function createCharacterEconomySnapshot(button) {
 }
 
 async function deleteCharacterEconomySnapshot(idSnapshot) {
-    if (!currentCharacter?.id || idSnapshot <= 0) return;
+    if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
     const shouldDelete = window.confirm("Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?");
     if (!shouldDelete) {
-        return;
+        return false;
     }
 
     try {
@@ -1615,10 +1497,12 @@ async function deleteCharacterEconomySnapshot(idSnapshot) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij verwijderen van economiesnapshot:", err);
         alert(getApiErrorMessage(err, "Kon de economiesnapshot niet verwijderen."));
         await getCharacter(currentCharacter.id, null, "economy");
+        return false;
     }
 }
 
@@ -1723,7 +1607,7 @@ async function withdrawSecuritiesBalance() {
 }
 
 async function rerollSecuritiesSnapshot(idSnapshot) {
-    if (!currentCharacter?.id || idSnapshot <= 0) return;
+    if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
     try {
         await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
@@ -1736,15 +1620,17 @@ async function rerollSecuritiesSnapshot(idSnapshot) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij opnieuw genereren van rendement:", err);
         alert(getApiErrorMessage(err, "Kon het rendement niet opnieuw genereren."));
         await getCharacter(currentCharacter.id, null, "economy");
+        return false;
     }
 }
 
 async function approveSecuritiesSnapshot(idSnapshot) {
-    if (!currentCharacter?.id || idSnapshot <= 0) return;
+    if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
     try {
         await apiFetchFinancialJson("api/characters/saveCharacterSecuritiesPortfolio.php", {
@@ -1757,10 +1643,12 @@ async function approveSecuritiesSnapshot(idSnapshot) {
         });
 
         await getCharacter(currentCharacter.id, null, "economy");
+        return true;
     } catch (err) {
         console.error("Fout bij goedkeuren van rendement:", err);
         alert(getApiErrorMessage(err, "Kon het rendement niet goedkeuren."));
         await getCharacter(currentCharacter.id, null, "economy");
+        return false;
     }
 }
 
@@ -1912,8 +1800,8 @@ function setupEconomySectionListeners() {
             return;
         }
 
-        const securitiesRiskProfileSelect = e.target.closest("select[data-role='securities-risk-profile']");
-        if (securitiesRiskProfileSelect && !securitiesRiskProfileSelect.disabled) {
+        const securitiesRiskProfileSlider = e.target.closest("input[data-role='securities-risk-profile']");
+        if (securitiesRiskProfileSlider && !securitiesRiskProfileSlider.disabled) {
             await saveSecuritiesSettings();
             return;
         }
@@ -1942,6 +1830,12 @@ function setupEconomySectionListeners() {
     });
 
     document.addEventListener("input", (e) => {
+        const securitiesRiskProfileSlider = e.target.closest("input[data-role='securities-risk-profile']");
+        if (securitiesRiskProfileSlider) {
+            updateSecuritiesRiskProfileDisplay(securitiesRiskProfileSlider);
+            return;
+        }
+
         const securitiesWithdrawalAmountInput = e.target.closest("[data-role='securities-withdraw-amount']");
         if (securitiesWithdrawalAmountInput) {
             updateSecuritiesWithdrawalModalState();

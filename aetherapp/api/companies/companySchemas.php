@@ -13,9 +13,7 @@ function aetherCompanyCreateSchema(): array
     return ['companyName' => ['type' => 'string', 'required' => true, 'trim' => true, 'minLength' => 1, 'maxLength' => 255]];
 }
 
-/** The UI sends previously read presentation fields back with its editable personnel state.
- * They are accepted for compatibility, validated, and never used for authority or writes.
- */
+/** Older clients may send previously read presentation fields back. */
 function aetherCompanyPersonnelEntrySchema(): array
 {
     return [
@@ -24,8 +22,10 @@ function aetherCompanyPersonnelEntrySchema(): array
         'displayName' => ['type' => 'string', 'maxLength' => 4096],
         'nameLabel' => ['type' => 'string', 'maxLength' => 4096],
         'professionLabel' => ['type' => 'string', 'maxLength' => 4096],
+        'functionDescription' => ['type' => 'string', 'trim' => true, 'maxLength' => 4000, 'default' => ''],
         'importance' => ['type' => 'enum', 'values' => ['Negligible', 'Low', 'Moderate', 'High', 'Critical'], 'default' => 'Moderate'],
         'salaryIncreasePercentage' => ['type' => 'decimal', 'scale' => 2, 'min' => '0.00', 'max' => '999999.99', 'default' => '0.00'],
+        'isBoardMember' => ['type' => 'bool'],
     ];
 }
 
@@ -73,7 +73,17 @@ function aetherValidateCompanyPersonnelRequest(array $input): array
         if (!is_array($skills) || !array_is_list($skills)) {
             throw new AetherValidationException(["Vaardigheden van personeelsrij {$i} moeten een lijst zijn."]);
         }
-        $person = aetherValidateInput(array_diff_key($entry, ['skills' => true]), aetherCompanyPersonnelEntrySchema());
+        // These values are calculated by the server and must never affect a personnel write.
+        // Ignore them for older clients that round-trip the detail response unchanged.
+        $readOnlyFields = [
+            'skills' => true,
+            'isCompanyLeader' => true,
+            'monthlySalaryIncreaseAmount' => true,
+            'leaderMonthlyIncome' => true,
+            'leaderStatusPoints' => true,
+            'leaderPersonnelRequirement' => true,
+        ];
+        $person = aetherValidateInput(array_diff_key($entry, $readOnlyFields), aetherCompanyPersonnelEntrySchema());
         $person['skills'] = [];
         foreach ($skills as $j => $skillEntry) {
             if (!is_array($skillEntry) || array_is_list($skillEntry) && $skillEntry !== []) {

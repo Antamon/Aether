@@ -24,17 +24,25 @@ try {
 }
 
 try {
-    aetherJsonResponse(aetherUpdateCharacterTrait(
+    $pdo->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
+    $pdo->beginTransaction();
+    $lock = $pdo->prepare('SELECT id FROM tblCharacter WHERE id = :idCharacter FOR UPDATE');
+    $lock->execute(['idCharacter' => $input['idCharacter']]);
+    $response = aetherUpdateCharacterTrait(
         $pdo,
         $currentUser,
         $input['idCharacter'],
         $input['idTrait'],
         (int) ($input['idCurrentTrait'] ?? 0),
         $input['action']
-    ));
-} catch (AetherCharacterTraitException $e) {
+    );
+    $pdo->commit();
+    aetherJsonResponse($response);
+} catch (AetherCharacterTraitException|AetherShareException $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
     aetherJsonError($e->getHttpStatus(), $e->getMessage());
 } catch (Throwable $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('updateTrait.php failed: ' . $e->getMessage());
     aetherJsonError(500, 'Kon trait niet bijwerken.');
 }

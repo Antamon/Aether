@@ -2,6 +2,13 @@
 
 Datum: 17 september 2026
 
+Update 5 oktober 2026: statische ingangspagina's gebruiken nu rechtstreekse
+CSS/JS-links met inhoudshashes. Voer na een CSS/JS-wijziging
+`node tools/version-assets.cjs` uit en upload ook de gewijzigde HTML-pagina's.
+De beschrijving van de assetresolver hieronder documenteert het eerdere gedrag;
+de resolver blijft beschikbaar voor oudere verwijzingen. Zie
+[de actuele optimalisatie en uploadinstructies](performance-optimization.md).
+
 ## Onderzoek van de bestaande situatie
 
 - De applicatie heeft vijf gebruikte statische ingangspagina's: `index.html`, `admin.html`, `companies.html`, `eventParticipation.html` en `static.html`.

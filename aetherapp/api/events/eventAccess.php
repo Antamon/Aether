@@ -33,3 +33,10 @@ function aetherCanReadEventParticipationForUser(array $currentUser, int $userId)
     return $userId === (int) ($currentUser['id'] ?? 0) || aetherCanManageEvents($currentUser);
 }
 
+function aetherCanLinkEventCharacter(array $user, array $character): bool
+{
+    return aetherCanManageEvents($user) || (($user['role'] ?? '') === 'participant'
+        && (int) ($user['id'] ?? 0) > 0 && (int) ($character['idUser'] ?? 0) === (int) $user['id']
+        && ($character['type'] ?? '') === 'player' && ($character['state'] ?? 'draft') !== 'draft');
+}
+

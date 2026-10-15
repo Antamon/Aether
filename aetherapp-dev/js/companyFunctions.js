@@ -120,7 +120,7 @@ window.addEventListener("load", () => {
 
 async function initCompanyPage() {
     try {
-        const currentUser = await apiFetchJson("getCurrentUser.php");
+        const currentUser = await aetherGetCurrentUser();
         if (!currentUser || !userHasPrivilegedRole(currentUser)) {
             window.location.href = "index.html";
             return;
@@ -322,6 +322,15 @@ function setupCompanyPageListeners() {
     if (companyPersonnelSpecSaveBtn) {
         companyPersonnelSpecSaveBtn.addEventListener("click", saveCompanyPersonnelSpecialisationFromModal);
     }
+
+    const companyTypeInfoButton = document.getElementById("companyTypeInfoButton");
+    if (companyTypeInfoButton) {
+        companyTypeInfoButton.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("companyTypeInfoModal")).show();
+        });
+    }
 }
 
 async function loadCompanyList(selectedCompanyId = 0) {
@@ -331,22 +340,23 @@ async function loadCompanyList(selectedCompanyId = 0) {
 
         renderCompanyList();
 
-        if (companies.length === 0) {
+        if (companies.length === 0 || Number(selectedCompanyId) <= 0) {
             currentCompanyId = 0;
             currentCompanyData = null;
             currentCompanyPersonnelState = [];
             setCompanyFormState(false);
             populateCompanyForm(null);
-            showCompanyFeedback("Nog geen bedrijven beschikbaar.", "info");
+            renderCompanyList();
+            if (companies.length === 0) {
+                showCompanyFeedback("Nog geen bedrijven beschikbaar.", "info");
+            } else {
+                hideCompanyFeedback();
+            }
             return;
         }
 
-        const nextCompanyId = Number(selectedCompanyId) > 0
-            ? Number(selectedCompanyId)
-            : Number(companies[0].id || 0);
-
         hideCompanyFeedback();
-        await loadCompany(nextCompanyId);
+        await loadCompany(Number(selectedCompanyId));
     } catch (err) {
         console.error("Fout bij laden bedrijvenlijst:", err);
         setCompanyFormState(false);
@@ -492,6 +502,7 @@ function populateCompanyForm(company) {
 function setCompanyFormState(enabled, options = {}) {
     const form = document.getElementById("companyForm");
     if (!form) return;
+    form.classList.toggle("d-none", !enabled);
 
     const { nameOnly = false } = options;
 
@@ -1209,23 +1220,17 @@ function renderCompanySnapshots(company) {
 
         if (editing) {
         const buttonGroup = document.createElement("div");
-        buttonGroup.className = "company-snapshot-actions";
+        buttonGroup.className = "company-snapshot-actions button-group";
 
-        const recalculateButton = document.createElement("button");
-        recalculateButton.type = "button";
-        recalculateButton.className = "btn btn-outline-secondary btn-sm";
+        const recalculateButton = AetherActionButtons.button({ icon: "fa-rotate", label: "Herbereken" });
         recalculateButton.dataset.action = "recalculate-company-snapshot";
         recalculateButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-        recalculateButton.textContent = "Herbereken";
         recalculateButton.disabled = isApplied;
         buttonGroup.appendChild(recalculateButton);
 
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "btn btn-outline-danger btn-sm";
+        const deleteButton = AetherActionButtons.button({ icon: "fa-trash", label: "Verwijderen" });
         deleteButton.dataset.action = "delete-company-snapshot";
         deleteButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-        deleteButton.textContent = "Verwijderen";
         buttonGroup.appendChild(deleteButton);
         header.appendChild(buttonGroup);
 
@@ -1391,38 +1396,29 @@ function renderCompanySnapshots(company) {
             appliedInfo.textContent = `Toegepast: ${getCompanySnapshotAppliedActionLabel(appliedAction)}. Eerdere boekingen blijven bewaard bij correcties.`;
             actionSection.appendChild(appliedInfo);
         } else if (profitAmount < 0) {
-            const lossButton = document.createElement("button");
-            lossButton.type = "button";
-            lossButton.className = "btn btn-outline-danger btn-sm";
+            const lossButton = AetherActionButtons.button({ icon: "fa-check", label: "Bedrijfswaarde aanpassen" });
             lossButton.dataset.action = "apply-company-snapshot";
             lossButton.dataset.applyAction = "loss_adjustment";
             lossButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-            lossButton.textContent = "Bedrijfswaarde aanpassen";
-            actionSection.appendChild(lossButton);
+            actionSection.appendChild(AetherActionButtons.group([lossButton]));
         } else if (profitAmount > 0) {
             const dividendInfo = document.createElement("div");
             dividendInfo.textContent = `Dividend voor 1%: ${formatCompanySnapshotCurrency(dividendPerPercentage)}`;
             actionSection.appendChild(dividendInfo);
 
             const actionButtons = document.createElement("div");
-            actionButtons.className = "company-snapshot-actions mt-2";
+            actionButtons.className = "company-snapshot-actions button-group mt-2";
 
-            const reinvestButton = document.createElement("button");
-            reinvestButton.type = "button";
-            reinvestButton.className = "btn btn-outline-primary btn-sm";
+            const reinvestButton = AetherActionButtons.button({ icon: "fa-arrow-trend-up", label: "Herinvesteren" });
             reinvestButton.dataset.action = "apply-company-snapshot";
             reinvestButton.dataset.applyAction = "reinvest";
             reinvestButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-            reinvestButton.textContent = "Herinvesteren";
             actionButtons.appendChild(reinvestButton);
 
-            const dividendButton = document.createElement("button");
-            dividendButton.type = "button";
-            dividendButton.className = "btn btn-outline-success btn-sm";
+            const dividendButton = AetherActionButtons.button({ icon: "fa-coins", label: "Dividend uitbetalen" });
             dividendButton.dataset.action = "apply-company-snapshot";
             dividendButton.dataset.applyAction = "dividend";
             dividendButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
-            dividendButton.textContent = "Dividend uitbetalen";
             actionButtons.appendChild(dividendButton);
 
             actionSection.appendChild(actionButtons);
@@ -1628,13 +1624,10 @@ function renderCompanyPersonnel(company) {
         }
         header.appendChild(titleWrap);
 
-        const removeButton = document.createElement("button");
-        removeButton.type = "button";
-        removeButton.className = "btn btn-outline-danger btn-sm";
+        const removeButton = AetherActionButtons.button({ icon: "fa-trash", label: "Verwijderen" });
         removeButton.dataset.action = "remove-company-personnel";
         removeButton.dataset.personnelIndex = String(entryIndex);
-        removeButton.textContent = "Verwijderen";
-        if (editing) header.appendChild(removeButton);
+        if (editing) header.appendChild(AetherActionButtons.group([removeButton]));
 
         cardEl.appendChild(header);
 
@@ -1844,15 +1837,12 @@ function renderCompanyPersonnel(company) {
         specialisationsLabel.textContent = "Specialisaties";
         specialisationsHeader.appendChild(specialisationsLabel);
 
-        const addSpecialisationButton = document.createElement("button");
-        addSpecialisationButton.type = "button";
-        addSpecialisationButton.className = "btn btn-outline-secondary btn-sm";
+        const addSpecialisationButton = AetherActionButtons.button({ icon: "fa-plus", label: "Specialisatie toevoegen" });
         addSpecialisationButton.dataset.action = "open-company-personnel-specialisation-modal";
         addSpecialisationButton.dataset.personnelIndex = String(entryIndex);
         addSpecialisationButton.dataset.skillIndex = "0";
-        addSpecialisationButton.textContent = "Specialisatie toevoegen";
         addSpecialisationButton.disabled = Number(skillEntry?.idSkill || 0) <= 0;
-        specialisationsHeader.appendChild(addSpecialisationButton);
+        specialisationsHeader.appendChild(AetherActionButtons.group([addSpecialisationButton]));
         specialisationsSection.appendChild(specialisationsHeader);
 
         const specialisationsList = document.createElement("div");
@@ -1872,15 +1862,12 @@ function renderCompanyPersonnel(company) {
                 text.textContent = specialisation?.name || `Specialisatie #${specialisation?.idSkillSpecialisation || 0}`;
                 badge.appendChild(text);
 
-                const deleteButton = document.createElement("button");
-                deleteButton.type = "button";
-                deleteButton.className = "btn btn-sm btn-link";
+                const deleteButton = AetherActionButtons.button({ icon: "fa-xmark", title: "Specialisatie verwijderen", ariaLabel: "Specialisatie verwijderen" });
                 deleteButton.dataset.action = "remove-company-personnel-specialisation";
                 deleteButton.dataset.personnelIndex = String(entryIndex);
                 deleteButton.dataset.skillIndex = "0";
                 deleteButton.dataset.specialisationIndex = String(specialisationIndex);
-                deleteButton.textContent = "x";
-                badge.appendChild(deleteButton);
+                badge.appendChild(AetherActionButtons.group([deleteButton]));
 
                 specialisationsList.appendChild(badge);
             });

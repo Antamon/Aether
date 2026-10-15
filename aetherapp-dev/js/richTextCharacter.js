@@ -1,11 +1,11 @@
 const AETHER_CHARACTER_RICH_TEXT_TOOLBAR = `
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold" aria-label="Vet"><i class="fa-solid fa-bold"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic" aria-label="Cursief"><i class="fa-solid fa-italic"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertUnorderedList" aria-label="Ongenummerde lijst"><i class="fa-solid fa-list-ul"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="insertOrderedList" aria-label="Genummerde lijst"><i class="fa-solid fa-list-ol"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="p" aria-label="Alinea">P</button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="formatBlock" data-value="h4" aria-label="Kopniveau 4">H4</button>
-    <button type="button" class="btn btn-sm btn-secondary" data-cmd="removeFormat" aria-label="Opmaak verwijderen"><i class="fa-solid fa-eraser"></i></button>
+    <button type="button" class="action-button" data-cmd="bold" aria-label="Vet"><i class="fa-solid fa-bold"></i></button>
+    <button type="button" class="action-button" data-cmd="italic" aria-label="Cursief"><i class="fa-solid fa-italic"></i></button>
+    <button type="button" class="action-button" data-cmd="insertUnorderedList" aria-label="Ongenummerde lijst"><i class="fa-solid fa-list-ul"></i></button>
+    <button type="button" class="action-button" data-cmd="insertOrderedList" aria-label="Genummerde lijst"><i class="fa-solid fa-list-ol"></i></button>
+    <button type="button" class="action-button" data-cmd="formatBlock" data-value="p" aria-label="Alinea">P</button>
+    <button type="button" class="action-button" data-cmd="formatBlock" data-value="h4" aria-label="Kopniveau 4">H4</button>
+    <button type="button" class="action-button" data-cmd="removeFormat" aria-label="Opmaak verwijderen"><i class="fa-solid fa-eraser"></i></button>
 `;
 
 function renderCharacterRichText(element, sanitizedHtml, emptyText = "Geen inhoud.") {
@@ -28,7 +28,7 @@ function createCharacterRichTextEditor(initialHtml, options = {}) {
     wrap.className = "aether-rich-text-editor";
 
     const toolbar = document.createElement("div");
-    toolbar.className = "btn-group mb-2 flex-wrap";
+    toolbar.className = "button-group mb-2 flex-wrap";
     toolbar.innerHTML = AETHER_CHARACTER_RICH_TEXT_TOOLBAR;
 
     const editor = document.createElement("div");

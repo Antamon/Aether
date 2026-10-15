@@ -52,10 +52,13 @@ function aetherPersonnelDeleteCompanyLinks(PDO $pdo, int $idCompany): void
 
 function aetherPersonnelInsert(PDO $pdo, int $idCompany, array $entry): int
 {
-    $stmt = $pdo->prepare('INSERT INTO tblCompanyPersonnel (idCompany, idCharacter, importance, salaryIncreasePercentage) VALUES (:idCompany, :idCharacter, :importance, :salaryIncreasePercentage)');
+    $stmt = $pdo->prepare('INSERT INTO tblCompanyPersonnel
+        (idCompany, idCharacter, importance, functionDescription, salaryIncreasePercentage)
+        VALUES (:idCompany, :idCharacter, :importance, :functionDescription, :salaryIncreasePercentage)');
     $stmt->execute([
         'idCompany' => $idCompany, 'idCharacter' => $entry['idCharacter'],
-        'importance' => $entry['importance'], 'salaryIncreasePercentage' => $entry['salaryIncreasePercentage'],
+        'importance' => $entry['importance'], 'functionDescription' => $entry['functionDescription'],
+        'salaryIncreasePercentage' => $entry['salaryIncreasePercentage'],
     ]);
     return (int) $pdo->lastInsertId();
 }

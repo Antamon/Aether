@@ -113,11 +113,19 @@ function runCacheManagementTests(): void
         foreach ($entryPages as $entryPage) {
             $html = file_get_contents($applicationRoot . '/' . $entryPage);
             assertCacheManagement(
-                !preg_match('/(?:href|src)="(?:css|js)\//', $html),
-                $entryPage . ' bevat nog een lokale CSS/JS-URL zonder centrale resolver.'
+                !str_contains($html, 'asset.php?path='),
+                $entryPage . ' gebruikt nog de PHP-omleiding voor assets.'
             );
+            preg_match_all('/(?:href|src)="((?:css|js)\/[^"?]+)\?v=([a-f0-9]{16})"/', $html, $assets, PREG_SET_ORDER);
+            assertCacheManagement(count($assets) > 0, $entryPage . ' mist versiegebonden assets.');
+            foreach ($assets as $asset) {
+                assertCacheManagement(
+                    substr(hash_file('sha256', $applicationRoot . '/' . $asset[1]), 0, 16) === $asset[2],
+                    $entryPage . ' bevat een verouderde assetversie: ' . $asset[1]
+                );
+            }
             assertCacheManagement(
-                str_contains($html, 'asset.php?path=js/updateManager.js'),
+                str_contains($html, 'js/updateManager.js?v='),
                 $entryPage . ' laadt de centrale updatechecker niet.'
             );
         }

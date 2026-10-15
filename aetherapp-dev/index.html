@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="asset.php?path=css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=a9b6a4b315701e4c">
     <title>Aether applicatie</title>
 </head>
 <body data-sidebar-page="characters">
@@ -16,7 +16,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html">
+            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina">
                     <img src="img/aether-logo.png" alt="Bootstrap">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,15 +24,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" id="characterSidebarNavTrigger" aria-controls="offcanvasScrolling" aria-expanded="false" aria-current="page" href="#"><i class="fa-solid fa-user"></i> Personages</a>
-                    </li>
-                    <li class="nav-item mr-2">
-                        <a class="nav-link" id="eventParticipation" aria-current="page" href="eventParticipation.html"><i class="fa-solid fa-calendar"></i> Evenementen</a>
-                    </li>
-                    <li class="nav-item mr-2 d-none" id="navbarCompaniesItem">
-                        <a class="nav-link" id="companiesPage" aria-current="page" href="companies.html"><i class="fa-solid fa-building"></i> Bedrijven</a>
-                    </li>
                     <li class="nav-item mr-2 d-none" id="navbarAdminItem">
                         <a class="nav-link" id="adminPage" aria-current="page" href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
                     </li>
@@ -174,6 +165,7 @@
 
     <!-- Charactersheet nav -->
     <div class="container d-none" id="pageNav"></div>
+    <div class="container aether-page d-none" id="characterDeleteActions"></div>
 
     <!-- Charactersheet body -->
     <div class="container aether-page" id="sheetBody">
@@ -196,8 +188,10 @@
                                     </div>
                                     <div class="character-portrait-actions">
                                         <input type="file" id="characterPortraitFileInput" class="d-none" accept="image/*">
-                                        <button type="button" class="btn btn-outline-primary btn-sm" id="characterPortraitUploadButton">Portret opladen</button>
-                                        <button type="button" class="btn btn-outline-danger btn-sm" id="characterPortraitDeleteButton">Verwijderen</button>
+                                        <div class="button-group">
+                                            <button type="button" class="action-button" id="characterPortraitUploadButton" title="Portret opladen" aria-label="Portret opladen"><i class="fa-solid fa-upload"></i></button>
+                                            <button type="button" class="action-button" id="characterPortraitDeleteButton" title="Portret verwijderen" aria-label="Portret verwijderen"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="character-sheet-header-fields">
@@ -283,14 +277,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card aether-panel character-sheet-card mb-4">
+                    <div class="card aether-panel character-sheet-card mb-4" id="leftInfoSections">
                         <div class="card-body">
                             <h4 class="character-sheet-card-title">Gezondheid</h4>
-                            <div id="healthSectionContent"></div>
-                        </div>
-                    </div>
-                        <div class="card aether-panel character-sheet-card mb-4" id="leftInfoSections">
-                        <div class="card-body">
+                            <div class="mb-4" id="healthSectionContent"></div>
                             <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
                             <div class="mb-4" id="livingStandardSectionContent"></div>
                             <h4 class="character-sheet-card-title" id="staffSectionTitle">Personeel</h4>
@@ -324,9 +314,9 @@
                             <h4 class="character-sheet-card-title">Vaardigheden</h4>
                             <div class="accordion mb-3" id="accordionSkills"></div>
                             <div class="input-group">
-                                <label class="input-group-text" for="idNewSkill">Vaardigheid toevoegen</label>
+                                <label class="input-group-text action-group-label" for="idNewSkill">Vaardigheid toevoegen</label>
                                 <select class="form-select" id="idNewSkill"></select>
-                                <button class="btn btn-success" type="button" id="addNewSkill"><i class="fa-solid fa-plus"></i></button>
+                                <div class="button-group"><button class="action-button" type="button" id="addNewSkill" aria-label="Vaardigheid toevoegen"><i class="fa-solid fa-plus" aria-hidden="true"></i></button></div>
                             </div>
                         </div>
                     </div>
@@ -375,7 +365,7 @@
             <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add specialisation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
             </div>
 
             <div class="modal-body">
@@ -440,8 +430,10 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="specSaveBtn">Safe</button>
+                <div class="button-group">
+                    <button type="button" class="action-button" id="specSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
+                    <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                </div>
             </div>
             </div>
         </div>
@@ -457,10 +449,7 @@
                         Choose discipline for
                         <span id="disciplineSkillTitle" class="fw-bold"></span>
                     </h5>
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="modal"
-                            aria-label="Sluiten"></button>
+                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                 </div>
 
                 <div class="modal-body">
@@ -531,12 +520,10 @@
                 <div class="modal-footer">
                     <!-- belangrijk: GEEN data-bs-dismiss op Cancel
                         → als user wegklikt zonder keuze, registreren we de skill niet -->
-                    <button type="button" class="btn btn-secondary" id="disciplineCancelBtn">
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" id="disciplineSaveBtn">
-                        Safe
-                    </button>
+                    <div class="button-group">
+                        <button type="button" class="action-button" id="disciplineSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
+                        <button type="button" class="action-button" id="disciplineCancelBtn"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                    </div>
                 </div>
 
             </div>
@@ -548,7 +535,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Taal kiezen</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                 </div>
                 <div class="modal-body">
                     <ul class="nav nav-tabs mb-3" id="languageTab" role="tablist">
@@ -604,8 +591,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="languageSaveBtn">Save</button>
+                    <div class="button-group">
+                        <button type="button" class="action-button" id="languageSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -616,26 +605,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
-    <script src="asset.php?path=js/mainFunctions.js"></script>
-    <script src="asset.php?path=js/updateManager.js"></script>
-    <script src="asset.php?path=js/characterState.js"></script>
-    <script src="asset.php?path=js/characterUtils.js"></script>
-    <script src="asset.php?path=js/apiCharacter.js"></script>
-    <script src="asset.php?path=js/formCharacter.js"></script>
-    <script src="asset.php?path=js/languageCharacter.js"></script>
-    <script src="asset.php?path=js/shareInterface.js"></script>
-    <script src="asset.php?path=js/dataCard.js"></script>
-    <script src="asset.php?path=js/shareMarketClient.js"></script>
-    <script src="asset.php?path=js/economyCharacter.js"></script>
-    <script src="asset.php?path=js/actionsCharacter.js"></script>
-    <script src="asset.php?path=js/passportCharacter.js"></script>
-    <script src="asset.php?path=js/richTextCharacter.js"></script>
-    <script src="asset.php?path=js/diaryCharacter.js"></script>
-    <script src="asset.php?path=js/backgroundCharacter.js"></script>
-    <script src="asset.php?path=js/createCharacter.js"></script>
-    <script src="asset.php?path=js/aetherSidebars.js"></script>
-    <script src="asset.php?path=js/characterFunctions.js"></script>
-    <script src="asset.php?path=js/navCharacter.js"></script>
-    <script src="asset.php?path=js/skillsCharacter.js"></script>
-    <script src="asset.php?path=js/traitsCharacter.js"></script>
+    <script src="js/performance.js?v=39da1fe1368d5dac"></script>
+    <script src="js/mainFunctions.js?v=f3db4bd7cb4060d8"></script>
+    <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
+    <script src="js/characterState.js?v=981855638e3a12a5"></script>
+    <script src="js/characterUtils.js?v=12234574229ba7ac"></script>
+    <script src="js/apiCharacter.js?v=4f21a466db3bf1cb"></script>
+    <script src="js/formCharacter.js?v=73a3b9e1b2d0de37"></script>
+    <script src="js/languageCharacter.js?v=8d3c1e36318cc052"></script>
+    <script src="js/shareInterface.js?v=9097b4a6a201256a"></script>
+    <script src="js/dataCard.js?v=f7e48488b0af3f4f"></script>
+    <script src="js/actionButtons.js?v=b4df11b598cd6c2e"></script>
+    <script src="js/shareMarketClient.js?v=043c3f5bb6197e15"></script>
+    <script src="js/dataTable.js?v=19912ea78f5f8424"></script>
+    <script src="js/economyCharacter.js?v=9a54913663e8fb4a"></script>
+    <script src="js/actionsCharacter.js?v=0ad7950f78600c8f"></script>
+    <script src="js/passportCharacter.js?v=5985be2c5d78caaf"></script>
+    <script src="js/richTextCharacter.js?v=3ba30d8961e86621"></script>
+    <script src="js/diaryCharacter.js?v=6faf305cd24daba3"></script>
+    <script src="js/backgroundCharacter.js?v=c02237a9f85d8b38"></script>
+    <script src="js/createCharacter.js?v=86349c4750dde34a"></script>
+    <script src="js/aetherSidebars.js?v=b1f8f20e0076ee18"></script>
+    <script src="js/characterFunctions.js?v=bcc3a43062836eea"></script>
+    <script src="js/navCharacter.js?v=dfc3c50904020c42"></script>
+    <script src="js/skillsCharacter.js?v=1aab4b4cc2932b3e"></script>
+    <script src="js/traitsCharacter.js?v=c5f260f3684b6dad"></script>
 </body>
