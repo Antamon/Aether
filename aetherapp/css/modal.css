@@ -1,0 +1,208 @@
+/* Frame dimensions follow the visible metal profiles in the supplied artwork. */
+.aether-modal-surface {
+  --corner: 180px;
+  --content-padding-x: 62px;
+  --content-padding-top: 58px;
+  --title-bar-height: 50px;
+  --top-rail: calc(var(--corner) * 145.125 / 1100);
+  --bottom-rail: calc(var(--corner) * 145.125 / 1100);
+  --left-rail: calc(var(--corner) * 156.95 / 1100);
+  --right-rail: calc(var(--corner) * 154.8 / 1100);
+  --seam: 1px;
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--primary-brown, #382719);
+  background: transparent !important;
+  padding: var(--content-padding-top) var(--content-padding-x) 48px;
+  min-height: min(361px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+}
+
+.modal { --bs-modal-width: 800px; }
+.modal-dialog { width: calc(100% - 32px); margin: 16px auto; }
+.modal-dialog-scrollable { height: calc(100% - 32px); }
+dialog.aether-modal-surface {
+  position: fixed;
+  width: min(800px, calc(100vw - 32px));
+  max-width: none;
+  margin: auto;
+}
+dialog.aether-modal-surface[open] { display: flex; flex-direction: column; }
+dialog.aether-modal-surface::backdrop { background: rgba(0, 0, 0, .5); }
+
+.aether-modal-surface::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: var(--top-rail) var(--right-rail) var(--bottom-rail) var(--left-rail);
+  background: #e8d2ac url('../images/paper.png') repeat;
+  pointer-events: none;
+}
+.aether-modal-surface > .modal-header,
+.aether-modal-surface > .modal-body,
+.aether-modal-surface > .modal-footer { position: relative; z-index: 2; }
+.aether-modal-surface > .modal-header,
+.aether-modal-surface > .modal-footer { flex-shrink: 0; border-color: rgba(91, 58, 25, .25); }
+.aether-modal-surface > .modal-header {
+  margin-top: calc(var(--top-rail) - var(--content-padding-top));
+  padding: 24px 0;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 0;
+}
+.aether-modal-surface > .modal-header::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--left-rail) - var(--content-padding-x));
+  right: calc(var(--right-rail) - var(--content-padding-x));
+  background: #640e0e url('../images/red.jpg') repeat center;
+  pointer-events: none;
+}
+.aether-modal-surface .modal-title {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  font-size: calc(1.3rem + .6vw);
+  font-weight: 500;
+  line-height: 1.2;
+  color: #fff0c9;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.aether-modal-surface > .modal-header::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--left-rail) - var(--content-padding-x));
+  right: calc(var(--right-rail) - var(--content-padding-x));
+  bottom: 0;
+  height: var(--title-bar-height);
+  transform: translateY(50%);
+  background: url('../images/modalTitleBar.png') no-repeat center;
+  background-size: max(100%, calc(var(--title-bar-height) * 2048 / 144)) var(--title-bar-height);
+  pointer-events: none;
+}
+.aether-modal-surface > .modal-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding: calc(20px + var(--title-bar-height) / 2) 0 20px;
+}
+/* Bootstrap rows normally extend into their parent's padding. The frame's body
+   has no horizontal padding, so keep those gutters inside the scroll area. */
+.aether-modal-surface .modal-body .row { margin-inline: 0; }
+.aether-modal-surface .modal-body :is(.row, .d-flex, .input-group, .share-ui-form-grid) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.aether-modal-surface .modal-body :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+.aether-modal-surface .modal-body :is(img, video, canvas) { max-width: 100%; height: auto; }
+.aether-modal-surface .modal-body pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.aether-modal-surface .modal-body .share-ui-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+}
+.aether-modal-surface .button-group { max-width: 100%; flex-wrap: wrap; }
+.aether-modal-surface .button-group .action-button {
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: 32px;
+  white-space: normal;
+}
+.aether-modal-surface > .modal-footer {
+  padding: 18px 0 8px;
+  justify-content: center;
+}
+dialog.aether-modal-surface > .modal-body > .button-group:last-child {
+  display: flex;
+  justify-content: center;
+}
+@media (min-width: 1200px) {
+  .aether-modal-surface .modal-title { font-size: 1.75rem; }
+}
+.aether-modal-surface > .modal-header [data-bs-dismiss="modal"],
+.aether-modal-surface > .modal-header .btn-close { display: none; }
+
+.aether-modal-frame {
+  position: absolute;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  z-index: 3;
+}
+.aether-modal-frame-top,
+.aether-modal-frame-bottom {
+  z-index: 1;
+  left: calc(var(--corner) - var(--seam));
+  right: calc(var(--corner) - var(--seam));
+  height: var(--top-rail);
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+}
+.aether-modal-frame-top { top: 0; background-image: url('../images/modalFrameMiddleTop.png'); }
+.aether-modal-frame-bottom { bottom: 0; background-image: url('../images/modalFrameMiddleBottom.png'); }
+.aether-modal-frame-left,
+.aether-modal-frame-right {
+  z-index: 1;
+  top: calc(var(--corner) - var(--seam));
+  bottom: calc(var(--corner) - var(--seam));
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+}
+.aether-modal-frame-left { left: 0; width: var(--left-rail); background-image: url('../images/modalFrameLeftMiddle.png'); }
+.aether-modal-frame-right { right: 0; width: var(--right-rail); background-image: url('../images/modalFrameRightMiddle.png'); }
+.aether-modal-frame-top-left,
+.aether-modal-frame-top-right,
+.aether-modal-frame-bottom-left,
+.aether-modal-frame-bottom-right { width: var(--corner); height: var(--corner); background-size: 100% 100%; }
+.aether-modal-frame-top-left { top: 0; left: 0; background-image: url('../images/modalFrameLeftTop.png'); }
+.aether-modal-frame-top-right { top: 0; right: 0; background-image: url('../images/modalFrameRightTop.png'); }
+.aether-modal-frame-bottom-left { bottom: 0; left: 0; background-image: url('../images/modalFrameLeftBottom.png'); }
+.aether-modal-frame-bottom-right { bottom: 0; right: 0; background-image: url('../images/modalFrameRightBottom.png'); }
+
+.aether-modal-surface > .aether-modal-close {
+  position: absolute;
+  z-index: 10;
+  top: calc(var(--corner) * 172 / 1100);
+  right: calc(var(--corner) * 165 / 1100);
+  width: calc(var(--corner) * 390 / 1100);
+  height: calc(var(--corner) * 390 / 1100);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #fff0c9;
+  font-size: max(16px, calc(var(--corner) * .12));
+  line-height: 1;
+}
+.aether-modal-close:hover { background-color: rgba(255, 245, 210, .1); }
+.aether-modal-close:focus-visible { outline: 2px solid #fff1be; outline-offset: 2px; }
+.aether-modal-close i { text-shadow: 0 1px 3px #230000; }
+
+@media (max-width: 575.98px), (max-height: 480px) {
+  .aether-modal-surface {
+    --corner: 110px;
+    --content-padding-x: 36px;
+    --content-padding-top: 42px;
+    --title-bar-height: 36px;
+    padding-bottom: 32px;
+    min-height: min(221px, calc(100dvh - 32px));
+  }
+}

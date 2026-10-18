@@ -866,7 +866,7 @@ function getCompanyDetailData(PDO $pdo, int $idCompany): ?array
 
     $company = dbOne(
         $pdo,
-        'SELECT id, companyName, description, foundationDate, companyValue, stability, profitability
+        'SELECT id, companyName, description, foundationDate, companyValue, stability, profitability, isShareListed
            FROM tblCompany
           WHERE id = :id',
         ['id' => $idCompany]

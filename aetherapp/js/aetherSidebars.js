@@ -323,10 +323,10 @@
     function positionBelowNavbar() {
         const bottom = Math.max(0, navbar.getBoundingClientRect().bottom);
         deck.style.setProperty("--aether-navbar-bottom", `${bottom}px`);
-        // Keep the character header inside the thin part of the proportional topbar.
-        // Use the sheet container as the anchor even while pageNav is hidden/loading.
-        const pageNav = document.getElementById("pageNav");
-        const sheet = document.getElementById("sheetBody");
+        // All page headers use the character sheet's width and stop before the
+        // descending topbar ornament. Anchor to the content container while loading.
+        const pageNav = document.getElementById("pageNav") || document.querySelector(".aether-page-nav");
+        const sheet = document.getElementById("sheetBody") || document.querySelector(".admin-page");
         if (pageNav && sheet) {
             const bounds = sheet.getBoundingClientRect();
             const artwork = navbar.getBoundingClientRect();

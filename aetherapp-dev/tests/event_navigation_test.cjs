@@ -5,7 +5,7 @@ const vm = require('node:vm');
 class Element {
     constructor(tag) {
         this.tag = tag; this.children = []; this.dataset = {}; this.listeners = {}; this.classes = new Set();
-        this.style = { setProperty() {} }; this.value = '';
+        this.style = { setProperty(name, value) { this[name] = value; } }; this.value = '';
         this.classList = { add: (...names) => names.forEach(name => this.classes.add(name)),
             remove: name => this.classes.delete(name), contains: name => this.classes.has(name),
             toggle: (name, force = !this.classes.has(name)) => force ? this.classes.add(name) : this.classes.delete(name) };
@@ -30,9 +30,22 @@ async function checkSidebar(role, page = 'characters') {
     const characterParticipantSelect = new Element('select'); characterParticipantSelect.id = 'listParticipant-input';
     characterParticipantHost.append(characterParticipantSelect); body.append(characterParticipantHost);
     const navbar = new Element('nav');
+    let artworkWidth = 1920;
+    navbar.getBoundingClientRect = () => ({bottom: 100, left: 0, width: artworkWidth});
+    let contentBounds = {left: 300, width: 1320};
+    let pageHeader;
+    if (['characters', 'static', 'admin'].includes(page)) {
+        pageHeader = new Element('div'); pageHeader.className = 'aether-page-nav';
+        const content = new Element('main');
+        if (page === 'admin') content.className = 'admin-page';
+        else { pageHeader.id = 'pageNav'; content.id = 'sheetBody'; }
+        content.getBoundingClientRect = () => contentBounds;
+        body.append(pageHeader, content);
+    }
+    const windowListeners = {};
     const calls = [];
-    const context = { console, URLSearchParams, window: { location: { search: '', href: '' }, addEventListener() {} },
-        document: { body, createElement: tag => new Element(tag), querySelector: () => navbar,
+    const context = { console, URLSearchParams, window: { location: { search: '', href: '' }, addEventListener(name, handler) {windowListeners[name] = handler;} },
+        document: { body, createElement: tag => new Element(tag), querySelector: selector => selector === '.aether-top-nav' ? navbar : body.querySelector(selector),
             getElementById: id => find(body, node => node.id === id), addEventListener() {} },
         aetherGetCurrentUser: async () => ({ role }), userHasPrivilegedRole: user => ['director', 'administrator'].includes(user.role),
         apiFetchJson: async url => { calls.push(url); return url.includes('getUserList')
@@ -40,6 +53,15 @@ async function checkSidebar(role, page = 'characters') {
             : [{ id: 7, title: 'Event', imageUrl: 'img/events/7.png' }]; }
     };
     vm.createContext(context); vm.runInContext(fs.readFileSync('js/aetherSidebars.js', 'utf8'), context);
+    if (pageHeader) {
+        assert.equal(pageHeader.style['--aether-page-nav-width'], '1124px', `${page} uses the same width before the topbar ornament`);
+        assert.equal(pageHeader.style['--aether-page-nav-left'], '300px');
+        assert.equal(pageHeader.style['--aether-page-nav-container-width'], '1320px');
+        artworkWidth = 1280; contentBounds = {left: 70, width: 1140};
+        windowListeners.resize();
+        assert.equal(pageHeader.style['--aether-page-nav-width'], '874px', `${page} recalculates the shared width on resize`);
+        assert.equal(pageHeader.style['--aether-page-nav-left'], '70px');
+    }
     const tab = context.document.getElementById('eventsSidebarTabToggle').children[0];
     tab.listeners.click(); await settle();
     const wrapper = context.document.getElementById('participantFilterWrapper');

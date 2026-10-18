@@ -113,6 +113,147 @@ let companySnapshotEventOptions = null;
 let companySnapshotEventLoadError = false;
 let companyPersonnelDraft = null;
 let companyPersonnelDraftIndex = -1;
+const COMPANY_DETAILS_KEY = "company-details";
+let companyDetailsDraft = null;
+let companyDetailsSaving = false;
+
+function clearCompanyDetailsDraft() {
+    if (companyDetailsDraft?.previewUrl) URL.revokeObjectURL(companyDetailsDraft.previewUrl);
+    companyDetailsDraft = null;
+    aetherDataCard.close(COMPANY_DETAILS_KEY);
+}
+
+function beginCompanyDetailsEdit() {
+    if (!currentCompanyData || !aetherDataCard.open(COMPANY_DETAILS_KEY)) return;
+    companyDetailsDraft = {
+        companyName: currentCompanyData.companyName || "",
+        description: currentCompanyData.description || "",
+        foundationDate: currentCompanyData.foundationDate || "",
+        isShareListed: Number(currentCompanyData.isShareListed) === 1,
+        logoFile: null, removeLogo: false, previewUrl: null
+    };
+    companyAutoSavePending = false;
+    renderCompanyDetailsMode();
+    renderCompanySnapshots(currentCompanyData);
+    renderCompanyPersonnel(currentCompanyData);
+    document.getElementById("companyName")?.focus();
+}
+
+function cancelCompanyDetailsEdit() {
+    if (companyDetailsSaving) return;
+    clearCompanyDetailsDraft();
+    companyAutoSavePending = false;
+    if (isCreatingCompany && !currentCompanyId) {
+        isCreatingCompany = false;
+        setCompanyFormState(false);
+        populateCompanyForm(null);
+    } else populateCompanyForm(currentCompanyData);
+    hideCompanyFeedback();
+}
+
+function renderCompanyDetailsMode() {
+    const company = currentCompanyData;
+    const editing = Boolean(companyDetailsDraft && aetherDataCard.isEditing(COMPANY_DETAILS_KEY));
+    const panel = document.getElementById("companyDetailsPanel");
+    panel?.classList.toggle("is-editing", editing);
+    document.getElementById("companyActivityPanel")?.classList.toggle("d-none", !company?.id);
+    const actions = document.getElementById("companyDetailsActions");
+    if (actions) {
+        actions.replaceChildren();
+        aetherDataCard.controls(actions, {
+            key: COMPANY_DETAILS_KEY, canEdit: Boolean(company),
+            onEdit: beginCompanyDetailsEdit, onSave: saveCompanyDetails, onCancel: cancelCompanyDetailsEdit
+        });
+        actions.querySelectorAll("button").forEach(button => { button.disabled ||= companyDetailsSaving; });
+    }
+    for (const [id, field] of [["companyName", "companyName"], ["companyFoundationDate", "foundationDate"], ["companyDescription", "description"]]) {
+        const input = document.getElementById(id);
+        if (!input) continue;
+        let text = document.getElementById(`${id}Display`);
+        if (!text) {
+            text = document.createElement("div"); text.id = `${id}Display`;
+            text.className = "company-details-display";
+            input.parentElement.appendChild(text);
+        }
+        if (editing) input.value = companyDetailsDraft[field];
+        const value = company?.[field] || "";
+        text.textContent = field === "foundationDate" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+            ? value.split("-").reverse().join("/") : value || "—";
+        input.classList.toggle("d-none", !editing);
+        input.disabled = !editing || companyDetailsSaving;
+        text.classList.toggle("d-none", editing);
+    }
+    const logoActions = panel?.querySelector(".company-logo-actions");
+    logoActions?.classList.toggle("d-none", !editing);
+    if (editing) {
+        const draft = companyDetailsDraft;
+        const url = draft.removeLogo ? null : draft.previewUrl || company?.logoUrl || null;
+        updateCompanyLogo(url, Boolean(url));
+        updateCompanyLogoActions(!companyDetailsSaving, Boolean(url));
+    }
+    const listing = document.getElementById("companyShareListing");
+    if (listing) {
+        listing.replaceChildren();
+        const listed = editing ? companyDetailsDraft.isShareListed : Number(company?.isShareListed) === 1;
+        const status = document.createElement("span");
+        status.className = "company-listing-status"; status.textContent = listed ? "Ja" : "Nee";
+        if (editing) {
+            const label = document.createElement("label"); label.className = "company-listing-switch";
+            const input = document.createElement("input"); input.type = "checkbox";
+            input.className = "company-listing-switch-input"; input.checked = listed;
+            input.disabled = companyDetailsSaving; input.setAttribute("aria-label", "Beursgenoteerd");
+            const slider = document.createElement("span"); slider.className = "company-listing-switch-slider";
+            slider.setAttribute("aria-hidden", "true");
+            input.addEventListener("change", () => {
+                companyDetailsDraft.isShareListed = input.checked;
+                status.textContent = input.checked ? "Ja" : "Nee";
+            });
+            label.append(input, slider); listing.appendChild(label);
+        }
+        listing.appendChild(status);
+    }
+}
+
+async function saveCompanyDetails() {
+    if (!companyDetailsDraft || companyDetailsSaving) return;
+    const draft = companyDetailsDraft;
+    for (const [id, key] of [["companyName", "companyName"], ["companyDescription", "description"], ["companyFoundationDate", "foundationDate"]]) {
+        draft[key] = String(document.getElementById(id)?.value || "").trim();
+    }
+    if (!draft.companyName) { showCompanyFeedback("De bedrijfsnaam is verplicht.", "danger"); return; }
+    companyDetailsSaving = true;
+    renderCompanyDetailsMode();
+    try {
+        if (!currentCompanyId) {
+            const created = await apiFetchIdempotentJson("api/companies/newCompany.php", {
+                method: "POST", body: { companyName: draft.companyName }
+            });
+            if (!Number(created?.id)) throw new Error("Het bedrijf kon niet worden aangemaakt.");
+            currentCompanyId = Number(created.id);
+            currentCompanyData = { ...currentCompanyData, id: currentCompanyId, isDraft: false };
+            document.getElementById("companyId").value = String(currentCompanyId);
+            isCreatingCompany = false;
+        }
+        const fields = { companyName: draft.companyName, description: draft.description, foundationDate: draft.foundationDate };
+        await apiFetchFinancialJson("api/companies/updateCompany.php", { method: "POST", body: { id: currentCompanyId, ...fields } });
+        Object.assign(currentCompanyData, fields);
+        if (draft.isShareListed !== (Number(currentCompanyData.isShareListed) === 1)) {
+            await aetherShareUi.mutateCompany("setShareListing", { idCompany: currentCompanyId, isShareListed: draft.isShareListed });
+            currentCompanyData.isShareListed = draft.isShareListed ? 1 : 0;
+        }
+        if (draft.logoFile && !(await uploadCompanyLogo(draft.logoFile))) return;
+        if (draft.removeLogo && !(await deleteCompanyLogo())) return;
+        clearCompanyDetailsDraft();
+        companyAutoSavePending = false;
+        await loadCompanyList(currentCompanyId);
+        showCompanyFeedback("Bedrijfsgegevens opgeslagen.", "success");
+    } catch (error) {
+        showCompanyFeedback(error?.message || "Kon de bedrijfsgegevens niet bewaren.", "danger");
+    } finally {
+        companyDetailsSaving = false;
+        renderCompanyDetailsMode();
+    }
+}
 
 window.addEventListener("load", () => {
     initCompanyPage();
@@ -171,6 +312,7 @@ function setupCompanyPageListeners() {
     if (form) {
         form.addEventListener("submit", (event) => {
             event.preventDefault();
+            if (companyDetailsDraft) void saveCompanyDetails();
         });
     }
 
@@ -202,15 +344,20 @@ function setupCompanyPageListeners() {
     const companyNameInput = document.getElementById("companyName");
     if (companyNameInput) {
         companyNameInput.addEventListener("input", () => {
+            if (companyDetailsDraft) { companyDetailsDraft.companyName = companyNameInput.value; return; }
             markCompanyAutoSavePending();
         });
 
         companyNameInput.addEventListener("blur", () => {
+            if (companyDetailsDraft) return;
             void ensureCompanyCreated(true);
             void flushCompanyAutoSave();
         });
 
         companyNameInput.addEventListener("keydown", (event) => {
+            if (companyDetailsDraft && event.key === "Enter") {
+                event.preventDefault(); void saveCompanyDetails(); return;
+            }
             if (event.key === "Enter" && isCreatingCompany && Number(document.getElementById("companyId")?.value || 0) <= 0) {
                 event.preventDefault();
                 void ensureCompanyCreated(true);
@@ -223,6 +370,10 @@ function setupCompanyPageListeners() {
         if (!input) return;
 
         input.addEventListener("input", () => {
+            if (companyDetailsDraft) {
+                companyDetailsDraft[fieldId === "companyDescription" ? "description" : "foundationDate"] = input.value;
+                return;
+            }
             if (fieldId === "companyValue") {
                 updateCompanyTypePresentation();
             }
@@ -230,6 +381,10 @@ function setupCompanyPageListeners() {
         });
 
         input.addEventListener("change", () => {
+            if (companyDetailsDraft) {
+                companyDetailsDraft[fieldId === "companyDescription" ? "description" : "foundationDate"] = input.value;
+                return;
+            }
             if (fieldId === "companyValue") {
                 updateCompanyTypePresentation();
             }
@@ -238,6 +393,7 @@ function setupCompanyPageListeners() {
         });
 
         input.addEventListener("blur", () => {
+            if (companyDetailsDraft) return;
             if (fieldId === "companyValue") {
                 setCompanyCurrencyInputDisplayValue(input);
                 updateCompanyTypePresentation();
@@ -266,12 +422,7 @@ function setupCompanyPageListeners() {
 
     if (companyLogoUploadButton && companyLogoFileInput) {
         companyLogoUploadButton.addEventListener("click", () => {
-            const id = Number(document.getElementById("companyId")?.value || 0);
-            if (id <= 0) {
-                showCompanyFeedback("Maak eerst het bedrijf aan voor je een logo oplaadt.", "danger");
-                return;
-            }
-
+            if (!companyDetailsDraft || companyDetailsSaving) return;
             companyLogoFileInput.click();
         });
     }
@@ -283,14 +434,24 @@ function setupCompanyPageListeners() {
                 return;
             }
 
-            await uploadCompanyLogo(file);
+            if (!companyDetailsDraft || companyDetailsSaving) return;
+            if (companyDetailsDraft.previewUrl) URL.revokeObjectURL(companyDetailsDraft.previewUrl);
+            companyDetailsDraft.logoFile = file;
+            companyDetailsDraft.removeLogo = false;
+            companyDetailsDraft.previewUrl = URL.createObjectURL(file);
+            renderCompanyDetailsMode();
             companyLogoFileInput.value = "";
         });
     }
 
     if (companyLogoDeleteButton) {
         companyLogoDeleteButton.addEventListener("click", async () => {
-            await deleteCompanyLogo();
+            if (!companyDetailsDraft || companyDetailsSaving) return;
+            if (companyDetailsDraft.previewUrl) URL.revokeObjectURL(companyDetailsDraft.previewUrl);
+            companyDetailsDraft.logoFile = null;
+            companyDetailsDraft.previewUrl = null;
+            companyDetailsDraft.removeLogo = true;
+            renderCompanyDetailsMode();
         });
     }
 
@@ -398,6 +559,7 @@ async function loadCompany(idCompany) {
         });
 
         if (currentCompanyId !== Number(company?.id || 0)) {
+            clearCompanyDetailsDraft();
             aetherDataCard.reset();
             companyPersonnelDraft = null;
             companyPersonnelDraftIndex = -1;
@@ -441,7 +603,7 @@ function populateCompanyForm(company) {
         currentCompanyData = company;
         currentCompanyPersonnelState = [];
         if (formTitle) formTitle.textContent = "Nieuw bedrijf";
-        if (formSubtitle) formSubtitle.textContent = "Geef eerst een bedrijfsnaam op. Daarna wordt het bedrijf automatisch aangemaakt met standaardwaarden.";
+        if (formSubtitle) formSubtitle.textContent = "Vul de bedrijfsgegevens in en klik op Save.";
         if (idInput) idInput.value = "";
         if (nameInput) nameInput.value = company.companyName || "";
         if (descriptionInput) descriptionInput.value = company.description || "";
@@ -455,6 +617,7 @@ function populateCompanyForm(company) {
         renderCompanySnapshots(null);
         renderCompanyPersonnel(null);
         isPopulatingCompanyForm = false;
+        renderCompanyDetailsMode();
         return;
     }
 
@@ -476,13 +639,14 @@ function populateCompanyForm(company) {
         renderCompanySnapshots(null);
         renderCompanyPersonnel(null);
         isPopulatingCompanyForm = false;
+        renderCompanyDetailsMode();
         return;
     }
 
     currentCompanyData = company;
     currentCompanyPersonnelState = cloneCompanyPersonnelEntries(company?.personnelEntries);
     if (formTitle) formTitle.textContent = company.companyName || "Bedrijfsgegevens";
-    if (formSubtitle) formSubtitle.textContent = "Werk de gegevens van dit bedrijf bij. Wijzigingen worden automatisch bewaard.";
+    if (formSubtitle) formSubtitle.textContent = "Algemene gegevens van dit bedrijf.";
     if (idInput) idInput.value = String(company.id || "");
     if (nameInput) nameInput.value = company.companyName || "";
     if (descriptionInput) descriptionInput.value = company.description || "";
@@ -497,12 +661,14 @@ function populateCompanyForm(company) {
     renderCompanySnapshots(company);
     renderCompanyPersonnel(company);
     isPopulatingCompanyForm = false;
+    renderCompanyDetailsMode();
 }
 
 function setCompanyFormState(enabled, options = {}) {
     const form = document.getElementById("companyForm");
     if (!form) return;
     form.classList.toggle("d-none", !enabled);
+    document.getElementById("companyActivityPanel")?.classList.toggle("d-none", !enabled || !currentCompanyData?.id);
 
     const { nameOnly = false } = options;
 
@@ -532,7 +698,8 @@ function startCreatingCompany() {
     currentCompanyData = createEmptyCompanyDraft();
     currentCompanyPersonnelState = [];
     populateCompanyForm(currentCompanyData);
-    setCompanyFormState(true, { nameOnly: true });
+    setCompanyFormState(true);
+    beginCompanyDetailsEdit();
     renderCompanyList();
     document.getElementById("companyName")?.focus();
 }
@@ -604,7 +771,7 @@ function updateCompanyLogoActions(canManage, hasLogo) {
 }
 
 function markCompanyAutoSavePending() {
-    if (isPopulatingCompanyForm) {
+    if (isPopulatingCompanyForm || companyDetailsDraft) {
         return;
     }
 
@@ -751,11 +918,13 @@ async function uploadCompanyLogo(file) {
         if (listedCompany) listedCompany.logoUrl = result?.logoUrl || null;
         renderCompanyList();
         showCompanyFeedback("Bedrijfslogo opgeslagen.", "success");
+        return true;
     } catch (err) {
         console.error("Fout bij opladen bedrijfslogo:", err);
         updateCompanyLogo(previousLogoUrl, previousHasLogo);
         updateCompanyLogoActions(true, previousHasLogo);
         showCompanyFeedback("Kon het bedrijfslogo niet opladen.", "danger");
+        return false;
     }
 }
 
@@ -782,10 +951,12 @@ async function deleteCompanyLogo() {
         if (listedCompany) listedCompany.logoUrl = null;
         renderCompanyList();
         showCompanyFeedback("Bedrijfslogo verwijderd.", "success");
+        return true;
     } catch (err) {
         console.error("Fout bij verwijderen bedrijfslogo:", err);
         updateCompanyLogoActions(true, hasCompanyLogo());
         showCompanyFeedback("Kon het bedrijfslogo niet verwijderen.", "danger");
+        return false;
     }
 }
 
@@ -924,6 +1095,7 @@ function updateCompanyTypePresentation() {
     const valueInput = document.getElementById("companyValue");
     const typeCard = document.getElementById("companyTypeCard");
     const typeLabel = document.getElementById("companyTypeLabel");
+    const typeTitle = document.getElementById("companyTypeInfoTitle");
     const typeRange = document.getElementById("companyTypeRange");
     const typeDescription = document.getElementById("companyTypeDescription");
 
@@ -940,6 +1112,7 @@ function updateCompanyTypePresentation() {
     if (!hasCompanyContext || !companyType) {
         typeCard.classList.add("d-none");
         typeLabel.textContent = "";
+        if (typeTitle) typeTitle.textContent = "Type bedrijf";
         typeRange.textContent = "";
         typeDescription.textContent = "";
         return;
@@ -947,6 +1120,7 @@ function updateCompanyTypePresentation() {
 
     typeCard.classList.remove("d-none");
     typeLabel.textContent = companyType.label;
+    if (typeTitle) typeTitle.textContent = companyType.label;
     typeRange.textContent = formatCompanyTypeRange(companyType);
     typeDescription.textContent = companyType.description;
 }
@@ -954,9 +1128,8 @@ function updateCompanyTypePresentation() {
 function renderCompanyShareholders(company) {
     const card = document.getElementById("companyShareholdersCard");
     if (!card) return;
-    const listing = document.getElementById("companyShareListing");
     void aetherShareUi.attachCompany(card, company?.isDraft ? 0 : company?.id, company,
-        async () => { await loadCompany(Number(company.id)); }, listing);
+        async () => { await loadCompany(Number(company.id)); });
 }
 
 function formatCompanySnapshotEventOptionLabel(option) {
