@@ -116,6 +116,7 @@ let companyPersonnelDraftIndex = -1;
 const COMPANY_DETAILS_KEY = "company-details";
 let companyDetailsDraft = null;
 let companyDetailsSaving = false;
+let companyDescriptionRichEditor = null;
 
 function clearCompanyDetailsDraft() {
     if (companyDetailsDraft?.previewUrl) URL.revokeObjectURL(companyDetailsDraft.previewUrl);
@@ -166,7 +167,7 @@ function renderCompanyDetailsMode() {
         });
         actions.querySelectorAll("button").forEach(button => { button.disabled ||= companyDetailsSaving; });
     }
-    for (const [id, field] of [["companyName", "companyName"], ["companyFoundationDate", "foundationDate"], ["companyDescription", "description"]]) {
+    for (const [id, field] of [["companyName", "companyName"], ["companyFoundationDate", "foundationDate"]]) {
         const input = document.getElementById(id);
         if (!input) continue;
         let text = document.getElementById(`${id}Display`);
@@ -183,6 +184,29 @@ function renderCompanyDetailsMode() {
         input.disabled = !editing || companyDetailsSaving;
         text.classList.toggle("d-none", editing);
     }
+    const descriptionInput = document.getElementById("companyDescription");
+    const descriptionDisplay = document.getElementById("companyDescriptionDisplay");
+    const editorHost = document.getElementById("companyDescriptionEditorHost");
+    if (descriptionInput && descriptionDisplay && editorHost && typeof createCharacterRichTextEditor === "function") {
+        if (!companyDescriptionRichEditor) {
+            companyDescriptionRichEditor = createCharacterRichTextEditor("");
+            editorHost.appendChild(companyDescriptionRichEditor.wrapper);
+            companyDescriptionRichEditor.editor.setAttribute("aria-label", "Bedrijfsbeschrijving");
+            companyDescriptionRichEditor.editor.addEventListener("input", () => {
+                if (companyDetailsDraft) companyDetailsDraft.description = companyDescriptionRichEditor.getHtml();
+            });
+        }
+        if (editing) companyDescriptionRichEditor.setHtml(companyDetailsDraft.description || "");
+        renderCharacterRichText(descriptionDisplay, company?.description || "", "Geen beschrijving beschikbaar.");
+        descriptionDisplay.classList.toggle("d-none", editing);
+        companyDescriptionRichEditor.wrapper.classList.toggle("d-none", !editing);
+        companyDescriptionRichEditor.editor.contentEditable = String(editing && !companyDetailsSaving);
+        descriptionInput.classList.add("d-none");
+    } else if (descriptionInput) {
+        if (editing) descriptionInput.value = companyDetailsDraft.description || "";
+        descriptionInput.classList.toggle("d-none", !editing);
+    }
+    if (descriptionInput) descriptionInput.disabled = !editing || companyDetailsSaving;
     const logoActions = panel?.querySelector(".company-logo-actions");
     logoActions?.classList.toggle("d-none", !editing);
     if (editing) {
@@ -217,9 +241,11 @@ function renderCompanyDetailsMode() {
 async function saveCompanyDetails() {
     if (!companyDetailsDraft || companyDetailsSaving) return;
     const draft = companyDetailsDraft;
-    for (const [id, key] of [["companyName", "companyName"], ["companyDescription", "description"], ["companyFoundationDate", "foundationDate"]]) {
+    for (const [id, key] of [["companyName", "companyName"], ["companyFoundationDate", "foundationDate"]]) {
         draft[key] = String(document.getElementById(id)?.value || "").trim();
     }
+    draft.description = companyDescriptionRichEditor
+        ? companyDescriptionRichEditor.getHtml() : String(document.getElementById("companyDescription")?.value || "").trim();
     if (!draft.companyName) { showCompanyFeedback("De bedrijfsnaam is verplicht.", "danger"); return; }
     companyDetailsSaving = true;
     renderCompanyDetailsMode();
@@ -235,7 +261,8 @@ async function saveCompanyDetails() {
             isCreatingCompany = false;
         }
         const fields = { companyName: draft.companyName, description: draft.description, foundationDate: draft.foundationDate };
-        await apiFetchFinancialJson("api/companies/updateCompany.php", { method: "POST", body: { id: currentCompanyId, ...fields } });
+        const updated = await apiFetchFinancialJson("api/companies/updateCompany.php", { method: "POST", body: { id: currentCompanyId, ...fields } });
+        if (typeof updated?.description === "string") fields.description = updated.description;
         Object.assign(currentCompanyData, fields);
         if (draft.isShareListed !== (Number(currentCompanyData.isShareListed) === 1)) {
             await aetherShareUi.mutateCompany("setShareListing", { idCompany: currentCompanyId, isShareListed: draft.isShareListed });
@@ -478,6 +505,9 @@ function setupCompanyPageListeners() {
             void createCompanySnapshot();
         });
     }
+    document.getElementById("companySnapshotCreateConfirm")?.addEventListener("click", () => {
+        void submitCompanySnapshotCreation();
+    });
 
     const companyPersonnelSpecSaveBtn = document.getElementById("companyPersonnelSpecSaveBtn");
     if (companyPersonnelSpecSaveBtn) {
@@ -568,6 +598,7 @@ async function loadCompany(idCompany) {
         currentCompanyData = company || null;
         setCompanyFormState(currentCompanyId > 0);
         populateCompanyForm(company);
+        await window.AetherCompanyQuarters?.whenReady();
         renderCompanyList();
         return true;
     } catch (err) {
@@ -578,6 +609,7 @@ async function loadCompany(idCompany) {
 }
 
 function populateCompanyForm(company) {
+    window.AetherCompanyQuarters?.render(company);
     isPopulatingCompanyForm = true;
     companyPersonnelSavePending = false;
     saveCompanyPersonnelQueued = false;
@@ -1417,7 +1449,8 @@ function renderCompanySnapshots(company) {
             try {
                 await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
                     method: "POST",
-                    body: { action: "update", idCompany: Number(company.id), idCompanySnapshot: idSnapshot, ...body }
+                    body: { action: "update", idCompany: Number(company.id), idCompanySnapshot: idSnapshot,
+                        ...body }
                 });
                 aetherDataCard.close(cardKey);
                 await loadCompany(Number(company.id));
@@ -1503,11 +1536,6 @@ function renderCompanySnapshots(company) {
                     body[key] = integer ? n : n.toFixed(2);
                 }
             }
-            if (!Object.keys(body).length) {
-                aetherDataCard.close(cardKey);
-                refreshCompanyDataCards(company);
-                return;
-            }
             await saveSnapshotField(body, button);
         };
         aetherDataCard.controls(header, {
@@ -1523,9 +1551,7 @@ function renderCompanySnapshots(company) {
                 ["Bedrijfswaarde", snapshot.companyValue == null ? null : formatCompanySnapshotCurrency(snapshot.companyValue)],
                 ["Uitgegeven aandelen", snapshot.issuedShareCount],
                 ["Aandelen in anonieme handen", snapshot.anonymousShareCount],
-                ["Marktprijs per aandeel", snapshot.shareMarketPrice == null ? null : formatCompanySnapshotCurrency(snapshot.shareMarketPrice)],
-                ["Stabiliteit", snapshot.stability],
-                ["Rendabiliteit", snapshot.profitability]
+                ["Marktprijs per aandeel", snapshot.shareMarketPrice == null ? null : formatCompanySnapshotCurrency(snapshot.shareMarketPrice)]
             ]) aetherDataCard.fact(facts, label, value);
             item.appendChild(facts);
             aetherDataCard.controls(header, {
@@ -1557,14 +1583,23 @@ function renderCompanySnapshots(company) {
         const stabilityLine = document.createElement("div");
         stabilityLine.textContent = `Stabiliteit: ${formatCompanySnapshotCurrency(variationAmounts.minAmount)} tot ${formatCompanySnapshotCurrency(variationAmounts.maxAmount)}`;
         resultMeta.append(profitabilityLine, stabilityLine);
-        result.append(resultLabel, resultValue, resultMeta);
+        result.append(resultLabel, resultValue);
+        if (editing) result.appendChild(resultMeta);
+        if (isApplied && !editing) {
+            const outcome = document.createElement("div");
+            outcome.className = "company-snapshot-profit-meta";
+            outcome.textContent = appliedAction === "dividend" ? "Uitbetaald aan de aandeelhouders."
+                : appliedAction === "reinvest" ? "Opnieuw geïnvesteerd in het bedrijf."
+                : "Verlies verwerkt in de bedrijfswaarde.";
+            result.appendChild(outcome);
+        }
         item.appendChild(result);
 
         const actionSection = document.createElement("div");
         actionSection.className = "company-snapshot-profit-meta mt-3";
         const dividendPerPercentage = profitAmount > 0 ? Number((profitAmount / 110).toFixed(2)) : 0;
 
-        if (isApplied) {
+        if (isApplied && editing) {
             const appliedInfo = document.createElement("div");
             appliedInfo.textContent = `Toegepast: ${getCompanySnapshotAppliedActionLabel(appliedAction)}. Eerdere boekingen blijven bewaard bij correcties.`;
             actionSection.appendChild(appliedInfo);
@@ -1597,7 +1632,7 @@ function renderCompanySnapshots(company) {
             actionSection.appendChild(actionButtons);
         }
 
-        if ((editing || isApplied) && actionSection.childElementCount > 0) {
+        if (editing && actionSection.childElementCount > 0) {
             item.appendChild(actionSection);
         }
         list.appendChild(item);
@@ -2342,23 +2377,77 @@ async function createCompanySnapshot() {
             && Number(snapshot.idEvent || 0) < idEvent)) : orderedSnapshots).at(-1);
     const baseline = previousSnapshot || currentCompanyData?.foundationSnapshot || currentCompanyData;
 
+    await window.AetherCompanyQuarters?.whenReady?.();
+    const quarter = window.AetherCompanyQuarters?.quarterForEvent?.(chosenDate);
+    const modal = document.getElementById("companySnapshotCreateModal");
+    if (!modal) return;
+    modal.dataset.idCompany = String(idCompany);
+    modal.dataset.idEvent = String(idEvent);
+    document.getElementById("companySnapshotCreateModalTitle").textContent = `Snapshot maken · ${chosenEvent?.title || "Event"}`;
+    document.getElementById("companySnapshotCreateContext").textContent = quarter
+        ? `Beginwaarden uit ${quarter.year} · kwartaal ${quarter.quarter}. Controleer de cijfers voordat je de snapshot maakt.`
+        : "Controleer de voorgestelde beginwaarden voordat je de snapshot maakt.";
+    const values = {
+        companySnapshotCreateValue: quarter?.companyValue ?? baseline?.companyValue ?? baseline?.initialCompanyValue ?? 0,
+        companySnapshotCreateShares: quarter?.issuedShareCount ?? baseline?.issuedShareCount ?? currentCompanyData?.issuedShareCount ?? 1,
+        companySnapshotCreatePrice: quarter?.shareMarketPrice ?? baseline?.shareMarketPrice ?? "",
+        companySnapshotCreateStability: quarter?.stability ?? baseline?.stability ?? 0,
+        companySnapshotCreateProfitability: quarter?.profitability ?? baseline?.profitability ?? 0
+    };
+    Object.entries(values).forEach(([id, value]) => {
+        document.getElementById(id).value = String(value);
+    });
+    document.getElementById("companySnapshotCreateError").classList.add("d-none");
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+}
+
+async function submitCompanySnapshotCreation() {
+    const modal = document.getElementById("companySnapshotCreateModal");
+    const error = document.getElementById("companySnapshotCreateError");
+    const confirm = document.getElementById("companySnapshotCreateConfirm");
+    if (!modal || confirm.disabled) return;
+    const specs = [
+        ["companySnapshotCreateValue", "companyValue", 0, 9999999999.99, false],
+        ["companySnapshotCreateShares", "issuedShareCount", 1, 1000000, true],
+        ["companySnapshotCreatePrice", "shareMarketPrice", 0, 9999999999.99, false],
+        ["companySnapshotCreateStability", "stability", -7, 7, true],
+        ["companySnapshotCreateProfitability", "profitability", -7, 7, true]
+    ];
+    const body = {
+        action: "create",
+        idCompany: Number(modal.dataset.idCompany),
+        idEvent: Number(modal.dataset.idEvent)
+    };
+    for (const [id, field, min, max, integer] of specs) {
+        const input = document.getElementById(id);
+        if (field === "shareMarketPrice" && !input.value) continue;
+        const value = Number(input.value);
+        if (!input.value || !Number.isFinite(value) || value < min || value > max
+            || (integer && !Number.isInteger(value)) || !input.checkValidity()) {
+            error.textContent = `Controleer ${input.labels?.[0]?.textContent?.toLowerCase() || field}.`;
+            error.classList.remove("d-none");
+            input.focus();
+            return;
+        }
+        body[field] = value;
+    }
+    error.classList.add("d-none");
+    confirm.disabled = true;
     try {
         const result = await apiFetchFinancialJson("api/companies/saveCompanySnapshot.php", {
             method: "POST",
-            body: {
-                action: "create",
-                idCompany,
-                idEvent,
-                stability: normalizeSliderValue(baseline?.stability),
-                profitability: normalizeSliderValue(baseline?.profitability)
-            }
+            body
         });
 
-        await applyCompanySnapshotResponse(result, idCompany);
+        bootstrap.Modal.getOrCreateInstance(modal).hide();
+        await applyCompanySnapshotResponse(result, body.idCompany);
         showCompanyFeedback("Snapshot opgeslagen.", "success");
     } catch (err) {
         console.error("Fout bij maken snapshot:", err);
-        showCompanyFeedback(err?.message || "Kon de snapshot niet bewaren.", "danger");
+        error.textContent = err?.message || "Kon de snapshot niet bewaren.";
+        error.classList.remove("d-none");
+    } finally {
+        confirm.disabled = false;
     }
 }
 

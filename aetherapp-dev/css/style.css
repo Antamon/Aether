@@ -522,6 +522,290 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   overflow-wrap: anywhere;
 }
 
+.company-description-section {
+  width: 100%;
+}
+
+.company-description-display {
+  column-count: 2;
+  column-gap: 2rem;
+  overflow-wrap: anywhere;
+}
+
+.company-description-display > :first-child {
+  margin-top: 0;
+}
+
+.company-description-display ul,
+.company-description-display ol,
+.company-description-display h4 {
+  break-inside: avoid-column;
+}
+
+@media (max-width: 767.98px) {
+  .company-description-display {
+    column-count: 1;
+  }
+}
+
+.company-quarter-history {
+  border-top: 1px solid rgba(100, 0, 0, 0.24);
+  padding-top: 1.5rem;
+}
+
+.company-quarter-history #companyQuarterMetric {
+  min-width: 11rem;
+}
+
+.company-quarter-toolbar,
+.company-quarter-edit-controls {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.company-quarter-toolbar {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company-quarter-edit-controls {
+  flex: 1 1 auto;
+}
+
+.company-quarter-mode-actions {
+  margin-left: auto;
+}
+
+.company-quarter-mode-actions.is-view .action-button:first-child {
+  border-radius: 8px;
+}
+
+.company-quarter-edit-radio {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.company-quarter-edit-radio input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.company-quarter-edit-radio label {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .45rem .7rem;
+  border: 1px solid rgba(100, 0, 0, .55);
+  border-radius: 0;
+  color: #650000;
+  background: rgba(255, 255, 255, .35);
+  cursor: pointer;
+}
+
+.company-quarter-edit-radio label:first-of-type {
+  border-radius: .45rem 0 0 .45rem;
+}
+
+.company-quarter-edit-radio label:last-of-type {
+  border-radius: 0 .45rem .45rem 0;
+  border-left: 0;
+}
+
+.company-quarter-edit-radio input:checked + label {
+  color: var(--primary-taupe);
+  background: var(--primary-red);
+}
+
+.company-quarter-edit-radio input:focus-visible + label {
+  outline: 2px solid #700000;
+  outline-offset: 2px;
+}
+
+.company-quarter-influence-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.company-quarter-influence-controls .form-range {
+  width: min(14rem, 100%);
+  margin: 0;
+}
+
+.company-quarter-graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: start;
+}
+
+.company-quarter-graph-layout #companyQuarterContent {
+  min-width: 0;
+}
+
+.company-quarter-zoom-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  height: 708px;
+  padding: .65rem .4rem;
+  border: 1px solid rgba(100, 0, 0, .18);
+  border-radius: .5rem;
+  background: rgba(255, 255, 255, .2);
+}
+
+.company-quarter-zoom-controls label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  margin: 0;
+  color: #402914;
+}
+
+.company-quarter-zoom-controls input[type="range"] {
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 1.4rem;
+  height: min(11rem, 24vh);
+  accent-color: #700000;
+}
+
+.company-quarter-zoom-controls output {
+  font-size: .7rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.company-quarter-chart-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  height: 708px;
+  padding: .5rem;
+  border: 1px solid rgba(100, 0, 0, 0.18);
+  border-radius: .5rem;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: grab;
+  user-select: none;
+}
+
+.company-quarter-chart-scroll.is-panning {
+  cursor: grabbing;
+}
+
+.company-quarter-chart-scroll.is-editing {
+  cursor: default;
+}
+
+.company-quarter-chart-scroll.is-editing :is(circle, polygon):not([data-snapshot="true"]) {
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.company-quarter-chart-scroll.is-modal-editing :is(circle, polygon) {
+  cursor: pointer;
+}
+
+.company-quarter-chart-scroll.is-editing :is(circle, polygon)[data-snapshot="true"] {
+  cursor: not-allowed;
+}
+
+.company-quarter-chart-scroll.is-modal-editing :is(circle, polygon)[data-snapshot="true"] {
+  cursor: pointer;
+}
+
+.company-quarter-chart-scroll svg {
+  display: block;
+  max-width: none;
+}
+
+.company-quarter-chart-scroll :is(circle, polygon) {
+  cursor: help;
+  stroke: transparent;
+  stroke-width: 12px;
+  paint-order: stroke fill;
+}
+
+.company-quarter-chart-scroll :is(circle, polygon):focus-visible {
+  outline: 3px solid #700000;
+  outline-offset: 3px;
+}
+
+.company-quarter-picker {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.company-quarter-period {
+  flex: 1 1 20rem;
+}
+
+.company-quarter-period .button-group {
+  display: flex;
+  width: 100%;
+}
+
+.company-quarter-period .form-select {
+  flex: 1 1 6rem;
+  min-width: 0;
+  width: auto;
+  border-radius: 0;
+}
+
+.company-quarter-period-label {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0 .6rem;
+  border: 0;
+  border-radius: .45rem 0 0 .45rem;
+  background: var(--primary-red);
+  color: var(--primary-taupe);
+  white-space: nowrap;
+}
+
+.company-quarter-period .action-button {
+  height: auto;
+  min-height: 2.4rem;
+}
+
+.company-quarter-events-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35rem 1.5rem;
+  padding: 0;
+  margin: .5rem 0 0;
+  list-style: none;
+}
+
+.company-quarter-events-list li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .company-quarter-events-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.company-quarter-events .form-label {
+  display: block;
+}
+
 .character-details-display {
   display: flex;
   align-items: center;

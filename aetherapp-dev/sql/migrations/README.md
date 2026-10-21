@@ -128,6 +128,43 @@ De bedrijfspagina laadt de eventkeuze via de bestaande event-API. Ongebruikte
 events vóór de recentste bedrijfssnapshot blijven zichtbaar maar uitgeschakeld,
 omdat snapshots momenteel in eventvolgorde worden aangemaakt.
 
+## Migratie 0016: bedrijfsevolutie per kwartaal
+
+Voer `0016_company_quarters.sql` uit op de ontwikkel- en productiedatabank
+voordat de nieuwe bedrijfspagina wordt gebruikt. Dit vereist de
+oprichtings- en snapshotgeschiedenis van migratie 0012. De eerste keer dat een
+admin of director een bedrijf opent, worden de kwartalen vanaf de oprichting
+tot het huidige spelkwartaal berekend en opgeslagen. Volgende kwartalen en
+gewijzigde snapshots werken automatisch door in het bijhorende kwartaal en
+alle volgende kwartalen tot de volgende snapshot. Tussengelegen handmatige
+kwartaalcijfers worden dan opnieuw berekend; hun gebeurtenissen blijven bewaard.
+Een bedrijfssnapshot krijgt
+voorrang in elk kwartaal dat zijn eventperiode (100 jaar teruggeschoven)
+overlapt. Grote bedrijfsgebeurtenissen worden apart per kwartaal opgeslagen.
+
+Tussen oprichting, snapshots en handmatig bewaarde kwartalen worden
+bedrijfswaarde, marktprijs per aandeel, stabiliteit en rendabiliteit lineair
+verdeeld. Uitgegeven aandelen blijven gelijk aan het voorgaande vaste punt.
+Na het laatste vaste punt blijven de cijfers gelijk. Een onbekende historische
+marktprijs blijft onbekend totdat een handmatig kwartaal of snapshot er een
+vastlegt. Meerdere versleepte punten of modalwijzigingen kunnen samen worden
+bewaard.
+
+## Migratie 0017: waarde na herinvestering
+
+Voer `0017_reinvested_snapshot_value.sql` uit op beide databases voordat de
+nieuwe snapshotverwerking wordt gebruikt. Voor bestaande verwerkte snapshots
+met `reinvest` wordt de herinvesteerde winst bij de opgeslagen snapshotwaarde
+opgeteld. De waarde voor die verwerking blijft in
+`preReinvestmentCompanyValue` bewaard. Nieuwe herinvesteringen vullen beide
+velden bij verwerking in.
+
+## Migratie 0018: historische curvesleutel
+
+`0018_company_quarter_curve_seed.sql` hoorde bij de vroegere willekeurige
+curvegenerator. De huidige code gebruikt `curveSeed` niet meer en vereist
+deze migratie niet. Een reeds uitgevoerde migratie mag blijven staan.
+
 ## Migratie 0013: functiebeschrijving bedrijfspersoneel
 
 Voer `run_0013_company_personnel_function_description_phpmyadmin.sql` uit

@@ -31,6 +31,9 @@ function aetherCompanySnapshotSchema(array $input): array
     return match ($action) {
         'create' => $schema + [
             'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'companyValue' => ['type' => 'decimal', 'min' => '0.00', 'max' => '9999999999.99'],
+            'issuedShareCount' => ['type' => 'int', 'min' => 1, 'max' => 1000000],
+            'shareMarketPrice' => ['type' => 'decimal', 'min' => '0.00', 'max' => '9999999999.99'],
             'stability' => ['type' => 'int', 'required' => false, 'min' => -7, 'max' => 7, 'default' => 0],
             'profitability' => ['type' => 'int', 'required' => false, 'min' => -7, 'max' => 7, 'default' => 0],
         ],

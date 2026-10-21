@@ -8,6 +8,7 @@ require_once __DIR__ . '/../auth/accessControl.php';
 require_once __DIR__ . '/../shared/decimal.php';
 require_once __DIR__ . '/companyLeadershipRules.php';
 require_once __DIR__ . '/companyAccess.php';
+require_once __DIR__ . '/companyRichText.php';
 require_once __DIR__ . '/../shares/shareAccess.php';
 
 function normalizeCompanySliderValue(mixed $value): int
@@ -877,6 +878,7 @@ function getCompanyDetailData(PDO $pdo, int $idCompany): ?array
     }
 
     $company['companyValue'] = round((float) ($company['companyValue'] ?? 0), 2);
+    $company['description'] = aetherSanitizeCompanyDescription((string) ($company['description'] ?? ''));
     $company['stability'] = normalizeCompanySliderValue($company['stability'] ?? 0);
     $company['profitability'] = normalizeCompanySliderValue($company['profitability'] ?? 0);
     $company['logoUrl'] = getCompanyLogoUrl((int) $company['id']);

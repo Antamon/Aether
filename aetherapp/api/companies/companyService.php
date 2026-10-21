@@ -8,6 +8,7 @@ require_once __DIR__ . '/../shared/validation.php';
 require_once __DIR__ . '/../characters/companyShareUtils.php';
 require_once __DIR__ . '/../shares/shareAccess.php';
 require_once __DIR__ . '/companyLeadershipRules.php';
+require_once __DIR__ . '/companyRichText.php';
 
 final class AetherCompanyException extends RuntimeException
 {
@@ -38,6 +39,9 @@ function aetherUpdateCompany(PDO $pdo, int $idCompany, array $fields): array
     if (array_key_exists('companyValue', $fields) && aetherShareLegacyWritesClosed($pdo)) {
         throw new AetherCompanyException(409, 'Bedrijfswaarde moet via de nieuwe aandelenservice worden gewijzigd.');
     }
+    if (isset($fields['description'])) {
+        $fields['description'] = aetherSanitizeCompanyDescription((string) $fields['description']);
+    }
     if (isset($fields['description']) && strlen($fields['description']) > 65535) {
         throw new AetherValidationException(['De bedrijfsbeschrijving is te lang voor het tekstveld.']);
     }
@@ -59,7 +63,9 @@ function aetherUpdateCompany(PDO $pdo, int $idCompany, array $fields): array
     if (array_key_exists('companyValue', $fields) && $oldType !== null && $newType !== null && $oldType !== $newType) {
         $updatedShareTraitCount = remapCompanyShareTraitsForCompany($pdo, $idCompany, $newType);
     }
-    return ['status' => 'ok', 'updatedShareTraitCount' => $updatedShareTraitCount];
+    $response = ['status' => 'ok', 'updatedShareTraitCount' => $updatedShareTraitCount];
+    if (array_key_exists('description', $fields)) $response['description'] = $fields['description'];
+    return $response;
 }
 
 /** Called inside aetherRunIdempotentMutation's transaction, after its claim. */

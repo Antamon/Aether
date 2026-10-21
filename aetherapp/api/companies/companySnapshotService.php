@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/companyUtils.php';
+require_once __DIR__ . '/companyQuarterService.php';
 require_once __DIR__ . '/../characters/companyShareUtils.php';
 require_once __DIR__ . '/../characters/characterFinanceService.php';
 require_once __DIR__ . '/../shared/idempotency.php';
@@ -291,6 +292,16 @@ function aetherCorrectCompanySnapshot(PDO $pdo, array $company, array $snapshot,
     $params = ['idSnapshot' => $idSnapshot, 'idCompany' => $idCompany];
     foreach ($keys as $key) $params[$key] = $next[$key];
     $set = implode(', ', array_map(static fn(string $key): string => "$key = :$key", $keys));
+    if (trim((string) ($snapshot['appliedAction'] ?? '')) === 'reinvest'
+        && array_key_exists('companyValue', $provided)) {
+        if (aetherDecimalCompare((string) $next['companyValue'], (string) ($snapshot['companyValueDelta'] ?? 0)) < 0) {
+            throw new AetherCompanyFinanceException(409, 'De bedrijfswaarde kan niet lager zijn dan de herinvestering.');
+        }
+        $set .= ', preReinvestmentCompanyValue = :preReinvestmentCompanyValue';
+        $params['preReinvestmentCompanyValue'] = aetherDecimalSubtract(
+            (string) $next['companyValue'], (string) ($snapshot['companyValueDelta'] ?? 0)
+        );
+    }
     // Posted dividends and profit/loss remain historical transactions; only unposted outcomes can be rerolled.
     $applied = !in_array(trim((string) $snapshot['appliedAction']), ['', 'none'], true);
     if (!$applied && array_intersect(array_keys($provided), ['companyValue', 'stability', 'profitability']) !== []) {
@@ -381,7 +392,7 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
 
         $event = dbOne(
             $pdo,
-            'SELECT id, dateStart
+            'SELECT id, dateStart, dateEnd
                FROM tblEvent
               WHERE id = :idEvent',
             ['idEvent' => $idEvent]
@@ -437,8 +448,8 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
         $personnelImpactSummary = getCompanyPersonnelImpactSummary($pdo, $idCompany, $stability);
         $personnelSalaryIncreaseExpenseAmount = getCompanyPersonnelSalaryIncreaseExpenseAmount($pdo, $idCompany);
         $financials = calculateCompanySnapshotFinancials(
-            $newerSnapshot === null ? ($company['companyValue'] ?? 0)
-                : ($previousSnapshot['companyValue'] ?? $foundation['initialCompanyValue'] ?? 0),
+            $input['companyValue'] ?? ($newerSnapshot === null ? ($company['companyValue'] ?? 0)
+                : ($previousSnapshot['companyValue'] ?? $foundation['initialCompanyValue'] ?? 0)),
             $stability,
             $profitability,
             $personnelImpactSummary['totalPercentage'] ?? 0,
@@ -452,6 +463,15 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
         $marketPrice = $previousSnapshot === null
             ? ($foundation['shareMarketPrice'] ?? null)
             : $previousSnapshot['shareMarketPrice'];
+        $issuedShareCount = $input['issuedShareCount'] ?? ($stock === null
+            ? ($previousSnapshot['issuedShareCount'] ?? null) : $company['issuedShareCount']);
+        $anonymousShareCount = $stock === null ? ($previousSnapshot['anonymousShareCount'] ?? null)
+            : $stock['anonymous'];
+        if ($issuedShareCount !== null && $anonymousShareCount !== null
+            && (int) $anonymousShareCount > (int) $issuedShareCount) {
+            throw new AetherCompanyFinanceException(400,
+                'Het aantal uitgegeven aandelen mag niet lager zijn dan het aantal anonieme aandelen.');
+        }
 
         $stmt = $pdo->prepare(
             'INSERT INTO tblCompanySnapshot (
@@ -494,11 +514,9 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
             'idCompany' => $idCompany,
             'idEvent' => $idEvent,
             'companyValue' => $financials['companyValue'],
-            'issuedShareCount' => $stock === null ? ($previousSnapshot['issuedShareCount'] ?? null)
-                : $company['issuedShareCount'],
-            'anonymousShareCount' => $stock === null ? ($previousSnapshot['anonymousShareCount'] ?? null)
-                : $stock['anonymous'],
-            'shareMarketPrice' => $marketPrice,
+            'issuedShareCount' => $issuedShareCount,
+            'anonymousShareCount' => $anonymousShareCount,
+            'shareMarketPrice' => $input['shareMarketPrice'] ?? $marketPrice,
             'stability' => $stability,
             'profitability' => $profitability,
             'appliedAction' => 'none',
@@ -540,7 +558,8 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
                 cs.stabilityUpperBoundPercentage,
                 cs.profitAmount,
                 e.title,
-                e.dateStart
+                e.dateStart,
+                e.dateEnd
                FROM tblCompanySnapshot AS cs
                JOIN tblEvent AS e
                  ON e.id = cs.idEvent
@@ -560,7 +579,13 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
         $appliedActionCurrent = trim((string) ($snapshot['appliedAction'] ?? 'none'));
 
         if ($action === 'update') {
-            aetherCorrectCompanySnapshot($pdo, $company, $snapshot, $input, (int) $currentUser['id']);
+            $snapshotFields = ['companyValue', 'issuedShareCount', 'anonymousShareCount',
+                'shareMarketPrice', 'stability', 'profitability'];
+            if (array_intersect_key($input, array_flip($snapshotFields)) !== []) {
+                aetherCorrectCompanySnapshot($pdo, $company, $snapshot, $input, (int) $currentUser['id']);
+            } else {
+                throw new AetherCompanyFinanceException(400, 'Geen snapshotgegevens om bij te werken.');
+            }
         } elseif ($action === 'recalculate') {
             if ($appliedActionCurrent !== '' && $appliedActionCurrent !== 'none') {
                 throw new AetherCompanyFinanceException(400, 'Een toegepaste snapshot kan niet opnieuw berekend worden.');
@@ -606,6 +631,8 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
             }
 
             $profitAmount = aetherFinanceDecimal($snapshot['profitAmount'] ?? 0);
+            $snapshotCompanyValue = (string) $snapshot['companyValue'];
+            $preReinvestmentCompanyValue = null;
 
             if ($applyAction === 'loss_adjustment') {
                 if (aetherDecimalCompare($profitAmount, '0.00') >= 0) {
@@ -621,6 +648,8 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
 
                 $companyValueDelta = applyCompanyValueDeltaAndRemap($pdo, $idCompany, $profitAmount,
                     (int) $currentUser['id'], $idCompanySnapshot, 'snapshot_reinvestment');
+                $preReinvestmentCompanyValue = $snapshotCompanyValue;
+                $snapshotCompanyValue = aetherDecimalAdd($snapshotCompanyValue, $companyValueDelta);
             } else {
                 if (aetherDecimalCompare($profitAmount, '0.00') <= 0) {
                     throw new AetherCompanyFinanceException(400, 'Deze snapshot bevat geen winst om dividend uit te betalen.');
@@ -633,20 +662,26 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
                     (int) $currentUser['id'], $idCompanySnapshot, 'snapshot_dividend_remainder');
             }
 
+            $reinvestmentField = $applyAction === 'reinvest'
+                ? ', preReinvestmentCompanyValue = :preReinvestmentCompanyValue' : '';
             $stmt = $pdo->prepare(
                 'UPDATE tblCompanySnapshot
                     SET appliedAction = :appliedAction,
                         companyValueDelta = :companyValueDelta,
+                        companyValue = :companyValue' . $reinvestmentField . ',
                         updatedAt = CURRENT_TIMESTAMP
                   WHERE id = :idCompanySnapshot
                     AND idCompany = :idCompany'
             );
-            $stmt->execute([
+            $params = [
                 'appliedAction' => $applyAction,
                 'companyValueDelta' => $companyValueDelta,
+                'companyValue' => $snapshotCompanyValue,
                 'idCompanySnapshot' => $idCompanySnapshot,
                 'idCompany' => $idCompany,
-            ]);
+            ];
+            if ($applyAction === 'reinvest') $params['preReinvestmentCompanyValue'] = $preReinvestmentCompanyValue;
+            $stmt->execute($params);
 
         } else {
             if (aetherShareLegacyWritesClosed($pdo)) {
@@ -685,6 +720,24 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
         }
     }
 
+    $quarterSnapshotChanged = $action === 'create' || $action === 'delete';
+    if (in_array($action, ['update', 'apply'], true)) {
+        $currentQuarterSnapshot = dbOne($pdo,
+            'SELECT companyValue, issuedShareCount, shareMarketPrice, stability, profitability
+               FROM tblCompanySnapshot WHERE id = :idSnapshot AND idCompany = :idCompany',
+            ['idSnapshot' => $idCompanySnapshot, 'idCompany' => $idCompany]);
+        foreach (['companyValue', 'issuedShareCount', 'shareMarketPrice', 'stability', 'profitability'] as $field) {
+            if ((string) ($snapshot[$field] ?? '') !== (string) ($currentQuarterSnapshot[$field] ?? '')) {
+                $quarterSnapshotChanged = true;
+                break;
+            }
+        }
+    }
+    if ($quarterSnapshotChanged) {
+        $snapshotEvent = $action === 'create' ? $event : $snapshot;
+        aetherCompanyQuarterRefreshAfterSnapshotChange($pdo, $idCompany,
+            (string) $snapshotEvent['dateStart'], $snapshotEvent['dateEnd'] ?? null);
+    }
     $response = buildCompanySnapshotResponse($pdo, $idCompany);
     aetherCompleteIdempotency($pdo, $currentUser, $operation, $requestKey, $response);
     $pdo->commit();
