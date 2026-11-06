@@ -1,11 +1,46 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/shareOwnershipRepository.php';
+
+/** Use the same dated valuation as the company card, including saved future snapshots. */
+function aetherShareValuationSql(): array
+{
+    $recordedValue = 'COALESCE(valuationSnapshot.companyValue, valuationFoundation.initialCompanyValue)';
+    return [
+        'joins' => 'LEFT JOIN tblCompanySnapshot AS valuationSnapshot ON valuationSnapshot.id = (
+            SELECT s.id FROM tblCompanySnapshot AS s JOIN tblEvent AS e ON e.id = s.idEvent
+            WHERE s.idCompany = c.id ORDER BY e.dateStart DESC, s.id DESC LIMIT 1)
+            LEFT JOIN tblCompanyFoundationSnapshot AS valuationFoundation ON valuationFoundation.idCompany = c.id',
+        'recordedValue' => $recordedValue,
+        'companyValue' => "COALESCE($recordedValue, c.companyValue)",
+        'issuedShareCount' => 'CASE WHEN valuationSnapshot.id IS NOT NULL
+            THEN COALESCE(valuationSnapshot.issuedShareCount, c.issuedShareCount)
+            ELSE COALESCE(valuationFoundation.initialShareCount, c.issuedShareCount) END',
+        // An unknown price in the latest snapshot must stay unknown.
+        'marketUnitPrice' => 'CASE WHEN valuationSnapshot.id IS NOT NULL
+            THEN valuationSnapshot.shareMarketPrice ELSE valuationFoundation.shareMarketPrice END',
+    ];
+}
+
+/** Buying existing issued shares cannot change a recorded company valuation. */
+function aetherShareValueAfterPurchase(PDO $pdo, array $company, string $amountDelta): string
+{
+    $valuation = aetherShareValuationSql();
+    $stmt = $pdo->prepare("SELECT {$valuation['recordedValue']} FROM tblCompany AS c
+        {$valuation['joins']} WHERE c.id = :idCompany");
+    $stmt->execute(['idCompany' => (int) $company['id']]);
+    $recorded = $stmt->fetchColumn();
+    return $recorded === null || $recorded === false
+        ? aetherDecimalAdd((string) $company['companyValue'], $amountDelta)
+        : aetherNormalizeDecimal((string) $recorded);
+}
+
 /** A mutation changes one company; character locks serialize cross-company portfolio updates. */
 function aetherSharesLockCompany(PDO $pdo, int $companyId): array
 {
     $stmt = $pdo->prepare('SELECT id, companyValue, initialCompanyValue, initialShareCount,
-                                 issuedShareCount, isShareListed
+                                 issuedShareCount, isShareListed, foundationDate
                             FROM tblCompany WHERE id = :idCompany FOR UPDATE');
     $stmt->execute(['idCompany' => $companyId]);
     $rows = [];
@@ -23,7 +58,8 @@ function aetherShareHolderIds(PDO $pdo, int $companyId): array
 /** Called only after the company row has been locked. */
 function aetherShareStock(PDO $pdo, int $companyId, int $issued): array
 {
-    $stmt = $pdo->prepare('SELECT COALESCE(SUM(shareCount), 0) FROM tblCompanyShareHolding WHERE idCompany = :idCompany');
+    $allHoldings = aetherShareOwnershipRowsSql($pdo);
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(shareCount), 0) FROM $allHoldings AS ownership WHERE idCompany = :idCompany");
     $stmt->execute(['idCompany' => $companyId]);
     $held = (int) $stmt->fetchColumn();
     $stmt = $pdo->prepare('SELECT shareCount FROM tblCompanyAnonymousShares WHERE idCompany = :idCompany');
@@ -93,9 +129,11 @@ function aetherShareRemoveHolding(PDO $pdo, int $companyId, int $characterId,
 
 function aetherSharePortfolioValue(PDO $pdo, int $characterId): string
 {
-    $stmt = $pdo->prepare('SELECT COALESCE(ROUND(SUM(h.shareCount * c.companyValue / c.issuedShareCount), 2), 0.00)
+    $valuation = aetherShareValuationSql();
+    $stmt = $pdo->prepare("SELECT COALESCE(ROUND(SUM(h.shareCount * {$valuation['companyValue']}
+                                 / NULLIF({$valuation['issuedShareCount']}, 0)), 2), 0.00)
                             FROM tblCompanyShareHolding h JOIN tblCompany c ON c.id = h.idCompany
-                           WHERE h.idCharacter = :idCharacter');
+                            {$valuation['joins']} WHERE h.idCharacter = :idCharacter");
     $stmt->execute(['idCharacter' => $characterId]);
     return aetherNormalizeDecimal((string) $stmt->fetchColumn());
 }

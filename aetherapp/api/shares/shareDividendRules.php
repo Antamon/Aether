@@ -47,3 +47,22 @@ function aetherShareDividendAllocation(string $pool, array $holdings, int $anony
     return ['payouts' => $payouts,
             'anonymousAmount' => aetherMinorUnitsToDecimal($assigned[0] ?? 0)];
 }
+
+/** Keep company and character IDs in distinct namespaces, with the existing cent allocation. */
+function aetherShareMixedDividendAllocation(string $pool, array $characters, array $companies, int $anonymous): array
+{
+    ksort($characters, SORT_NUMERIC);
+    ksort($companies, SORT_NUMERIC);
+    $weights = [];
+    $characterKeys = [];
+    $companyKeys = [];
+    $key = 1;
+    foreach ($characters as $id => $count) { $characterKeys[$id] = $key; $weights[$key++] = $count; }
+    foreach ($companies as $id => $count) { $companyKeys[$id] = $key; $weights[$key++] = $count; }
+    $allocation = aetherShareDividendAllocation($pool, $weights, $anonymous);
+    $characterPayouts = $companyPayouts = [];
+    foreach ($characterKeys as $id => $index) $characterPayouts[$id] = $allocation['payouts'][$index];
+    foreach ($companyKeys as $id => $index) $companyPayouts[$id] = $allocation['payouts'][$index];
+    return ['payouts' => $characterPayouts, 'companyPayouts' => $companyPayouts,
+        'anonymousAmount' => $allocation['anonymousAmount']];
+}

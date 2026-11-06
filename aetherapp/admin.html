@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=d0b30505110a58bf">
+    <link rel="stylesheet" href="css/style.css?v=357f2f9ac913e1c0">
     <link rel="stylesheet" href="css/page-nav.css?v=15dd62f126204bd9">
     <link rel="stylesheet" href="css/modal.css?v=e7d148b7fe904a7b">
     <title>Admin - Aether applicatie</title>
@@ -24,60 +24,12 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item mr-2 d-none" id="navbarAdminItem">
-                        <a class="nav-link active" id="adminPage" aria-current="page" href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
-                    </li>
                 </ul>
                 <div id="navbarName"></div>
             </div>
         </div>
     </nav>
 
-        <div class="container admin-header-tabs aether-page-nav">
-            <ul class="nav nav-tabs" id="adminMainTabs">
-                <li class="nav-item">
-                    <a class="nav-link navTab active" href="#" data-admin-tab="skills">Vaardigheden</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link navTab" href="#" data-admin-tab="traits">Eigenschappen</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link navTab" href="#" data-admin-tab="knowledge">Wereldwijs</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link navTab" href="#" data-admin-tab="actions">Acties</a>
-                </li>
-            </ul>
-            <div class="aether-page-nav-body">
-            <div class="row py-3 navRow admin-toolbar mb-4" id="adminSkillsToolbar">
-                <div class="col-lg-8 col-12 mb-3 mb-lg-0">
-                    <label class="form-label admin-toolbar-label" for="adminSkillSelect">Vaardigheid</label>
-                    <select class="form-select" id="adminSkillSelect">
-                        <option value="0">Kies een vaardigheid</option>
-                    </select>
-                </div>
-                <div class="col-lg-4 col-12 d-grid align-self-end">
-                    <button type="button" class="btn btn-outline-light" id="adminNewSkillButton">Nieuwe vaardigheid</button>
-                </div>
-            </div>
-            <div class="row py-3 navRow admin-toolbar mb-4 d-none" id="adminKnowledgeToolbar">
-                <div class="col-lg-8 col-12">
-                    <label class="form-label admin-toolbar-label" for="adminKnowledgeEventSelect">Event</label>
-                    <select class="form-select" id="adminKnowledgeEventSelect">
-                        <option value="0">Kies een event</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row py-3 navRow admin-toolbar mb-4 d-none" id="adminActionsToolbar">
-                <div class="col-lg-8 col-12">
-                    <label class="form-label admin-toolbar-label" for="adminActionsEventSelect">Event</label>
-                    <select class="form-select" id="adminActionsEventSelect">
-                        <option value="0">Kies een event</option>
-                    </select>
-                </div>
-            </div>
-            </div>
-        </div>
     <main class="container aether-page admin-page">
         <div class="alert py-2 px-3 d-none mb-4" id="adminFeedback" role="status"></div>
 
@@ -86,6 +38,18 @@
                 <div class="col-lg-9 col-12">
                     <div class="card aether-panel shadow-sm admin-card">
                         <div class="card-body">
+                            <div class="row admin-toolbar mb-4" id="adminSkillsToolbar">
+                <div class="col-lg-8 col-12 mb-3 mb-lg-0">
+                    <label class="form-label admin-toolbar-label" for="adminSkillSelect">Vaardigheid</label>
+                    <select class="form-select" id="adminSkillSelect">
+                        <option value="0">Kies een vaardigheid</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-12 align-self-end">
+                    <div class="button-group"><button type="button" class="action-button" id="adminNewSkillButton">Nieuwe vaardigheid</button></div>
+                </div>
+            </div>
+
                             <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                                 <div>
                                     <h1 class="h4 mb-1" id="adminSkillTitle">Vaardigheid</h1>
@@ -172,6 +136,15 @@
         <section class="d-none" id="adminKnowledgeSection">
             <div class="card aether-panel shadow-sm admin-card">
                 <div class="card-body">
+                            <div class="row admin-toolbar mb-4" id="adminKnowledgeToolbar">
+                <div class="col-lg-8 col-12">
+                    <label class="form-label admin-toolbar-label" for="adminKnowledgeEventSelect">Event</label>
+                    <select class="form-select" id="adminKnowledgeEventSelect">
+                        <option value="0">Kies een event</option>
+                    </select>
+                </div>
+            </div>
+
                     <h1 class="h4 mb-2">Wereldwijs</h1>
                     <p class="text-muted mb-4" id="adminKnowledgeSubtitle">Kies bovenaan een event om alle ingevulde gossip van dat event te bekijken.</p>
                     <div id="adminKnowledgeContent">
@@ -184,6 +157,15 @@
         <section class="d-none" id="adminActionsSection">
             <div class="card aether-panel shadow-sm admin-card">
                 <div class="card-body">
+                            <div class="row admin-toolbar mb-4" id="adminActionsToolbar">
+                <div class="col-lg-8 col-12">
+                    <label class="form-label admin-toolbar-label" for="adminActionsEventSelect">Event</label>
+                    <select class="form-select" id="adminActionsEventSelect">
+                        <option value="0">Kies een event</option>
+                    </select>
+                </div>
+            </div>
+
                     <h1 class="h4 mb-2">Acties</h1>
                     <p class="text-muted mb-4" id="adminActionsSubtitle">Kies bovenaan een event om alle geregistreerde speleracties te bekijken.</p>
                     <div id="adminActionsContent">
@@ -199,8 +181,8 @@
     <script src="js/modal.js?v=a235e11728124506"></script>
     <script src="js/mainFunctions.js?v=f3db4bd7cb4060d8"></script>
     <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
-    <script src="js/aetherSidebars.js?v=b1ad6c6b8e1f2004"></script>
-    <script src="js/adminFunctions.js?v=ca1a65f305e129b9"></script>
+    <script src="js/aetherSidebars.js?v=61c6ad5a98987beb"></script>
+    <script src="js/adminFunctions.js?v=064887755779bc30"></script>
     <script src="js/adminActions.js?v=9cbd65db07595253"></script>
 </body>
 </html>

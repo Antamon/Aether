@@ -73,6 +73,35 @@
             list.className = "company-list event-sidebar-list";
             scroll.append(list);
         }
+        if (config.key === "admin") {
+            const list = document.createElement("div");
+            list.className = "company-list";
+            list.id = "adminMainTabs";
+            for (const [key, label, image] of [
+                ["skills", "Vaardigheden", "actionsVaardigheden.png"],
+                ["traits", "Eigenschappen", "actionStatuseigenschappen.png"],
+                ["knowledge", "Wereldwijs", "actionWereldwijs.png"],
+                ["actions", "Acties", "actionBoeken.png"]
+            ]) {
+                const link = document.createElement("a");
+                link.className = "company-sidebar-card";
+                link.href = `admin.html?tab=${key}`;
+                link.dataset.adminTab = key;
+                const frame = document.createElement("span");
+                frame.className = "company-sidebar-image-frame";
+                const icon = document.createElement("img");
+                icon.className = "company-sidebar-image";
+                icon.src = `img/${image}`;
+                icon.alt = "";
+                frame.append(icon);
+                const name = document.createElement("span");
+                name.className = "company-sidebar-name";
+                name.textContent = label;
+                link.append(frame, name);
+                list.append(link);
+            }
+            scroll.append(list);
+        }
         paper.append(scroll);
         panel.append(header, paper);
 
@@ -127,8 +156,8 @@
                 return;
             }
             if (key === "companies" && !userHasPrivilegedRole(user)) {
-                const result = await apiFetchJson("api/companies/getMyLeaderCompanies.php");
-                renderNavigationCompanies(result?.companies || [], list, "leaderPersonnel.html");
+                const result = await apiFetchJson("api/companies/getMyCompanies.php");
+                renderNavigationCompanies(result?.companies || [], list);
                 list.nextElementSibling?.classList.add("d-none");
                 loadedLists.add(key);
                 return;
@@ -305,6 +334,7 @@
     }
 
     function setOpen(key) {
+        if (key && !allowedKeys.has(key)) key = null;
         activeKey = key;
         deck.classList.toggle("is-open", key !== null);
         for (const [sidebarKey, { panel, tab, tabHost }] of panels) {
@@ -338,6 +368,28 @@
     }
 
     sidebars.forEach(createSidebar);
+    // Restricted tabs stay hidden until the server has confirmed access.
+    for (const key of ["admin", "companies"]) panels.get(key).tabHost.classList.add("d-none");
+    let allowedKeys = new Set(["characters", "events"]);
+    void (async () => {
+        try {
+            const user = await aetherGetCurrentUser();
+            if (userHasPrivilegedRole(user)) {
+                allowedKeys.add("admin"); allowedKeys.add("companies");
+            } else {
+                const result = await apiFetchJson("api/companies/getMyCompanies.php");
+                if (result?.companies?.length) allowedKeys.add("companies");
+                const list = document.getElementById("companyList");
+                if (list) {
+                    renderNavigationCompanies(result?.companies || [], list);
+                    list.nextElementSibling?.classList.add("d-none");
+                    loadedLists.add("companies");
+                }
+            }
+            for (const key of ["admin", "companies"]) panels.get(key).tabHost.classList.toggle("d-none", !allowedKeys.has(key));
+            if (activeKey && !allowedKeys.has(activeKey)) setOpen(null);
+        } catch (error) { console.error("Sidebarrechten laden mislukt:", error); setOpen(null); }
+    })();
     const edge = document.createElement("span");
     edge.className = "aether-sidebar-gold-edge";
     edge.setAttribute("aria-hidden", "true");
@@ -362,6 +414,7 @@
     window.closeCharacterSidebar = () => { if (activeKey === "characters") setOpen(null); };
     window.closeCompanySidebar = () => { if (activeKey === "companies") setOpen(null); };
     window.closeEventSidebar = () => { if (activeKey === "events") setOpen(null); };
+    window.closeAdminSidebar = () => { if (activeKey === "admin") setOpen(null); };
     positionBelowNavbar();
     const requested = new URLSearchParams(window.location.search).get("sidebar");
     const selectingCompany = new URLSearchParams(window.location.search).has("company")

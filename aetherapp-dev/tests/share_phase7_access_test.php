@@ -29,7 +29,8 @@ $draft = ['id' => 23, 'idUser' => 7, 'type' => 'player', 'state' => 'draft'];
 
 shareAccessCheck(aetherCanTradeForCharacter($owner, $player), 'Eigen actief personage');
 shareAccessCheck(!aetherCanTradeForCharacter($other, $player), 'Andermans personage');
-shareAccessCheck(!aetherCanTradeForCharacter($owner, $extra), 'Extra kan niet handelen');
+shareAccessCheck(aetherCanTradeForCharacter($owner, $extra), 'Eigen extra kan aandelen verhandelen');
+shareAccessCheck(!aetherCanTradeForCharacter($other, $extra), 'Andermans extra kan geen aandelen verhandelen');
 shareAccessCheck(aetherCanTradeForCharacter($director, $player), 'Director mag handelen');
 shareAccessCheck(aetherCanTradeForCharacter($admin, $player), 'Administrator mag handelen');
 shareAccessCheck(!aetherCanManageShareCompany($owner), 'Participant mag geen bedrijfsparameters wijzigen');

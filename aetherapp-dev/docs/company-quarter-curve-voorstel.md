@@ -6,6 +6,11 @@ lineair verdeeld tussen die punten. Het aantal uitgegeven aandelen blijft
 tussen vaste punten gelijk aan het voorgaande aantal. Na het laatste vaste
 punt blijven de cijfers gelijk totdat een nieuw punt wordt toegevoegd.
 
+Het grafiekbereik loopt minstens tot het huidige spelkwartaal (Belgische
+kalenderdatum min 100 jaar) en omvat het eerstvolgende eventkwartaal, ook
+zonder aangemaakte snapshot. Verder gelegen aangemaakte bedrijfssnapshots
+worden eveneens volledig meegenomen, tot en met hun laatste eventkwartaal.
+
 Een nieuwe of gewijzigde snapshot berekent de tussenliggende kwartalen opnieuw.
 De beheerder kan daarna in de grafiek meerdere punten verslepen of via de
 kwartaalmodal aanpassen en alles in één keer bewaren. Snapshots zelf blijven

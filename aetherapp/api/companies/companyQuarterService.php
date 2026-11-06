@@ -4,6 +4,33 @@ declare(strict_types=1);
 require_once __DIR__ . '/companyUtils.php';
 require_once __DIR__ . '/companyQuarterMath.php';
 
+/** Keep an event's identity so learned information survives an edited quarter. */
+function aetherCompanyQuarterSaveEvents(PDO $pdo, int $quarterId, array $items): void
+{
+    $stmt = $pdo->prepare('SELECT id, description, publicity FROM tblCompanyQuarterEvent WHERE idCompanyQuarter = :id FOR UPDATE');
+    $stmt->execute(['id' => $quarterId]);
+    $existing = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) $existing[(int) $row['id']] = $row;
+    foreach ($items as $item) {
+        $id = (int) ($item['id'] ?? 0);
+        if (!$id) foreach ($existing as $candidateId => $candidate) {
+            if ($candidate['description'] === trim($item['description']) && (int) $candidate['publicity'] === (int) $item['publicity']) {
+                $id = $candidateId; break;
+            }
+        }
+        if ($id && !isset($existing[$id])) throw new RuntimeException('Onbekende of dubbele bedrijfsgebeurtenis.', 422);
+        $stmt = $pdo->prepare($id
+            ? 'UPDATE tblCompanyQuarterEvent SET description = :description, publicity = :publicity WHERE id = :eventId AND idCompanyQuarter = :quarterId'
+            : 'INSERT INTO tblCompanyQuarterEvent (idCompanyQuarter, description, publicity) VALUES (:quarterId, :description, :publicity)');
+        $params = ['quarterId' => $quarterId, 'description' => trim($item['description']), 'publicity' => $item['publicity']];
+        if ($id) $params['eventId'] = $id;
+        $stmt->execute($params);
+        unset($existing[$id]);
+    }
+    $delete = $pdo->prepare('DELETE FROM tblCompanyQuarterEvent WHERE id = :id AND idCompanyQuarter = :quarterId');
+    foreach (array_keys($existing) as $id) $delete->execute(['id' => $id, 'quarterId' => $quarterId]);
+}
+
 function aetherCompanyQuarterHistoryAvailable(PDO $pdo): bool
 {
     $stmt = $pdo->query("SELECT COUNT(*) FROM tblSchemaMigration
@@ -52,9 +79,18 @@ function aetherCompanyQuarterTimeline(PDO $pdo, int $companyId, bool $persist = 
     $foundationDate = $foundation['foundationDate'] ?? $company['foundationDate'] ?? null;
     if (!$foundationDate) return [];
     $first = aetherCompanyQuarterForDate($foundationDate);
-    $last = aetherCompanyQuarterForOutgameDate(
-        (new DateTimeImmutable('today', new DateTimeZone('Europe/Brussels')))->format('Y-m-d')
-    );
+    $today = (new DateTimeImmutable('today', new DateTimeZone('Europe/Brussels')))->format('Y-m-d');
+    $stmt = $pdo->prepare('SELECT dateStart, dateEnd FROM tblEvent
+        WHERE dateStart >= :today ORDER BY dateStart, id LIMIT 1');
+    $stmt->execute(['today' => $today]);
+    $nextEvent = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    $stmt = $pdo->prepare('SELECT s.id, s.idEvent, e.title, e.dateStart, e.dateEnd,
+        s.companyValue, s.issuedShareCount, s.shareMarketPrice, s.stability, s.profitability
+        FROM tblCompanySnapshot s JOIN tblEvent e ON e.id = s.idEvent
+        WHERE s.idCompany = :idCompany ORDER BY e.dateStart, s.id');
+    $stmt->execute(['idCompany' => $companyId]);
+    $snapshotRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $last = aetherCompanyQuarterTimelineEnd($today, $nextEvent, $snapshotRows);
     if ($first > $last) return [];
     if ($last - $first > 2000) throw new RuntimeException('De oprichtingsdatum ligt te ver in het verleden.', 409);
 
@@ -79,13 +115,8 @@ function aetherCompanyQuarterTimeline(PDO $pdo, int $companyId, bool $persist = 
             ];
         }
     }
-    $stmt = $pdo->prepare('SELECT s.id, s.idEvent, e.title, e.dateStart, e.dateEnd,
-        s.companyValue, s.issuedShareCount, s.shareMarketPrice, s.stability, s.profitability
-        FROM tblCompanySnapshot s JOIN tblEvent e ON e.id = s.idEvent
-        WHERE s.idCompany = :idCompany ORDER BY e.dateStart, s.id');
-    $stmt->execute(['idCompany' => $companyId]);
     $snapshots = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $snapshot) {
+    foreach ($snapshotRows as $snapshot) {
         $start = aetherCompanyQuarterForOutgameDate($snapshot['dateStart']);
         $endDate = $snapshot['dateEnd'] ?: $snapshot['dateStart'];
         $end = aetherCompanyQuarterForOutgameDate($endDate);
@@ -203,9 +234,6 @@ function aetherCompanySaveQuarterEdits(PDO $pdo, int $companyId, array $input): 
                     profitability = VALUES(profitability), isManual = VALUES(isManual)');
         $find = $pdo->prepare('SELECT id FROM tblCompanyQuarter WHERE idCompany = :idCompany
             AND quarterYear = :year AND quarterNumber = :quarter');
-        $deleteEvents = $pdo->prepare('DELETE FROM tblCompanyQuarterEvent WHERE idCompanyQuarter = :id');
-        $insertEvent = $pdo->prepare('INSERT INTO tblCompanyQuarterEvent
-            (idCompanyQuarter, description, publicity) VALUES (:id, :description, :publicity)');
         $seen = [];
         foreach ($edits as $edit) {
             if (!is_array($edit)) throw new RuntimeException('Ongeldige kwartaalgegevens.', 422);
@@ -253,16 +281,14 @@ function aetherCompanySaveQuarterEdits(PDO $pdo, int $companyId, array $input): 
             if (!is_array($edit['events']) || count($edit['events']) > 30) throw new RuntimeException('Ongeldige gebeurtenissenlijst.', 422);
             $find->execute(['idCompany' => $companyId, 'year' => $year, 'quarter' => $quarter]);
             $savedId = (int) $find->fetchColumn();
-            $deleteEvents->execute(['id' => $savedId]);
             foreach ($edit['events'] as $event) {
                 if (!is_array($event) || !is_string($event['description'] ?? null)
                     || trim($event['description']) === '' || mb_strlen($event['description']) > 2000
                     || !in_array($event['publicity'] ?? null, [1, 2, 3, 4, 5], true)) {
                     throw new RuntimeException('Controleer de bedrijfsgebeurtenissen.', 422);
                 }
-                $insertEvent->execute(['id' => $savedId, 'description' => trim($event['description']),
-                    'publicity' => $event['publicity']]);
             }
+            aetherCompanyQuarterSaveEvents($pdo, $savedId, $edit['events']);
         }
         $result = aetherCompanyQuarterTimeline($pdo, $companyId, true);
         $pdo->commit();
@@ -289,7 +315,7 @@ function aetherCompanySaveQuarter(PDO $pdo, int $companyId, array $input): array
             || !in_array($item['publicity'] ?? null, [1, 2, 3, 4, 5], true)) {
             throw new RuntimeException('Controleer de beschrijving en zichtbaarheid van elke gebeurtenis.', 422);
         }
-        $cleanEvents[] = ['description' => trim($item['description']), 'publicity' => $item['publicity']];
+        $cleanEvents[] = ['id' => (int) ($item['id'] ?? 0), 'description' => trim($item['description']), 'publicity' => $item['publicity']];
     }
     $pdo->beginTransaction();
     try {
@@ -339,11 +365,7 @@ function aetherCompanySaveQuarter(PDO $pdo, int $companyId, array $input): array
         $stmt->execute(['idCompany' => $companyId, 'quarterYear' => $year, 'quarterNumber' => $quarter]);
         $id = (int) $stmt->fetchColumn();
         if (!$id) throw new RuntimeException('Kwartaal kon niet worden bewaard.', 409);
-        $stmt = $pdo->prepare('DELETE FROM tblCompanyQuarterEvent WHERE idCompanyQuarter = :id');
-        $stmt->execute(['id' => $id]);
-        $stmt = $pdo->prepare('INSERT INTO tblCompanyQuarterEvent (idCompanyQuarter, description, publicity)
-            VALUES (:id, :description, :publicity)');
-        foreach ($cleanEvents as $item) $stmt->execute(['id' => $id] + $item);
+        aetherCompanyQuarterSaveEvents($pdo, $id, $cleanEvents);
         aetherCompanyQuarterTimeline($pdo, $companyId, true);
         $pdo->commit();
         return ['status' => 'ok'];

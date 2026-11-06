@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/shareRules.php';
 require_once __DIR__ . '/shareException.php';
+require_once __DIR__ . '/shareOwnershipRepository.php';
 
 function aetherIsShareCapitalTrait(array $trait): bool
 {
@@ -58,14 +59,15 @@ function aetherShareSetDraftLevel(PDO $pdo, int $id, int $level): void
 function aetherShareDraftQuotes(PDO $pdo, ?int $companyId = null): array
 {
     $where = $companyId === null ? '' : ' AND c.id = :idCompany';
+    $allHoldings = aetherShareOwnershipRowsSql($pdo);
     $stmt = $pdo->prepare("SELECT c.id AS idCompany, c.companyName, s.id AS idSnapshot, s.idEvent,
-        e.title AS eventTitle, e.dateStart AS quoteDate, s.shareMarketPrice AS unitPrice, 0 AS foundationOrder,
-        GREATEST(0, c.issuedShareCount - COALESCE((SELECT SUM(h.shareCount) FROM tblCompanyShareHolding h WHERE h.idCompany = c.id), 0)
+        e.title AS eventTitle, e.dateStart AS quoteDate, s.shareMarketPrice AS unitPrice, 0 AS foundationOrder, c.foundationDate,
+        GREATEST(0, c.issuedShareCount - COALESCE((SELECT SUM(h.shareCount) FROM $allHoldings h WHERE h.idCompany = c.id), 0)
             - COALESCE((SELECT a.shareCount FROM tblCompanyAnonymousShares a WHERE a.idCompany = c.id), 0)) AS freeShareCount
         FROM tblCompany c JOIN tblCompanySnapshot s ON s.idCompany = c.id JOIN tblEvent e ON e.id = s.idEvent
         WHERE c.initialShareCount IS NOT NULL AND c.issuedShareCount > 0 $where
-        UNION ALL SELECT c.id, c.companyName, 0, NULL, 'Oprichting', f.foundationDate, f.shareMarketPrice, 1,
-        GREATEST(0, c.issuedShareCount - COALESCE((SELECT SUM(h.shareCount) FROM tblCompanyShareHolding h WHERE h.idCompany = c.id), 0)
+        UNION ALL SELECT c.id, c.companyName, 0, NULL, 'Oprichting', f.foundationDate, f.shareMarketPrice, 1, c.foundationDate,
+        GREATEST(0, c.issuedShareCount - COALESCE((SELECT SUM(h.shareCount) FROM $allHoldings h WHERE h.idCompany = c.id), 0)
             - COALESCE((SELECT a.shareCount FROM tblCompanyAnonymousShares a WHERE a.idCompany = c.id), 0))
         FROM tblCompany c JOIN tblCompanyFoundationSnapshot f ON f.idCompany = c.id
         WHERE c.initialShareCount IS NOT NULL AND c.issuedShareCount > 0" . ($companyId === null ? '' : ' AND c.id = :foundationCompany') . '

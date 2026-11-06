@@ -35,7 +35,7 @@ const context = {
         return url.includes('getCharacterPortfolio') ? {
             status: { intrinsicPortfolioValue: value },
             holdings: [{ idCompany: 1, companyName: 'Company', shareCount: 2 }]
-        } : { offers: [] };
+        } : { offers: [{ id: 1, companyName: 'Company', offeredShareCount: 5, purchasedShareCount: 0, unitPrice: '10.00' }] };
     }
 };
 vm.createContext(context);
@@ -47,18 +47,18 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
     assert(!card.className.includes('p-3'), 'Portfolio uses the standard panel padding');
     const content = card.children[0];
     const offers = new Element('section'); card.appendChild(offers);
-    const form = content.querySelectorAll('details')[1];
+    const form = content.querySelectorAll('details')[0];
     form.open = true;
     const draft = new Element('input'); draft.value = 'Draft offer'; form.appendChild(draft);
     value = 200;
     await card.aetherRefresh();
-    assert.equal(content.querySelectorAll('details')[1], form, 'Polling preserves the open form');
+    assert.equal(content.querySelectorAll('details')[0], form, 'Polling preserves the open form');
     assert.equal(draft.value, 'Draft offer');
     form.open = false;
     await card.aetherRefresh();
-    assert.notEqual(content.querySelectorAll('details')[1], form, 'Closed cards receive fresh data');
+    assert.notEqual(content.querySelectorAll('details')[0], form, 'Closed cards receive fresh data');
     assert.equal(card.children[1], offers, 'Available offers survive portfolio updates');
-    const updatedForm = content.querySelectorAll('details')[1];
+    const updatedForm = content.querySelectorAll('details')[0];
     // Opening the form while a request is in flight must also preserve it.
     let release;
     gate = new Promise(resolve => { release = resolve; });
@@ -69,6 +69,6 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
     release();
     await pending;
     gate = null;
-    assert.equal(content.querySelectorAll('details')[1], updatedForm, 'In-flight refresh preserves a newly opened form');
+    assert.equal(content.querySelectorAll('details')[0], updatedForm, 'In-flight refresh preserves a newly opened form');
     console.log('Portfolio refresh checks passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

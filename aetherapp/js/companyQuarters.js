@@ -15,6 +15,7 @@
     let horizontalZoom = 1, verticalZoom = 1;
     let snapshotEventOptions = [], existingSnapshotIds = new Set(), foundationGameDate = "";
     let latestRender = Promise.resolve();
+    let canEdit = false;
 
     function gameDate(outgameDate) {
         const date = String(outgameDate || "").slice(0, 10);
@@ -90,6 +91,7 @@
         const metric = document.getElementById("companyQuarterMetric");
         toggle.setAttribute("aria-pressed", String(editMode));
         toggle.disabled = chartSaving || !quarters.length;
+        document.querySelector(".company-quarter-mode-actions").classList.toggle("d-none", !canEdit);
         toggle.innerHTML = editMode
             ? '<i class="fa-solid fa-eye" aria-hidden="true"></i> Bekijk grafiek'
             : '<i class="fa-solid fa-pen" aria-hidden="true"></i> Grafiek bewerken';
@@ -120,7 +122,7 @@
         if (!content || !metric) return;
         const oldChart = content.querySelector(".company-quarter-chart-scroll");
         const scrollFractionX = !resetScroll && oldChart && oldChart.scrollWidth > oldChart.clientWidth
-            ? oldChart.scrollLeft / (oldChart.scrollWidth - oldChart.clientWidth) : 0;
+            ? oldChart.scrollLeft / (oldChart.scrollWidth - oldChart.clientWidth) : resetScroll ? 0 : 1;
         const scrollFractionY = !resetScroll && oldChart && oldChart.scrollHeight > oldChart.clientHeight
             ? oldChart.scrollTop / (oldChart.scrollHeight - oldChart.clientHeight) : 0;
         content.replaceChildren();
@@ -197,7 +199,7 @@
         const pointElements = [];
         visible.forEach((row, index) => {
             if (values[index] !== null) {
-                const eventCount = row.events?.length || 0;
+                const eventCount = canEdit ? row.events?.length || 0 : 0;
                 const pendingSnapshot = row.source !== "snapshot" && Boolean(row.pendingSnapshotEvents?.length);
                 const pointSize = row.source === "snapshot" ? 8 : 6;
                 const point = eventCount && !pendingSnapshot
@@ -387,13 +389,35 @@
         }
         footer.append(periodControl(true), periodControl(false));
         content.appendChild(footer);
-        const eventRows = quarters.flatMap((row, index) => (rowAt(index).events || []).map(event => ({ row, event })));
+        const eventRows = canEdit ? quarters.map((row, index) => rowAt(index)).filter(row => row.events?.length) : [];
         if (eventRows.length) {
             content.appendChild(node("h4", "h5 mt-3 mb-1", "Grote gebeurtenissen"));
-            const list = node("ul", "company-quarter-events-list");
-            eventRows.forEach(({ row, event }) => {
-                list.appendChild(node("li", "", `${row.year} K${row.quarter} – ${event.description}`));
+            const list = node("div", "company-quarter-events-list");
+            const columns = [node("div", "company-quarter-events-column"), node("div", "company-quarter-events-column")];
+            eventRows.forEach((row, index) => {
+                const card = node("div", "data-card company-quarter-events-card");
+                const header = node("div", "d-flex justify-content-between align-items-start gap-2 mb-2");
+                header.appendChild(node("h5", "h6 mb-0", `${row.year} K${row.quarter}`));
+                const actions = node("div", "button-group");
+                const edit = AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit" });
+                edit.setAttribute("aria-label", `${row.year} K${row.quarter} bewerken`);
+                edit.title = "Kwartaal bewerken";
+                edit.disabled = saving || chartSaving;
+                edit.addEventListener("click", () => {
+                    editMode = true; editType = "modal";
+                    draw();
+                    open(row);
+                });
+                actions.appendChild(edit); header.appendChild(actions); card.appendChild(header);
+                row.events.forEach(event => {
+                    const description = node("p", "mb-2");
+                    description.appendChild(node("strong", "", ["Verhuld", "Beperkt", "Gemengd", "Publiek", "Zeer publiek"][Number(event.publicity) - 1] || "Onbekend"));
+                    description.appendChild(document.createTextNode(` – ${event.description}`));
+                    card.appendChild(description);
+                });
+                columns[index < Math.ceil(eventRows.length / 2) ? 0 : 1].appendChild(card);
             });
+            list.append(...columns);
             content.appendChild(list);
         }
         if (editMode) content.appendChild(node("p", "small text-muted mt-2 mb-0", editType === "drag"
@@ -403,6 +427,7 @@
 
     function eventEditor(item = {}) {
         const row = node("div", "company-quarter-event row g-2 align-items-end mb-2");
+        row.dataset.eventId = String(item.id || 0);
         const textCol = node("div", "col-12 col-md-7");
         const textLabel = node("label", "form-label", "Beschrijving");
         const textInput = node("textarea", "form-control");
@@ -496,7 +521,7 @@
         for (const eventRow of body.querySelectorAll(".company-quarter-event")) {
             const description = eventRow.querySelector("textarea").value.trim();
             if (!description) { error.textContent = "Vul bij elke gebeurtenis een beschrijving in."; error.classList.remove("d-none"); return; }
-            payload.events.push({ description, publicity: Number(eventRow.querySelector("select").value) });
+            payload.events.push({ id: Number(eventRow.dataset.eventId || 0), description, publicity: Number(eventRow.querySelector("select").value) });
         }
         stage(currentIndex, payload, payload.events);
         editStatus(`${pending.size} kwartaal${pending.size === 1 ? "" : "en"} klaar om te bewaren.`);
@@ -517,7 +542,7 @@
                 const edit = { year: row.year, quarter: row.quarter };
                 fields.forEach(([key]) => { edit[key] = row[key]; });
                 if (eventSignature(row.events) !== eventSignature(quarters[index].events))
-                    edit.events = (row.events || []).map(({ description, publicity }) => ({ description, publicity }));
+                    edit.events = (row.events || []).map(({ id, description, publicity }) => ({ id: id || 0, description, publicity }));
                 return edit;
             });
             const result = await apiFetchJson("api/companies/saveCompanyQuarterDrag.php", {
@@ -540,6 +565,7 @@
     }
 
     async function render(company) {
+        canEdit = company?.canManageCompany !== false;
         const section = document.getElementById("companyQuarterHistory");
         const content = document.getElementById("companyQuarterContent");
         if (!section || !content) return false;
@@ -565,7 +591,10 @@
             quarters = []; content.replaceChildren(); updateEditControls(); return false;
         }
         const metric = document.getElementById("companyQuarterMetric");
-        if (!metric.options.length) fields.forEach(([key, label]) => metric.add(new Option(label, key)));
+        const previousMetric = metric.value;
+        metric.replaceChildren();
+        fields.filter(([, , kind]) => canEdit || kind !== "score").forEach(([key, label]) => metric.add(new Option(label, key)));
+        if ([...metric.options].some(option => option.value === previousMetric)) metric.value = previousMetric;
         content.textContent = "Kwartaalhistoriek laden…";
         updateEditControls();
         try {
@@ -587,7 +616,7 @@
     }
     document.getElementById("companyQuarterMetric")?.addEventListener("change", () => draw());
     document.getElementById("companyQuarterEditToggle")?.addEventListener("click", () => {
-        if (chartSaving) return;
+        if (chartSaving || !canEdit) return;
         const discarded = editMode ? pending.size : 0;
         if (editMode) pending.clear();
         editMode = !editMode;

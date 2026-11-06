@@ -22,6 +22,18 @@ function aetherCompanyQuarterBounds(int $index): array
     return [intdiv($index, 4), $index % 4 + 1];
 }
 
+/** Include the current game quarter, next event and every saved future snapshot. */
+function aetherCompanyQuarterTimelineEnd(string $today, ?array $nextEvent, array $snapshots): int
+{
+    $last = aetherCompanyQuarterForOutgameDate($today);
+    foreach ($nextEvent === null ? $snapshots : [$nextEvent, ...$snapshots] as $period) {
+        $start = (string) $period['dateStart'];
+        $last = max($last, aetherCompanyQuarterForOutgameDate($start),
+            aetherCompanyQuarterForOutgameDate((string) (($period['dateEnd'] ?? null) ?: $start)));
+    }
+    return $last;
+}
+
 /** Interpolate four figures; issued shares belong to the preceding anchor. */
 function aetherCompanyQuarterInterpolate(array $from, array $to, float $fraction): array
 {

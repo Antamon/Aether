@@ -6,6 +6,7 @@ require_once __DIR__ . '/traitUtils.php';
 require_once __DIR__ . '/companyShareUtils.php';
 require_once __DIR__ . '/../companies/companyLeadershipRules.php';
 require_once __DIR__ . '/../shares/shareAccess.php';
+require_once __DIR__ . '/../shares/shareOwnershipRepository.php';
 
 function getCurrentUserId(): int
 {
@@ -436,15 +437,16 @@ function getCharacterVirtualCompanyShareLivingStandardIncome(PDO $pdo, int $idCh
     }
 
     if (aetherShareLegacyWritesClosed($pdo)) {
+        $allHoldings = aetherShareOwnershipRowsSql($pdo);
         $rows = dbAll($pdo,
-            'SELECT h.shareCount, c.companyValue, c.profitability,
-                    COALESCE((SELECT SUM(h2.shareCount) FROM tblCompanyShareHolding AS h2
+            "SELECT h.shareCount, c.companyValue, c.profitability,
+                    COALESCE((SELECT SUM(h2.shareCount) FROM $allHoldings AS h2
                                WHERE h2.idCompany = h.idCompany), 0)
                     + COALESCE(a.shareCount, 0) AS soldShareCount
                FROM tblCompanyShareHolding AS h
                JOIN tblCompany AS c ON c.id = h.idCompany
                LEFT JOIN tblCompanyAnonymousShares AS a ON a.idCompany = h.idCompany
-              WHERE h.idCharacter = :idCharacter',
+              WHERE h.idCharacter = :idCharacter",
             ['idCharacter' => $idCharacter]);
         $monthly = 0.0;
         foreach ($rows as $row) {

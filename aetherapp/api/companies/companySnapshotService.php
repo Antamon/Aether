@@ -15,6 +15,52 @@ final class AetherCompanyFinanceException extends RuntimeException
     public function getHttpStatus(): int { return $this->httpStatus; }
 }
 
+/** Called under the company lock, in the snapshot mutation's transaction. */
+function clearCompanySnapshotShareSearch(PDO $pdo, int $idCompany, array $snapshot): void
+{
+    if (!$pdo->inTransaction()) throw new LogicException('Snapshotopruiming vereist een transactie.');
+    $stmt = $pdo->prepare("SELECT 1 FROM tblCompanyShareTransaction
+        WHERE idCompany = :company AND idEvent = :event
+          AND operationCode IN ('buy_free', 'buy_from_holder', 'legacy_purchase', 'purchase_correction')
+        LIMIT 1");
+    $stmt->execute(['company' => $idCompany, 'event' => (int) $snapshot['idEvent']]);
+    if ($stmt->fetchColumn() !== false) {
+        throw new AetherCompanyFinanceException(409,
+            'Op deze snapshot zijn aandelen gekocht. De snapshot kan niet verwijderd worden.');
+    }
+
+    $stmt = $pdo->prepare('SELECT o.id, o.purchasedShareCount FROM tblShareOffer o
+        LEFT JOIN tblShareSearchAssessment a ON a.id = o.idAssessment
+        WHERE o.idSnapshot = :snapshot OR a.idSnapshot = :assessmentSnapshot ORDER BY o.id');
+    $stmt->execute(['snapshot' => (int) $snapshot['id'], 'assessmentSnapshot' => (int) $snapshot['id']]);
+    $offers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($offers as $offer) {
+        if ((int) $offer['purchasedShareCount'] > 0) {
+            throw new AetherCompanyFinanceException(409,
+                'Op deze snapshot zijn aandelen gekocht. De snapshot kan niet verwijderd worden.');
+        }
+    }
+    if ($offers) {
+        $ids = array_map('intval', array_column($offers, 'id'));
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        // Also protect linked purchase history when its event was later corrected.
+        $stmt = $pdo->prepare("SELECT 1 FROM tblCompanyShareTransaction WHERE idOffer IN ($placeholders) LIMIT 1");
+        $stmt->execute($ids);
+        if ($stmt->fetchColumn() !== false) {
+            throw new AetherCompanyFinanceException(409,
+                'Op deze snapshot zijn aandelen gekocht. De snapshot kan niet verwijderd worden.');
+        }
+        $stmt = $pdo->prepare("DELETE FROM tblShareOfferRecipient WHERE idOffer IN ($placeholders)");
+        $stmt->execute($ids);
+        $stmt = $pdo->prepare("DELETE FROM tblShareOffer WHERE id IN ($placeholders)");
+        $stmt->execute($ids);
+    }
+    $stmt = $pdo->prepare('DELETE FROM tblShareSearchAssessment WHERE idSnapshot = :snapshot');
+    $stmt->execute(['snapshot' => (int) $snapshot['id']]);
+    // The event-wide search also covers other companies. Retain it; missing
+    // assessments are rolled again on the next search after recreating a snapshot.
+}
+
 function buildCompanySnapshotResponse(PDO $pdo, int $idCompany): array
 {
     $company = getCompanyDetailData($pdo, $idCompany);
@@ -115,7 +161,14 @@ function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $id
         $anonymous = max(0, 100 - array_sum($holdings));
         aetherFinanceLockCharacters($pdo, array_keys($holdings));
     }
-    $allocation = aetherShareDividendAllocation($pool, $holdings, $anonymous);
+    $companyHoldings = [];
+    if (aetherCompanyShareOwnershipAvailable($pdo)) {
+        $stmt = $pdo->prepare('SELECT idHoldingCompany, shareCount FROM tblCompanyShareCompanyHolding
+            WHERE idCompany = :issuer ORDER BY idHoldingCompany');
+        $stmt->execute(['issuer' => $idCompany]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) $companyHoldings[(int) $row['idHoldingCompany']] = (int) $row['shareCount'];
+    }
+    $allocation = aetherShareMixedDividendAllocation($pool, $holdings, $companyHoldings, $anonymous);
 
     $snapshotId = (int) ($snapshot['id'] ?? 0);
     $eventTitle = trim((string) ($snapshot['title'] ?? ''));
@@ -157,11 +210,22 @@ function createCompanySnapshotDividendPayouts(PDO $pdo, array $snapshot, int $id
         $paidOutMinor += aetherDecimalToMinorUnits($amount);
     }
 
+    // Company dividends are assigned administratively; they never change either company value.
+    foreach ($allocation['companyPayouts'] as $ownerId => $amount) {
+        $stmt = $pdo->prepare('INSERT INTO tblCompanySnapshotCompanyPayout
+            (idCompanySnapshot, idHoldingCompany, shareCount, amount) VALUES (:snapshot, :owner, :shares, :amount)');
+        $stmt->execute(['snapshot' => $snapshotId, 'owner' => $ownerId, 'shares' => $companyHoldings[$ownerId], 'amount' => $amount]);
+        $paidOutMinor += aetherDecimalToMinorUnits($amount);
+    }
     return aetherMinorUnitsToDecimal($paidOutMinor);
 }
 
 function reverseCompanySnapshotDividendPayouts(PDO $pdo, int $idCompanySnapshot): void
 {
+    if (aetherCompanyShareOwnershipAvailable($pdo)) {
+        $stmt = $pdo->prepare('DELETE FROM tblCompanySnapshotCompanyPayout WHERE idCompanySnapshot = :snapshot');
+        $stmt->execute(['snapshot' => $idCompanySnapshot]);
+    }
     $payouts = dbAll(
         $pdo,
         'SELECT id, idCharacter, amount
@@ -685,20 +749,7 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
 
         } else {
             if (aetherShareLegacyWritesClosed($pdo)) {
-                $stmt = $pdo->prepare('SELECT 1 FROM tblShareSearchAssessment
-                                       WHERE idSnapshot = :idSnapshot LIMIT 1');
-                $stmt->execute(['idSnapshot' => $idCompanySnapshot]);
-                if ($stmt->fetchColumn() !== false) {
-                    throw new AetherCompanyFinanceException(409,
-                        'Deze snapshot heeft historische aandelenzoekresultaten en kan niet verwijderd worden.');
-                }
-                $stmt = $pdo->prepare('SELECT 1 FROM tblShareOffer
-                                       WHERE idSnapshot = :idSnapshot LIMIT 1');
-                $stmt->execute(['idSnapshot' => $idCompanySnapshot]);
-                if ($stmt->fetchColumn() !== false) {
-                    throw new AetherCompanyFinanceException(409,
-                        'Deze snapshot heeft aandelenaanbiedingen en kan niet verwijderd worden.');
-                }
+                clearCompanySnapshotShareSearch($pdo, $idCompany, $snapshot);
             }
             reverseCompanySnapshotEffects($pdo, $snapshot, $idCompany, (int) $currentUser['id']);
 
@@ -737,6 +788,11 @@ function aetherSaveCompanySnapshot(PDO $pdo, array $currentUser, array $input, s
         $snapshotEvent = $action === 'create' ? $event : $snapshot;
         aetherCompanyQuarterRefreshAfterSnapshotChange($pdo, $idCompany,
             (string) $snapshotEvent['dateStart'], $snapshotEvent['dateEnd'] ?? null);
+        if (aetherShareMigrationActive($pdo)) {
+            $holderIds = aetherShareHolderIds($pdo, $idCompany);
+            aetherFinanceLockCharacters($pdo, $holderIds);
+            aetherShareRevalue($pdo, $holderIds);
+        }
     }
     $response = buildCompanySnapshotResponse($pdo, $idCompany);
     aetherCompleteIdempotency($pdo, $currentUser, $operation, $requestKey, $response);

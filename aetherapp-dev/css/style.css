@@ -330,6 +330,7 @@ input[type=text], input[type=date], input[type=number], textarea, select {
 }
 
 .aether-sidebar-deck {
+  background: var(--primary-brown) url("../img/leather.jpg") repeat;
   --aether-sidebar-tab-height: 175px;
   position: fixed;
   top: var(--aether-navbar-bottom, 0px);
@@ -713,7 +714,7 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   touch-action: none;
 }
 
-.company-quarter-chart-scroll.is-modal-editing :is(circle, polygon) {
+.company-quarter-chart-scroll.is-modal-editing :is(circle, polygon):not([data-snapshot="true"]) {
   cursor: pointer;
 }
 
@@ -785,13 +786,20 @@ input[type=text], input[type=date], input[type=number], textarea, select {
 .company-quarter-events-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .35rem 1.5rem;
+  gap: 1rem 1.5rem;
   padding: 0;
   margin: .5rem 0 0;
   list-style: none;
 }
 
-.company-quarter-events-list li {
+.company-quarter-events-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.company-quarter-events-card {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -804,6 +812,41 @@ input[type=text], input[type=date], input[type=number], textarea, select {
 
 .company-quarter-events .form-label {
   display: block;
+}
+
+.share-purchase-quarter .button-group {
+  display: flex;
+}
+
+.share-purchase-quarter .form-select {
+  min-width: 0;
+  width: auto;
+  flex: 1 1 5rem;
+  border-radius: 0;
+}
+
+.share-purchase-quarter .form-select:first-child {
+  border-radius: .45rem 0 0 .45rem;
+}
+
+.share-purchase-quarter .form-select:last-child {
+  border-radius: 0 .45rem .45rem 0;
+}
+
+.share-purchase-tabs .nav-link {
+  color: var(--primary-red);
+}
+
+.share-purchase-tabs .nav-link.active {
+  background: var(--primary-red);
+  color: var(--primary-taupe);
+  border-color: var(--primary-red);
+}
+
+.share-purchase-row .share-purchase-bank-switch,
+.share-purchase-row .share-ui-form-grid > p,
+.share-purchase-row .share-ui-form-grid > [data-share-feedback] {
+  grid-column: 1 / -1;
 }
 
 .character-details-display {
@@ -1866,6 +1909,8 @@ a.event-character-link:focus-visible { outline: 2px solid var(--primary-red); ou
   background: rgba(100, 0, 0, 0.09);
 }
 
+a.company-sidebar-card { text-decoration: none; }
+
 .company-sidebar-card:focus-visible {
   outline: 2px solid rgb(100, 0, 0);
   outline-offset: 2px;
@@ -2393,7 +2438,7 @@ a.event-character-link:focus-visible { outline: 2px solid var(--primary-red); ou
 }
 
 .admin-toolbar-label {
-  color: #e7cdcd;
+  color: var(--primary-brown);
   font-weight: 600;
 }
 
@@ -3044,6 +3089,11 @@ a.event-character-link:focus-visible { outline: 2px solid var(--primary-red); ou
     border-bottom: 1px solid rgba(74, 48, 28, .2);
 }
 
+.share-holder-character-column {
+    width: 1%;
+    white-space: nowrap;
+}
+
 .share-detail-line {
     display: flex;
     align-items: baseline;
@@ -3076,6 +3126,7 @@ a.event-character-link:focus-visible { outline: 2px solid var(--primary-red); ou
 }
 
 .share-company-tile:hover,
+.share-company-tile[aria-pressed="true"],
 .share-company-tile:focus-visible {
     border-color: var(--primary-red);
     background: rgba(100, 0, 0, .09);
@@ -3094,7 +3145,26 @@ a.event-character-link:focus-visible { outline: 2px solid var(--primary-red); ou
 .share-company-logo img { width: 100%; height: 100%; object-fit: contain; }
 .share-company-logo > i { font-size: 2.5rem; }
 .share-company-name { min-height: 2.5rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.share-company-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.share-company-dialog-header h3 { margin: 0; }
 .share-company-dialog-body { margin-bottom: 1rem; }
+
+.company-research-heading { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+.company-research-logo { width: 9rem; height: 9rem; object-fit: contain; }
+.company-research-back { margin-left: auto; align-self: flex-start; }
+.company-research-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 767px) { .company-research-facts { grid-template-columns: minmax(0, 1fr); } }
+.company-research-chart { min-width: 0; cursor: grab; }
+.company-research-chart svg { display: block; max-width: none; }
+.company-research-events { column-count: 2; column-gap: 1.5rem; }
+.company-research-events > .company-research-event-group { break-inside: avoid; }
+@media (max-width: 767px) { .company-research-events { column-count: 1; } }
 @media (min-width: 992px) {
     .share-company-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

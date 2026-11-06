@@ -172,7 +172,7 @@ if (defined('AETHER_COMPANY_ENDPOINT_BOOTSTRAP')) {
     return;
 }
 
-$root = dirname(__DIR__);
+$root = $argv[1] ?? dirname(__DIR__);
 $fixture = sys_get_temp_dir() . '/aether-company-' . bin2hex(random_bytes(5));
 $failures = [];
 $stateFiles = [];

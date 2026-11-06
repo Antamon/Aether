@@ -12,12 +12,15 @@ const aetherShareMarketClient = (() => {
     let searchPromise = null;
     let searchPromiseKey = "";
     let marketEditKey = "";
+    let selectedResearchCompanyId = 0;
+    let researchLoadingCompanyId = 0;
+    let discoveryEditing = false;
     const labels = {
-        nl: { search: "Aandelenmarkt doorzoeken", market: "Aandelenmarkt", noEvent: "Geen koopbaar evenement.",
+        nl: { search: "Aandelenmarkt doorzoeken", market: "Onderzoek bedrijf", noEvent: "Geen koopbaar evenement.",
               noFinds: "Nog geen aandelen gevonden.", offers: "Beschikbare aanbiedingen", noOffers: "Geen aanbiedingen beschikbaar.",
               buy: "Kopen", share: "Delen", shared: "Gedeelde aandelen", choose: "Kies een personage", shares: "aandelen", stock: "Vrije voorraad", error: "De aandelenmarkt kon niet worden geladen.", searchError: "De aandelenzoekactie kon niet worden uitgevoerd.", assessed: "bedrijven onderzocht", discovered: "opgemerkt",
               snapshotCompanies: "Bedrijven met een snapshot voor dit event", notSearched: "Nog niet doorzocht", found: "Gevonden", notFound: "Niet gevonden", chance: "kans", discoveryRoll: "ontdekkingsworp", quantityRoll: "aandelenworp", priceRoll: "prijsworp", purchasePrice: "aankoopprijs", marketPrice: "marktprijs", notListed: "niet beursgenoteerd" },
-        en: { search: "Search share market", market: "Share market", noEvent: "No tradeable event.",
+        en: { search: "Search share market", market: "Research company", noEvent: "No tradeable event.",
               noFinds: "No shares discovered yet.", offers: "Available offers", noOffers: "No offers available.",
               buy: "Buy", share: "Share", shared: "Shared shares", choose: "Choose a character", shares: "shares", stock: "Free stock", error: "The share market could not be loaded.", searchError: "The share search could not be completed.", assessed: "companies checked", discovered: "discovered",
               snapshotCompanies: "Companies with a snapshot for this event", notSearched: "Not searched yet", found: "Found", notFound: "Not found", chance: "chance", discoveryRoll: "discovery roll", quantityRoll: "share quantity roll", priceRoll: "price roll", purchasePrice: "purchase price", marketPrice: "market price", notListed: "not listed" },
@@ -32,7 +35,7 @@ const aetherShareMarketClient = (() => {
     function canTrade(character) {
         const user = getCurrentUser();
         return userHasPrivilegedRole(user)
-            || (character?.type === "player" && Number(character?.idUser) === Number(user?.id));
+            || (["player", "extra"].includes(character?.type) && Number(character?.idUser) === Number(user?.id));
     }
 
     function canSearch(character) {
@@ -41,6 +44,8 @@ const aetherShareMarketClient = (() => {
     }
 
     async function refresh(force = false) {
+        if (!force && discoveryEditing) return;
+        if (!force && typeof aetherCompanyResearch !== "undefined" && aetherCompanyResearch.hasDraft()) return;
         if (!characterId || document.hidden
             || ![...document.querySelectorAll("[data-share-market-host]")].some((host) => {
                 const tab = host.closest("#actionsTab, #economyTab");
@@ -87,6 +92,10 @@ const aetherShareMarketClient = (() => {
             eventId = nextEventId;
             version = "";
             data = null;
+            selectedResearchCompanyId = 0;
+            researchLoadingCompanyId = 0;
+            discoveryEditing = false;
+            if (typeof aetherCompanyResearch !== "undefined") aetherCompanyResearch.reset();
             recipients = null;
             searchError = false;
         }
@@ -94,15 +103,15 @@ const aetherShareMarketClient = (() => {
         void refresh(true);
     }
 
-    function searchSelectedEvent() {
+    function searchSelectedEvent(companyId = 0) {
         const purchaseEventId = Number(data?.currentEvent?.id || eventId);
         if (characterId <= 0 || purchaseEventId <= 0 || data?.canTradeAtEvent === false) return Promise.resolve(null);
-        const key = `${characterId}:${purchaseEventId}`;
+        const key = `${characterId}:${purchaseEventId}:${companyId}`;
         if (searchPromise && searchPromiseKey === key) return searchPromise;
         const requestedId = characterId;
         const requestedEventId = purchaseEventId;
         const task = apiFetchIdempotentJson("api/shares/searchShareMarket.php", {
-            method: "POST", body: { idCharacter: requestedId, idEvent: requestedEventId },
+            method: "POST", body: { idCharacter: requestedId, idEvent: requestedEventId, ...(companyId > 0 ? {idCompany: companyId} : {}) },
         }).then(async (result) => {
             searchError = false;
             if (requestedId === characterId && requestedEventId === Number(data?.currentEvent?.id || eventId)) await refresh(true);
@@ -131,7 +140,7 @@ const aetherShareMarketClient = (() => {
         host.className = "data-card share-market-card mt-3";
         host.dataset.shareMarketHost = "actions";
         container.appendChild(host);
-        begin(character.id, selectedEventId);
+        begin(character.id, userHasPrivilegedRole(getCurrentUser()) ? selectedEventId : 0);
         if (recipients === null) {
             const requestedId = characterId;
             apiFetchJson(url("api/shares/getShareRecipientOptions.php"))
@@ -157,142 +166,108 @@ const aetherShareMarketClient = (() => {
     }
 
     function renderAdminAssessments(host, event) {
-        if (!data?.canEditAssessments || !event) return;
-        const heading = document.createElement("h4");
-        heading.className = "h5 mt-3";
-        heading.textContent = tr("snapshotCompanies");
-        host.appendChild(heading);
-        for (const item of data.assessments || []) {
-            const row = document.createElement("div");
-            row.className = "share-market-assessment data-card mt-2";
-            if (item.idAssessment) row.dataset.shareAssessmentId = String(item.idAssessment);
-            const name = document.createElement("strong");
-            name.textContent = item.companyName || `#${item.idCompany}`;
-            row.appendChild(name);
-            if (!item.idAssessment) {
-                row.appendChild(document.createTextNode(` · ${tr("notSearched")}`));
-                host.appendChild(row);
-                continue;
-            }
-            const band = { chance: Number(item.chancePercent),
-                quantity: [Number(item.quantityMin), Number(item.quantityMax)],
-                price: [Number(item.priceMin), Number(item.priceMax)] };
-            const found = Number(item.wasDiscovered) === 1;
-            const price = item.unitPrice ?? (item.shareMarketPrice && item.priceRoll
-                ? Number(item.shareMarketPrice) * Number(item.priceRoll) / 100 : null);
-            const detail = document.createElement("p");
-            detail.className = "mb-0 mt-1";
-            detail.textContent = `${tr(found ? "found" : "notFound")} · ${tr("chance")} ${band.chance}% · `
-                + `${tr("discoveryRoll")} ${item.discoveryRoll} · ${tr("quantityRoll")} ${item.quantityRoll ?? "—"}%`
-                + ` (${item.offeredShareCount ?? "—"} ${tr("shares")}) · `
-                + `${tr("priceRoll")} ${item.priceRoll == null ? "—" : Number(item.priceRoll) - 100}% · `
-                + `${tr("purchasePrice")} ${price == null ? "—" : money(price)}`
-                + (Number(item.isShareListed) === 1 ? "" : ` · ${tr("notListed")}`);
-            row.appendChild(detail);
-            if (aetherDataCard.isEditing(marketEditKey)) {
-                const fields = [
-                    ["discoveryRoll", tr("discoveryRoll"), 1, 100],
-                    ["quantityRoll", `${tr("quantityRoll")} (%)`, ...band.quantity],
-                    ["priceRoll", `${tr("priceRoll")} (%)`, ...band.price],
-                ];
-                const form = document.createElement("div");
-                form.className = "share-market-assessment-fields mt-2";
-                for (const [key, label, min, max] of fields) {
-                    const wrap = document.createElement("label");
-                    wrap.className = "form-label mb-0";
-                    wrap.textContent = `${label} (${min}–${max})`;
-                    const input = document.createElement("input");
-                    input.className = "form-control form-control-sm";
-                    input.type = "number";
-                    input.min = String(min);
-                    input.max = String(max);
-                    input.required = true;
-                    input.dataset.roll = key;
-                    input.value = String(key === "priceRoll" && item[key] != null
-                        ? Number(item[key]) - 100 : item[key] ?? min);
-                    wrap.appendChild(input);
-                    form.appendChild(wrap);
-                }
-                row.appendChild(form);
-            }
-            host.appendChild(row);
+        renderDiscoveryEditor(host, event);
+    }
+
+    function renderDiscoveryEditor(host, event) {
+        if (!data?.canEditAssessments || !event || !selectedResearchCompanyId) return;
+        const item = (data.assessments || []).find(row => Number(row.idCompany) === selectedResearchCompanyId);
+        if (!item) return;
+        const editor = document.createElement('div'); editor.className = 'mt-2';
+        const button = AetherActionButtons.button({icon: item.idOffer ? 'fa-pen-nib' : 'fa-plus',
+            label: item.idOffer ? 'Gevonden aandelen aanpassen' : 'Gevonden aandelen toevoegen'});
+        editor.appendChild(AetherActionButtons.group([button])); host.appendChild(editor);
+        button.disabled = Number(item.isShareListed) !== 1 || !(Number(item.shareMarketPrice) > 0) || !(Number(item.freeShareCount) > 0);
+        if (button.disabled) {
+            const reason = document.createElement('p'); reason.className = 'small text-muted';
+            reason.textContent = !(Number(item.freeShareCount) > 0) ? 'Geen vrije aandelen beschikbaar.'
+                : 'Een vondst vereist een beursgenoteerd bedrijf met een snapshotmarktprijs.';
+            editor.appendChild(reason);
         }
+        button.addEventListener('click', () => {
+            discoveryEditing = true;
+            editor.replaceChildren();
+            const form = document.createElement('form'); form.className = 'share-ui-form-grid';
+            const inputs = [];
+            for (const [label, value, mode] of [['Aantal aandelen', item.offeredShareCount || 1, 'numeric'],
+                ['Prijs per aandeel', item.unitPrice ?? item.shareMarketPrice ?? '', 'decimal']]) {
+                const wrap = document.createElement('label'); wrap.className = 'form-label'; wrap.textContent = label;
+                const input = document.createElement('input'); input.className = 'form-control'; input.type = 'text';
+                input.inputMode = mode; input.value = String(value); wrap.appendChild(input); inputs.push(input); form.appendChild(wrap);
+            }
+            const status = document.createElement('p'); status.className = 'small'; status.setAttribute('role', 'status');
+            const save = AetherActionButtons.button({icon: 'fa-check', label: 'Save'}); save.type = 'submit';
+            const cancel = AetherActionButtons.button({icon: 'fa-xmark', label: 'Cancel'});
+            cancel.addEventListener('click', () => { discoveryEditing = false; editor.replaceChildren(AetherActionButtons.group([button])); });
+            form.appendChild(AetherActionButtons.group([save, cancel])); form.appendChild(status); editor.appendChild(form);
+            form.addEventListener('submit', async actionEvent => {
+                actionEvent.preventDefault();
+                const count = Number(inputs[0].value), price = inputs[1].value.trim().replace(',', '.');
+                if (!Number.isInteger(count) || count < 1 || count > Number(item.freeShareCount) || !/^\d+(?:\.\d{1,2})?$/.test(price) || Number(price) <= 0) {
+                    status.textContent = 'Controleer het aantal, de vrije voorraad en de prijs.'; return;
+                }
+                save.disabled = true; cancel.disabled = true;
+                try {
+                    await apiFetchIdempotentJson('api/shares/saveShareDiscovery.php', {method: 'POST', body: {
+                        idCharacter: characterId, idCompany: selectedResearchCompanyId, idEvent: Number(event.id), shareCount: count, unitPrice: price
+                    }});
+                    discoveryEditing = false; await refresh(true);
+                } catch (error) { status.textContent = aetherShareUi.errorMessage(error); save.disabled = false; cancel.disabled = false; }
+            });
+        });
     }
 
     function renderActions(host) {
         host.replaceChildren();
         const event = data?.currentEvent;
         marketEditKey = `share-market:${characterId}:${Number(event?.id || 0)}`;
-        host.classList.toggle("is-editing", aetherDataCard.isEditing(marketEditKey));
+        host.classList.toggle("data-card", !selectedResearchCompanyId);
         const header = document.createElement("div");
         header.className = "d-flex align-items-start gap-2 mb-2";
         const title = document.createElement("h3");
         title.textContent = tr("market");
         header.appendChild(title);
-        aetherDataCard.controls(header, {
-            key: marketEditKey,
-            canEdit: Boolean(data?.canEditAssessments && event),
-            onEdit: () => { if (aetherDataCard.open(marketEditKey)) render(); },
-            onCancel: () => { aetherDataCard.close(marketEditKey); render(); },
-            onSave: async () => {
-                const editedRows = [...host.querySelectorAll("[data-share-assessment-id]")];
-                try {
-                    for (const row of editedRows) {
-                        const idAssessment = Number(row.dataset.shareAssessmentId);
-                        const original = (data?.assessments || []).find((item) => Number(item.idAssessment) === idAssessment);
-                        if (!original) continue;
-                        const values = Object.fromEntries([...row.querySelectorAll("[data-roll]")]
-                            .map((input) => [input.dataset.roll,
-                                Number(input.value) + (input.dataset.roll === "priceRoll" ? 100 : 0)]));
-                        if (Object.entries(values).every(([key, value]) => value === Number(original[key]))) continue;
-                        await apiFetchIdempotentJson("api/shares/updateShareSearchAssessment.php", {
-                            method: "POST", body: { idCompany: Number(original.idCompany), idCharacter: characterId,
-                                idEvent: Number(event.id), idAssessment, ...values },
-                        });
-                    }
-                    aetherDataCard.close(marketEditKey);
-                    await refresh(true);
-                } catch (error) {
-                    alert(aetherShareUi.errorMessage(error));
-                    await refresh(true);
-                }
-            },
-        });
-        host.appendChild(header);
+        if (!selectedResearchCompanyId) host.appendChild(header);
         if (searchError) {
             const warning = document.createElement("p");
             warning.className = "text-danger";
             warning.textContent = tr("searchError");
             host.appendChild(warning);
         }
-        const summary = document.createElement("p");
-        summary.textContent = event ? `${event.title} (${event.dateStart} – ${event.dateEnd})` : tr("noEvent");
-        host.appendChild(summary);
-        const eventSearch = (data?.events || []).find((item) => Number(item.id) === Number(event?.id));
-        if (eventSearch?.idSearch) {
-            const progress = document.createElement("p");
-            progress.textContent = `${Number(eventSearch.assessedCompanies || 0)} ${tr("assessed")}, `
-                + `${Number(eventSearch.discoveredCompanies || 0)} ${tr("discovered")}.`;
-            host.appendChild(progress);
-        }
-        if (event && data?.canTradeAtEvent !== false) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "btn btn-outline-primary align-self-start mb-3";
-            button.textContent = tr("search");
-            button.addEventListener("click", async () => {
-                button.disabled = true;
-                try {
-                    await searchSelectedEvent();
-                } catch (error) {
-                    alert(aetherShareUi.errorMessage(error));
-                } finally {
-                    button.disabled = false;
+        const companies = data?.researchCompanies || [];
+        if (companies.length && !selectedResearchCompanyId) {
+            aetherShareUi.companyGrid(host, companies, async company => {
+                const requestedCompany = Number(company.idCompany), requestedCharacter = characterId, requestedEvent = eventId;
+                selectedResearchCompanyId = requestedCompany; researchLoadingCompanyId = requestedCompany;
+                searchError = false; render();
+                try { await searchSelectedEvent(requestedCompany); }
+                catch (error) { console.error("Bedrijfsonderzoek:", error); }
+                finally {
+                    if (characterId === requestedCharacter && eventId === requestedEvent && selectedResearchCompanyId === requestedCompany) {
+                        researchLoadingCompanyId = 0; render();
+                    }
                 }
             });
-            host.appendChild(button);
+            return;
         }
-        const finds = (data?.discoveries || []).filter((row) => Number(row.idEvent) === Number(event?.id));
+        if (selectedResearchCompanyId) {
+            const back = AetherActionButtons.button({icon: "fa-arrow-left", label: "Alle bedrijven tonen"});
+            back.addEventListener("click", () => { aetherCompanyResearch.reset(); selectedResearchCompanyId = 0; researchLoadingCompanyId = 0; discoveryEditing = false; render(); });
+            if (researchLoadingCompanyId) {
+                host.appendChild(AetherActionButtons.group([back]));
+                const loading = document.createElement("p"); loading.textContent = "Bedrijf onderzoeken…"; host.appendChild(loading); return;
+            }
+            const companyHost = document.createElement("div"); companyHost.className = "company-research mt-3";
+            host.appendChild(companyHost);
+            const shareContent = document.createElement("div"); shareContent.className = "company-research-shares mb-4";
+            void aetherCompanyResearch.mount(companyHost, {characterId, companyId: selectedResearchCompanyId, eventId: Number(event.id), shareContent, backButton: back});
+            host = shareContent;
+        }
+        const finds = (data?.discoveries || []).filter((row) => Number(row.idEvent) === Number(event?.id)
+            && (!selectedResearchCompanyId || Number(row.idCompany) === selectedResearchCompanyId));
+        if (selectedResearchCompanyId) {
+            const heading = document.createElement("h4"); heading.textContent = "Gevonden aandelen"; host.appendChild(heading);
+        }
         const result = document.createElement("p");
         result.textContent = finds.length
             ? finds.map((row) => {
@@ -304,6 +279,7 @@ const aetherShareMarketClient = (() => {
         renderAdminAssessments(host, event);
         const sharedOffers = (data?.offers || []).filter((offer) =>
             offer.sourceCode === "search" && offer.recipientKind === "shared"
+            && (!selectedResearchCompanyId || Number(offer.idCompany) === selectedResearchCompanyId)
             && Number(offer.idEvent) === Number(event?.id));
         if (sharedOffers.length) {
             const heading = document.createElement("h4");
@@ -365,10 +341,12 @@ const aetherShareMarketClient = (() => {
 
     function renderEconomy(host) {
         host.replaceChildren();
+        const offers = (data?.offers || []).filter(offer => Number(offer.availableShareCount) > 0);
+        if (!offers.length || !(data?.offerEvent || data?.currentEvent) || data?.canTradeAtEvent === false) return;
         const title = document.createElement("h3");
         title.textContent = tr("offers");
         host.appendChild(title);
-        const event = data?.currentEvent;
+        const event = data?.offerEvent || data?.currentEvent;
         if (data?.canEditAssessments) {
             const label = document.createElement("label");
             label.className = "form-label d-block";
@@ -376,7 +354,7 @@ const aetherShareMarketClient = (() => {
             const select = document.createElement("select");
             select.className = "form-select mb-3";
             select.setAttribute("aria-label", "Event voor aandelenaankoop");
-            for (const item of data?.events || []) {
+            for (const item of data?.offerEvents || data?.events || []) {
                 const option = document.createElement("option");
                 option.value = String(item.id);
                 option.textContent = `${item.title} (${item.dateStart})`;
@@ -397,7 +375,6 @@ const aetherShareMarketClient = (() => {
             host.appendChild(empty);
             return;
         }
-        const offers = data?.offers || [];
         if (!offers.length) {
             const empty = document.createElement("p");
             empty.textContent = tr("noOffers");
@@ -419,6 +396,13 @@ const aetherShareMarketClient = (() => {
         instructions.className = "small text-muted";
         instructions.textContent = `${event.title} (${event.dateStart}). Kies het aantal aandelen dat je wilt kopen. Het aankoopbedrag wordt van de bankrekening afgetrokken. De voorraad wordt bij aankoop opnieuw gecontroleerd.`;
         host.appendChild(instructions);
+        const manager = Boolean(data?.canEditAssessments);
+        const current = aetherShareUi.currentGamePeriod();
+        const eventPeriod = aetherShareUi.periodFromDate(event.dateStart);
+        const period = aetherShareUi.purchaseQuarterControl(data?.events?.length ? data.events : [event], {
+            value: manager ? eventPeriod : current, idEvent: Number(event.id), allowPast: manager
+        });
+        host.appendChild(period.wrapper);
         for (const offer of offers) {
             const row = document.createElement("div");
             row.className = "data-card mb-3";
@@ -445,6 +429,8 @@ const aetherShareMarketClient = (() => {
             button.disabled = Number(offer.availableShareCount) < 1;
             button.addEventListener("click", async () => {
                 const count = Number(quantity.value);
+                const selectedPeriod = period.getValue();
+                if (!selectedPeriod) { errorMessage.textContent = "Kies een geldig aankoopkwartaal voor dit event."; return; }
                 if (!Number.isInteger(count) || count < 1 || count > Number(offer.availableShareCount)) {
                     errorMessage.textContent = `Kies een geheel aantal van 1 tot ${offer.availableShareCount}.`;
                     return;
@@ -454,7 +440,7 @@ const aetherShareMarketClient = (() => {
                 try {
                     await apiFetchIdempotentJson("api/shares/buyOffer.php", {
                         method: "POST", body: { idOffer: Number(offer.id), idCharacter: selectedCharacterId,
-                            shareCount: count, idEvent: Number(event.id) },
+                            shareCount: count, idEvent: Number(event.id), ...selectedPeriod },
                     });
                     close();
                     await refresh(true);
@@ -484,5 +470,10 @@ const aetherShareMarketClient = (() => {
 
     document.addEventListener("visibilitychange", () => { if (!document.hidden) void refresh(true); });
     window.addEventListener("focus", () => { void refresh(true); });
-    return { attachActions, attachEconomy, refresh, searchSelectedEvent };
+    function resetActionView() {
+        selectedResearchCompanyId = 0; researchLoadingCompanyId = 0; searchError = false; discoveryEditing = false;
+        if (marketEditKey) aetherDataCard.close(marketEditKey);
+        if (typeof aetherCompanyResearch !== "undefined") aetherCompanyResearch.reset();
+    }
+    return { attachActions, attachEconomy, refresh, searchSelectedEvent, resetActionView };
 })();

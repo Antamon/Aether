@@ -9,7 +9,7 @@ try {
     if (!isset($aetherShareAction)) throw new LogicException('Aandelenactie ontbreekt.');
     require_once __DIR__ . '/../../db.php';
     require_once __DIR__ . '/shareService.php';
-    if (in_array($aetherShareAction, ['market_search', 'share_discovery', 'assessment_update'], true)) {
+    if (in_array($aetherShareAction, ['market_search', 'share_discovery', 'assessment_update', 'research_update', 'discovery_update'], true)) {
         require_once __DIR__ . '/shareSearchService.php';
     }
     require_once __DIR__ . '/../shared/request.php';
@@ -22,11 +22,31 @@ try {
     aetherRequireCsrfToken();
     if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
     $schemas = [
+        'company_holding_add' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idHoldingCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
+        ],
+        'discovery_update' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
+            'unitPrice' => ['type' => 'decimal', 'required' => true, 'minExclusive' => '0.00', 'max' => '9999999999.99'],
+        ],
+        'research_update' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'revision' => ['type' => 'string', 'required' => true, 'minLength' => 64, 'maxLength' => 64],
+        ],
         'draft_purchase' => [
             'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
             'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
             'idSnapshot' => ['type' => 'int', 'min' => 0],
             'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
+            'purchaseYear' => ['type' => 'int', 'min' => 1000, 'max' => 9899],
+            'purchaseQuarter' => ['type' => 'int', 'min' => 1, 'max' => 4],
         ],
         'foundation' => [
             'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
@@ -69,17 +89,40 @@ try {
             'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
             'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
             'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'purchaseYear' => ['type' => 'int', 'min' => 1000, 'max' => 9899],
+            'purchaseQuarter' => ['type' => 'int', 'min' => 1, 'max' => 4],
         ],
         'add_purchase' => [
             'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
             'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
-            'idEvent' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idEvent' => ['type' => 'int', 'min' => 1],
+            'purchaseYear' => ['type' => 'int', 'min' => 1000, 'max' => 9899],
+            'purchaseQuarter' => ['type' => 'int', 'min' => 1, 'max' => 4],
             'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
-            'unitPrice' => ['type' => 'decimal', 'required' => true, 'minExclusive' => '0.00', 'max' => '9999999999.99'],
+            'unitPrice' => ['type' => 'decimal', 'minExclusive' => '0.00', 'max' => '9999999999.99'],
+        ],
+        'update_purchase' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idTransaction' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'revision' => ['type' => 'int', 'required' => true, 'min' => 0],
+            'shareCount' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 1000000],
+            'purchaseYear' => ['type' => 'int', 'required' => true, 'min' => 1000, 'max' => 9899],
+            'purchaseQuarter' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 4],
+            'adjustBank' => ['type' => 'bool', 'required' => true],
+        ],
+        'initialize_purchase_history' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
+        ],
+        'remove_holding' => [
+            'idCompany' => ['type' => 'int', 'required' => true, 'min' => 1],
+            'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
         ],
         'market_search' => [
             'idCharacter' => ['type' => 'int', 'required' => true, 'min' => 1],
             'idEvent' => ['type' => 'int', 'min' => 1],
+            'idCompany' => ['type' => 'int', 'min' => 1],
         ],
         'share_discovery' => [
             'idOffer' => ['type' => 'int', 'required' => true, 'min' => 1],
@@ -122,15 +165,30 @@ try {
     ];
     $schema = $schemas[$aetherShareAction] ?? null;
     if ($schema === null) throw new LogicException('Onbekende aandelenactie.');
-    $input = aetherValidateInput(aetherReadJsonObject(), $schema);
+    $rawInput = aetherReadJsonObject();
+    $knownEventIds = $rawInput['knownEventIds'] ?? null;
+    if ($aetherShareAction === 'research_update') unset($rawInput['knownEventIds']);
+    $input = aetherValidateInput($rawInput, $schema);
+    if ($aetherShareAction === 'research_update') {
+        if (!is_array($knownEventIds) || !array_is_list($knownEventIds)) throw new AetherValidationException(['Kies de gekende gebeurtenissen.']);
+        $input['knownEventIds'] = $knownEventIds;
+        if (count($input['knownEventIds']) > 10000) throw new AetherValidationException(['Te veel gebeurtenissen.']);
+        foreach ($input['knownEventIds'] as $id) if (!is_int($id) || $id < 1) throw new AetherValidationException(['Ongeldige gebeurtenis.']);
+    }
     $key = aetherRequireIdempotencyKey();
     $response = match ($aetherShareAction) {
+        'company_holding_add' => aetherShareAddCompanyHolding($pdo, $currentUser, $input, $key),
+        'discovery_update' => aetherShareSaveDiscovery($pdo, $currentUser, $input, $key),
+        'research_update' => aetherCompanyResearchSave($pdo, $currentUser, $input, $key),
         'draft_purchase' => aetherShareBuyDraft($pdo, $currentUser, $input, $key),
         'private_offer' => aetherShareCreatePrivateOffer($pdo, $currentUser, $input, $key),
         'holder_offer' => aetherShareCreateHolderOffer($pdo, $currentUser, $input, $key),
         'cancel_offer' => aetherShareCancelOffer($pdo, $currentUser, $input, $key),
         'buy_offer' => aetherShareBuyOffer($pdo, $currentUser, $input, $key),
         'add_purchase' => aetherShareAddPurchase($pdo, $currentUser, $input, $key),
+        'update_purchase' => aetherShareUpdatePurchase($pdo, $currentUser, $input, $key),
+        'initialize_purchase_history' => aetherShareInitializePurchaseHistory($pdo, $currentUser, $input, $key),
+        'remove_holding' => aetherShareRemoveCharacterHolding($pdo, $currentUser, $input, $key),
         'market_search' => aetherShareSearch($pdo, $currentUser, $input, $key),
         'share_discovery' => aetherShareShareDiscovery($pdo, $currentUser, $input, $key),
         'assessment_update' => aetherShareUpdateAssessment($pdo, $currentUser, $input, $key),

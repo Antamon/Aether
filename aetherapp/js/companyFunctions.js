@@ -109,6 +109,7 @@ let saveCompanyPersonnelRequestInFlight = false;
 let saveCompanyPersonnelQueued = false;
 let saveCompanyPersonnelInFlightPromise = null;
 let companyPersonnelSpecialisationModalInstance = null;
+let companyPersonnelSpecialisationOpen = false;
 let companySnapshotEventOptions = null;
 let companySnapshotEventLoadError = false;
 let companyPersonnelDraft = null;
@@ -162,7 +163,7 @@ function renderCompanyDetailsMode() {
     if (actions) {
         actions.replaceChildren();
         aetherDataCard.controls(actions, {
-            key: COMPANY_DETAILS_KEY, canEdit: Boolean(company),
+            key: COMPANY_DETAILS_KEY, canEdit: Boolean(company) && company.canManageCompany !== false,
             onEdit: beginCompanyDetailsEdit, onSave: saveCompanyDetails, onCancel: cancelCompanyDetailsEdit
         });
         actions.querySelectorAll("button").forEach(button => { button.disabled ||= companyDetailsSaving; });
@@ -289,22 +290,25 @@ window.addEventListener("load", () => {
 async function initCompanyPage() {
     try {
         const currentUser = await aetherGetCurrentUser();
-        if (!currentUser || !userHasPrivilegedRole(currentUser)) {
+        if (!currentUser) {
             window.location.href = "index.html";
             return;
         }
 
         window.AETHER_CURRENT_USER = currentUser;
+        const canManage = userHasPrivilegedRole(currentUser);
+        document.getElementById("newCompanyButton")?.classList.toggle("d-none", !canManage);
+        document.querySelectorAll(".company-slider-card").forEach(card => card.classList.toggle("d-none", !canManage));
         syncPrivilegedNavbar(currentUser);
         setupCompanyPageListeners();
         const params = new URLSearchParams(window.location.search);
         const selectedId = params.get("company");
         await Promise.all([
-            loadCompanySnapshotEventOptions(),
+            canManage ? loadCompanySnapshotEventOptions() : Promise.resolve(),
             loadCompanyList(selectedId && /^[1-9]\d*$/.test(selectedId) ? Number(selectedId) : 0)
         ]);
         if (currentCompanyData?.id) renderCompanySnapshots(currentCompanyData);
-        if (params.get("new") === "1") startCreatingCompany();
+        if (canManage && params.get("new") === "1") startCreatingCompany();
     } catch (err) {
         console.error("Fout bij initialiseren bedrijvenpagina:", err);
         window.location.href = "index.html";
@@ -526,8 +530,9 @@ function setupCompanyPageListeners() {
 
 async function loadCompanyList(selectedCompanyId = 0) {
     try {
-        const list = await apiFetchJson("api/companies/getCompanyList.php");
-        companies = Array.isArray(list) ? list : [];
+        const canManage = userHasPrivilegedRole(window.AETHER_CURRENT_USER);
+        const list = await apiFetchJson(canManage ? "api/companies/getCompanyList.php" : "api/companies/getMyCompanies.php");
+        companies = canManage ? (Array.isArray(list) ? list : []) : (list.companies || []);
 
         renderCompanyList();
 
@@ -1013,6 +1018,15 @@ function formatCompanyValueForInput(value) {
     })} Fr`;
 }
 
+/** Keep money as decimal text so JSON/PHP cannot add floating-point digits. */
+function parseCompanySnapshotMoney(value) {
+    let text = String(value ?? "").trim().replace(/\s+/g, "");
+    if (/^\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(text)) text = text.replace(/\./g, "");
+    if (!/^\d+(?:[.,]\d{1,2})?$/.test(text)) return null;
+    const [whole, fraction = ""] = text.replace(",", ".").split(".");
+    return `${whole.replace(/^0+(?=\d)/, "")}.${fraction.padEnd(2, "0")}`;
+}
+
 function parseCompanyValueInputValue(value) {
     let normalizedValue = String(value ?? "")
         .trim()
@@ -1242,11 +1256,12 @@ function appendSnapshotInput(parent, key, label, value, options = {}) {
     wrap.textContent = label;
     const input = document.createElement("input");
     input.className = "form-control";
-    input.type = "number";
+    input.type = options.integer ? "number" : "text";
+    if (!options.integer) input.inputMode = "decimal";
     input.step = options.integer ? "1" : "0.01";
     input.min = options.min ?? "0";
     if (options.max !== undefined) input.max = String(options.max);
-    input.value = value == null ? "" : String(value);
+    input.value = value == null ? "" : options.integer ? String(value) : Number(value).toFixed(2).replace(".", ",");
     input.dataset.snapshotEdit = key;
     wrap.appendChild(input);
     parent.appendChild(wrap);
@@ -1319,13 +1334,15 @@ function renderFoundationSnapshot(list, company) {
         const body = { idCompany: Number(company.id) };
         for (const [key, input] of inputs) {
             if (input.value.trim() === "" && key !== "initialCompanyValue" && key !== "initialShareCount") continue;
-            const n = Number(input.value);
-            if (input.value.trim() === "" || !Number.isFinite(n) || n < Number(input.min)
+            const integer = key.endsWith("Count") || key === "stability" || key === "profitability";
+            const decimal = integer ? null : parseCompanySnapshotMoney(input.value);
+            const n = integer ? Number(input.value) : Number(decimal);
+            if (input.value.trim() === "" || (!integer && decimal === null) || !Number.isFinite(n) || n < Number(input.min)
                 || (input.max && n > Number(input.max)) || (input.step === "1" && !Number.isInteger(n))) {
                 showCompanyFeedback(`Controleer ${input.parentElement?.firstChild?.textContent || key}.`, "danger");
                 return;
             }
-            body[key] = key.endsWith("Count") || key === "stability" || key === "profitability" ? n : n.toFixed(2);
+            body[key] = integer ? n : decimal;
         }
         try {
             await aetherShareUi.mutateCompany("setCompanyFoundation", body);
@@ -1342,6 +1359,10 @@ function renderFoundationSnapshot(list, company) {
 }
 
 function renderCompanySnapshots(company) {
+    if (company?.canManageCompany === false) {
+        document.getElementById("companySnapshotsCard")?.classList.add("d-none");
+        return;
+    }
     const card = document.getElementById("companySnapshotsCard");
     const eventSelect = document.getElementById("companySnapshotEventSelect");
     const list = document.getElementById("companySnapshotsList");
@@ -1526,14 +1547,15 @@ function renderCompanySnapshots(company) {
             if (profitability !== Number(snapshot.profitability)) body.profitability = profitability;
             for (const [key, { field, label, integer }] of snapshotInputs) {
                 if (field.value.trim() === "") continue;
-                const n = Number(field.value);
-                if (!Number.isFinite(n) || n < Number(field.min) || (integer && !Number.isInteger(n))) {
+                const decimal = integer ? null : parseCompanySnapshotMoney(field.value);
+                const n = integer ? Number(field.value) : Number(decimal);
+                if ((!integer && decimal === null) || !Number.isFinite(n) || n < Number(field.min) || (integer && !Number.isInteger(n))) {
                     showCompanyFeedback(`Controleer ${label.toLowerCase()}.`, "danger");
                     return;
                 }
                 if (snapshot[key] == null || (integer ? n !== Number(snapshot[key])
                     : n.toFixed(2) !== Number(snapshot[key]).toFixed(2))) {
-                    body[key] = integer ? n : n.toFixed(2);
+                    body[key] = integer ? n : decimal;
                 }
             }
             await saveSnapshotField(body, button);
@@ -1760,6 +1782,10 @@ function formatCompanyPersonnelSkillLevelLabel(level) {
 }
 
 function renderCompanyPersonnel(company) {
+    if (!companyPersonnelDraft) {
+        const modal = document.getElementById("companyPersonnelEditModal");
+        if (modal) bootstrap.Modal.getInstance(modal)?.hide();
+    }
     const card = document.getElementById("companyPersonnelCard");
     const list = document.getElementById("companyPersonnelList");
     const empty = document.getElementById("companyPersonnelEmpty");
@@ -1780,6 +1806,7 @@ function renderCompanyPersonnel(company) {
 
     card.classList.remove("d-none");
     addButton.disabled = aetherDataCard.hasActive();
+    addButton.classList.toggle("d-none", company.canManageCompany === false && !company.canAddPersonnel);
     list.innerHTML = "";
 
     const entries = Array.isArray(currentCompanyPersonnelState) ? [...currentCompanyPersonnelState] : [];
@@ -1811,7 +1838,7 @@ function renderCompanyPersonnel(company) {
         const titleWrap = document.createElement("div");
         const title = document.createElement("h3");
         title.textContent = Number(entry?.idCharacter || 0) > 0
-            ? getCompanyPersonnelCharacterLabel(entry.idCharacter)
+            ? entry.nameLabel || entry.displayName || getCompanyPersonnelCharacterLabel(entry.idCharacter)
             : `Personeelslid ${entryIndex + 1}`;
         titleWrap.appendChild(title);
 
@@ -1832,11 +1859,6 @@ function renderCompanyPersonnel(company) {
         }
         header.appendChild(titleWrap);
 
-        const removeButton = AetherActionButtons.button({ icon: "fa-trash", label: "Verwijderen" });
-        removeButton.dataset.action = "remove-company-personnel";
-        removeButton.dataset.personnelIndex = String(entryIndex);
-        if (editing) header.appendChild(AetherActionButtons.group([removeButton]));
-
         cardEl.appendChild(header);
 
         if (!editing) {
@@ -1854,7 +1876,7 @@ function renderCompanyPersonnel(company) {
             cardEl.appendChild(facts);
             aetherDataCard.controls(header, {
                 key: cardKey,
-                canEdit: true,
+                canEdit: company.canManageCompany !== false || company.canAddPersonnel,
                 onEdit: () => {
                     if (!aetherDataCard.open(cardKey)) return;
                     companyPersonnelDraft = cloneCompanyPersonnelEntries([entry])[0];
@@ -1866,12 +1888,29 @@ function renderCompanyPersonnel(company) {
             return;
         }
 
-        aetherDataCard.controls(header, {
-            key: cardKey,
-            canEdit: true,
-            onSave: () => saveCompanyPersonnelDraft(entryIndex, cardKey),
-            onCancel: () => cancelCompanyPersonnelDraft(cardKey)
+        const saveButton = AetherActionButtons.button({
+            icon: "fa-check",
+            label: "Save",
+            onClick: async () => {
+                saveButton.disabled = true;
+                try {
+                    await saveCompanyPersonnelDraft(entryIndex, cardKey);
+                } finally {
+                    if (saveButton.isConnected) saveButton.disabled = false;
+                }
+            }
         });
+        const editorActions = [saveButton];
+        if (entryIndex < currentCompanyPersonnelState.length
+            && (company.canManageCompany !== false || company.canAddPersonnel)) {
+            const removeButton = AetherActionButtons.button({
+                icon: "fa-trash",
+                label: "Verwijderen",
+                onClick: () => { void removeCompanyPersonnelDraft(entryIndex, cardKey); }
+            });
+            editorActions.push(removeButton);
+        }
+        header.appendChild(AetherActionButtons.group(editorActions));
 
         const fieldsRow = document.createElement("div");
         fieldsRow.className = "row g-3";
@@ -1881,6 +1920,7 @@ function renderCompanyPersonnel(company) {
 
         const characterSelect = document.createElement("select");
         characterSelect.className = "form-select";
+        characterSelect.disabled = company.canManageCompany === false && entryIndex < currentCompanyPersonnelState.length;
         characterSelect.dataset.companyPersonnelField = "idCharacter";
         characterSelect.dataset.personnelIndex = String(entryIndex);
         const characterPlaceholder = document.createElement("option");
@@ -1895,7 +1935,10 @@ function renderCompanyPersonnel(company) {
             optionEl.selected = Number(entry?.idCharacter || 0) === Number(option.idCharacter || 0);
             characterSelect.appendChild(optionEl);
         });
-        characterCol.appendChild(characterSelect);
+        if (company.canManageCompany === false && entryIndex < currentCompanyPersonnelState.length) {
+            const name = document.createElement("span"); name.textContent = entry.nameLabel || entry.displayName;
+            characterCol.appendChild(name);
+        } else characterCol.appendChild(characterSelect);
         fieldsRow.appendChild(characterCol);
 
         const functionCol = document.createElement("div");
@@ -1918,7 +1961,7 @@ function renderCompanyPersonnel(company) {
         importanceCol.className = "col-12 col-md-6";
         const importanceLabel = document.createElement("label");
         importanceLabel.className = "form-label";
-        importanceLabel.textContent = "Importance";
+        importanceLabel.textContent = "Belang";
         importanceCol.appendChild(importanceLabel);
 
         const importanceSelect = document.createElement("select");
@@ -1932,7 +1975,10 @@ function renderCompanyPersonnel(company) {
             optionEl.selected = String(entry?.importance || "Moderate") === importance;
             importanceSelect.appendChild(optionEl);
         });
-        importanceCol.appendChild(importanceSelect);
+        if (company.canManageCompany === false) {
+            const value = document.createElement("span"); value.className = "d-block";
+            value.textContent = entry.importance || "Moderate"; importanceCol.appendChild(value);
+        } else importanceCol.appendChild(importanceSelect);
         fieldsRow.appendChild(importanceCol);
 
         const salaryCol = document.createElement("div");
@@ -1975,6 +2021,17 @@ function renderCompanyPersonnel(company) {
         fieldsRow.appendChild(roleCol);
 
         cardEl.appendChild(fieldsRow);
+
+        if (company.canManageCompany === false) {
+            const facts = document.createElement("div"); facts.className = "data-card-facts mt-3";
+            const skill = entry.skills?.[0];
+            aetherDataCard.fact(facts, "Vaardigheid", skill?.skillName);
+            aetherDataCard.fact(facts, "Vereist niveau", skill?.idSkill ? formatCompanyPersonnelSkillLevelLabel(skill.level) : null);
+            aetherDataCard.fact(facts, "Specialisaties", skill?.specialisations?.map(item => item.name).join(", "));
+            cardEl.appendChild(facts);
+            showCompanyPersonnelEditor(cardEl);
+            return;
+        }
 
         const skills = Array.isArray(entry?.skills) ? entry.skills : [];
         if (skills.length === 0) {
@@ -2083,7 +2140,7 @@ function renderCompanyPersonnel(company) {
         specialisationsSection.appendChild(specialisationsList);
         skillSection.appendChild(specialisationsSection);
         cardEl.appendChild(skillSection);
-        list.appendChild(cardEl);
+        showCompanyPersonnelEditor(cardEl);
     });
 }
 
@@ -2152,9 +2209,48 @@ async function saveCompanyPersonnelDraft(index, cardKey) {
         showCompanyFeedback("Kies eerst een personage.", "danger");
         return false;
     }
+    if (currentCompanyData?.canManageCompany === false) {
+        try {
+            await apiFetchIdempotentJson("api/companies/saveCompanyPersonnelAction.php", {method: "POST", body: {
+                idCompany: Number(currentCompanyData.id), idCharacter: Number(companyPersonnelDraft.idCharacter),
+                action: index < currentCompanyPersonnelState.length ? "update" : "add",
+                functionDescription: companyPersonnelDraft.functionDescription || "",
+                salaryIncreasePercentage: Number(companyPersonnelDraft.salaryIncreasePercentage || 0).toFixed(2),
+                isBoardMember: Boolean(companyPersonnelDraft.isBoardMember)
+            }});
+            cancelCompanyPersonnelDraft(cardKey);
+            await loadCompany(Number(currentCompanyData.id));
+            return true;
+        } catch (error) { showCompanyFeedback(error?.message || "Bewaren mislukt.", "danger"); return false; }
+    }
     const entries = cloneCompanyPersonnelEntries(currentCompanyPersonnelState);
     entries[index] = cloneCompanyPersonnelEntries([companyPersonnelDraft])[0];
     return saveCompanyPersonnel({ entries, closeCardKey: cardKey });
+}
+
+async function removeCompanyPersonnelDraft(index, cardKey) {
+    if (index !== companyPersonnelDraftIndex) return;
+    if (index >= currentCompanyPersonnelState.length) {
+        cancelCompanyPersonnelDraft(cardKey);
+        return;
+    }
+    if (currentCompanyData?.canManageCompany === false) {
+        try {
+            await apiFetchIdempotentJson("api/companies/saveCompanyPersonnelAction.php", {method: "POST", body: {
+                idCompany: Number(currentCompanyData.id),
+                idCharacter: Number(companyPersonnelDraft?.idCharacter || 0),
+                action: "remove"
+            }});
+            cancelCompanyPersonnelDraft(cardKey);
+            await loadCompany(Number(currentCompanyData.id));
+        } catch (error) {
+            showCompanyFeedback(error?.message || "Verwijderen mislukt.", "danger");
+        }
+        return;
+    }
+    const entries = cloneCompanyPersonnelEntries(currentCompanyPersonnelState);
+    entries.splice(index, 1);
+    await saveCompanyPersonnel({ entries, closeCardKey: cardKey });
 }
 
 function handleCompanyPersonnelCardClick(event) {
@@ -2173,6 +2269,7 @@ function handleCompanyPersonnelCardClick(event) {
     const specialisationIndex = Number(button.dataset.specialisationIndex || -1);
 
     if (action === "add-company-personnel") {
+        if (currentCompanyData?.canManageCompany === false && !currentCompanyData.canAddPersonnel) return;
         const cardKey = `company:${currentCompanyData?.id}:personnel:${currentCompanyPersonnelState.length}`;
         if (!aetherDataCard.open(cardKey)) return;
         companyPersonnelDraftIndex = currentCompanyPersonnelState.length;
@@ -2185,13 +2282,7 @@ function handleCompanyPersonnelCardClick(event) {
         if (personnelIndex < 0) return;
         if (personnelIndex !== companyPersonnelDraftIndex) return;
         const cardKey = `company:${currentCompanyData?.id}:personnel:${personnelIndex}`;
-        if (personnelIndex >= currentCompanyPersonnelState.length) {
-            cancelCompanyPersonnelDraft(cardKey);
-            return;
-        }
-        const entries = cloneCompanyPersonnelEntries(currentCompanyPersonnelState);
-        entries.splice(personnelIndex, 1);
-        void saveCompanyPersonnel({ entries, closeCardKey: cardKey });
+        void removeCompanyPersonnelDraft(personnelIndex, cardKey);
         return;
     }
 
@@ -2218,6 +2309,33 @@ function handleCompanyPersonnelCardClick(event) {
         openCompanyPersonnelSpecialisationModal(personnelIndex, skillIndex);
         return;
     }
+}
+
+function showCompanyPersonnelEditor(card) {
+    let modal = document.getElementById("companyPersonnelEditModal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "companyPersonnelEditModal";
+        modal.className = "modal fade"; modal.tabIndex = -1;
+        modal.setAttribute("aria-labelledby", "companyPersonnelEditTitle");
+        modal.innerHTML = '<div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h3 class="modal-title" id="companyPersonnelEditTitle">Personeelslid</h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div><div class="modal-body"></div></div></div>';
+        modal.addEventListener("click", handleCompanyPersonnelCardClick);
+        modal.addEventListener("change", handleCompanyPersonnelCardChange);
+        modal.addEventListener("input", event => {
+            if (["salaryIncreasePercentage", "functionDescription"].includes(event.target?.dataset?.companyPersonnelField)) handleCompanyPersonnelCardChange(event);
+        });
+        modal.addEventListener("hidden.bs.modal", () => {
+            if (companyPersonnelSpecialisationOpen) return;
+            if (companyPersonnelDraft) cancelCompanyPersonnelDraft(`company:${currentCompanyData?.id}:personnel:${companyPersonnelDraftIndex}`);
+        });
+        document.body.appendChild(modal);
+    }
+    document.getElementById("companyPersonnelEditTitle").textContent = companyPersonnelDraftIndex >= currentCompanyPersonnelState.length
+        ? "Personeelslid toevoegen" : "Personeelslid aanpassen";
+    card.classList.remove("data-card");
+    card.classList.remove("is-editing");
+    modal.querySelector(".modal-body").replaceChildren(card);
+    if (!companyPersonnelSpecialisationOpen) bootstrap.Modal.getOrCreateInstance(modal).show();
 }
 
 function markCompanyPersonnelSavePending() {
@@ -2247,6 +2365,13 @@ function openCompanyPersonnelSpecialisationModal(personnelIndex, skillIndex) {
         alert("Kies eerst een vaardigheid.");
         return;
     }
+    companyPersonnelSpecialisationOpen = true;
+    const personnelModal = document.getElementById("companyPersonnelEditModal");
+    bootstrap.Modal.getInstance(personnelModal)?.hide();
+    modalEl.addEventListener("hidden.bs.modal", () => {
+        companyPersonnelSpecialisationOpen = false;
+        if (companyPersonnelDraft) bootstrap.Modal.getOrCreateInstance(personnelModal).show();
+    }, {once: true});
 
     modalEl.dataset.personnelIndex = String(personnelIndex);
     modalEl.dataset.skillIndex = String(skillIndex);
@@ -2395,7 +2520,8 @@ async function createCompanySnapshot() {
         companySnapshotCreateProfitability: quarter?.profitability ?? baseline?.profitability ?? 0
     };
     Object.entries(values).forEach(([id, value]) => {
-        document.getElementById(id).value = String(value);
+        document.getElementById(id).value = ["companySnapshotCreateValue", "companySnapshotCreatePrice"].includes(id) && value !== ""
+            ? Number(value).toFixed(2).replace(".", ",") : String(value);
     });
     document.getElementById("companySnapshotCreateError").classList.add("d-none");
     bootstrap.Modal.getOrCreateInstance(modal).show();
@@ -2421,15 +2547,16 @@ async function submitCompanySnapshotCreation() {
     for (const [id, field, min, max, integer] of specs) {
         const input = document.getElementById(id);
         if (field === "shareMarketPrice" && !input.value) continue;
-        const value = Number(input.value);
-        if (!input.value || !Number.isFinite(value) || value < min || value > max
+        const decimal = integer ? null : parseCompanySnapshotMoney(input.value);
+        const value = integer ? Number(input.value) : Number(decimal);
+        if (!input.value || (!integer && decimal === null) || !Number.isFinite(value) || value < min || value > max
             || (integer && !Number.isInteger(value)) || !input.checkValidity()) {
             error.textContent = `Controleer ${input.labels?.[0]?.textContent?.toLowerCase() || field}.`;
             error.classList.remove("d-none");
             input.focus();
             return;
         }
-        body[field] = value;
+        body[field] = integer ? value : decimal;
     }
     error.classList.add("d-none");
     confirm.disabled = true;

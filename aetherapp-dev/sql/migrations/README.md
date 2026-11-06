@@ -1,5 +1,40 @@
 # Aether-databasemigraties
 
+## 0022: bedrijfsgebeurtenissen onderzoeken (27 oktober 2026)
+
+Voer `0022_company_research.sql` uit op beide databases na 0016 en vóór de code
+van versie 2026.10.27.2. De migratie bewaart per personage, bedrijfssnapshot en
+kwartaalgebeurtenis de kans, worp en kennis. Eerder geleerde informatie blijft
+beschikbaar in volgende snapshots. Admins en directors kunnen de kennis per
+snapshot corrigeren. Zie [bedrijfsinformatie in de economieactie](../../docs/company-research.md).
+
+## 0021: omschrijving statuseigenschap Aandelen (23 oktober 2026)
+
+Voer `0021_share_status_description.sql` uit op beide databases. De migratie
+vervangt uitsluitend de zichtbare omschrijving van de statuseigenschap
+**Aandelen** en is veilig opnieuw uit te voeren. Plaats de aangepaste PHP- en
+JavaScriptbestanden vóór het gebruik van de knop waarmee een administrator of
+director een aandelenbezit naar naamloze handen terugzet.
+
+## 0020: aandelenwaardering uit snapshots (22 oktober 2026)
+
+Plaats eerst de PHP-code van versie 2026.10.22.2 en voer daarna, na 0019,
+`0020_company_snapshot_valuation.sql` uit. De portefeuille en aandelenstatus
+gebruiken de laatste vastgelegde snapshot, net als de bedrijfskaart. De migratie
+herstelt bekende losse bedrijfswaarden van bedrijf 13 en herwaardeert de
+opgeslagen aandelenstatussen. Zie
+[`docs/share-snapshot-valuation.md`](../../docs/share-snapshot-valuation.md).
+
+## 0019: aandelenstand na oprichtingscorrecties (22 oktober 2026)
+
+Plaats eerst de aangepaste `api/shares/shareService.php`. Voer daarna
+`0019_company_foundation_share_count.sql` uit om de bekende afwijking van
+bedrijf 13 (81 actueel tegenover 100 in Holiday) gericht te herstellen.
+De migratie wijzigt geen schema, bewaart een auditregel en herwaardeert de
+portefeuilles van de betrokken personages. Zie
+[`docs/company-foundation-share-count-repair.md`](../../docs/company-foundation-share-count-repair.md)
+voor voorwaarden en controle-uitvoer.
+
 ## Aandelenhervorming fase 2 (voorbereid op 30 september 2026)
 
 De huidige dev-resultaten en de uitvoering staan in [`docs/aandelen-fase2-migratie-en-rekenregels.md`](../../docs/aandelen-fase2-migratie-en-rekenregels.md). De migraties `0006_share_reform_schema`, `0007_share_reform_backfill` en `0008_share_domain_codes` zijn voorbereid, maar in deze sessie **niet** tegen MariaDB uitgevoerd. De gebruiker heeft op 1 oktober 2026 uitvoering op `oneiros_beaetherdev` na back-up toegestaan. `run_0006_to_0008_share_reform_phpmyadmin.sql` bundelt de voorcontroles, migraties en verificaties in één uitvoerbaar bestand en blokkeert de productiedatabase `oneiros_be_aether`. Upload dit pakket niet als productie-uitrol zolang de oude procentuele aandeelroutes nog schrijven.

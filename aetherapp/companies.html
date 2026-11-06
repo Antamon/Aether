@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=d0b30505110a58bf">
+    <link rel="stylesheet" href="css/style.css?v=357f2f9ac913e1c0">
     <link rel="stylesheet" href="css/page-nav.css?v=15dd62f126204bd9">
     <link rel="stylesheet" href="css/modal.css?v=e7d148b7fe904a7b">
     <title>Bedrijven - Aether applicatie</title>
@@ -24,9 +24,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item mr-2 d-none" id="navbarAdminItem">
-                        <a class="nav-link" id="adminPage" aria-current="page" href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
-                    </li>
                 </ul>
                 <div id="navbarName"></div>
             </div>
@@ -186,7 +183,7 @@
                                     <div id="companyQuarterEditControls" class="company-quarter-edit-controls d-none">
                                         <div class="button-group company-quarter-edit-radio" role="radiogroup" aria-label="Bewerken via">
                                             <input type="radio" name="companyQuarterEditMode" id="companyQuarterModeDrag" value="drag" checked>
-                                            <label for="companyQuarterModeDrag"><i class="fa-solid fa-arrows-up-down-left-right" aria-hidden="true"></i> Slepen</label>
+                                            <label for="companyQuarterModeDrag"><i class="fa-solid fa-arrows-up-down" aria-hidden="true"></i> Slepen</label>
                                             <input type="radio" name="companyQuarterEditMode" id="companyQuarterModeModal" value="modal">
                                             <label for="companyQuarterModeModal"><i class="fa-solid fa-file-contract" aria-hidden="true"></i> Kwartaalmodal</label>
                                         </div>
@@ -243,9 +240,9 @@
             <div class="modal-body">
                 <p id="companySnapshotCreateContext" class="small mb-3"></p>
                 <div class="row g-3">
-                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateValue">Bedrijfswaarde</label><input type="number" class="form-control" id="companySnapshotCreateValue" min="0" max="9999999999.99" step="0.01"></div>
+                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateValue">Bedrijfswaarde</label><input type="text" inputmode="decimal" class="form-control" id="companySnapshotCreateValue"></div>
                     <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateShares">Uitgegeven aandelen</label><input type="number" class="form-control" id="companySnapshotCreateShares" min="1" max="1000000" step="1"></div>
-                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreatePrice">Marktprijs per aandeel</label><input type="number" class="form-control" id="companySnapshotCreatePrice" min="0" max="9999999999.99" step="0.01"></div>
+                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreatePrice">Marktprijs per aandeel</label><input type="text" inputmode="decimal" class="form-control" id="companySnapshotCreatePrice"></div>
                     <div class="col-12 col-sm-3"><label class="form-label" for="companySnapshotCreateStability">Stabiliteit</label><input type="number" class="form-control" id="companySnapshotCreateStability" min="-7" max="7" step="1"></div>
                     <div class="col-12 col-sm-3"><label class="form-label" for="companySnapshotCreateProfitability">Rendabiliteit</label><input type="number" class="form-control" id="companySnapshotCreateProfitability" min="-7" max="7" step="1"></div>
                 </div>
@@ -309,12 +306,12 @@
     <script src="js/modal.js?v=a235e11728124506"></script>
     <script src="js/mainFunctions.js?v=f3db4bd7cb4060d8"></script>
     <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
-    <script src="js/aetherSidebars.js?v=b1ad6c6b8e1f2004"></script>
+    <script src="js/aetherSidebars.js?v=61c6ad5a98987beb"></script>
     <script src="js/actionButtons.js?v=b4df11b598cd6c2e"></script>
-    <script src="js/shareInterface.js?v=80a00aa5728cee3c"></script>
+    <script src="js/shareInterface.js?v=9da42807545472ac"></script>
     <script src="js/dataCard.js?v=f7e48488b0af3f4f"></script>
     <script src="js/richTextCharacter.js?v=3ba30d8961e86621"></script>
-    <script src="js/companyFunctions.js?v=759d8bad17719d47"></script>
-    <script src="js/companyQuarters.js?v=cbb0aa613357a0cc"></script>
+    <script src="js/companyFunctions.js?v=f140d6b01ab62f42"></script>
+    <script src="js/companyQuarters.js?v=733d68a0110012fa"></script>
 </body>
 </html>

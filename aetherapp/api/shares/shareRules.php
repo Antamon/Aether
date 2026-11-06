@@ -80,7 +80,7 @@ function aetherShareSearchBand(int $level): array
         1 => ['chance' => 30, 'quantityMin' => 1, 'quantityMax' => 10, 'priceMin' => 10, 'priceMax' => 40],
         2 => ['chance' => 50, 'quantityMin' => 10, 'quantityMax' => 30, 'priceMin' => 0, 'priceMax' => 20],
         3 => ['chance' => 70, 'quantityMin' => 30, 'quantityMax' => 60, 'priceMin' => -10, 'priceMax' => 10],
-        4 => ['chance' => 90, 'quantityMin' => 40, 'quantityMax' => 80, 'priceMin' => -15, 'priceMax' => 5],
+        4 => ['chance' => 90, 'quantityMin' => 60, 'quantityMax' => 90, 'priceMin' => -20, 'priceMax' => 0],
         default => throw new DomainException('Ongeldig Fiscaliteit-zoekniveau.'),
     };
 }

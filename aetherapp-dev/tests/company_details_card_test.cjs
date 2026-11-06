@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 class Element {
     constructor(tag) {
-        this.tag = tag; this.children = []; this.listeners = {}; this.attributes = {}; this.value = '';
+        this.tag = tag; this.children = []; this.listeners = {}; this.attributes = {}; this.value = ''; this.dataset = {};
         this.classes = new Set(); this.isConnected = true;
         this.classList = {add: (...keys) => keys.forEach(key => this.classes.add(key)), remove: key => this.classes.delete(key),
             contains: key => this.classes.has(key), toggle: (key, force) => {if(force) this.classes.add(key); else this.classes.delete(key);}};
@@ -36,7 +36,8 @@ const activity = add(root, 'section', 'companyActivityPanel');
 const find = (node, id) => node.id === id ? node : node.children.map(child => find(child,id)).find(Boolean);
 const writes = [], revoked = [], feedback = [];
 const context = {console, Date, window: {addEventListener() {}},
-    document: {getElementById: id => find(root,id), createElement: tag => new Element(tag), addEventListener() {}},
+    document: {getElementById: id => find(root,id), createElement: tag => new Element(tag),
+        createTextNode: text => Object.assign(new Element('#text'), {textContent:text}), addEventListener() {}},
     URL: {createObjectURL: () => 'blob:preview', revokeObjectURL: url => revoked.push(url)},
     apiFetchFinancialJson: async (url, options) => {writes.push({url, body: options.body});},
     apiFetchIdempotentJson: async (url, options) => {writes.push({url, body: options.body}); return {id:44};},
@@ -44,6 +45,7 @@ const context = {console, Date, window: {addEventListener() {}},
 };
 vm.createContext(context);
 for (const file of ['js/actionButtons.js','js/dataCard.js','js/companyFunctions.js']) vm.runInContext(fs.readFileSync(file,'utf8'), context);
+const renderPersonnel = context.renderCompanyPersonnel;
 for (const name of ['renderCompanySnapshots','renderCompanyPersonnel','renderCompanyShareholders','renderCompanyList','updateCompanyTypePresentation','updateSliderPresentation','updateCompanyLogoActions']) context[name] = () => {};
 context.updateCompanyLogo = url => {context.logo = url;};
 context.showCompanyFeedback = message => feedback.push(message); context.hideCompanyFeedback = () => {};
@@ -93,6 +95,39 @@ function editing() {return panel.classList.contains('is-editing');}
     await button('Save').listeners.click();
     assert.equal(writes[beforeCreate].url,'api/companies/newCompany.php');
     assert.equal(writes[beforeCreate+1].body.id,44); assert(!editing());
+    context.populateCompanyForm({...company, canManageCompany:false});
+    assert.equal(find(root,'companyDetailsActions').querySelectorAll('button').length, 0, 'Linked users have no edit actions');
+    assert.equal(find(root,'companyNameDisplay').textContent, company.companyName);
+    assert(find(root,'companyName').disabled, 'Linked users cannot change the company name');
+    const personnelCard = add(root, 'div', 'companyPersonnelCard');
+    add(personnelCard, 'div', 'companyPersonnelList'); add(personnelCard, 'p', 'companyPersonnelEmpty');
+    add(personnelCard, 'button', 'addCompanyPersonnelButton');
+    const modal = add(root, 'div', 'companyPersonnelEditModal');
+    add(modal, 'h3', 'companyPersonnelEditTitle');
+    const modalBody = add(modal, 'div', 'personnelModalBody', 'modal-body');
+    context.bootstrap = {Modal: {getInstance: () => ({hide() {}}), getOrCreateInstance: () => ({show() {}})}};
+    context.renderCompanyPersonnel = renderPersonnel;
+    for (const manager of [false, true]) {
+        context.personnelCompany = {...company, canManageCompany: manager, canAddPersonnel: true};
+        vm.runInContext(`currentCompanyData=personnelCompany; companyPersonnelDraftIndex=0;
+            companyPersonnelDraft={idCharacter:21,nameLabel:'Ada',importance:'High',functionDescription:'Functie',salaryIncreasePercentage:2,isBoardMember:false,skills:[]};
+            currentCompanyPersonnelState=[{...companyPersonnelDraft}]; aetherDataCard.reset(); aetherDataCard.open('company:7:personnel:0');`, context);
+        renderPersonnel(context.personnelCompany);
+        const all = node => [node,...node.children.flatMap(all)];
+        const editable = all(modalBody).map(node => node.dataset?.companyPersonnelField).filter(Boolean);
+        for (const key of ['functionDescription','salaryIncreasePercentage','isBoardMember']) assert(editable.includes(key));
+        for (const key of ['importance','skillId','skillLevel']) assert.equal(editable.includes(key), manager);
+        assert(!all(modalBody).some(node => node.classList?.contains('data-card')),
+            'The personnel editor modal has no nested data card frame');
+        const personnelButtons = all(modalBody).filter(node => node.tag === 'button');
+        const save = personnelButtons.find(node => node.querySelector('span')?.textContent === 'Save');
+        const remove = personnelButtons.find(node => node.querySelector('span')?.textContent === 'Verwijderen');
+        assert(save && remove && save.parentElement === remove.parentElement,
+            'Save and delete share a single action group');
+        assert(!personnelButtons.some(node => node.querySelector('span')?.textContent === 'Cancel'),
+            'Closing the modal replaces the personnel cancel button');
+        assert.equal(find(root,'companyPersonnelList').children.length, 0, 'The editor is in a modal, not inline');
+    }
     const html=fs.readFileSync('companies.html','utf8');
     assert(html.indexOf('</form>') < html.indexOf('id="companyActivityPanel"'), 'The general-data form must end before the independent second panel');
     console.log('Company details display/edit, staged listing/logo, cancel, save, failure and creation tests passed.');

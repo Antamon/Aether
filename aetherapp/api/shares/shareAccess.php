@@ -50,6 +50,9 @@ function aetherRequireShareMigration(PDO $pdo): void
 function aetherCanTradeForCharacter(array $user, array $character): bool
 {
     return aetherCanEditCharacter($user, $character)
+        || (($user['role'] ?? '') === AETHER_ROLE_PARTICIPANT
+            && ($character['type'] ?? '') === 'extra'
+            && (int) ($character['idUser'] ?? 0) === (int) ($user['id'] ?? 0))
         || aetherIsPrivilegedRole((string) ($user['role'] ?? ''));
 }
 

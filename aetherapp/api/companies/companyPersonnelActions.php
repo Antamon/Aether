@@ -13,9 +13,10 @@ function aetherCompanyPersonnelActionInput(array $input): array
         'action' => ['type' => 'enum', 'required' => true, 'values' => ['add', 'update', 'remove']],
         'salaryIncreasePercentage' => ['type' => 'decimal', 'scale' => 2, 'min' => '0.00', 'max' => '999999.99'],
         'isBoardMember' => ['type' => 'bool'],
+        'functionDescription' => ['type' => 'string', 'trim' => true, 'maxLength' => 4000],
     ];
     $out = aetherValidateInput($input, $schema);
-    if ($out['action'] === 'remove' && (isset($out['salaryIncreasePercentage']) || isset($out['isBoardMember']))) {
+    if ($out['action'] === 'remove' && (isset($out['salaryIncreasePercentage']) || isset($out['isBoardMember']) || isset($out['functionDescription']))) {
         throw new AetherValidationException(['Bij verwijderen zijn geen personeelsvelden toegestaan.']);
     }
     return $out;
@@ -24,18 +25,7 @@ function aetherCompanyPersonnelActionInput(array $input): array
 function aetherCompanyPersonnelActorCanEdit(PDO $pdo, array $user, int $idCompany): bool
 {
     if (aetherIsPrivilegedRole((string) $user['role'])) return true;
-    if ((string) $user['role'] !== 'participant' || !aetherCompanyLeadershipAvailable($pdo)) return false;
-    $stmt = $pdo->prepare("SELECT 1 FROM tblCompanyPersonnel AS cp
-        JOIN tblCharacter AS c ON c.id = cp.idCharacter
-        WHERE cp.idCompany = :idCompany AND c.idUser = :idUser
-          AND EXISTS (SELECT 1 FROM tblLinkCharacterTrait AS link
-                      JOIN tblTrait AS trait ON trait.id = link.idTrait
-                      WHERE link.idCharacter = c.id AND trait.`class` = 'middle class'
-                        AND trait.`type` = 'profession'
-                        AND trait.name IN ('Bedrijfsleider', 'Bedrijfsleider klein', 'Bedrijfsleider groot'))
-        LIMIT 1");
-    $stmt->execute(['idCompany' => $idCompany, 'idUser' => (int) $user['id']]);
-    return $stmt->fetchColumn() !== false;
+    return aetherCompanyUserIsBoardMember($pdo, $user, $idCompany);
 }
 
 function aetherCompanyPersonnelAction(PDO $pdo, array $user, array $input): array
@@ -66,11 +56,12 @@ function aetherCompanyPersonnelAction(PDO $pdo, array $user, array $input): arra
             if ($stmt->fetchColumn() !== false) throw new AetherCompanyException(409, 'Dit personage leidt al een ander bedrijf.');
         }
         $stmt = $pdo->prepare('INSERT INTO tblCompanyPersonnel
-            (idCompany, idCharacter, importance, salaryIncreasePercentage, isBoardMember, isCompanyLeader)
-            VALUES (:idCompany, :idCharacter, :importance, :salary, :board, :leader)');
+            (idCompany, idCharacter, importance, salaryIncreasePercentage, isBoardMember, isCompanyLeader, functionDescription)
+            VALUES (:idCompany, :idCharacter, :importance, :salary, :board, :leader, :description)');
         $stmt->execute(['idCompany' => $idCompany, 'idCharacter' => $idCharacter,
             'importance' => 'Moderate', 'salary' => $input['salaryIncreasePercentage'] ?? 0,
-            'board' => (int) ($isLeader || ($input['isBoardMember'] ?? false)), 'leader' => (int) $isLeader]);
+            'board' => (int) ($isLeader || ($input['isBoardMember'] ?? false)), 'leader' => (int) $isLeader,
+            'description' => $input['functionDescription'] ?? '']);
     } elseif ($action === 'update') {
         if ($current === null) throw new AetherCompanyException(404, 'Personeelslid niet gevonden.');
         $isLeader = aetherCharacterHasCompanyLeaderProfession($pdo, $idCharacter);
@@ -80,6 +71,10 @@ function aetherCompanyPersonnelAction(PDO $pdo, array $user, array $input): arra
             WHERE id = :id');
         $stmt->execute(['salary' => $input['salaryIncreasePercentage'] ?? $current['salaryIncreasePercentage'],
             'board' => $board, 'leader' => (int) $isLeader, 'id' => $current['id']]);
+        if (array_key_exists('functionDescription', $input)) {
+            $stmt = $pdo->prepare('UPDATE tblCompanyPersonnel SET functionDescription = :description WHERE id = :id');
+            $stmt->execute(['description' => $input['functionDescription'], 'id' => $current['id']]);
+        }
     } else {
         if ($current === null) throw new AetherCompanyException(404, 'Personeelslid niet gevonden.');
         if (aetherCharacterHasCompanyLeaderProfession($pdo, $idCharacter) && !aetherIsPrivilegedRole((string) $user['role'])) {

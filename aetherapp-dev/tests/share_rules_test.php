@@ -37,7 +37,7 @@ foreach ([
     1 => [30, 1, 10, 10, 40],
     2 => [50, 10, 30, 0, 20],
     3 => [70, 30, 60, -10, 10],
-    4 => [90, 40, 80, -15, 5],
+    4 => [90, 60, 90, -20, 0],
 ] as $level => [$chance, $quantityMin, $quantityMax, $priceMin, $priceMax]) {
     $band = aetherShareSearchBand($level);
     shareRuleCheck($band === compact('chance', 'quantityMin', 'quantityMax', 'priceMin', 'priceMax'),

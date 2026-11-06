@@ -34,7 +34,8 @@ async function initAdminPage() {
         syncPrivilegedNavbar(adminCurrentUser);
         syncAdminNavbarName(adminCurrentUser);
         setupAdminPageListeners();
-        setActiveAdminTab("skills");
+        const requestedTab = new URLSearchParams(window.location.search).get("tab");
+        setActiveAdminTab(["skills", "traits", "knowledge", "actions"].includes(requestedTab) ? requestedTab : "skills");
 
         const catalog = await apiFetchJson("api/admin/getSkillList.php");
         applyAdminSkillCatalog(catalog);
@@ -86,6 +87,7 @@ function setupAdminPageListeners() {
             }
 
             setActiveAdminTab(nextTab);
+            window.closeAdminSidebar?.();
         });
     });
 
@@ -421,6 +423,8 @@ function setActiveAdminTab(tabName) {
 
     document.querySelectorAll("#adminMainTabs [data-admin-tab]").forEach((tab) => {
         tab.classList.toggle("active", (tab.dataset.adminTab || "") === tabName);
+        if (tab.dataset.adminTab === tabName) tab.setAttribute("aria-current", "page");
+        else tab.removeAttribute("aria-current");
     });
 
     const skillsToolbar = document.getElementById("adminSkillsToolbar");

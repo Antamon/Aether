@@ -17,6 +17,21 @@ const aetherCharacterActionsState = {
 
 let aetherKnowledgeModalInstance = null;
 
+function characterActionsCanChooseEvent() {
+    const user = typeof getCurrentUser === "function" ? getCurrentUser() : window.AETHER_CURRENT_USER;
+    return userHasPrivilegedRole(user);
+}
+
+function currentCharacterActionEvent(events) {
+    const today = new Intl.DateTimeFormat("en-CA", {timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit"}).formatToParts(new Date());
+    const part = type => today.find(item => item.type === type).value;
+    const date = `${part("year")}-${part("month")}-${part("day")}`;
+    const eligible = events.filter(event => String(event.dateEnd || event.dateStart).slice(0, 10) >= date);
+    const ongoing = eligible.filter(event => String(event.dateStart).slice(0, 10) <= date)
+        .sort((a, b) => String(b.dateStart).localeCompare(String(a.dateStart)) || Number(b.idEvent) - Number(a.idEvent));
+    return ongoing[0] || eligible.sort((a, b) => String(a.dateStart).localeCompare(String(b.dateStart)) || Number(a.idEvent) - Number(b.idEvent))[0] || null;
+}
+
 async function fetchCharacterActionEvents(idCharacter) {
     return apiFetchJson("api/characters/getCharacterActionEvents.php", {
         method: "POST",
@@ -120,6 +135,7 @@ async function renderCharacterActionsTab(character) {
             if (aetherCharacterActionsState.selectedEventId <= 0 && aetherCharacterActionsState.events.length > 0) {
                 aetherCharacterActionsState.selectedEventId = Number(aetherCharacterActionsState.events[0].idEvent || 0);
             }
+            if (!characterActionsCanChooseEvent()) aetherCharacterActionsState.selectedEventId = Number(currentCharacterActionEvent(aetherCharacterActionsState.events)?.idEvent || 0);
         } catch (err) {
             console.error("Fout bij laden characteracties:", err);
             catalogError = true;
@@ -225,7 +241,7 @@ function buildCharacterActionsLayout(character) {
     card.className = "card aether-panel character-sheet-card";
 
     const header = document.createElement("div");
-    header.className = "card-header character-actions-card-header";
+    header.className = "card-header character-actions-card-header d-flex justify-content-between align-items-center flex-wrap gap-3";
 
     const headerRow = document.createElement("div");
     headerRow.className = "character-actions-event-row";
@@ -260,8 +276,18 @@ function buildCharacterActionsLayout(character) {
 
     headerRow.appendChild(label);
     headerRow.appendChild(select);
-    header.appendChild(headerRow);
-    card.appendChild(header);
+    if (characterActionsCanChooseEvent()) header.appendChild(headerRow);
+    if (aetherCharacterActionsState.activeAction) {
+        const back = AetherActionButtons.button({icon: "fa-arrow-left", label: "Toon acties"});
+        back.addEventListener("click", () => {
+            aetherCharacterActionsState.activeAction = "";
+            aetherShareMarketClient.resetActionView();
+            void renderCharacterActionsTab(currentCharacter || character);
+        });
+        const actions = AetherActionButtons.group([back]); actions.classList.add("ms-auto");
+        header.appendChild(actions);
+    }
+    if (header.childNodes.length) card.appendChild(header);
 
     const body = document.createElement("div");
     body.className = "card-body";
@@ -301,10 +327,10 @@ function buildCharacterActionsLayout(character) {
         empty.textContent = "Dit personage heeft momenteel geen acties beschikbaar.";
         body.appendChild(empty);
     } else {
-        body.appendChild(actionButtonRow);
+        if (!aetherCharacterActionsState.activeAction) body.appendChild(actionButtonRow);
 
         const actionContent = document.createElement("div");
-        actionContent.className = "character-actions-content mt-4";
+        actionContent.className = "character-actions-content";
 
         if (aetherCharacterActionsState.activeAction === "economy") {
             const economy = document.createElement("div");
@@ -911,13 +937,7 @@ document.addEventListener("change", (event) => {
         return;
     }
 
-    void renderCharacterActionsTab(currentCharacter).then(() => {
-        if (aetherCharacterActionsState.activeAction === "economy") {
-            void aetherShareMarketClient.searchSelectedEvent().catch((error) => {
-                console.error("Aandelenzoekactie:", error);
-            });
-        }
-    });
+    void renderCharacterActionsTab(currentCharacter);
 });
 
 document.addEventListener("click", (event) => {
@@ -927,11 +947,8 @@ document.addEventListener("click", (event) => {
     if (economyButton && Number(currentCharacter?.id || 0) > 0
         && characterHasFiscalityAction(currentCharacter)) {
         aetherCharacterActionsState.activeAction = "economy";
-        void renderCharacterActionsTab(currentCharacter).then(() => {
-            void aetherShareMarketClient.searchSelectedEvent().catch((error) => {
-                console.error("Aandelenzoekactie:", error);
-            });
-        });
+        aetherShareMarketClient.resetActionView();
+        void renderCharacterActionsTab(currentCharacter);
         return;
     }
 
