@@ -1,0 +1,25 @@
+{
+  "release": "2026.11.17.8",
+  "published": [
+    {
+      "app": "aetherapp",
+      "file": "js/mainFunctions.js",
+      "sha256": "595ea32597e24ddd3650ea57a437f35359c4cf4cd9e5569f2ad84e9478c69fb8"
+    },
+    {
+      "app": "aetherapp",
+      "file": "VERSION",
+      "sha256": "6bb752e433dce22feb078a90d9d44e1c343d421e8986d6e55e9ffbf6e26a5398"
+    },
+    {
+      "app": "aetherapp-dev",
+      "file": "js/mainFunctions.js",
+      "sha256": "595ea32597e24ddd3650ea57a437f35359c4cf4cd9e5569f2ad84e9478c69fb8"
+    },
+    {
+      "app": "aetherapp-dev",
+      "file": "VERSION",
+      "sha256": "6bb752e433dce22feb078a90d9d44e1c343d421e8986d6e55e9ffbf6e26a5398"
+    }
+  ]
+}

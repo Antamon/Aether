@@ -144,6 +144,7 @@ async function renderCharacterActionsTab(character) {
         }
     }
 
+    window.AetherResearchCharacter?.stop();
     container.innerHTML = "";
     if (catalogError) {
         const warning = document.createElement("p");
@@ -152,6 +153,10 @@ async function renderCharacterActionsTab(character) {
         container.appendChild(warning);
     }
     container.appendChild(buildCharacterActionsLayout(character));
+    if (aetherCharacterActionsState.activeAction === "research") {
+        const host = container.querySelector('[data-research-content]');
+        if (host) void AetherResearchCharacter.attach(host, character, aetherCharacterActionsState.selectedEventId);
+    }
     if (aetherCharacterActionsState.activeAction === "economy") {
         const host = container.querySelector("[data-share-action-content='economy']");
         if (host) aetherShareMarketClient.attachActions(
@@ -194,6 +199,7 @@ function getCharacterActionsCatalog(character) {
         });
     }
 
+    catalog.push({actionCode: "research", buttonAction: "character-action-research", label: "Onderzoek", imageSrc: "img/actionSpeuren.png"});
     if (characterHasFiscalityAction(character)) {
         catalog.push({
             actionCode: "economy",
@@ -276,7 +282,7 @@ function buildCharacterActionsLayout(character) {
 
     headerRow.appendChild(label);
     headerRow.appendChild(select);
-    if (characterActionsCanChooseEvent()) header.appendChild(headerRow);
+    if (characterActionsCanChooseEvent() && aetherCharacterActionsState.activeAction !== "research") header.appendChild(headerRow);
     if (aetherCharacterActionsState.activeAction) {
         const back = AetherActionButtons.button({icon: "fa-arrow-left", label: "Toon acties"});
         back.addEventListener("click", () => {
@@ -327,7 +333,7 @@ function buildCharacterActionsLayout(character) {
         empty.textContent = "Dit personage heeft momenteel geen acties beschikbaar.";
         body.appendChild(empty);
     } else {
-        if (!aetherCharacterActionsState.activeAction) body.appendChild(actionButtonRow);
+        if (!aetherCharacterActionsState.activeAction || aetherCharacterActionsState.activeAction === "research") body.appendChild(actionButtonRow);
 
         const actionContent = document.createElement("div");
         actionContent.className = "character-actions-content";
@@ -337,6 +343,10 @@ function buildCharacterActionsLayout(character) {
             economy.className = "w-100";
             economy.dataset.shareActionContent = "economy";
             actionContent.appendChild(economy);
+        } else if (aetherCharacterActionsState.activeAction === "research") {
+            const research = document.createElement("div");
+            research.dataset.researchContent = "1";
+            actionContent.appendChild(research);
         } else if (aetherCharacterActionsState.activeAction === "knowledge") {
             actionContent.appendChild(buildKnowledgeActionContent(character));
         } else {
@@ -941,6 +951,11 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.closest("[data-action='character-action-research']") && Number(currentCharacter?.id || 0) > 0) {
+        aetherCharacterActionsState.activeAction = "research";
+        void renderCharacterActionsTab(currentCharacter);
+        return;
+    }
     const economyButton = event.target instanceof HTMLElement
         ? event.target.closest("[data-action='character-action-economy']")
         : null;

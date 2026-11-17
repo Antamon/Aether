@@ -24,7 +24,8 @@ async function check(role){
         aetherCharacterActionsState.selectedEventId=7;`,context);
     let layout=context.buildCharacterActionsLayout(character);
     assert.equal(all(layout).filter(node=>node.tag==='select').length,Number(role!=='participant'),'Only managers get an event selector');
-    assert.equal(all(layout).filter(node=>node.className?.startsWith('character-action-tile ')).length,1,'Entry view shows available actions');
+    assert.equal(all(layout).filter(node=>node.className?.startsWith('character-action-tile ')).length,2,'Entry view shows economy and research');
+    assert(all(layout).some(node=>node.dataset.action==='character-action-research'),'Research is available also at skill level zero');
     vm.runInContext("aetherCharacterActionsState.activeAction='economy';",context);
     layout=context.buildCharacterActionsLayout(character);
     assert(!all(layout).some(node=>node.className?.startsWith('character-action-tile ')),'Selected action hides the action tiles');

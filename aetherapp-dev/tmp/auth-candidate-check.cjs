@@ -1,0 +1,4 @@
+const fs=require('node:fs');const {Client}=require('C:/Users/jan_m/.vscode/extensions/natizyskunk.sftp-1.16.4/node_modules/ssh2');const config=JSON.parse(fs.readFileSync('aetherapp-dev/.vscode/sftp.json','utf8'));const p=Array.isArray(config)?config[0]:config;
+const base=p.remotePath.replace(/\/$/,'').replace(/\/aetherapp-dev$/,'');const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
+const source=fs.readFileSync('aetherapp-dev/tmp/auth-candidate-check.php','utf8').replace(/^<\?php\s*/,'').replace('$base=$argv[1];','$base='+JSON.stringify(base)+';');
+const c=new Client();c.on('ready',()=>c.exec('php -r '+quote(source),(e,stream)=>{if(e){console.log(e.message);c.end();return;}stream.on('data',b=>process.stdout.write(b));stream.stderr.on('data',b=>process.stdout.write(b));stream.on('close',()=>c.end());}));c.on('error',e=>console.log(e.message));c.connect({host:p.host,port:p.port||22,username:p.username,password:p.password,readyTimeout:20000});

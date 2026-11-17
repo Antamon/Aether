@@ -81,12 +81,13 @@
                 ["skills", "Vaardigheden", "actionsVaardigheden.png"],
                 ["traits", "Eigenschappen", "actionStatuseigenschappen.png"],
                 ["knowledge", "Wereldwijs", "actionWereldwijs.png"],
-                ["actions", "Acties", "actionBoeken.png"]
+                ["actions", "Acties", "actionBoeken.png"],
+                ["research", "Onderzoek", "actionSpeuren.png"]
             ]) {
                 const link = document.createElement("a");
                 link.className = "company-sidebar-card";
-                link.href = `admin.html?tab=${key}`;
-                link.dataset.adminTab = key;
+                link.href = key === "research" ? "research.html" : `admin.html?tab=${key}`;
+                if (key !== "research") link.dataset.adminTab = key;
                 const frame = document.createElement("span");
                 frame.className = "company-sidebar-image-frame";
                 const icon = document.createElement("img");

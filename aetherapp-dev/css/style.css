@@ -1117,24 +1117,34 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   border-bottom: 0px !important;
 }
 
-.navTab.active, .navTab.active:link,.navTab.active:visited, .navRow, .accordion-button:not(.collapsed){
+.navTab.active, .navTab.active:link,.navTab.active:visited, .navRow {
   background-color: rgb(100, 0, 0) !important;
   color: #b98c8c;
 }
 
-#accordionSkills .accordion-item,
-#accordionSkills .accordion-collapse,
-#accordionSkills .accordion-body,
-.event-character-accordion .accordion-item,
-.event-character-accordion .accordion-collapse,
-.event-character-accordion .accordion-body {
+/* One accordion theme for Character sheet, events and research. */
+.accordion-item,
+.accordion-collapse,
+.accordion-body {
   background-color: transparent;
 }
 
-#accordionSkills .accordion-button.collapsed,
-.event-character-accordion .accordion-button.collapsed {
+.accordion-button {
+  font-family: "Amarante", Georgia, serif;
   background-color: rgba(255, 255, 255, 0.5);
 }
+.accordion-button:not(.collapsed) {
+  background-color: var(--primary-red);
+  color: #b98c8c;
+}
+.accordion-button::after {
+  background-image: none !important;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m2 5 6 6 6-6' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m2 5 6 6 6-6' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+summary.accordion-button { cursor: pointer; list-style: none; }
+summary.accordion-button::-webkit-details-marker { display: none; }
 
 .navInfoCell{
   display: flex;

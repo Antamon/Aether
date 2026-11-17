@@ -1,5 +1,13 @@
 # Aether-databasemigraties
 
+## 0024: Onderzoek (6 november 2026)
+
+Voer `0024_research.sql` uit vóór de code van versie 2026.11.06.1 wordt gebruikt,
+op iedere betrokken database. Vereist 0004 (idempotentie) en 0014
+(event/personagekoppelingen). De migratie voegt uitsluitend onderzoekstabellen
+toe en is veilig herhaalbaar. Zie [Onderzoek](../../docs/research.md) voor
+installatie, toegang, spelregels, mediaopslag en tests.
+
 ## 0022: bedrijfsgebeurtenissen onderzoeken (27 oktober 2026)
 
 Voer `0022_company_research.sql` uit op beide databases na 0016 en vóór de code

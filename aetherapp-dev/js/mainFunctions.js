@@ -107,7 +107,10 @@ function aetherGetCurrentUser() {
     if (!aetherCurrentUserRequest) {
         aetherCurrentUserRequest = apiFetchJson("checkLogin.php").then((data) => {
             if (data?.status !== "ok" || !data.user) {
-                throw Object.assign(new Error("Geen geldige sessie."), { status: 401 });
+                if (data?.status === "redirect") {
+                    throw Object.assign(new Error("Geen geldige sessie."), { status: 401 });
+                }
+                throw Object.assign(new Error("De server gaf geen geldig antwoord op de sessiecontrole."), { status: 502 });
             }
             const user = { ...data.user, csrfToken: data.csrfToken };
             window.AETHER_CURRENT_USER = user;

@@ -1,0 +1,137 @@
+[
+  {
+    "app": "aetherapp-dev",
+    "file": "css/style.css",
+    "sha256": "4f5f6112f7ad7f031c5ad5bfd837b81efa3204191f089843c1476f92a670802f"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "css/research.css",
+    "sha256": "c63cf854d19bcdad25fd0ed2cbed56890a5547b23ac90acce7b6e17e6ab0072b"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "js/researchAdmin.js",
+    "sha256": "2bc77e1ddde691a1e3eac9af26f0a49f3e387e5d01f3b7bddd71e8687d1d1ccb"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "admin.html",
+    "sha256": "294bbe5e6479d80f54db59464177688056d9a53edb30b8613330caa8abf61588"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "companies.html",
+    "sha256": "81b3fc3123b597466b9274198facd35c734b7a7483bcb3930c979bdc2030762d"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "eventParticipation.html",
+    "sha256": "4670b1d7c8e56e3d951357187b6b04264ece25a23002be0e43515a4ce233e263"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "index.html",
+    "sha256": "997b40455dd24e87d511023fa045f799be468e3b64aa6174c5f9d691257f6462"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "leaderPersonnel.html",
+    "sha256": "16acb75d6bf69cea54da84b47a0eb9b2e0d6acb65162c6df891a0667b4d57d9d"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "research.html",
+    "sha256": "489a94cfedefec16163d25c1567b73c18efb4fb4f4ddaca791a92296755f5db2"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "static.html",
+    "sha256": "37bcb4f4dabd13975a48d6f303bed77605306e8093e8fb4019a5b41c389eee32"
+  },
+  {
+    "app": "aetherapp-dev",
+    "file": "VERSION",
+    "sha256": "673cffebfa2490a8439e572ff38fdad07dfa7bf7a6a9bc3812bd80b0ac75970b"
+  },
+  {
+    "app": "aetherapp",
+    "file": "css/style.css",
+    "sha256": "4f5f6112f7ad7f031c5ad5bfd837b81efa3204191f089843c1476f92a670802f"
+  },
+  {
+    "app": "aetherapp",
+    "file": "css/research.css",
+    "sha256": "c63cf854d19bcdad25fd0ed2cbed56890a5547b23ac90acce7b6e17e6ab0072b"
+  },
+  {
+    "app": "aetherapp",
+    "file": "js/researchAdmin.js",
+    "sha256": "2bc77e1ddde691a1e3eac9af26f0a49f3e387e5d01f3b7bddd71e8687d1d1ccb"
+  },
+  {
+    "app": "aetherapp",
+    "file": "js/researchQrPdf.js",
+    "sha256": "afcb67bbc43e4accf65cad45f7c50c8036c79d2ac1684393490371115b93c1cd"
+  },
+  {
+    "app": "aetherapp",
+    "file": "js/vendor/jspdf.umd.min.js",
+    "sha256": "85ba2cc3ff858a20fa49fe6e457bec863ea40b55a9f3725e58a940e62f6f61a4"
+  },
+  {
+    "app": "aetherapp",
+    "file": "js/vendor/jspdf.LICENSE",
+    "sha256": "2d26bfab8a36d2250602c7a7597237e180c5cd3517acc108126e3cb399f483c8"
+  },
+  {
+    "app": "aetherapp",
+    "file": "fonts/Amarante-Regular.ttf",
+    "sha256": "76cbeaae692f03153654c3cf2c79252ea61ac6bdf6dcb192c491cb8e3c0dfca7"
+  },
+  {
+    "app": "aetherapp",
+    "file": "fonts/Amarante-OFL.txt",
+    "sha256": "89bf0833b785c49b0f271273ab440bdc20c85bf0322537dc901df940bf1579da"
+  },
+  {
+    "app": "aetherapp",
+    "file": "admin.html",
+    "sha256": "294bbe5e6479d80f54db59464177688056d9a53edb30b8613330caa8abf61588"
+  },
+  {
+    "app": "aetherapp",
+    "file": "companies.html",
+    "sha256": "81b3fc3123b597466b9274198facd35c734b7a7483bcb3930c979bdc2030762d"
+  },
+  {
+    "app": "aetherapp",
+    "file": "eventParticipation.html",
+    "sha256": "4670b1d7c8e56e3d951357187b6b04264ece25a23002be0e43515a4ce233e263"
+  },
+  {
+    "app": "aetherapp",
+    "file": "index.html",
+    "sha256": "997b40455dd24e87d511023fa045f799be468e3b64aa6174c5f9d691257f6462"
+  },
+  {
+    "app": "aetherapp",
+    "file": "leaderPersonnel.html",
+    "sha256": "16acb75d6bf69cea54da84b47a0eb9b2e0d6acb65162c6df891a0667b4d57d9d"
+  },
+  {
+    "app": "aetherapp",
+    "file": "research.html",
+    "sha256": "489a94cfedefec16163d25c1567b73c18efb4fb4f4ddaca791a92296755f5db2"
+  },
+  {
+    "app": "aetherapp",
+    "file": "static.html",
+    "sha256": "37bcb4f4dabd13975a48d6f303bed77605306e8093e8fb4019a5b41c389eee32"
+  },
+  {
+    "app": "aetherapp",
+    "file": "VERSION",
+    "sha256": "673cffebfa2490a8439e572ff38fdad07dfa7bf7a6a9bc3812bd80b0ac75970b"
+  }
+]

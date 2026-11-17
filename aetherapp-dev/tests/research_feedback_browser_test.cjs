@@ -1,0 +1,61 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const {chromium}=require(process.env.RESEARCH_PLAYWRIGHT||'../tmp/feedback-browser/package');
+const root=path.resolve(__dirname,'..');
+const fixture={id:1,title:'Bruidsspoor',description:'',active:1,eventIds:[1],discoveries:[{id:1,title:'Stof van de jurk',idSkill:6,active:1,description:'',bonusIds:[],routes:[{id:1,kind:'general',level:0,steps:[{id:1,revision:1,position:1,content:'Een stukje stof.',conditions:[],media:[]}]},{id:2,revision:1,kind:'specialisation',level:0,idRequiredSpecialisation:72,characterIds:[],steps:[{id:2,revision:1,position:1,content:'Je herkent satijn.',conditions:[],media:[{id:1}]}]},...[1,2,3,4].map(level=>({id:level+2,kind:'general',level,steps:[]}))]}]};
+const html=`<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/research.css"></head><body><div id="researchAdmin"></div><script src="js/actionButtons.js"></script><script src="js/richTextCharacter.js"></script><script src="js/researchUi.js"></script><script>
+window.aetherGetCurrentUser=async()=>({role:'director'});window.userHasPrivilegedRole=()=>true;
+window.fixture=${JSON.stringify(fixture)};window.writes=[];
+AetherResearch.read=async(op)=>op==='catalog'?{events:[{id:1,title:'Event'}],skills:[{id:6,name:'Speuren'}],characters:[],specialisations:[{id:72,idSkill:6,name:'Stoffen'},{id:73,idSkill:7,name:'Auditeren'}]}:op==='challenges'?{challenges:[fixture]}:fixture;
+AetherResearch.write=async(op,data)=>{writes.push({op,data});if(op==='step_save'){const route=fixture.discoveries[0].routes.find(r=>r.id===data.idRoute);let step=route.steps.find(s=>s.id===data.id);if(!step){step={id:99,revision:0,position:1,conditions:[],media:[]};route.steps.push(step);}Object.assign(step,{content:data.content,confirmationRequired:data.confirmationRequired,conditions:data.conditions,revision:step.revision+1});if(data.followUp&&!route.steps.some(s=>s.position>step.position))route.steps.push({id:100,revision:1,position:step.position+1,content:'',conditions:[],media:[]});}return{id:1};};
+</script><script src="js/researchAdmin.js"></script></body></html>`;
+const characterHtml=`<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/research.css"></head><body><div class="card"><div class="character-actions-card-header"></div><div id="character"></div></div><script src="js/actionButtons.js"></script><script src="js/richTextCharacter.js"></script><script src="js/researchUi.js"></script><script>
+window.writes=[];const feedback={id:1,title:'Stof',status:'awaiting_confirmation',timed:false,countdownSeconds:null,history:[],currents:[{id:1,content:'Algemene opdracht',confirmationRequired:true,shownAt:'2026-01-01',media:[]},{id:2,content:'Persoonlijke opdracht',confirmationRequired:true,shownAt:'2026-01-01',media:[]}]};feedback.current=feedback.currents[0];
+AetherResearch.read=async(op)=>op==='events'?{events:[{id:1,title:'Event',dateStart:'2026-01-01'}]}:op==='found'?{discoveries:[feedback]}:feedback;
+AetherResearch.write=async(op,data)=>{writes.push({op,data});const step=feedback.currents.find(s=>s.id===data.idStep);feedback.history.push(step);feedback.currents=feedback.currents.filter(s=>s!==step);feedback.current=feedback.currents[0]||null;feedback.status=feedback.currents.length?'awaiting_confirmation':'completed';return{saved:true};};
+</script><script src="js/researchCharacter.js"></script><script>AetherResearchCharacter.attach(document.getElementById('character'),{id:1},1);</script></body></html>`;
+const server=http.createServer((req,res)=>{if(req.url==='/'||req.url==='/character'){res.setHeader('Content-Type','text/html');return res.end(req.url==='/'?html:characterHtml);}const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));if(!file.startsWith(root+path.sep)){res.writeHead(403);return res.end();}try{res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'application/octet-stream');res.end(fs.readFileSync(file));}catch{res.writeHead(404);res.end();}});
+(async()=>{
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const browser=await chromium.launch({executablePath:process.env.RESEARCH_EDGE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+    try{
+        const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+        await page.goto('http://127.0.0.1:'+server.address().port);
+        await page.locator('[data-challenge-id="1"] summary').click();await page.locator('[data-discovery-id="1"] button').click();
+        const selection=page.locator('.research-selection'),section=selection.locator('[data-key="level-1-0"]');
+        assert.equal(await selection.getByRole('button',{name:'Volgende feedbackstap',exact:true}).count(),0);
+        assert.equal(await section.getByRole('button',{name:'Variant toevoegen',exact:true}).count(),1);
+        const media=section.locator('button.research-has-media');assert.equal(await media.count(),1);
+        assert.equal(await media.evaluate(n=>getComputedStyle(n).color),'rgb(100, 0, 0)');
+        assert.notEqual(await section.getByRole('button',{name:'Media beheren',exact:true}).evaluate(n=>getComputedStyle(n).color),'rgb(100, 0, 0)');
+        await section.getByRole('button',{name:'Feedback bewerken',exact:true}).first().click();
+        let dialog=page.locator('dialog[open]');
+        await dialog.getByLabel('Deze feedback krijgt een vervolgstap',{exact:true}).check();
+        await dialog.getByRole('button',{name:'Opslaan',exact:true}).click();
+        await section.locator('tr .fa-arrow-right').waitFor({state:'attached'});
+        assert.equal(await section.locator('tr').count(),3,'Follow-up is inserted under its own feedback, before variants');
+        assert.equal(await section.locator('tr').nth(1).locator('.fa-arrow-right').count(),1);
+        assert.equal(await section.locator('tr').nth(1).getByRole('button',{name:'Media beheren',exact:true}).count(),1);
+        await section.locator('tr').nth(1).getByRole('button',{name:'Feedback bewerken',exact:true}).click();
+        dialog=page.locator('dialog[open]');await dialog.getByLabel('Feedback',{exact:true}).fill('Je vindt een herkenbaar parfum.');
+        await dialog.getByLabel('Deze feedback krijgt een vervolgstap',{exact:true}).check();await dialog.getByRole('button',{name:'Opslaan',exact:true}).click();
+        await section.getByText('Je vindt een herkenbaar parfum.',{exact:true}).waitFor();
+        assert.equal(await section.locator('.fa-arrow-right').count(),2,'Follow-ups can form a chain');
+        await section.locator('tr').last().getByRole('button',{name:'Feedback bewerken',exact:true}).click();
+        dialog=page.locator('dialog[open]');assert.equal(await dialog.getByText('Prioriteit (hoger wint)',{exact:true}).count(),0);
+        assert.deepEqual(await dialog.getByLabel('Verplichte specialisatie (geen niveaubonus)',{exact:true}).locator('option').allTextContents(),['Geen vereiste specialisatie','Stoffen']);
+        assert.equal(await dialog.getByLabel('Feedback',{exact:true}).count(),1);await dialog.evaluate(n=>n.close());
+        await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Feedback fits mobile width');
+        await page.goto('http://127.0.0.1:'+server.address().port+'/character');
+        await page.getByRole('button',{name:'Stof Opdracht bezig'}).click();
+        await page.getByText('Persoonlijke opdracht',{exact:true}).waitFor();
+        assert.equal(await page.locator('.research-step').count(),2,'Character sees all matching feedback simultaneously');
+        await page.getByRole('button',{name:'Opdracht uitgevoerd',exact:true}).nth(1).click();
+        await page.waitForFunction(()=>writes.length===1&&document.querySelectorAll('.research-step button').length===1);
+        assert.equal(await page.evaluate(()=>writes[0].data.idStep),2,'Confirmation addresses the selected branch');
+        await page.getByRole('button',{name:'Opdracht uitgevoerd',exact:true}).click();
+        await page.locator('.research-detail').getByText('Afgerond',{exact:true}).waitFor();
+        assert.equal(await page.locator('.research-step').count(),2,'Completed feedback remains in history');
+        await page.evaluate(()=>AetherResearchCharacter.stop());
+        assert.deepEqual(errors,[]);console.log('PASS: browser follow-up checkbox/save/chain, arrow placement, media colors, shared editor, specialisation filter, mobile layout and simultaneous character feedback/confirmation.');
+    }finally{await browser.close();server.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;server.close();});
