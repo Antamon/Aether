@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Shared tables, ten-row pagination and read-only detail dialogs.
 const AetherDataTable = (() => {
     let nextModalId = 0;
@@ -26,12 +27,12 @@ const AetherDataTable = (() => {
             button.addEventListener("click", async () => {
                 buttons.forEach(item => { item.disabled = true; }); error.textContent = "";
                 try { if (await action.run() !== false) instance.hide(); }
-                catch (failure) { error.textContent = failure.message || "De wijziging kon niet worden bewaard."; }
+                catch (failure) { error.textContent = failure.message || aetherT("De wijziging kon niet worden bewaard."); }
                 finally { buttons.forEach(item => { item.disabled = false; }); }
             });
             buttons.push(button);
         }
-        const close = AetherActionButtons.button({ icon: "fa-xmark", label: "Sluiten" });
+        const close = AetherActionButtons.button({ icon: "fa-xmark", label: aetherT("Sluiten") });
         close.dataset.bsDismiss = "modal"; buttons.push(close);
         const footer = node("div", "modal-footer"); footer.append(AetherActionButtons.group(buttons));
         content.append(header, body, footer); dialog.append(content); modal.append(dialog); document.body.append(modal);
@@ -46,7 +47,7 @@ const AetherDataTable = (() => {
 
     function infoButton(details) {
         const button = node("button", "data-info-button"); button.type = "button";
-        button.setAttribute("aria-label", `Details: ${details.title}`); button.title = "Gegevens bekijken";
+        button.setAttribute("aria-label", `Details: ${details.title}`); button.title = aetherT("Gegevens bekijken");
         const icon = node("i", "fa-solid fa-circle-info"); icon.setAttribute("aria-hidden", "true"); button.append(icon);
         button.addEventListener("click", () => showDetails({ ...details, trigger: button }));
         return button;
@@ -64,8 +65,8 @@ const AetherDataTable = (() => {
         let page = 0;
         const count = Math.max(1, Math.ceil(rows.length / pageSize));
         const status = node("span", "data-table-page-status"); status.setAttribute("aria-live", "polite");
-        const previous = AetherActionButtons.button({ icon: "fa-arrow-left", ariaLabel: "Vorige pagina", title: "Vorige pagina" });
-        const next = AetherActionButtons.button({ icon: "fa-arrow-right", ariaLabel: "Volgende pagina", title: "Volgende pagina" });
+        const previous = AetherActionButtons.button({ icon: "fa-arrow-left", ariaLabel: aetherT("Vorige pagina"), title: aetherT("Vorige pagina") });
+        const next = AetherActionButtons.button({ icon: "fa-arrow-right", ariaLabel: aetherT("Volgende pagina"), title: aetherT("Volgende pagina") });
         function draw() {
             body.replaceChildren();
             for (const row of rows.slice(page * pageSize, (page + 1) * pageSize)) {
@@ -77,13 +78,13 @@ const AetherDataTable = (() => {
                 }
                 body.append(tr);
             }
-            status.textContent = `Pagina ${page + 1} van ${count}`;
+            status.textContent = aetherT("Pagina {0} van {1}",[page + 1,count]);
             previous.disabled = page === 0; next.disabled = page === count - 1;
         }
         previous.addEventListener("click", () => { if (page > 0) { --page; draw(); } });
         next.addEventListener("click", () => { if (page < count - 1) { ++page; draw(); } });
         if (count > 1) {
-            const pager = node("nav", "data-table-pagination mt-3"); pager.setAttribute("aria-label", `${label}: pagina's`);
+            const pager = node("nav", "data-table-pagination mt-3"); pager.setAttribute("aria-label", aetherT("{0}: pagina's",[label]));
             pager.append(AetherActionButtons.group([previous]), status, AetherActionButtons.group([next])); section.append(pager);
         }
         draw(); host.append(section); return section;

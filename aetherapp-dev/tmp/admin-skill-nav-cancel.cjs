@@ -1,0 +1,18 @@
+const fs=require('fs');let p='admin.html',s=fs.readFileSync(p,'utf8');const a=s.indexOf('                            <div class="row admin-toolbar mb-4" id="adminSkillsToolbar">'),b=s.indexOf('                            <div class="d-flex justify-content-between',a);
+const toolbar=s.slice(a,b).trim().replace('row admin-toolbar mb-4','row admin-toolbar navRow g-3');
+s=s.slice(0,a)+s.slice(b);s=s.replace('    <main class="container aether-page admin-page">',`    <nav class="aether-page-nav" id="pageNav" aria-label="Vaardigheden beheren"><div class="aether-page-nav-body">${toolbar}</div></nav>
+    <main class="container aether-page admin-page">`);
+s=s.replace('id="adminSkillModeButton">Edit</button></div>','id="adminSkillModeButton">Edit</button><button type="button" class="action-button" id="adminSkillCancelButton" hidden>Annuleren</button></div>');fs.writeFileSync(p,s);
+p='js/adminFunctions.js';s=fs.readFileSync(p,'utf8');s='let adminSkillBeforeDraft = null;\n'+s;
+s=s.replace('    const form = document.getElementById("adminSkillForm");',"    document.getElementById('adminSkillCancelButton')?.addEventListener('click',cancelCreatingAdminSkill);\n    const form = document.getElementById(\"adminSkillForm\");");
+s=s.replace('    const skillsToolbar = document.getElementById("adminSkillsToolbar");',"    document.getElementById('pageNav')?.classList.toggle('d-none',tabName!=='skills');\n    const skillsToolbar = document.getElementById(\"adminSkillsToolbar\");");
+s=s.replace('function startCreatingAdminSkill() {',"function cancelCreatingAdminSkill(){\n    if(adminSkillSaving||!adminSkillEditing||Number(currentAdminSkill?.idSkill||0)>0)return;\n    adminSkillEditing=false;isCreatingAdminSkill=false;populateAdminSkillForm(adminSkillBeforeDraft);adminSkillBeforeDraft=null;hideAdminFeedback();\n}\nfunction startCreatingAdminSkill() {\n    adminSkillBeforeDraft=currentAdminSkill?JSON.parse(JSON.stringify(currentAdminSkill)):null;");
+s=s.replace("    renderAdminSkillView(skill);", "    const cancel=document.getElementById('adminSkillCancelButton');cancel.hidden=!editing||Number(skill?.idSkill||0)>0;cancel.disabled=adminSkillSaving;\n    renderAdminSkillView(skill);");
+const start=s.indexOf("            const portrait=document.createElement('img');portrait.className='admin-holder-portrait';"),end=s.indexOf('\n            list.appendChild(item);',start);
+s=s.slice(0,start)+`            const card=document.createElement('a');card.className='company-sidebar-card character-sidebar-card';card.href='index.html?character='+Number(character.idCharacter)+'&tab=character_sheet';
+            const frame=document.createElement('span');frame.className='company-sidebar-image-frame character-sidebar-portrait-frame';
+            const placeholder=()=>{frame.replaceChildren();frame.classList.add('character-sidebar-portrait-placeholder');frame.textContent='Geen pasfoto';};
+            if(character.portraitUrl){const portrait=document.createElement('img');portrait.className='company-sidebar-image character-sidebar-portrait-image';portrait.alt='';portrait.loading='lazy';portrait.src=character.portraitUrl;portrait.addEventListener('error',placeholder,{once:true});frame.append(portrait);}else placeholder();
+            const name=document.createElement('span');name.className='company-sidebar-name character-sidebar-name';name.textContent=baseName;card.append(frame,name);item.append(card);
+            if(specs.length){const names=document.createElement('div');names.className='small admin-holder-specialisations';names.textContent=specs.join(', ');item.append(names);}
+`+s.slice(end);fs.writeFileSync(p,s);

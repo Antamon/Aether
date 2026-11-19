@@ -78,7 +78,7 @@
 }
 .aether-page-nav-body .row { --bs-gutter-x: 1rem; }
 .aether-page-nav-body .navRow > * { min-width: 0; }
-.aether-page-nav-body .admin-toolbar-label { color: var(--primary-taupe); }
+.aether-page-nav-body :is(h1, h2, h3, .admin-toolbar-label) { color: var(--primary-taupe); }
 .aether-page-nav-body :is(.form-select, .form-control, input[type="text"], input[type="number"]) {
   min-width: 0;
   max-width: 100%;

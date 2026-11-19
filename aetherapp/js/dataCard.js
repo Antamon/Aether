@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Shared read/edit controls for cards. A page supplies its own fields and save operation.
 const aetherDataCard = (() => {
     let activeKey = null;
@@ -16,13 +17,13 @@ const aetherDataCard = (() => {
         return AetherActionButtons.button({ label, icon, onClick });
     }
 
-    function controls(header, { key, canEdit = false, onEdit, onSave, onCancel, saveLabel = "Bewaren" }) {
+    function controls(header, { key, canEdit = false, onEdit, onSave, onCancel, saveLabel = aetherT("Bewaren") }) {
         const actions = document.createElement("div");
         actions.className = "data-card-actions button-group";
         if (!canEdit) return actions;
         if (isEditing(key)) {
-            const cancel = button("Cancel", "fa-xmark", onCancel);
-            const save = button(saveLabel === "Bewaren" ? "Save" : saveLabel, "fa-check", async () => {
+            const cancel = button(aetherT("Cancel"), "fa-xmark", onCancel);
+            const save = button(saveLabel === "Bewaren" ? aetherT("Save") : saveLabel, "fa-check", async () => {
                 save.disabled = true;
                 cancel.disabled = true;
                 try { await onSave(save); } finally {
@@ -34,9 +35,9 @@ const aetherDataCard = (() => {
             });
             actions.append(save, cancel);
         } else {
-            const edit = button("Edit", "fa-pen-nib", onEdit);
-            edit.setAttribute("aria-label", "Bewerken");
-            edit.title = "Bewerken";
+            const edit = button(aetherT("Edit"), "fa-pen-nib", onEdit);
+            edit.setAttribute("aria-label", aetherT("Bewerken"));
+            edit.title = aetherT("Bewerken");
             edit.disabled = activeKey !== null;
             actions.appendChild(edit);
         }

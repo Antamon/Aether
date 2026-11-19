@@ -1,8 +1,9 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Background tab logic (personal background & knowledge)
 
 const AETHER_BACKGROUND_SECTIONS = {
     personal_background: {
-        title: "Personal background",
+        title: aetherT("Personal background"),
         maxLength: 10000
     },
     knowledge: {
@@ -13,24 +14,24 @@ const AETHER_BACKGROUND_SECTIONS = {
 
 const AETHER_PERSONALITY_SECTIONS = {
     nature: {
-        title: "Nature",
+        title: aetherT("Nature"),
         maxLength: 1000
     },
     demeanour: {
-        title: "Demeanour",
+        title: aetherT("Demeanour"),
         maxLength: 1000
     }
 };
 
 const AETHER_TIE_TYPES = [
-    { value: "superior", label: "Superior" },
-    { value: "dependent", label: "Dependent" },
-    { value: "landlord", label: "Landlord" },
-    { value: "household_staff", label: "Household staff" },
-    { value: "spouse", label: "Spouse" },
-    { value: "ally", label: "Ally" },
-    { value: "adversary", label: "Adversary" },
-    { value: "person_of_interest", label: "Person of interest" }
+    { value: "superior", label: aetherT("Superior") },
+    { value: "dependent", label: aetherT("Dependent") },
+    { value: "landlord", label: aetherT("Landlord") },
+    { value: "household_staff", label: aetherT("Household staff") },
+    { value: "spouse", label: aetherT("Spouse") },
+    { value: "ally", label: aetherT("Ally") },
+    { value: "adversary", label: aetherT("Adversary") },
+    { value: "person_of_interest", label: aetherT("Person of interest") }
 ];
 
 const AETHER_TIE_TYPE_HELP_TEXT = {
@@ -81,8 +82,8 @@ function ensureTiePortraitModal() {
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Portret</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">${aetherT("Portret")}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${aetherT("Close")}"></button>
                     </div>
                     <div class="modal-body text-center">
                         <img id="tiePortraitModalImage" class="tie-portrait-modal-image" src="" alt="">
@@ -109,8 +110,8 @@ function openTiePortraitModal(src, label) {
     if (!image || !title) return;
 
     image.src = src;
-    image.alt = label || "Portret";
-    title.textContent = label || "Portret";
+    image.alt = label || aetherT("Portret");
+    title.textContent = label || aetherT("Portret");
     aetherTiePortraitModalInstance.show();
 }
 
@@ -223,7 +224,7 @@ async function showBackgroundTab(character) {
     container.style.padding = "0";
     container.style.height = "auto";
 
-    container.innerHTML = `<div class="text-muted">Loading background...</div>`;
+    container.innerHTML = `<div class="text-muted">${aetherT("Loading background...")}</div>`;
     await loadAndRenderSections(container, character, AETHER_BACKGROUND_SECTIONS, "background");
 }
 
@@ -273,7 +274,7 @@ async function showPersonalityTab(character) {
     container.style.padding = "0";
     container.style.height = "auto";
 
-    container.innerHTML = `<div class="text-muted">Loading personality...</div>`;
+    container.innerHTML = `<div class="text-muted">${aetherT("Loading personality...")}</div>`;
     await loadAndRenderSections(container, character, AETHER_PERSONALITY_SECTIONS, "personality");
 }
 
@@ -289,7 +290,7 @@ async function loadAndRenderSections(container, character, metaMap, tabName) {
         }
     } catch (err) {
         console.error(`Fout bij laden ${tabName}:`, err);
-        container.innerHTML = `<div class="text-danger">Kon ${tabName} niet laden.</div>`;
+        container.innerHTML = `<div class="text-danger">Kon ${tabName} ${aetherT("niet laden.")}</div>`;
         renderSections(container, character, {}, metaMap, tabName);
     }
 }
@@ -364,18 +365,18 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
         actionGroup = AetherActionButtons.group();
         editBtn = AetherActionButtons.button({
             icon: "fa-pen-nib",
-            label: "Edit",
-            ariaLabel: `${title} bewerken`
+            label: aetherT("Edit"),
+            ariaLabel: aetherT("{0} bewerken",[title])
         });
         btnSave = AetherActionButtons.button({
             icon: "fa-check",
-            label: "Save",
-            ariaLabel: `${title} bewaren`
+            label: aetherT("Save"),
+            ariaLabel: aetherT("{0} bewaren",[title])
         });
         btnCancel = AetherActionButtons.button({
             icon: "fa-xmark",
-            label: "Cancel",
-            ariaLabel: `${title} wijzigen annuleren`
+            label: aetherT("Cancel"),
+            ariaLabel: aetherT("{0} wijzigen annuleren",[title])
         });
         actionGroup.appendChild(editBtn);
         header.appendChild(actionGroup);
@@ -383,7 +384,7 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
 
     const viewDiv = document.createElement("div");
     viewDiv.className = "p-3";
-    renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
+    renderCharacterRichText(viewDiv, content, aetherT("Geen tekst beschikbaar."));
 
     // Editor
     const richEditor = createCharacterRichTextEditor(content, { minHeight: "180px" });
@@ -416,15 +417,15 @@ function renderSectionBlock(character, sectionKey, title, content, canEdit) {
             try {
                 const result = await saveCharacterSection(character.id, sectionKey, newContent);
                 if (typeof result?.content !== "string") {
-                    throw new Error("De server gaf geen gesaniteerde rich text terug.");
+                    throw new Error(aetherT("De server gaf geen gesaniteerde rich text terug."));
                 }
                 content = result.content;
                 richEditor.setHtml(content);
-                renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
+                renderCharacterRichText(viewDiv, content, aetherT("Geen tekst beschikbaar."));
                 setEditing(false);
             } catch (err) {
                 console.error("Fout bij opslaan sectie:", err);
-                alert("Opslaan mislukt.");
+                alert(aetherT("Opslaan mislukt."));
             }
         });
     }
@@ -462,24 +463,24 @@ async function renderTies(container, character) {
 
     const h4 = document.createElement("h4");
     h4.className = "mb-0";
-    h4.textContent = "Ties";
+    h4.textContent = aetherT("Ties");
     header.appendChild(h4);
 
     const actionGroup = AetherActionButtons.group();
     const addBtn = AetherActionButtons.button({
         icon: "fa-plus",
-        label: "Add tie",
-        ariaLabel: "Tie toevoegen"
+        label: aetherT("Add tie"),
+        ariaLabel: aetherT("Tie toevoegen")
     });
     const saveBtn = AetherActionButtons.button({
         icon: "fa-check",
-        label: "Save",
-        ariaLabel: "Tie bewaren"
+        label: aetherT("Save"),
+        ariaLabel: aetherT("Tie bewaren")
     });
     const cancelBtn = AetherActionButtons.button({
         icon: "fa-xmark",
-        label: "Cancel",
-        ariaLabel: "Tie wijzigen annuleren"
+        label: aetherT("Cancel"),
+        ariaLabel: aetherT("Tie wijzigen annuleren")
     });
     if (canEdit) {
         actionGroup.appendChild(addBtn);
@@ -510,7 +511,7 @@ async function renderTies(container, character) {
     descInput.type = "text";
     descInput.maxLength = 255;
     descInput.className = "form-control form-control-sm";
-    descInput.placeholder = "Description";
+    descInput.placeholder = aetherT("Description");
     descCol.appendChild(descInput);
 
     editorRow.appendChild(selCharCol);
@@ -556,7 +557,7 @@ async function renderTies(container, character) {
         selChar.innerHTML = "";
         const placeholder = document.createElement("option");
         placeholder.value = "";
-        placeholder.textContent = "Select character";
+        placeholder.textContent = aetherT("Select character");
         selChar.appendChild(placeholder);
 
         const selectedRelationType = selType.value;
@@ -612,7 +613,7 @@ async function renderTies(container, character) {
         if (tie && ![...selChar.options].some((option) => option.value === String(tie.idOtherCharacter))) {
             const fallbackCharacterOption = document.createElement("option");
             fallbackCharacterOption.value = String(tie.idOtherCharacter);
-            fallbackCharacterOption.textContent = tie.otherName || `Personage #${tie.idOtherCharacter}`;
+            fallbackCharacterOption.textContent = tie.otherName || aetherT("Personage #{0}",[tie.idOtherCharacter]);
             selChar.appendChild(fallbackCharacterOption);
         }
         selChar.value = tie ? tie.idOtherCharacter : "";
@@ -630,7 +631,7 @@ async function renderTies(container, character) {
         if (!ties || ties.length === 0) {
             const empty = document.createElement("div");
             empty.className = "text-muted";
-            empty.textContent = "No ties yet.";
+            empty.textContent = aetherT("No ties yet.");
             list.appendChild(empty);
             return;
         }
@@ -642,13 +643,13 @@ async function renderTies(container, character) {
                 const portraitButton = document.createElement("button");
                 portraitButton.type = "button";
                 portraitButton.className = "character-tie-portrait-button";
-                portraitButton.setAttribute("aria-label", `Toon portret van ${t.otherName || "deze tie"}`);
-                portraitButton.addEventListener("click", () => openTiePortraitModal(t.portraitUrl, t.otherName || "Portret"));
+                portraitButton.setAttribute("aria-label", aetherT("Toon portret van {0}",[t.otherName || "deze tie"]));
+                portraitButton.addEventListener("click", () => openTiePortraitModal(t.portraitUrl, t.otherName || aetherT("Portret")));
 
                 const portrait = document.createElement("img");
                 portrait.className = "character-tie-portrait";
                 portrait.src = t.portraitUrl;
-                portrait.alt = t.otherName || "Tie portrait";
+                portrait.alt = t.otherName || aetherT("Tie portrait");
                 portraitButton.appendChild(portrait);
                 row.appendChild(portraitButton);
             }
@@ -675,7 +676,7 @@ async function renderTies(container, character) {
                 deleteBtn.className = "btn btn-link text-danger p-0 me-2";
                 deleteBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
                 deleteBtn.addEventListener("click", async () => {
-                    const confirmed = window.confirm("Weet u zeker dat u deze tie wilt verwijderen?");
+                    const confirmed = window.confirm(aetherT("Weet u zeker dat u deze tie wilt verwijderen?"));
                     if (!confirmed) {
                         return;
                     }
@@ -692,7 +693,7 @@ async function renderTies(container, character) {
                         renderList();
                     } catch (err) {
                         console.error("Fout bij verwijderen tie:", err);
-                        alert("Verwijderen van tie mislukt.");
+                        alert(aetherT("Verwijderen van tie mislukt."));
                     }
                 });
                 actions.appendChild(deleteBtn);
@@ -700,7 +701,7 @@ async function renderTies(container, character) {
             }
 
             const name = document.createElement("strong");
-            name.textContent = t.otherName || "Onbekend";
+            name.textContent = t.otherName || aetherT("Onbekend");
             headerRow.appendChild(name);
 
             const typeSpan = document.createElement("span");
@@ -749,7 +750,7 @@ async function renderTies(container, character) {
                 hideEditor();
             } catch (err) {
                 console.error("Fout bij opslaan tie:", err);
-                alert("Opslaan van tie mislukt.");
+                alert(aetherT("Opslaan van tie mislukt."));
             }
         });
     }

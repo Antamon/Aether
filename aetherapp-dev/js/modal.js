@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // One decorative frame for static Bootstrap modals and dynamically created dialogs.
 (() => {
     let nextTitle = 0;
@@ -36,7 +37,7 @@
         const close = document.createElement("button");
         close.type = "button";
         close.className = "aether-modal-close";
-        close.setAttribute("aria-label", "Sluiten");
+        close.setAttribute("aria-label", aetherT("Sluiten"));
         const icon = document.createElement("i");
         icon.className = "fa-solid fa-xmark";
         icon.setAttribute("aria-hidden", "true");

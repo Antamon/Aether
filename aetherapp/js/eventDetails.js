@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const eventDetailsState = { events: [], selectedId: 0, request: 0, participationRequest: 0, modalRequest: 0, editing: false };
 const eventNode = (tag, className = "", text) => {
     const node = document.createElement(tag); node.className = className;
@@ -13,14 +14,14 @@ function showEventPageView(detail) {
 
 function eventDetailError(error) {
     const host = document.getElementById("eventFeedback");
-    let message = error.message || "Kon eventgegevens niet verwerken.";
+    let message = error.message || aetherT("Kon eventgegevens niet verwerken.");
     try { const response = JSON.parse(error.responseBody); message = response.validationErrors?.join(" ") || response.error || message; } catch (_) {}
     host.textContent = message; host.classList.remove("d-none");
     console.error(error);
 }
 
 function mayLeaveEventDetails() {
-    return !eventDetailsState.editing || window.confirm("Niet bewaarde eventgegevens verlaten?");
+    return !eventDetailsState.editing || window.confirm(aetherT("Niet bewaarde eventgegevens verlaten?"));
 }
 
 async function refreshEventSidebar() {
@@ -62,21 +63,21 @@ function renderEventDetails(data, edit = false) {
     const event = data.event;
     const card = eventNode("section", "aether-panel mb-4");
     const header = eventNode("div", "d-flex justify-content-between align-items-start gap-3 mb-3");
-    header.append(eventNode("h1", "h3", event.title || "Nieuw event")); card.append(header);
+    header.append(eventNode("h1", "h3", event.title || aetherT("Nieuw event"))); card.append(header);
     const layout = eventNode("div", "event-detail-layout");
     const media = eventNode("div");
     const frame = eventNode("div", "event-image-frame");
     function showImage() {
         frame.replaceChildren();
-        if (event.imageUrl) { const image = eventNode("img"); image.src = event.imageUrl; image.alt = event.title || "Eventafbeelding"; frame.append(image); }
-        else frame.append(eventNode("span", "text-muted", "Nog geen afbeelding"));
+        if (event.imageUrl) { const image = eventNode("img"); image.src = event.imageUrl; image.alt = event.title || aetherT("Eventafbeelding"); frame.append(image); }
+        else frame.append(eventNode("span", "text-muted", aetherT("Nog geen afbeelding")));
     }
     showImage(); media.append(frame); layout.append(media);
     const fields = eventNode("div", "event-detail-fields"); const inputs = {};
     for (const [key, title, type, limit] of [
-        ["title", "Titel", "text", 50], ["type", "Type", "select"], ["dateStart", "Begindatum", "date"],
-        ["dateEnd", "Einddatum", "date"], ["venue", "Locatie", "text", 50],
-        ["ep", "Ervaringspunten", "number"], ["description", "Beschrijving", "textarea", 255]
+        ["title", aetherT("Titel"), "text", 50], ["type", "Type", "select"], ["dateStart", aetherT("Begindatum"), "date"],
+        ["dateEnd", aetherT("Einddatum"), "date"], ["venue", aetherT("Locatie"), "text", 50],
+        ["ep", aetherT("Ervaringspunten"), "number"], ["description", aetherT("Beschrijving"), "textarea", 255]
     ]) {
         if (edit) {
             const label = eventNode("label", "form-label", title);
@@ -91,10 +92,10 @@ function renderEventDetails(data, edit = false) {
         }
     }
     layout.append(fields); card.append(layout); host.append(card);
-    if (data.canManage && !edit) header.append(AetherActionButtons.group([AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit", onClick: () => renderEventDetails(data, true) })]));
+    if (data.canManage && !edit) header.append(AetherActionButtons.group([AetherActionButtons.button({ icon: "fa-pen-nib", label: aetherT("Edit"), onClick: () => renderEventDetails(data, true) })]));
     if (data.canManage && edit) {
-        const save = AetherActionButtons.button({ icon: "fa-check", label: "Save" });
-        const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel", onClick: () => {
+        const save = AetherActionButtons.button({ icon: "fa-check", label: aetherT("Save") });
+        const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: aetherT("Cancel"), onClick: () => {
             if (event.id) renderEventDetails(data);
             else { eventDetailsState.editing = false; showEventPageView(false); }
         } });
@@ -102,7 +103,7 @@ function renderEventDetails(data, edit = false) {
         save.addEventListener("click", async () => {
             const request = eventDetailsState.request;
             const body = Object.fromEntries(Object.entries(inputs).map(([key, input]) => [key, key === "ep" ? Number(input.value) : input.value]));
-            if (!body.title.trim() || !body.dateStart || !body.dateEnd || !Number.isSafeInteger(body.ep) || body.ep < 0) { eventDetailError(new Error("Controleer de titel, datums en ervaringspunten.")); return; }
+            if (!body.title.trim() || !body.dateStart || !body.dateEnd || !Number.isSafeInteger(body.ep) || body.ep < 0) { eventDetailError(new Error(aetherT("Controleer de titel, datums en ervaringspunten."))); return; }
             save.disabled = true; cancel.disabled = true;
             try {
                 const result = await apiFetchJson(`api/events/${event.id ? "updateEvent" : "newEvent"}.php`, { method: "POST", body: { ...body, ...(event.id ? { id: event.id } : {}) } });
@@ -113,8 +114,8 @@ function renderEventDetails(data, edit = false) {
         });
         if (event.id) {
             const upload = eventNode("input", "d-none"); upload.type = "file"; upload.accept = "image/png,image/jpeg,image/webp,image/gif";
-            const uploadButton = AetherActionButtons.button({ icon: "fa-upload", label: "Opladen", onClick: () => upload.click() });
-            const deleteButton = AetherActionButtons.button({ icon: "fa-trash-can", label: "Verwijderen", disabled: !event.imageUrl });
+            const uploadButton = AetherActionButtons.button({ icon: "fa-upload", label: aetherT("Opladen"), onClick: () => upload.click() });
+            const deleteButton = AetherActionButtons.button({ icon: "fa-trash-can", label: aetherT("Verwijderen"), disabled: !event.imageUrl });
             const group = AetherActionButtons.group([uploadButton, deleteButton]); group.classList.add("mt-2"); media.append(group, upload);
             async function updateImage(action, file) {
                 uploadButton.disabled = true; deleteButton.disabled = true;
@@ -124,7 +125,7 @@ function renderEventDetails(data, edit = false) {
                     if (file) {
                         const body = new FormData(); body.append("action", action); body.append("idEvent", event.id); body.append("image", file);
                         const response = await fetch("api/events/eventDetails.php", { method: "POST", credentials: "same-origin", headers: { "X-CSRF-Token": window.AETHER_CSRF_TOKEN || "" }, body });
-                        if (!response.ok) { const error = new Error("Upload mislukt"); error.responseBody = await response.text(); throw error; }
+                        if (!response.ok) { const error = new Error(aetherT("Upload mislukt")); error.responseBody = await response.text(); throw error; }
                         result = await response.json();
                     } else result = await apiFetchJson("api/events/eventDetails.php", { method: "POST", body: { action, idEvent: event.id } });
                     event.imageUrl = result.imageUrl; showImage(); await refreshEventSidebar();
@@ -132,9 +133,9 @@ function renderEventDetails(data, edit = false) {
                 finally { uploadButton.disabled = false; deleteButton.disabled = !event.imageUrl; save.disabled = false; cancel.disabled = false; upload.value = ""; }
             }
             upload.addEventListener("change", () => { if (upload.files[0]) void updateImage("upload", upload.files[0]); });
-            deleteButton.addEventListener("click", () => { if (window.confirm("Eventafbeelding verwijderen?")) void updateImage("deleteImage"); });
-            media.append(eventNode("p", "small text-muted mt-2", "Afbeeldingen worden meteen bewaard."));
-        } else media.append(eventNode("p", "small text-muted mt-2", "Bewaar het event om een afbeelding op te laden."));
+            deleteButton.addEventListener("click", () => { if (window.confirm(aetherT("Eventafbeelding verwijderen?"))) void updateImage("deleteImage"); });
+            media.append(eventNode("p", "small text-muted mt-2", aetherT("Afbeeldingen worden meteen bewaard.")));
+        } else media.append(eventNode("p", "small text-muted mt-2", aetherT("Bewaar het event om een afbeelding op te laden.")));
     }
     if (event.id) renderEventCharacters(card, data);
 }
@@ -150,24 +151,24 @@ async function showEventCharacterModal(idEvent, idCharacter, kind, button) {
         modal.setAttribute("aria-labelledby", "eventCharacterModalTitle");
         const dialog = eventNode("div", "modal-dialog modal-lg modal-dialog-scrollable");
         const content = eventNode("div", "modal-content"); const header = eventNode("div", "modal-header");
-        const title = eventNode("h2", "modal-title h5", `${kind === "gossip" ? "Gossip" : "Snapshot"} — ${[data.identity.firstName, data.identity.lastName].filter(Boolean).join(" ")}`);
+        const title = eventNode("h2", "modal-title h5", `${kind === "gossip" ? "Gossip" : aetherT("Snapshot")} — ${[data.identity.firstName, data.identity.lastName].filter(Boolean).join(" ")}`);
         title.id = "eventCharacterModalTitle"; header.append(title);
         const body = eventNode("div", "modal-body"); body.append(eventNode("p", "fw-semibold", data.identity.eventTitle));
         if (data.message) body.append(eventNode("p", "event-character-modal-message", data.message));
         const fields = !data.details ? [] : kind === "gossip" ? [["gossip1", "Gossip 1"], ["gossip2", "Gossip 2"], ["gossip3", "Gossip 3"]] : [
-            ["transactionDate", "Datum"], ["amount", "Inkomsten", "money"], ["securitiesBalanceSnapshot", "Saldo effectenportefeuille", "money"],
-            ["securitiesManagerType", "Beheer"], ["securitiesRiskProfile", "Risicoprofiel"], ["securitiesManagerSkillLevel", "Vaardigheidsniveau beheerder"],
-            ["securitiesBasePercentage", "Basisrendement", "percent"], ["securitiesVariationLimitPercentage", "Maximale afwijking", "percent"],
-            ["securitiesVariationPercentage", "Afwijking", "percent"], ["securitiesReturnPercentage", "Rendement", "percent"],
-            ["securitiesReturnAmount", "Rendementbedrag", "money"], ["securitiesStatus", "Status effectenrendement"]
+            ["transactionDate", aetherT("Datum")], ["amount", aetherT("Inkomsten"), "money"], ["securitiesBalanceSnapshot", aetherT("Saldo effectenportefeuille"), "money"],
+            ["securitiesManagerType", aetherT("Beheer")], ["securitiesRiskProfile", aetherT("Risicoprofiel")], ["securitiesManagerSkillLevel", aetherT("Vaardigheidsniveau beheerder")],
+            ["securitiesBasePercentage", aetherT("Basisrendement"), "percent"], ["securitiesVariationLimitPercentage", aetherT("Maximale afwijking"), "percent"],
+            ["securitiesVariationPercentage", aetherT("Afwijking"), "percent"], ["securitiesReturnPercentage", aetherT("Rendement"), "percent"],
+            ["securitiesReturnAmount", aetherT("Rendementbedrag"), "money"], ["securitiesStatus", aetherT("Status effectenrendement")]
         ];
         for (const [key, label, format] of fields) {
             const value = data.details[key];
             let text = value == null ? "—" : String(value);
-            if (value != null && format) text = new Intl.NumberFormat("nl-BE", { maximumFractionDigits: 2, minimumFractionDigits: format === "money" ? 2 : 0 }).format(Number(value)) + (format === "money" ? " Fr" : "%");
+            if (value != null && format) text = new Intl.NumberFormat((globalThis.AetherI18n?.locale || "nl-BE"), { maximumFractionDigits: 2, minimumFractionDigits: format === "money" ? 2 : 0 }).format(Number(value)) + (format === "money" ? " Fr" : "%");
             const section = eventNode("div", "mb-3"); section.append(eventNode("strong", "d-block", label), eventNode("div", "event-character-modal-value", text)); body.append(section);
         }
-        const close = AetherActionButtons.button({ icon: "fa-xmark", label: "Sluiten" }); close.dataset.bsDismiss = "modal";
+        const close = AetherActionButtons.button({ icon: "fa-xmark", label: aetherT("Sluiten") }); close.dataset.bsDismiss = "modal";
         const footer = eventNode("div", "modal-footer"); footer.append(AetherActionButtons.group([close]));
         content.append(header, body, footer); dialog.append(content); modal.append(dialog); document.body.append(modal);
         const instance = new bootstrap.Modal(modal);
@@ -177,7 +178,7 @@ async function showEventCharacterModal(idEvent, idCharacter, kind, button) {
 }
 
 function renderEventCharacters(host, data) {
-    for (const [type, title] of [["player", "Spelerspersonages"], ["extra", "Figurantenrollen"]]) {
+    for (const [type, title] of [["player", aetherT("Spelerspersonages")], ["extra", aetherT("Figurantenrollen")]]) {
         if (type === "extra" && !data.canManage && !data.characters.some(character => character.type === "extra" && character.linked && character.canViewStatus)) continue;
         const entries = data.characters.filter(character => character.type === type);
         const linked = entries.filter(character => character.linked);
@@ -192,7 +193,7 @@ function renderEventCharacters(host, data) {
         const collapse = eventNode("div", "accordion-collapse collapse"); collapse.id = collapseId;
         const body = eventNode("div", "accordion-body");
         const grid = eventNode("div", "event-character-grid");
-        if (!linked.length) grid.append(eventNode("p", "text-muted", "Nog geen personages gekoppeld."));
+        if (!linked.length) grid.append(eventNode("p", "text-muted", aetherT("Nog geen personages gekoppeld.")));
         function buildCard(character) {
             const row = eventNode("div", "event-character-card");
             const canOpen = data.canManage || character.canOpen === true;
@@ -202,15 +203,15 @@ function renderEventCharacters(host, data) {
             const frame = eventNode("span", "event-character-portrait");
             if (character.portraitUrl) {
                 const image = eventNode("img"); image.src = character.portraitUrl; image.alt = ""; image.loading = "lazy";
-                image.addEventListener("error", () => { frame.replaceChildren(eventNode("span", "", "Geen portret")); }, { once: true });
+                image.addEventListener("error", () => { frame.replaceChildren(eventNode("span", "", aetherT("Geen portret"))); }, { once: true });
                 frame.append(image);
-            } else frame.append(eventNode("span", "", "Geen portret"));
+            } else frame.append(eventNode("span", "", aetherT("Geen portret")));
             portrait.append(frame, eventNode("span", "event-character-name", name)); row.append(portrait);
             if (data.canManage || character.canViewStatus) {
                 const icons = eventNode("div", "event-character-icons");
                 for (const [icon, complete, label] of [
-                    ["fa-camera", character.hasSnapshot, character.hasSnapshot ? "Snapshot voor dit event aanwezig" : "Snapshot voor dit event ontbreekt"],
-                    ["fa-comment", character.gossipComplete, character.gossipComplete ? "Drie gossipniveaus ingevuld" : "Nog geen drie gossipniveaus ingevuld"]
+                    ["fa-camera", character.hasSnapshot, character.hasSnapshot ? aetherT("Snapshot voor dit event aanwezig") : aetherT("Snapshot voor dit event ontbreekt")],
+                    ["fa-comment", character.gossipComplete, character.gossipComplete ? aetherT("Drie gossipniveaus ingevuld") : aetherT("Nog geen drie gossipniveaus ingevuld")]
                 ]) {
                     const status = eventNode("button", `event-character-status${complete ? " is-complete" : ""}`);
                     status.type = "button"; status.setAttribute("aria-label", label); status.title = label;
@@ -223,7 +224,7 @@ function renderEventCharacters(host, data) {
                 }
                 if (data.canManage) {
                     const remove = eventNode("button", "event-character-remove"); remove.type = "button";
-                    remove.setAttribute("aria-label", `${name} van dit event verwijderen`); remove.title = "Van dit event verwijderen";
+                    remove.setAttribute("aria-label", aetherT("{0} van dit event verwijderen",[name])); remove.title = aetherT("Van dit event verwijderen");
                     const trash = eventNode("i", "fa-solid fa-trash-can"); trash.setAttribute("aria-hidden", "true"); remove.append(trash);
                     remove.addEventListener("click", () => { void setLink(character.id, false); }); icons.append(remove);
                 }
@@ -236,13 +237,13 @@ function renderEventCharacters(host, data) {
         let select, add;
         function updateChoices() {
             if (!select) return;
-            const blank = eventNode("option", "", "Kies een personage"); blank.value = ""; select.replaceChildren(blank); select.value = "";
+            const blank = eventNode("option", "", aetherT("Kies een personage")); blank.value = ""; select.replaceChildren(blank); select.value = "";
             for (const character of entries.filter(character => !character.linked && (data.canManage || character.canLink))) { const option = eventNode("option", "", [character.firstName, character.lastName].filter(Boolean).join(" ")); option.value = character.id; select.append(option); }
             add.disabled = !entries.some(character => !character.linked && (data.canManage || character.canLink));
         }
         if (data.canManage || entries.some(character => character.canLink)) {
-            select = eventNode("select", "form-select"); select.setAttribute("aria-label", `${title} koppelen`);
-            add = AetherActionButtons.button({ icon: "fa-plus", label: "Koppelen", onClick: () => { if (select.value) void setLink(Number(select.value), true); } });
+            select = eventNode("select", "form-select"); select.setAttribute("aria-label", aetherT("{0} koppelen",[title]));
+            add = AetherActionButtons.button({ icon: "fa-plus", label: aetherT("Koppelen"), onClick: () => { if (select.value) void setLink(Number(select.value), true); } });
             updateChoices();
             const group = eventNode("div", "input-group mt-3"); group.append(select, AetherActionButtons.group([add])); body.append(group);
         }
@@ -261,7 +262,7 @@ function renderEventCharacters(host, data) {
                 }
                 const current = entries.filter(character => character.linked);
                 grid.replaceChildren(...current.map(character => cards.get(Number(character.id))));
-                if (!current.length) grid.append(eventNode("p", "text-muted", "Nog geen personages gekoppeld."));
+                if (!current.length) grid.append(eventNode("p", "text-muted", aetherT("Nog geen personages gekoppeld.")));
                 trigger.textContent = `${title} (${current.length})`;
                 window.scrollTo?.({ left: x, top: y, behavior: "instant" });
             } catch (error) { if (request === eventDetailsState.request) eventDetailError(error); }

@@ -1,135 +1,35 @@
 {
-  "release": "2026.11.17.5",
+  "release": "2026.11.18.1",
   "records": [
     {
       "app": "aetherapp-dev",
-      "file": "api/research/researchRules.php",
-      "sha256": "e7ceb8b4f9c64e89b16ad25fbcbc43ee6a1402c415a96ede2c6d1976ea71aeec"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "api/research/researchRepository.php",
-      "sha256": "803d229679d80972d22db475445c0be244490e47baefd081debabfa8e57f98ec"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "api/research/researchAdminService.php",
-      "sha256": "a62fa08b18aaf8988ca0960d1f26c0310b5a8c9b22afbe49d837db50c6a28994"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "api/research/researchReadService.php",
-      "sha256": "19b84aae143cb8ff4c327d25e5e9a988e81c33a19b84015e8a9a605e2f1dd8bf"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "api/research/upload.php",
-      "sha256": "37e70ac7be927a86086194b6e01eef5a52541b6d1791e642fa54ca55dcab5e59"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "api/research/researchService.php",
-      "sha256": "c89c3d8ad2c9e286991c3f9976b9a66179feeec128e70100cf76ea61eef0bf2f"
-    },
-    {
-      "app": "aetherapp-dev",
       "file": "js/researchAdmin.js",
-      "sha256": "0097a824d06e7fc4e42399198acd0c518a5a1ca005ed9aba78fd2d82fae51c69"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "js/researchQrPdf.js",
-      "sha256": "5acc6bf9f91c57203e660a3feaaa37590dae442b2ccb90a6e1bae3df9633e81a"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "css/research.css",
-      "sha256": "2431c9127b4ee78466c604b22b8c2a90583ad45fdc9d6f2727820529431a3ac5"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "index.html",
-      "sha256": "dc9c85ea4336069d648f30842d7d648fc61fbe1a40e0f4fd0122cae6d22986dd"
+      "sha256": "ef344fc29f28c7e42d0592925c4de8a92f2e633db8fc5af39b06aad839b86e5e"
     },
     {
       "app": "aetherapp-dev",
       "file": "research.html",
-      "sha256": "2d11477fe810080ea27b8d05408affc4bb53e5b98df81f961196353035b86f3d"
-    },
-    {
-      "app": "aetherapp-dev",
-      "file": "docs/research.md",
-      "sha256": "551b74ff63e6e0b31b0864d0d938822bd1457a9bd46fff558547e9947cc35ca4"
+      "sha256": "0febdfb3355421d24b66a3275ed42db560cf760ee2fb1b980fecbeb28e62603b"
     },
     {
       "app": "aetherapp-dev",
       "file": "VERSION",
-      "sha256": "40e3f88ff6589ddaec21fabaeb01bffb620e2c9fac9fe0ac9e0801f2642c0710"
-    },
-    {
-      "app": "aetherapp",
-      "file": "api/research/researchRules.php",
-      "sha256": "e7ceb8b4f9c64e89b16ad25fbcbc43ee6a1402c415a96ede2c6d1976ea71aeec"
-    },
-    {
-      "app": "aetherapp",
-      "file": "api/research/researchRepository.php",
-      "sha256": "803d229679d80972d22db475445c0be244490e47baefd081debabfa8e57f98ec"
-    },
-    {
-      "app": "aetherapp",
-      "file": "api/research/researchAdminService.php",
-      "sha256": "a62fa08b18aaf8988ca0960d1f26c0310b5a8c9b22afbe49d837db50c6a28994"
-    },
-    {
-      "app": "aetherapp",
-      "file": "api/research/researchReadService.php",
-      "sha256": "19b84aae143cb8ff4c327d25e5e9a988e81c33a19b84015e8a9a605e2f1dd8bf"
-    },
-    {
-      "app": "aetherapp",
-      "file": "api/research/upload.php",
-      "sha256": "37e70ac7be927a86086194b6e01eef5a52541b6d1791e642fa54ca55dcab5e59"
-    },
-    {
-      "app": "aetherapp",
-      "file": "api/research/researchService.php",
-      "sha256": "c89c3d8ad2c9e286991c3f9976b9a66179feeec128e70100cf76ea61eef0bf2f"
+      "sha256": "f67db653003ef422c24c6bc88cd264f67a3cd07c932e8e754e99373d7845e123"
     },
     {
       "app": "aetherapp",
       "file": "js/researchAdmin.js",
-      "sha256": "0097a824d06e7fc4e42399198acd0c518a5a1ca005ed9aba78fd2d82fae51c69"
-    },
-    {
-      "app": "aetherapp",
-      "file": "js/researchQrPdf.js",
-      "sha256": "5acc6bf9f91c57203e660a3feaaa37590dae442b2ccb90a6e1bae3df9633e81a"
-    },
-    {
-      "app": "aetherapp",
-      "file": "css/research.css",
-      "sha256": "2431c9127b4ee78466c604b22b8c2a90583ad45fdc9d6f2727820529431a3ac5"
-    },
-    {
-      "app": "aetherapp",
-      "file": "index.html",
-      "sha256": "dc9c85ea4336069d648f30842d7d648fc61fbe1a40e0f4fd0122cae6d22986dd"
+      "sha256": "ef344fc29f28c7e42d0592925c4de8a92f2e633db8fc5af39b06aad839b86e5e"
     },
     {
       "app": "aetherapp",
       "file": "research.html",
-      "sha256": "2d11477fe810080ea27b8d05408affc4bb53e5b98df81f961196353035b86f3d"
-    },
-    {
-      "app": "aetherapp",
-      "file": "docs/research.md",
-      "sha256": "551b74ff63e6e0b31b0864d0d938822bd1457a9bd46fff558547e9947cc35ca4"
+      "sha256": "0febdfb3355421d24b66a3275ed42db560cf760ee2fb1b980fecbeb28e62603b"
     },
     {
       "app": "aetherapp",
       "file": "VERSION",
-      "sha256": "40e3f88ff6589ddaec21fabaeb01bffb620e2c9fac9fe0ac9e0801f2642c0710"
+      "sha256": "f67db653003ef422c24c6bc88cd264f67a3cd07c932e8e754e99373d7845e123"
     }
   ]
 }

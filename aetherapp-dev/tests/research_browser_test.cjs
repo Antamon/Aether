@@ -58,7 +58,7 @@ const challengeName='Browser challenge '+Date.now();
         await page.getByRole('button',{name:'Scan QR-code',exact:true}).waitFor();await page.getByRole('button',{name:'Scan QR-code',exact:true}).click();dialog=page.locator('dialog[open]');
         await dialog.getByLabel('Of plak een onderzoekscode').fill('aether-research:'+discovery.qrToken);await dialog.getByRole('button',{name:'Code openen',exact:true}).click();await dialog.waitFor({state:'detached'});
         await page.getByText('Eerste zichtbare feedback',{exact:true}).waitFor();await page.getByText('Druk op de rode knop.',{exact:true}).waitFor();
-        const confirm=page.getByRole('button',{name:'Opdracht uitgevoerd',exact:true});await confirm.waitFor();await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Opdracht uitgevoerd')&&!b.disabled));
+        const confirm=page.getByRole('button',{name:'Afgerond',exact:true});await confirm.waitFor();await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Opdracht uitgevoerd')&&!b.disabled));
         assert.equal(await page.getByText('Verborgen geheime informatie',{exact:true}).count(),0,'Hidden future step not in DOM');
         response=await context.request.get(base+`/api/research/media.php?id=${mediaId}&idEvent=1&idCharacter=1`);assert.equal(response.status(),404,'Hidden file inaccessible');
         response=await context.request.get(base+'/api/research/http.php?op=catalog');assert.equal(response.status(),403,'Participant cannot manage');

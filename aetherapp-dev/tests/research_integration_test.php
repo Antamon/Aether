@@ -40,6 +40,8 @@ try {
     }
     $pdo->exec('INSERT INTO tblCharacterSpecialisation VALUES(5,6,72),(5,6,73)');
     $migration=file_get_contents(dirname(__DIR__).'/sql/migrations/0024_research.sql');$pdo->exec($migration);$pdo->exec($migration);
+    $progressionMigration=file_get_contents(dirname(__DIR__).'/sql/migrations/0025_research_progression.sql');$pdo->exec($progressionMigration);$pdo->exec($progressionMigration);
+    $conclusionMigration=file_get_contents(dirname(__DIR__).'/sql/migrations/0026_research_conclusions.sql');$pdo->exec($conclusionMigration);$pdo->exec($conclusionMigration);
     $idem=file_get_contents(dirname(__DIR__).'/sql/migrations/apply/0004_api_idempotency.sql');$pdo->exec(substr($idem,0,strpos($idem,'START TRANSACTION;')));
     $ad=['id'=>99,'role'=>'director'];$user=fn(int $id)=>['id'=>$id,'role'=>'participant'];
     $save=fn(string $op,array $data)=>txResearch($pdo,fn()=>researchAdminSave($pdo,$ad,$op,$data));
@@ -140,7 +142,27 @@ try {
     $idemInput=['idCharacter'=>1,'idEvent'=>1,'code'=>$timed['qrToken']];$key='research-test-request-123';$calls=0;
     for($i=0;$i<2;$i++)aetherRunIdempotentMutation($pdo,$user(1),'research.scan',$key,$idemInput,function()use($pdo,$user,$idemInput,&$calls){researchLock($pdo);$calls++;return researchScan($pdo,$user(1),$idemInput);},fn()=>researchAccess($pdo,$user(1),1,1));checkResearch($calls===1,'Idempotency replay skips mutation');
     $progress=txResearch($pdo,fn()=>researchRead($pdo,$ad,'progress',['idEvent'=>1,'idDiscovery'=>$task['id']]));checkResearch($progress['progress'][0]['steps'][1]['shownAt']!==null && $progress['progress'][0]['steps'][1]['confirmedAt']!==null,'Separate shown and confirmed tracking');
-    echo "PASS: MariaDB migration twice; levels 0–4; bonus cap; all eligible personal/specialisation/general feedback; rich text; role/character/event access; visibility acknowledgements; sequential mixed confirmation; AND prerequisites; cycles; shared concurrent and personal timers; trigger actions; absolute times and DST; repeated scans; idempotency; protected media; progress.\n";
+    $machine=$make('Universal machine');
+    $save('discovery_save',['id'=>(int)$machine['id'],'revision'=>(int)$machine['revision'],'title'=>$machine['title'],'description'=>'','idSkill'=>6,'bonusIds'=>[72,73],'active'=>false,'progressionMode'=>'universal']);
+    $button=$step($machine,0,'Press machine button',true);
+    $result=$step($machine,0,'Machine result',false,[['type'=>'duration','seconds'=>300,'scope'=>'shared','discoveryId'=>(int)$machine['id'],'stepId'=>$button,'action'=>'confirmed','showCountdown'=>true]]);
+    $activate($machine);$scan($machine,1);$advance($machine,1,$button);$advance($machine,1,$button,'confirm');
+    $scan($machine,2);$late=$state($machine,2);checkResearch($late['status']==='waiting_time'&&!$late['current']&&!$late['history'],'Late scanner skips the shared completed instruction and sees countdown');
+    checkResearch($late['countdownSeconds']>0,'Late scanner sees running shared countdown');
+    $advance($machine,1,$button,'confirm');checkResearch((int)researchOne($pdo,'SELECT COUNT(*) AS n FROM tblResearchSharedProgress WHERE idDiscovery=?',[$machine['id']])['n']===1,'Universal completion idempotent');
+    $scan($machine,2,2);checkResearch($state($machine,2,2)['current']['id']===$button,'Universal progress isolated per event');
+    researchQuery($pdo,"UPDATE tblResearchTimer SET endsAt='2000-01-01' WHERE idStep=?",[$result]);
+    checkResearch($state($machine,2)['current']['id']===$result,'Universal next feedback released after timer');
+    $advance($machine,2,$result);$scan($machine,3);checkResearch($state($machine,3)['status']==='completed','Late scanner sees final shared completion');
+    $delayed=$make('Delayed completion');$locked=$step($delayed,0,'Read immediately, confirm later',true,[['type'=>'absolute','times'=>['1'=>'2099-06-09T12:00','2'=>'2000-06-09T12:00'],'showCountdown'=>true,'target'=>'completion']]);$activate($delayed);$scan($delayed,1);
+    $lockedState=$state($delayed,1);checkResearch($lockedState['current']['id']===$locked&&!$lockedState['current']['canConfirm'],'Completion gate shows feedback but disables confirmation');
+    $advance($delayed,1,$locked);failResearch(fn()=>$advance($delayed,1,$locked,'confirm'),409);
+    $scan($delayed,1,2);$advance($delayed,1,$locked,'shown',2);$advance($delayed,1,$locked,'confirm',2);checkResearch($state($delayed,1,2)['status']==='completed','Elapsed absolute confirmation gate releases button');
+    $ownTimer=$make('Time from reading');$ownStep=$step($ownTimer,0,'Work for a while',true);$ownRow=researchOne($pdo,'SELECT * FROM tblResearchStep WHERE id=?',[$ownStep]);
+    $save('step_save',['id'=>$ownStep,'revision'=>(int)$ownRow['revision'],'idRoute'=>(int)$ownRow['idRoute'],'content'=>'Work for a while','confirmationRequired'=>true,'conditions'=>[['type'=>'duration','seconds'=>30,'scope'=>'character','discoveryId'=>(int)$ownTimer['id'],'stepId'=>$ownStep,'action'=>'shown','showCountdown'=>true,'target'=>'completion']]]);
+    $activate($ownTimer);$scan($ownTimer,1);$advance($ownTimer,1,$ownStep);checkResearch(!$state($ownTimer,1)['current']['canConfirm'],'Personal completion duration starts on reading');
+    researchQuery($pdo,"UPDATE tblResearchTimer SET endsAt='2000-01-01' WHERE idStep=?",[$ownStep]);$advance($ownTimer,1,$ownStep,'confirm');checkResearch($state($ownTimer,1)['status']==='completed','Duration unlocks final confirmation without follow-up');
+    echo "PASS: personal and universal event-isolated progression; late scans; timer visibility and confirmation gates; migrations twice; existing levels, variants, concurrency, media, idempotency and access checks.\n";
     if (getenv('RESEARCH_BROWSER_FIXTURE')) {
         $pdo->exec("ALTER TABLE tblUser ADD username VARCHAR(100),ADD firstName VARCHAR(100),ADD lastName VARCHAR(100); UPDATE tblUser SET username=CONCAT('test',id),firstName='Test',lastName=CAST(id AS CHAR)");
         file_put_contents(getenv('RESEARCH_BROWSER_FIXTURE'),researchJson(['database'=>$db,'dsn'=>$dsn,'user'=>getenv('RESEARCH_TEST_USER')?:'root','password'=>getenv('RESEARCH_TEST_PASSWORD')?:'']));

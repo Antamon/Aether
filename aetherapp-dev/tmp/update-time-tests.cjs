@@ -1,0 +1,15 @@
+const fs=require('fs');let p='tests/research_feedback_browser_test.cjs',s=fs.readFileSync(p,'utf8');
+let a=s.indexOf("        await dialog.locator('select').filter"),b=s.indexOf("        await dialog.getByRole('button',{name:'Opslaan'",a);
+s=s.slice(0,a)+`        assert.equal(await dialog.getByText('Tijd instellen',{exact:true}).isVisible(),false);
+        await dialog.getByLabel('Vervolgstap toevoegen',{exact:true}).check();
+        assert(await dialog.getByText('Tijd instellen',{exact:true}).isVisible());
+        assert.equal(await dialog.getByRole('radio').count(),3);
+        await dialog.getByRole('button',{name:'Opslaan',exact:true}).click();
+        await dialog.getByRole('alert').waitFor();assert.equal(await page.evaluate(()=>writes.length),0);
+        await dialog.getByLabel('Bevestiging nodig',{exact:true}).check();
+`+s.slice(b);
+s=s.replaceAll('Deze feedback krijgt een vervolgstap','Vervolgstap toevoegen');
+s=s.replace("await dialog.getByLabel('Vervolgstap toevoegen',{exact:true}).check();await dialog.getByRole", "await dialog.getByLabel('Vervolgstap toevoegen',{exact:true}).check();await dialog.getByRole('radio',{name:'Timer',exact:true}).check();await dialog.getByLabel('Dagen',{exact:true}).fill('1');await dialog.getByLabel('Seconden',{exact:true}).fill('9');await dialog.getByRole");
+s=s.replace("        const media=section.locator",`        const buttonStyle=await section.getByRole('button',{name:'Variant toevoegen',exact:true}).evaluate(n=>{const s=getComputedStyle(n),r=n.getBoundingClientRect(),p=n.parentElement.getBoundingClientRect();return {corners:[s.borderTopLeftRadius,s.borderTopRightRadius,s.borderBottomLeftRadius,s.borderBottomRightRadius],center:Math.abs((r.left+r.right)-(p.left+p.right))<2};});assert(buttonStyle.corners.every(v=>parseFloat(v)>0));assert(buttonStyle.center);
+        const media=section.locator`);
+fs.writeFileSync(p,s);

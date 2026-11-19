@@ -1,61 +1,68 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Share screens use the dedicated, permission-checked API. Numbers sent to it stay locale neutral.
 const aetherShareUi = (() => {
-    const copy = {
-        nl: {
-            name: "Naam", purchases: "Aankopen", eventUnknown: "Event onbekend", addPurchase: "Aandelenaankoop toevoegen",
-            purchaseQuarter: "Aankoopkwartaal", purchaseSummary: "Overzicht", adjustBank: "Bankrekening aanpassen",
-            purchaseEvent: "Event van aankoop", purchaseDebits: "De aankoopprijs wordt van de bankrekening van het personage afgetrokken.",
-            setupPurchase: "Maak eerst een event en bedrijfsaandelen aan.",
-            economyAction: "Economie",
-            portfolio: "Aandelenportefeuille", emptyPortfolio: "Dit personage bezit nog geen aandelen.",
-            intrinsic: "Intrinsieke bezitswaarde", level: "Aandelen-niveau", status: "Gebruikte statuspunten",
-            personnel: "Personeelsvoorwaarde", shares: "aandelen", issued: "Uitgegeven", sold: "Verkocht",
-            free: "Vrij", anonymous: "Anoniem", nominal: "Nominale waarde per aandeel",
-            intrinsicUnit: "Intrinsieke waarde per aandeel", market: "Marktprijs", listed: "Beursgenoteerd",
-            initialValue: "Initiële bedrijfswaarde", initialCount: "Initieel aantal aandelen",
-            companyValue: "Actuele bedrijfswaarde", quantity: "Aantal aandelen", price: "Prijs per aandeel",
-            save: "Bewaren", cancel: "Annuleren", create: "Aanbod maken", close: "Sluiten", removeHolding: "Aandelen verwijderen",
-            recipient: "Ontvangend personage", seller: "Verkopend personage", board: "Raad van bestuur",
-            offer: "Rechtstreeks aanbod", sell: "Aandelen rechtstreeks aanbieden",
-            privateOffer: "Privéaanbod", buyback: "Vrije aandelen intrekken",
-            snapshot: "Snapshot", loading: "Aandelengegevens laden…", unavailable: "Aandelengegevens zijn niet beschikbaar.",
-            invalid: "Controleer het aantal en de prijs. Gebruik gehele aantallen en bedragen met maximaal twee decimalen.",
-            saved: "Wijziging bewaard.", company: "Bedrijfsaandelen", manager: "Aandelenbeheer",
-            myOffers: "Mijn open aanbiedingen", noOffers: "Geen open aanbiedingen.", revoke: "Intrekken",
-            noBoard: "Je bent geen bestuurslid van dit bedrijf.", noRecipients: "Geen actieve ontvangers beschikbaar.",
-            noSnapshotsForOffer: "Maak eerst een bedrijfssnapshot om aandelen voor die snapshot aan te bieden.",
-            conflict: "De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst.",
-            forbidden: "Je hebt geen toegang tot deze aandelenactie.",
-        },
-        en: {
-            name: "Name", purchases: "Purchases", eventUnknown: "Unknown event", addPurchase: "Add share purchase",
-            purchaseQuarter: "Purchase quarter", purchaseSummary: "Overview", adjustBank: "Adjust bank account",
-            purchaseEvent: "Purchase event", purchaseDebits: "The purchase price is deducted from the character's bank account.",
-            setupPurchase: "Create an event and company shares first.",
-            economyAction: "Economy",
-            portfolio: "Share portfolio", emptyPortfolio: "This character owns no shares yet.",
-            intrinsic: "Intrinsic portfolio value", level: "Share level", status: "Status points used",
-            personnel: "Staff requirement", shares: "shares", issued: "Issued", sold: "Sold",
-            free: "Free", anonymous: "Anonymous", nominal: "Nominal value per share",
-            intrinsicUnit: "Intrinsic value per share", market: "Market price", listed: "Listed",
-            initialValue: "Initial company value", initialCount: "Initial share count",
-            companyValue: "Current company value", quantity: "Number of shares", price: "Price per share",
-            save: "Save", cancel: "Cancel", create: "Create offer", close: "Close", removeHolding: "Remove shares",
-            recipient: "Recipient character", seller: "Selling character", board: "Board of directors",
-            offer: "Direct offer", sell: "Offer owned shares directly",
-            privateOffer: "Private offer", buyback: "Retire free shares",
-            snapshot: "Snapshot", loading: "Loading shares…", unavailable: "Share data is unavailable.",
-            invalid: "Check the quantity and price. Use whole share counts and amounts with at most two decimals.",
-            saved: "Change saved.", company: "Company shares", manager: "Share management",
-            myOffers: "My open offers", noOffers: "No open offers.", revoke: "Cancel offer",
-            noBoard: "You are not a board member of this company.", noRecipients: "No active recipients available.",
-            noSnapshotsForOffer: "Create a company snapshot before offering shares for it.",
-            conflict: "The stock or offer changed. The data has been refreshed.",
-            forbidden: "You do not have access to this share action.",
-        },
-    };
-    const tr = (key) => (copy[document.documentElement.lang?.slice(0, 2)] || copy.nl)[key] || key;
-    const number = (value, digits = 0) => new Intl.NumberFormat(document.documentElement.lang || "nl-BE", {
+    const interfaceKeys = {
+    "name": "Naam",
+    "purchases": "Aankopen",
+    "eventUnknown": "Event onbekend",
+    "addPurchase": "Aandelenaankoop toevoegen",
+    "purchaseQuarter": "Aankoopkwartaal",
+    "purchaseSummary": "Overzicht",
+    "adjustBank": "Bankrekening aanpassen",
+    "purchaseEvent": "Event van aankoop",
+    "purchaseDebits": "De aankoopprijs wordt van de bankrekening van het personage afgetrokken.",
+    "setupPurchase": "Maak eerst een event en bedrijfsaandelen aan.",
+    "economyAction": "Economie",
+    "portfolio": "Aandelenportefeuille",
+    "emptyPortfolio": "Dit personage bezit nog geen aandelen.",
+    "intrinsic": "Intrinsieke bezitswaarde",
+    "level": "Aandelen-niveau",
+    "status": "Gebruikte statuspunten",
+    "personnel": "Personeelsvoorwaarde",
+    "shares": "aandelen",
+    "issued": "Uitgegeven",
+    "sold": "Verkocht",
+    "free": "Vrij",
+    "anonymous": "Anoniem",
+    "nominal": "Nominale waarde per aandeel",
+    "intrinsicUnit": "Intrinsieke waarde per aandeel",
+    "market": "Marktprijs",
+    "listed": "Beursgenoteerd",
+    "initialValue": "Initiële bedrijfswaarde",
+    "initialCount": "Initieel aantal aandelen",
+    "companyValue": "Actuele bedrijfswaarde",
+    "quantity": "Aantal aandelen",
+    "price": "Prijs per aandeel",
+    "save": "Bewaren",
+    "cancel": "Annuleren",
+    "create": "Aanbod maken",
+    "close": "Sluiten",
+    "removeHolding": "Aandelen verwijderen",
+    "recipient": "Ontvangend personage",
+    "seller": "Verkopend personage",
+    "board": "Raad van bestuur",
+    "offer": "Rechtstreeks aanbod",
+    "sell": "Aandelen rechtstreeks aanbieden",
+    "privateOffer": "Privéaanbod",
+    "buyback": "Vrije aandelen intrekken",
+    "snapshot": "Snapshot",
+    "loading": "Aandelengegevens laden…",
+    "unavailable": "Aandelengegevens zijn niet beschikbaar.",
+    "invalid": "Controleer het aantal en de prijs. Gebruik gehele aantallen en bedragen met maximaal twee decimalen.",
+    "saved": "Wijziging bewaard.",
+    "company": "Bedrijfsaandelen",
+    "manager": "Aandelenbeheer",
+    "myOffers": "Mijn open aanbiedingen",
+    "noOffers": "Geen open aanbiedingen.",
+    "revoke": "Intrekken",
+    "noBoard": "Je bent geen bestuurslid van dit bedrijf.",
+    "noRecipients": "Geen actieve ontvangers beschikbaar.",
+    "noSnapshotsForOffer": "Maak eerst een bedrijfssnapshot om aandelen voor die snapshot aan te bieden.",
+    "conflict": "De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst.",
+    "forbidden": "Je hebt geen toegang tot deze aandelenactie."
+};
+    const tr = key => aetherT(interfaceKeys[key] || key);
+    const number = (value, digits = 0) => new Intl.NumberFormat(document.documentElement.lang || (globalThis.AetherI18n?.locale || "nl-BE"), {
         minimumFractionDigits: digits, maximumFractionDigits: digits,
     }).format(Number(value || 0));
     const money = (value) => `Fr ${number(value, 2)}`;
@@ -203,7 +210,7 @@ const aetherShareUi = (() => {
     }
     function purchasePeriodLabel(purchase) {
         return purchase.purchaseYear && purchase.purchaseQuarter
-            ? `${purchase.purchaseYear} · K${purchase.purchaseQuarter}`
+            ? aetherT("{0} · K{1}",[purchase.purchaseYear,purchase.purchaseQuarter])
             : purchase.eventTitle ? `${purchase.eventTitle} (${purchase.eventDate})` : tr("eventUnknown");
     }
     function purchaseQuarterControl(events, options = {}) {
@@ -212,8 +219,8 @@ const aetherShareUi = (() => {
         const group = element("div", "button-group");
         const year = element("select", "form-select");
         const quarter = element("select", "form-select");
-        year.setAttribute("aria-label", "Speljaar van aankoop");
-        quarter.setAttribute("aria-label", "Kwartaal van aankoop");
+        year.setAttribute("aria-label", aetherT("Speljaar van aankoop"));
+        quarter.setAttribute("aria-label", aetherT("Kwartaal van aankoop"));
         group.append(year, quarter); wrapper.appendChild(group);
         const foundation = periodFromDate(options.foundationDate, false);
         const fallback = options.value || currentGamePeriod();
@@ -238,7 +245,7 @@ const aetherShareUi = (() => {
             ? { purchaseYear: Number(year.value), purchaseQuarter: Number(quarter.value) } : null;
         const updateQuarter = (preferred) => {
             quarter.replaceChildren();
-            periods.filter(period => period.purchaseYear === Number(year.value)).forEach(period => quarter.add(new Option(`K${period.purchaseQuarter}`, period.purchaseQuarter)));
+            periods.filter(period => period.purchaseYear === Number(year.value)).forEach(period => quarter.add(new Option(aetherT("K{0}",[period.purchaseQuarter]), period.purchaseQuarter)));
             if (periods.some(period => period.purchaseYear === Number(year.value) && period.purchaseQuarter === preferred)) quarter.value = String(preferred);
             quarter.disabled = !quarter.children.length;
         };
@@ -261,23 +268,23 @@ const aetherShareUi = (() => {
     function renderPurchaseHistory(host, data, holding, character, refresh) {
         const purchases = (data.purchases || []).filter(purchase => Number(purchase.idCompany) === Number(holding.idCompany));
         host.replaceChildren();
-        if (!purchases.length) host.appendChild(element("p", "text-muted", "Geen afzonderlijke aankopen geregistreerd."));
+        if (!purchases.length) host.appendChild(element("p", "text-muted", aetherT("Geen afzonderlijke aankopen geregistreerd.")));
         purchases.forEach(purchase => {
             const row = element("section", "data-card share-purchase-row mb-3");
             const display = () => {
                 row.replaceChildren();
                 const header = element("div", "d-flex justify-content-between align-items-center gap-2 mb-2");
                 header.appendChild(element("h4", "h5 mb-0", purchasePeriodLabel(purchase)));
-                const edit = AetherActionButtons.button({ icon: "fa-pen", title: "Aankoop aanpassen", ariaLabel: "Aankoop aanpassen" });
-                edit.setAttribute("aria-label", `Aankoop ${purchasePeriodLabel(purchase)} aanpassen`);
+                const edit = AetherActionButtons.button({ icon: "fa-pen", title: aetherT("Aankoop aanpassen"), ariaLabel: aetherT("Aankoop aanpassen") });
+                edit.setAttribute("aria-label", aetherT("Aankoop {0} aanpassen",[purchasePeriodLabel(purchase)]));
                 edit.addEventListener("click", editing);
                 header.appendChild(AetherActionButtons.group([edit])); row.appendChild(header);
                 detailLine(row, tr("purchaseEvent"), purchase.eventTitle || tr("eventUnknown"));
                 detailLine(row, tr("quantity"), number(purchase.shareCount));
-                detailLine(row, tr("price"), purchase.unitPrice == null ? "Onbekend" : money(purchase.unitPrice));
-                detailLine(row, "Totaalbedrag", purchase.unitPrice == null ? "Onbekend" : money(purchase.totalAmount));
+                detailLine(row, tr("price"), purchase.unitPrice == null ? aetherT("Onbekend") : money(purchase.unitPrice));
+                detailLine(row, aetherT("Totaalbedrag"), purchase.unitPrice == null ? aetherT("Onbekend") : money(purchase.totalAmount));
                 if (purchase.purchaseDateSource === "character_created") row.appendChild(element("p", "small text-muted mb-0",
-                    "Aankoopkwartaal aangevuld op basis van de aanmaakdatum van het personage."));
+                    aetherT("Aankoopkwartaal aangevuld op basis van de aanmaakdatum van het personage.")));
             };
             const editing = () => {
                 row.replaceChildren();
@@ -301,7 +308,7 @@ const aetherShareUi = (() => {
                     const period = periodControl?.getValue() || (!events.length ? retainedPeriod : null);
                     const sameFoundation = purchase.idEvent == null && period?.purchaseYear === Number(purchase.purchaseYear)
                         && period?.purchaseQuarter === Number(purchase.purchaseQuarter);
-                    const event = sameFoundation ? { id: null, title: purchase.legacyOwnership ? "Historisch bezit" : "Oprichting" } : eventForPeriod(events, period);
+                    const event = sameFoundation ? { id: null, title: purchase.legacyOwnership ? aetherT("Historisch bezit") : aetherT("Oprichting") } : eventForPeriod(events, period);
                     const quote = purchaseQuote(data, holding.idCompany, event?.id);
                     const price = Number(event?.id) === Number(purchase.idEvent) ? purchase.unitPrice : quote?.shareMarketPrice;
                     return { period, event, price, total: Number(price) * Number(count.value) };
@@ -310,20 +317,20 @@ const aetherShareUi = (() => {
                     const selected = effective();
                     const unknownUnchanged = purchase.unitPrice == null && selected.price == null && selected.event;
                     save.disabled = !selected.period || !selected.event || (!unknownUnchanged && !(Number(selected.price) > 0)) || !integer(count.value);
-                    priceLine.textContent = save.disabled ? "Voor dit kwartaal is geen geldige snapshotprijs beschikbaar."
-                        : unknownUnchanged ? "De oorspronkelijke aankoopprijs is niet geregistreerd. Het aantal en kwartaal kunnen worden aangepast zonder bankboeking."
-                        : purchase.unitPrice == null ? `${selected.event.title} · ${money(selected.price)} per aandeel · totaal ${money(selected.total)}. Het oorspronkelijke aankoopbedrag is onbekend; er volgt geen bankboeking.`
-                        : `${selected.event.title} · ${money(selected.price)} per aandeel · totaal ${money(selected.total)} · verschil ${money(selected.total - Number(purchase.totalAmount))}. ${bank.checked ? "Het bankverschil wordt mee geboekt." : "De bankrekening wordt niet aangepast."}`;
+                    priceLine.textContent = save.disabled ? aetherT("Voor dit kwartaal is geen geldige snapshotprijs beschikbaar.")
+                        : unknownUnchanged ? aetherT("De oorspronkelijke aankoopprijs is niet geregistreerd. Het aantal en kwartaal kunnen worden aangepast zonder bankboeking.")
+                        : purchase.unitPrice == null ? aetherT("{0} · {1} per aandeel · totaal {2}. Het oorspronkelijke aankoopbedrag is onbekend; er volgt geen bankboeking.",[selected.event.title,money(selected.price),money(selected.total)])
+                        : aetherT("{0} · {1} per aandeel · totaal {2} · verschil {3}. {4}",[selected.event.title,money(selected.price),money(selected.total),money(selected.total - Number(purchase.totalAmount)),bank.checked ? "Het bankverschil wordt mee geboekt." : "De bankrekening wordt niet aangepast."]);
                 };
                 periodControl = purchaseQuarterControl(events, { value: purchase.purchaseYear ? purchase : periodFromDate(purchase.eventDate),
                     foundationDate: holding.foundationDate, onChange: update,
                     includePeriod: eventForPeriod(events, retainedPeriod) ? retainedPeriod : null });
                 if (!events.length && retainedPeriod) form.appendChild(element("p", "small mb-0",
-                    `Bestaand aankoopkwartaal: ${purchasePeriodLabel(purchase)}. Er is geen bedrijfssnapshot beschikbaar om een ander kwartaal te kiezen.`));
+                    aetherT("Bestaand aankoopkwartaal: {0}. Er is geen bedrijfssnapshot beschikbaar om een ander kwartaal te kiezen.",[purchasePeriodLabel(purchase)])));
                 count.addEventListener("input", update); bank.addEventListener("change", update);
                 form.append(periodControl.wrapper, countWrap, toggle, priceLine, AetherActionButtons.group([save]));
-                if (purchase.draftCapitalPurchase) form.appendChild(element("p", "small text-muted", "Deze aankoop is betaald uit aandelenstartkapitaal. Het bestede startkapitaal wordt mee gecorrigeerd."));
-                if (purchase.idCounterpartyCharacter) form.appendChild(element("p", "small text-muted", "Bij een bankcorrectie wordt ook de rekening van de oorspronkelijke verkoper aangepast."));
+                if (purchase.draftCapitalPurchase) form.appendChild(element("p", "small text-muted", aetherT("Deze aankoop is betaald uit aandelenstartkapitaal. Het bestede startkapitaal wordt mee gecorrigeerd.")));
+                if (purchase.idCounterpartyCharacter) form.appendChild(element("p", "small text-muted", aetherT("Bij een bankcorrectie wordt ook de rekening van de oorspronkelijke verkoper aangepast.")));
                 form.appendChild(element("div", "")).dataset.shareFeedback = "1";
                 form.addEventListener("submit", async event => {
                     event.preventDefault(); update(); if (save.disabled) return;
@@ -375,7 +382,7 @@ const aetherShareUi = (() => {
                         await reload();
                     } catch (error) {
                         history.replaceChildren(element("p", "text-danger", errorMessage(error)));
-                        const retry = AetherActionButtons.button({ icon: "fa-rotate-right", label: "Opnieuw proberen" });
+                        const retry = AetherActionButtons.button({ icon: "fa-rotate-right", label: aetherT("Opnieuw proberen") });
                         retry.addEventListener("click", () => { void initializeHistory(); });
                         history.appendChild(AetherActionButtons.group([retry]));
                     } finally { historyInitializing = false; }
@@ -384,7 +391,7 @@ const aetherShareUi = (() => {
                     historySelected = index === 1;
                     body.hidden = historySelected; history.hidden = !historySelected;
                     buttons.forEach((button, i) => {
-                        button.className = `nav-link${i === index ? " active" : ""}`;
+                        button.className = `nav-link${i === index ? aetherT(" active") : ""}`;
                         button.setAttribute("aria-selected", String(i === index));
                         button.tabIndex = i === index ? 0 : -1;
                     });
@@ -414,16 +421,16 @@ const aetherShareUi = (() => {
                 });
             }
             detailLine(body, tr("quantity"), number(holding.shareCount));
-            if (Number(holding.issuedShareCount) > 0) detailLine(body, "Aandeel in het bedrijf", `${number(Number(holding.shareCount) / Number(holding.issuedShareCount) * 100, 2)}%`);
+            if (Number(holding.issuedShareCount) > 0) detailLine(body, aetherT("Aandeel in het bedrijf"), `${number(Number(holding.shareCount) / Number(holding.issuedShareCount) * 100, 2)}%`);
             const price = holding.marketUnitPrice;
-            detailLine(body, "Huidige marktwaarde per aandeel", price == null ? "—" : money(price));
-            detailLine(body, "Totale marktwaarde", price == null ? "—" : money(Number(price) * Number(holding.shareCount)));
+            detailLine(body, aetherT("Huidige marktwaarde per aandeel"), price == null ? "—" : money(price));
+            detailLine(body, aetherT("Totale marktwaarde"), price == null ? "—" : money(Number(price) * Number(holding.shareCount)));
             detailLine(body, tr("intrinsic"), money(holding.intrinsicValue));
             if (data.canManagePurchases) {
                 const removeHolding = AetherActionButtons.button({ icon: "fa-trash", label: tr("removeHolding") });
                 removeHolding.addEventListener("click", async () => {
                     if (typeof window.confirm === "function"
-                        && !window.confirm("Alle aandelen van dit personage worden naar naamloze handen verplaatst. Doorgaan?")) return;
+                        && !window.confirm(aetherT("Alle aandelen van dit personage worden naar naamloze handen verplaatst. Doorgaan?"))) return;
                     removeHolding.disabled = true;
                     try {
                         await post("removeCharacterHolding", { idCompany: Number(holding.idCompany), idCharacter: Number(character.id) });
@@ -441,13 +448,13 @@ const aetherShareUi = (() => {
                 const history = element("details", "my-3");
                 history.appendChild(element("summary", "", tr("purchases")));
                 for (const purchase of purchases) {
-                    history.appendChild(element("p", "small mt-2", `${purchasePeriodLabel(purchase)} · ${number(purchase.shareCount)} ${tr("shares")} · ${money(purchase.totalAmount)}`));
+                    history.appendChild(element("p", "small mt-2", `${purchasePeriodLabel(purchase)} · ${number(purchase.shareCount)} ${tr(aetherT("shares"))} · ${money(purchase.totalAmount)}`));
                 }
                 body.appendChild(history);
             }
             if (character.state !== "active" || !canTrade(character)) return;
             body.appendChild(element("h4", "h5 mt-3", tr("sell")));
-            body.appendChild(element("p", "small text-muted", "Bied aandelen aan een ander personage aan. De verkoop wordt voltooid wanneer de ontvanger het aanbod koopt."));
+            body.appendChild(element("p", "small text-muted", aetherT("Bied aandelen aan een ander personage aan. De verkoop wordt voltooid wanneer de ontvanger het aanbod koopt.")));
             const formHost = element("div", "mb-3", tr("loading"));
             body.appendChild(formHost);
             query("getShareRecipientOptions", "idCharacter", character.id).then(response => {
@@ -528,7 +535,7 @@ const aetherShareUi = (() => {
                 const row = element("div", "share-ui-holding");
                 row.appendChild(element("span", "", `${offer.companyName} · ${number(
                     Number(offer.offeredShareCount) - Number(offer.purchasedShareCount)
-                )} ${tr("shares")} · ${money(offer.unitPrice)}`));
+                )} ${tr(aetherT("shares"))} · ${money(offer.unitPrice)}`));
                 const revoke = action(tr("revoke"), "btn-outline-danger btn-sm");
                 revoke.addEventListener("click", async () => {
                     revoke.disabled = true;
@@ -548,16 +555,16 @@ const aetherShareUi = (() => {
         const budget = data.draftBudget;
         const openBudget = budget && budget.closedAt === null;
         const metrics = element("div", "share-ui-metrics mt-3");
-        metrics.append(metric("Startkapitaal Aandelen", money(openBudget ? budget.budgetAmount : 0)),
-            metric("Besteed startkapitaal", money(budget?.spentAmount || 0)),
-            metric("Beschikbaar aankoopbedrag", money(openBudget ? budget.remainingAmount : 0)));
+        metrics.append(metric(aetherT("Startkapitaal Aandelen"), money(openBudget ? budget.budgetAmount : 0)),
+            metric(aetherT("Besteed startkapitaal"), money(budget?.spentAmount || 0)),
+            metric(aetherT("Beschikbaar aankoopbedrag"), money(openBudget ? budget.remainingAmount : 0)));
         card.append(metrics);
         card.append(element("p", "small text-muted mt-2", openBudget
-            ? "Alle beschikbare bedrijfsaandelen zijn zichtbaar tijdens Draft. Je betaalt de snapshotmarktprijs, zonder vaardigheidsaanpassing. Ongebruikt startkapitaal vervalt na Draft."
-            : "Neem eerst de statuseigenschap Aandelen om tijdens Draft startkapitaal te gebruiken. Een eerder afgesloten budget wordt niet opnieuw beschikbaar."));
+            ? aetherT("Alle beschikbare bedrijfsaandelen zijn zichtbaar tijdens Draft. Je betaalt de snapshotmarktprijs, zonder vaardigheidsaanpassing. Ongebruikt startkapitaal vervalt na Draft.")
+            : aetherT("Neem eerst de statuseigenschap Aandelen om tijdens Draft startkapitaal te gebruiken. Een eerder afgesloten budget wordt niet opnieuw beschikbaar.")));
         const quotes = (data.draftQuotes || []).filter(quote => Number(quote.freeShareCount) > 0);
-        if (!quotes.length) { card.append(element("p", "text-muted", "Geen bedrijfssnapshots met een marktprijs beschikbaar.")); return; }
-        card.appendChild(element("h4", "h5 mt-3", "Beschikbare aandelen"));
+        if (!quotes.length) { card.append(element("p", "text-muted", aetherT("Geen bedrijfssnapshots met een marktprijs beschikbaar."))); return; }
+        card.appendChild(element("h4", "h5 mt-3", aetherT("Beschikbare aandelen")));
         const companies = [...new Map(quotes.map(quote => [Number(quote.idCompany), quote])).values()];
         companyGrid(card, companies, (company, trigger) => companyDialog(company, trigger, (body, close) => {
             renderDraftQuoteForm(body, data, character, async () => { close(); await reload(); },
@@ -568,21 +575,21 @@ const aetherShareUi = (() => {
     function renderDraftQuoteForm(card, data, character, reload, quotes) {
         const budget = data.draftBudget;
         const openBudget = budget && budget.closedAt === null;
-        card.appendChild(element("p", "small text-muted", "Je koopt aan de marktprijs van de gekozen snapshot. Het aankoopbedrag wordt van je beschikbare startkapitaal afgetrokken."));
+        card.appendChild(element("p", "small text-muted", aetherT("Je koopt aan de marktprijs van de gekozen snapshot. Het aankoopbedrag wordt van je beschikbare startkapitaal afgetrokken.")));
         const form = element("form", "share-ui-form-grid mt-2 mb-3");
-        const wrap = element("label", "form-label", data.canChooseDraftSnapshot ? "Bedrijf en snapshot" : "Beschikbare aandelen");
-        const select = element("select", "form-select"); select.setAttribute("aria-label", "Aandelen kopen tijdens Draft");
+        const wrap = element("label", "form-label", data.canChooseDraftSnapshot ? aetherT("Bedrijf en snapshot") : aetherT("Beschikbare aandelen"));
+        const select = element("select", "form-select"); select.setAttribute("aria-label", aetherT("Aandelen kopen tijdens Draft"));
         quotes.forEach((quote, index) => select.add(new Option(
-            `${quote.companyName} · ${quote.eventTitle || "Oprichting"}${quote.quoteDate ? ` (${quote.quoteDate})` : ""} · ${money(quote.unitPrice)} · ${number(quote.freeShareCount)} vrij`, index)));
+            aetherT("{0} · {1}{2} · {3} · {4} vrij",[quote.companyName,quote.eventTitle || "Oprichting",quote.quoteDate ? ` (${quote.quoteDate})` : "",money(quote.unitPrice),number(quote.freeShareCount)]), index)));
         select.value = "0"; wrap.append(select);
         const [countWrap, count] = field(tr("quantity"), "1");
         const total = element("p", "mb-0");
         const periodHost = element("div", "");
         let quarterControl = null;
-        const save = action("Aandelen kopen"); save.type = "submit";
+        const save = action(aetherT("Aandelen kopen")); save.type = "submit";
         const update = () => {
             const quote = quotes[Number(select.value)]; const quantity = integer(count.value);
-            total.textContent = quote && quantity ? `Aankoopbedrag: ${money(Number(quote.unitPrice) * quantity)}` : "";
+            total.textContent = quote && quantity ? aetherT("Aankoopbedrag: {0}",[money(Number(quote.unitPrice) * quantity)]) : "";
             save.disabled = !data.canBuyDraftShares || !openBudget || !quantity || !quote
                 || quantity > Number(quote.freeShareCount) || Number(quote.unitPrice) * quantity > Number(budget?.remainingAmount || 0);
             if (quarterControl && !quarterControl.getValue()) save.disabled = true;
@@ -598,7 +605,7 @@ const aetherShareUi = (() => {
                 periodHost.appendChild(quarterControl.wrapper);
             } else if (quote?.quoteDate) {
                 const period = data.canChooseDraftSnapshot ? periodFromDate(quote.quoteDate, false) : currentGamePeriod();
-                if (period) periodHost.appendChild(element("p", "small mb-0", `${tr("purchaseQuarter")}: ${period.purchaseYear} · K${period.purchaseQuarter}`));
+                if (period) periodHost.appendChild(element("p", "small mb-0", aetherT("{0}: {1} · K{2}",[tr("purchaseQuarter"),period.purchaseYear,period.purchaseQuarter])));
             }
             update();
         };
@@ -627,7 +634,7 @@ const aetherShareUi = (() => {
         add.addEventListener("click", () => companyDialog({companyName: tr("addPurchase")}, add, (body) => {
             const quotes = data.managerQuotes || [];
             const select = element("select", "form-select mb-3");
-            select.setAttribute("aria-label", "Snapshot voor aandelenaankoop");
+            select.setAttribute("aria-label", aetherT("Snapshot voor aandelenaankoop"));
             const events = [...new Map(quotes.map(quote => [Number(quote.idEvent), quote])).values()];
             events.forEach(quote => select.add(new Option(`${quote.eventTitle} (${quote.quoteDate})`, quote.idEvent)));
             const list = element("div", "");
@@ -644,7 +651,7 @@ const aetherShareUi = (() => {
             };
             select.addEventListener("change", render);
             body.append(select, list);
-            if (!events.length) body.appendChild(element("p", "text-muted", "Geen snapshots met vrije aandelen beschikbaar."));
+            if (!events.length) body.appendChild(element("p", "text-muted", aetherT("Geen snapshots met vrije aandelen beschikbaar.")));
             render();
         }));
     }
@@ -674,8 +681,8 @@ const aetherShareUi = (() => {
             const event = eventForPeriod(companyPurchaseEvents(data, companySelect.value), period?.getValue());
             const price = purchaseQuote(data, companySelect.value, event?.id)?.shareMarketPrice;
             save.disabled = !event || !(Number(price) > 0) || !integer(count.value);
-            priceLine.textContent = save.disabled ? "Geen geldige snapshotprijs voor dit kwartaal."
-                : `${event.title} · ${money(price)} per aandeel · totaal ${money(Number(price) * Number(count.value))}`;
+            priceLine.textContent = save.disabled ? aetherT("Geen geldige snapshotprijs voor dit kwartaal.")
+                : aetherT("{0} · {1} per aandeel · totaal {2}",[event.title,money(price),money(Number(price) * Number(count.value))]);
         };
         const rebuildPeriod = () => {
             const company = companies.find(company => Number(company.id) === Number(companySelect.value));
@@ -770,7 +777,7 @@ const aetherShareUi = (() => {
     }
 
     function renderCompany(host, data, companyData, reload) {
-        host.replaceChildren(element("h3", "h5", "Aandeelhouders"));
+        host.replaceChildren(element("h3", "h5", aetherT("Aandeelhouders")));
         const company = data.company || {};
         const stock = data.stock || {};
         const sold = Number(stock.held || 0) + Number(stock.anonymous || 0);
@@ -785,7 +792,7 @@ const aetherShareUi = (() => {
             const head = element("thead", "");
             const groupHeadings = element("tr", "");
             const nameHeading = element("th", "", tr("name")); nameHeading.setAttribute("scope", "col");
-            const sharesHeading = element("th", "text-end", "Aandelen"); sharesHeading.setAttribute("scope", "colgroup"); sharesHeading.colSpan = 2;
+            const sharesHeading = element("th", "text-end", aetherT("Aandelen")); sharesHeading.setAttribute("scope", "colgroup"); sharesHeading.colSpan = 2;
             const characterHeading = element("th", "share-holder-character-column"); characterHeading.setAttribute("scope", "col");
             groupHeadings.append(nameHeading, sharesHeading);
             if (data.canManageShares) groupHeadings.appendChild(characterHeading);
@@ -803,8 +810,8 @@ const aetherShareUi = (() => {
                     const companyHolder = Number(holding.idHoldingCompany) > 0;
                     link.href = companyHolder ? `companies.html?company=${Number(holding.idHoldingCompany)}`
                         : `index.html?character=${Number(holding.idCharacter)}&tab=economy`;
-                    link.setAttribute("aria-label", `${name}: ${companyHolder ? "bedrijf" : "economie"} bekijken`);
-                    link.title = `${name}: ${companyHolder ? "bedrijf" : "economie"} bekijken`;
+                    link.setAttribute("aria-label", aetherT("{0}: {1} bekijken",[name,companyHolder ? "bedrijf" : "economie"]));
+                    link.title = aetherT("{0}: {1} bekijken",[name,companyHolder ? "bedrijf" : "economie"]);
                     const icon = element("i", companyHolder ? "fa-solid fa-industry" : "fa-solid fa-user"); icon.setAttribute("aria-hidden", "true");
                     link.appendChild(icon); cell.appendChild(link); row.appendChild(cell);
                 }
@@ -813,7 +820,7 @@ const aetherShareUi = (() => {
             table.append(head, rows); list.appendChild(table);
             host.appendChild(list);
         }
-        if (!data.holdings?.length) host.appendChild(element("p", "text-muted mb-0", "Nog geen aandeelhouders."));
+        if (!data.holdings?.length) host.appendChild(element("p", "text-muted mb-0", aetherT("Nog geen aandeelhouders.")));
         if (data.canManageShares || (Array.isArray(data.myBoardCharacterIds) && data.myBoardCharacterIds.length)) {
             renderPrivateOffer(host, data, reload, companyData);
         }
@@ -827,22 +834,22 @@ const aetherShareUi = (() => {
         input.type = "checkbox";
         input.checked = listed;
         input.disabled = !data.canManageShares;
-        input.setAttribute("aria-label", "Beursgenoteerd");
+        input.setAttribute("aria-label", aetherT("Beursgenoteerd"));
         const slider = element("span", "company-listing-switch-slider");
         slider.setAttribute("aria-hidden", "true");
         label.append(input, slider);
-        const status = element("span", "company-listing-status", listed ? "Ja" : "Nee");
+        const status = element("span", "company-listing-status", listed ? aetherT("Ja") : aetherT("Nee"));
         status.setAttribute("aria-live", "polite");
         host.append(label, status);
         if (!data.canManageShares) return;
         input.addEventListener("change", async () => {
             input.disabled = true;
-            status.textContent = input.checked ? "Ja" : "Nee";
+            status.textContent = input.checked ? aetherT("Ja") : aetherT("Nee");
             try { await post("setShareListing", { idCompany: Number(data.company.id), isShareListed: input.checked }); await reload(); }
             catch (error) {
                 input.checked = listed;
                 input.disabled = false;
-                status.textContent = listed ? "Ja" : "Nee";
+                status.textContent = listed ? aetherT("Ja") : aetherT("Nee");
                 host.appendChild(element("p", "text-danger mb-0", errorMessage(error)));
             }
         });
@@ -935,9 +942,9 @@ const aetherShareUi = (() => {
         const open = action(tr("privateOffer"));
         const buttons = [open];
         if (data.canManageShares) {
-            const parent = AetherActionButtons.button({ icon: "fa-industry", label: "Aandelen moederbedrijf" });
+            const parent = AetherActionButtons.button({ icon: "fa-industry", label: aetherT("Aandelen moederbedrijf") });
             parent.disabled = data.canAddCompanyHolding === false || Number(data.stock?.free || 0) < 1;
-            if (data.canAddCompanyHolding === false) parent.title = "Voer eerst migratie 0023_company_share_ownership uit.";
+            if (data.canAddCompanyHolding === false) parent.title = aetherT("Voer eerst migratie 0023_company_share_ownership uit.");
             parent.addEventListener("click", () => showCompanyHoldingDialog(data, parent, reload));
             buttons.push(parent);
         }
@@ -1007,7 +1014,7 @@ const aetherShareUi = (() => {
                     row.appendChild(element("span", "", offer.recipientNames || tr("recipient")));
                     row.appendChild(element("span", "", `${number(
                         Number(offer.offeredShareCount) - Number(offer.purchasedShareCount)
-                    )} ${tr("shares")} · ${money(offer.unitPrice)}`));
+                    )} ${tr(aetherT("shares"))} · ${money(offer.unitPrice)}`));
                     const revoke = action(tr("revoke"), "btn-outline-danger btn-sm");
                     revoke.addEventListener("click", async () => {
                         revoke.disabled = true;
@@ -1028,10 +1035,10 @@ const aetherShareUi = (() => {
     }
 
     function showCompanyHoldingDialog(data, trigger, reload) {
-        companyDialog({ companyName: "Aandelen moederbedrijf" }, trigger, (body, close) => {
+        companyDialog({ companyName: aetherT("Aandelen moederbedrijf") }, trigger, (body, close) => {
             const available = Number(data.stock?.free || 0);
-            body.appendChild(element("p", "", `${data.company.companyName} · ${number(available)} vrije aandelen`));
-            const selected = element("p", "fw-bold", "Kies het moederbedrijf dat mede-eigenaar wordt.");
+            body.appendChild(element("p", "", aetherT("{0} · {1} vrije aandelen",[data.company.companyName,number(available)])));
+            const selected = element("p", "fw-bold", aetherT("Kies het moederbedrijf dat mede-eigenaar wordt."));
             const list = element("div", "mb-3");
             list.textContent = tr("loading");
             const [countWrap, count] = field(tr("quantity"), "1");
@@ -1044,7 +1051,7 @@ const aetherShareUi = (() => {
                 list.replaceChildren();
                 const choices = companies.filter(company => Number(company.id) !== Number(data.company.id))
                     .map(company => ({ ...company, idCompany: Number(company.id) }));
-                if (!choices.length) { list.textContent = "Geen andere bedrijven beschikbaar."; return; }
+                if (!choices.length) { list.textContent = aetherT("Geen andere bedrijven beschikbaar."); return; }
                 const grid = companyGrid(list, choices, (company, tile) => {
                     selectedId = Number(company.idCompany);
                     for (const item of grid.children) item.setAttribute("aria-pressed", item === tile ? "true" : "false");
@@ -1059,7 +1066,7 @@ const aetherShareUi = (() => {
             save.addEventListener("click", async () => {
                 const quantity = integer(count.value);
                 if (!selectedId || !quantity || quantity > available) {
-                    feedback(body, `Kies een bedrijf en 1 tot ${number(available)} aandelen.`, true);
+                    feedback(body, aetherT("Kies een bedrijf en 1 tot {0} aandelen.",[number(available)]), true);
                     return;
                 }
                 save.disabled = true;

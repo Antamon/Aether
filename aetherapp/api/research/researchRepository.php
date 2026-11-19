@@ -37,7 +37,7 @@ function researchFeedbackRoutes(PDO $pdo,int $discovery): array
     foreach ($routes as &$route) $route['hasFeedback']=(bool)researchSteps($pdo,(int)$route['id'],true);
     return $routes;
 }
-/** Snapshot eligible branches in the action log; existing discoveries expand once on first read. */
+/** Current selected branches; QR rescans replace this selection while keeping step progress. */
 function researchFoundRoutes(PDO $pdo,int $character,array $found): array
 {
     $selected=array_map('intval',researchQuery($pdo,"SELECT DISTINCT s.idRoute FROM tblResearchAction a JOIN tblResearchStep s ON s.id=a.idStep WHERE a.idEvent=? AND a.idCharacter=? AND a.idDiscovery=? AND a.actionCode='feedback_selected'",[$found['idEvent'],$character,$found['idDiscovery']])->fetchAll(PDO::FETCH_COLUMN));
@@ -45,7 +45,7 @@ function researchFoundRoutes(PDO $pdo,int $character,array $found): array
     if ($selected) return array_values(array_filter($routes,static fn(array $route):bool=>in_array((int)$route['id'],$selected,true)));
     $owned=array_map('intval',researchQuery($pdo,"SELECT cs.idSkillSpecialisation FROM tblCharacterSpecialisation cs JOIN tblSkillSpecialisation sp ON sp.id=cs.idSkillSpecialisation AND sp.idSkill=cs.idSkill WHERE cs.idCharacter=? AND sp.kind='specialisation'",[$character])->fetchAll(PDO::FETCH_COLUMN));
     $matches=researchSelectRoutes($routes,(int)$found['effectiveLevel'],$character,$owned);
-    $actor=researchOne($pdo,"SELECT actorUserId FROM tblResearchAction WHERE idEvent=? AND idCharacter=? AND idDiscovery=? AND actionCode='scanned' ORDER BY id LIMIT 1",[$found['idEvent'],$character,$found['idDiscovery']]);
+    $actor=researchOne($pdo,"SELECT actorUserId FROM tblResearchAction WHERE idEvent=? AND idCharacter=? AND idDiscovery=? AND actionCode IN ('scanned','conclusion_available') ORDER BY id LIMIT 1",[$found['idEvent'],$character,$found['idDiscovery']]);
     $actorId=(int)($actor['actorUserId']??researchOne($pdo,'SELECT idUser FROM tblCharacter WHERE id=?',[$character])['idUser']);
     foreach ($matches as $route) {
         $steps=researchSteps($pdo,(int)$route['id'],true);

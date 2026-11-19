@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Diary tab logic
 
 function canEditDiary(character) {
@@ -66,7 +67,7 @@ function showDiaryTab(character) {
     container.classList.remove("d-none");
     container.style.display = "block";
     container.hidden = false;
-    container.innerHTML = `<div class="text-muted">Loading diary...</div>`;
+    container.innerHTML = `<div class="text-muted">${aetherT("Loading diary...")}</div>`;
 
     loadDiaryEntries(container, character);
 }
@@ -77,7 +78,7 @@ async function loadDiaryEntries(container, character) {
         renderDiaryEntries(container, character, data.entries || [], data.availableEvents || []);
     } catch (err) {
         console.error("Fout bij laden diary:", err);
-        container.innerHTML = `<div class="text-danger">Kon diary niet laden.</div>`;
+        container.innerHTML = `<div class="text-danger">${aetherT("Kon diary niet laden.")}</div>`;
     }
 }
 
@@ -96,10 +97,10 @@ function renderDiaryEntries(container, character, entries, availableEvents) {
 
     const sel = document.createElement("select");
     sel.className = "form-select";
-    sel.setAttribute("aria-label", "Select event");
+    sel.setAttribute("aria-label", aetherT("Select event"));
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Select event";
+    placeholder.textContent = aetherT("Select event");
     sel.appendChild(placeholder);
     sortDiaryEventsNewestFirst(availableEvents || []).forEach(ev => {
         const opt = document.createElement("option");
@@ -110,7 +111,7 @@ function renderDiaryEntries(container, character, entries, availableEvents) {
 
     const colBtn = document.createElement("div");
     colBtn.className = "button-group";
-    const btn = AetherActionButtons.button({ icon: "fa-plus", label: "Add diary", disabled: true });
+    const btn = AetherActionButtons.button({ icon: "fa-plus", label: aetherT("Add diary"), disabled: true });
     colBtn.appendChild(btn);
 
     row.appendChild(sel);
@@ -136,7 +137,7 @@ function renderDiaryEntries(container, character, entries, availableEvents) {
                 await loadDiaryEntries(container, character);
             } catch (err) {
                 console.error("Fout bij toevoegen diary:", err);
-                alert("Kon diary entry niet toevoegen.");
+                alert(aetherT("Kon diary entry niet toevoegen."));
             } finally {
                 btn.disabled = !sel.value;
             }
@@ -155,7 +156,7 @@ function renderDiaryEntries(container, character, entries, availableEvents) {
             sel.querySelector(`option[value="${event.id}"]`)?.remove();
         } else if (event) {
             const notice = document.createElement("p"); notice.className = "data-card";
-            notice.textContent = `Gossip voor "${event.title}" is nog niet ingevuld. Alleen een admin of director kan de gossip van deze figurantenrol aanpassen.`;
+            notice.textContent = aetherT("Gossip voor \"{0}\" is nog niet ingevuld. Alleen een admin of director kan de gossip van deze figurantenrol aanpassen.",[event.title]);
             panel.appendChild(notice); window.AETHER_EVENT_TARGET = null;
             requestAnimationFrame(() => notice.scrollIntoView({ block: "center" }));
         }
@@ -163,7 +164,7 @@ function renderDiaryEntries(container, character, entries, availableEvents) {
     if (!entries || entries.length === 0) {
         const empty = document.createElement("div");
         empty.className = "text-muted";
-        empty.textContent = "No diary entries yet.";
+        empty.textContent = aetherT("No diary entries yet.");
         panel.appendChild(empty);
     } else {
         sortDiaryEventsNewestFirst(entries).forEach(entry => {
@@ -199,13 +200,13 @@ function renderDiaryEntry(entry, rights, character, openGossip = false) {
 
     let editBtn = null;
     if (canEditAll || canEditAchievementsOnly) {
-        editBtn = AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit" });
+        editBtn = AetherActionButtons.button({ icon: "fa-pen-nib", label: aetherT("Edit") });
     }
 
     wrap.appendChild(header);
 
-    const goalsSection = createDiarySection("Goals", entry.goals);
-    const achievementsSection = createDiarySection("Achievements", entry.achievements);
+    const goalsSection = createDiarySection(aetherT("Goals"), entry.goals);
+    const achievementsSection = createDiarySection(aetherT("Achievements"), entry.achievements);
 
     const gossipRow = document.createElement("div");
     gossipRow.className = "row g-2";
@@ -241,8 +242,8 @@ function renderDiaryEntry(entry, rights, character, openGossip = false) {
 
     const actions = document.createElement("div");
     actions.className = "button-group";
-    const btnSave = AetherActionButtons.button({ icon: "fa-check", label: "Save" });
-    const btnCancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel" });
+    const btnSave = AetherActionButtons.button({ icon: "fa-check", label: aetherT("Save") });
+    const btnCancel = AetherActionButtons.button({ icon: "fa-xmark", label: aetherT("Cancel") });
     if (editBtn) header.appendChild(actions);
 
     const exitEditMode = () => {
@@ -314,7 +315,7 @@ function renderDiaryEntry(entry, rights, character, openGossip = false) {
                 ? res.entries.find(item => entry.id ? Number(item.id) === Number(entry.id) : Number(item.idEvent) === Number(entry.idEvent))
                 : null;
             if (!updated) {
-                throw new Error("De server gaf geen gesaniteerde diary terug.");
+                throw new Error(aetherT("De server gaf geen gesaniteerde diary terug."));
             }
             Object.assign(entry, updated);
             goalsSection.edit.setHtml(entry.goals);
@@ -327,7 +328,7 @@ function renderDiaryEntry(entry, rights, character, openGossip = false) {
             exitEditMode();
         } catch (err) {
             console.error("Fout bij opslaan diary:", err);
-            alert("Opslaan van diary mislukt.");
+            alert(aetherT("Opslaan van diary mislukt."));
         } finally {
             btnSave.disabled = false;
             btnCancel.disabled = false;

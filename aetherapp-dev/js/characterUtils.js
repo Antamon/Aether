@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Utility-functies voor character berekeningen
 
 const CHARACTER_BASE_HEALTH = 4;
@@ -158,8 +159,8 @@ function getAvailableStatusPoints(character) {
 }
 
 function expertiseExtra(experience) {
-    if (experience <= 20) return "Average person";
-    else if (experience <= 30) return "Professional";
-    else if (experience <= 40) return "Master";
-    else return "Super human";
+    if (experience <= 20) return aetherT("Average person");
+    else if (experience <= 30) return aetherT("Professional");
+    else if (experience <= 40) return aetherT("Master");
+    else return aetherT("Super human");
 }

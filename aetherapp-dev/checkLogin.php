@@ -54,6 +54,7 @@ try {
             'lastName' => $lastName,
             'displayName' => trim($firstName . ' ' . $lastName),
             'role' => $user['role'],
+            'interfaceLanguage' => aetherProfileInterfaceLanguage((int) $user['id']),
         ],
         'csrfToken' => aetherGetCsrfToken(),
     ]);

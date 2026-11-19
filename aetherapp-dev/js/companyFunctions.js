@@ -1,28 +1,29 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const COMPANY_STABILITY_RANGES = [
     {
         min: -7,
         max: -5,
-        message: "Extreem volatiel. Grote winsten mogelijk, maar even goed zware verliezen. Sterk afhankelijk van hype, innovatie of gebeurtenissen op de markten."
+        message: aetherT("Extreem volatiel. Grote winsten mogelijk, maar even goed zware verliezen. Sterk afhankelijk van hype, innovatie of gebeurtenissen op de markten.")
     },
     {
         min: -4,
         max: -2,
-        message: "Volatiel. Inkomsten kunnen sterk fluctueren. Gevoelig voor trends, marktschommelingen of externe invloeden. Risico begint een rol te spelen."
+        message: aetherT("Volatiel. Inkomsten kunnen sterk fluctueren. Gevoelig voor trends, marktschommelingen of externe invloeden. Risico begint een rol te spelen.")
     },
     {
         min: -1,
         max: 1,
-        message: "Normale variatie. Het bedrijf kent duidelijke ups en downs, maar dit is ingecalculeerd en beheersbaar."
+        message: aetherT("Normale variatie. Het bedrijf kent duidelijke ups en downs, maar dit is ingecalculeerd en beheersbaar.")
     },
     {
         min: 2,
         max: 4,
-        message: "Stabiel. Kleine schommelingen. Af en toe een kleine dip of piek, maar verrassingen zijn zeldzaam."
+        message: aetherT("Stabiel. Kleine schommelingen. Af en toe een kleine dip of piek, maar verrassingen zijn zeldzaam.")
     },
     {
         min: 5,
         max: 7,
-        message: "Extreem stabiel. Inkomsten zijn voorspelbaar en nauwelijks gevoelig voor trends of externe factoren. Denk aan basisvoorzieningen of langdurige contracten."
+        message: aetherT("Extreem stabiel. Inkomsten zijn voorspelbaar en nauwelijks gevoelig voor trends of externe factoren. Denk aan basisvoorzieningen of langdurige contracten.")
     }
 ];
 
@@ -30,17 +31,17 @@ const COMPANY_PROFITABILITY_RANGES = [
     {
         min: -7,
         max: -5,
-        message: "Verlieslatend. Kosten liggen duidelijk hoger dan de inkomsten. Mogelijk werkt het businessmodel niet meer, ontsporen de kosten of drukt concurrentie het bedrijf weg. Het kan ook zijn dat het bedrijf in een intensieve investeringsfase zit waarbij winst nog niet de focus is."
+        message: aetherT("Verlieslatend. Kosten liggen duidelijk hoger dan de inkomsten. Mogelijk werkt het businessmodel niet meer, ontsporen de kosten of drukt concurrentie het bedrijf weg. Het kan ook zijn dat het bedrijf in een intensieve investeringsfase zit waarbij winst nog niet de focus is.")
     },
     {
         min: -4,
         max: -2,
-        message: "Riskante toestand. Inkomsten zijn niet gegarandeerd. Potentiele marges zijn klein of worden opgeslorpt door kosten. Mogelijk kampt het bedrijf met sterke concurrentie, inefficientie of dalende vraag, of het investeert bewust in groei waardoor winst beperkt blijft."
+        message: aetherT("Riskante toestand. Inkomsten zijn niet gegarandeerd. Potentiele marges zijn klein of worden opgeslorpt door kosten. Mogelijk kampt het bedrijf met sterke concurrentie, inefficientie of dalende vraag, of het investeert bewust in groei waardoor winst beperkt blijft.")
     },
     {
         min: -1,
         max: 1,
-        message: "Normale winst. Inkomsten en kosten zijn meestal in balans. Het bedrijf is stabiel, maar bouwt weinig reserves op."
+        message: aetherT("Normale winst. Inkomsten en kosten zijn meestal in balans. Het bedrijf is stabiel, maar bouwt weinig reserves op.")
     },
     {
         min: 2,
@@ -50,42 +51,42 @@ const COMPANY_PROFITABILITY_RANGES = [
     {
         min: 5,
         max: 7,
-        message: "Uitzonderlijk winstgevend. Zeer hoge rendabiliteit. Sterke marktpositie, unieke diensten of quasi-monopolie zorgen voor uitzonderlijke winsten."
+        message: aetherT("Uitzonderlijk winstgevend. Zeer hoge rendabiliteit. Sterke marktpositie, unieke diensten of quasi-monopolie zorgen voor uitzonderlijke winsten.")
     }
 ];
 
 const COMPANY_TYPE_DEFINITIONS = [
     {
         key: "micro",
-        label: "Micro-onderneming",
+        label: aetherT("Micro-onderneming"),
         min: 0,
         max: 30000,
         description: "Dit type onderneming is klein, persoonlijk en volledig verweven met het leven van de eigenaar. De zaak is vaak gevestigd in of naast de woning, en draait op vakmanschap, reputatie en vaste klanten. Groei is beperkt, maar stabiliteit kan hoog zijn zolang de eigenaar gezond blijft. Innovatie gebeurt traag en meestal uit noodzaak, niet uit strategie. Dit zijn de stille radertjes van de stad: onmisbaar, maar zelden zichtbaar in het grote economische spel. Voorbeelden: bakkerij, kleermakerij, schoenmaker, kleine herberg, horlogemaker."
     },
     {
         key: "family",
-        label: "Familiebedrijf",
+        label: aetherT("Familiebedrijf"),
         min: 30000,
         max: 450000,
         description: "Een familiebedrijf vormt een eerste echte economische entiteit los van één individu. Meerdere familieleden of werknemers dragen bij aan de werking, en er is vaak sprake van specialisatie en eenvoudige organisatie. Investeringen in materiaal of infrastructuur zijn merkbaar, en het bedrijf kan lokale concurrentie aangaan of zelfs domineren. De continuïteit ligt in de familie: generaties bouwen verder op wat eerder is opgebouwd. Voorbeelden: drukkerij, brouwerij, transportbedrijf met paarden en vroege stoomwagens, kleine bouwonderneming, industriële wasserij."
     },
     {
         key: "national",
-        label: "Nationale onderneming",
+        label: aetherT("Nationale onderneming"),
         min: 450000,
         max: 6750000,
         description: "Dit type bedrijf overstijgt de lokale markt en opereert op nationaal niveau, vaak met meerdere vestigingen of distributiepunten. Er ontstaat een duidelijke hiërarchie met management, administratie en gespecialiseerde arbeiders. De eigenaar is niet langer dagelijks betrokken bij de uitvoering, maar stuurt op afstand via leidinggevenden. Deze bedrijven zijn zichtbaar in het straatbeeld en beginnen een merkidentiteit op te bouwen. Ze beïnvloeden prijzen, werkgelegenheid en soms zelfs lokale politiek. Voorbeelden: warenhuisketen, nationale brouwerijgroep, spoorwegmaatschappij binnen één land, grote textielfabriek, gas- of elektriciteitsmaatschappij in opkomst."
     },
     {
         key: "small_international",
-        label: "Kleine internationale groep",
+        label: aetherT("Kleine internationale groep"),
         min: 6750000,
         max: 101250000,
         description: "Deze bedrijven opereren over landsgrenzen heen en combineren productie, handel en financiën. Ze hebben dochterondernemingen in meerdere regio’s en werken vaak met complexe eigendomsstructuren. Beslissingen worden strategisch genomen en hebben impact op hele sectoren. Innovatie speelt een grotere rol, zeker in deze moderne tijd waar technologie een concurrentievoordeel biedt. Ze onderhouden banden met banken, adel en overheden. Voorbeelden: internationale staalproducent, chemisch bedrijf, spoorwegnetwerk tussen meerdere landen, fabrikant van industriële machines, telegraaf- of communicatienetwerk."
     },
     {
         key: "large_international",
-        label: "Grote internationale groep",
+        label: aetherT("Grote internationale groep"),
         min: 101250000,
         max: Infinity,
         description: "Dit zijn economische grootmachten die functioneren als staten binnen staten. Ze controleren volledige productieketens, van grondstof tot eindproduct, en hebben invloed op internationale handel en politiek. De leiding bestaat uit elites: industriëlen, bankiers en adel. Hun beslissingen kunnen oorlogen beïnvloeden, steden doen groeien of instorten, en technologische revoluties versnellen. In een steampunkwereld zijn dit de bedrijven die experimenteren met grensverleggende en soms gevaarlijke technologieën. Voorbeelden: continentaal spoorwegimperium, megaconglomeraat in staal en wapens, energiebedrijf met stoom- en elektrische netwerken, internationale bankholding, fabrikant van geavanceerde lucht- of oorlogsmachines."
@@ -192,13 +193,13 @@ function renderCompanyDetailsMode() {
         if (!companyDescriptionRichEditor) {
             companyDescriptionRichEditor = createCharacterRichTextEditor("");
             editorHost.appendChild(companyDescriptionRichEditor.wrapper);
-            companyDescriptionRichEditor.editor.setAttribute("aria-label", "Bedrijfsbeschrijving");
+            companyDescriptionRichEditor.editor.setAttribute("aria-label", aetherT("Bedrijfsbeschrijving"));
             companyDescriptionRichEditor.editor.addEventListener("input", () => {
                 if (companyDetailsDraft) companyDetailsDraft.description = companyDescriptionRichEditor.getHtml();
             });
         }
         if (editing) companyDescriptionRichEditor.setHtml(companyDetailsDraft.description || "");
-        renderCharacterRichText(descriptionDisplay, company?.description || "", "Geen beschrijving beschikbaar.");
+        renderCharacterRichText(descriptionDisplay, company?.description || "", aetherT("Geen beschrijving beschikbaar."));
         descriptionDisplay.classList.toggle("d-none", editing);
         companyDescriptionRichEditor.wrapper.classList.toggle("d-none", !editing);
         companyDescriptionRichEditor.editor.contentEditable = String(editing && !companyDetailsSaving);
@@ -221,17 +222,17 @@ function renderCompanyDetailsMode() {
         listing.replaceChildren();
         const listed = editing ? companyDetailsDraft.isShareListed : Number(company?.isShareListed) === 1;
         const status = document.createElement("span");
-        status.className = "company-listing-status"; status.textContent = listed ? "Ja" : "Nee";
+        status.className = "company-listing-status"; status.textContent = listed ? aetherT("Ja") : aetherT("Nee");
         if (editing) {
             const label = document.createElement("label"); label.className = "company-listing-switch";
             const input = document.createElement("input"); input.type = "checkbox";
             input.className = "company-listing-switch-input"; input.checked = listed;
-            input.disabled = companyDetailsSaving; input.setAttribute("aria-label", "Beursgenoteerd");
+            input.disabled = companyDetailsSaving; input.setAttribute("aria-label", aetherT("Beursgenoteerd"));
             const slider = document.createElement("span"); slider.className = "company-listing-switch-slider";
             slider.setAttribute("aria-hidden", "true");
             input.addEventListener("change", () => {
                 companyDetailsDraft.isShareListed = input.checked;
-                status.textContent = input.checked ? "Ja" : "Nee";
+                status.textContent = input.checked ? aetherT("Ja") : aetherT("Nee");
             });
             label.append(input, slider); listing.appendChild(label);
         }
@@ -247,7 +248,7 @@ async function saveCompanyDetails() {
     }
     draft.description = companyDescriptionRichEditor
         ? companyDescriptionRichEditor.getHtml() : String(document.getElementById("companyDescription")?.value || "").trim();
-    if (!draft.companyName) { showCompanyFeedback("De bedrijfsnaam is verplicht.", "danger"); return; }
+    if (!draft.companyName) { showCompanyFeedback(aetherT("De bedrijfsnaam is verplicht."), "danger"); return; }
     companyDetailsSaving = true;
     renderCompanyDetailsMode();
     try {
@@ -255,7 +256,7 @@ async function saveCompanyDetails() {
             const created = await apiFetchIdempotentJson("api/companies/newCompany.php", {
                 method: "POST", body: { companyName: draft.companyName }
             });
-            if (!Number(created?.id)) throw new Error("Het bedrijf kon niet worden aangemaakt.");
+            if (!Number(created?.id)) throw new Error(aetherT("Het bedrijf kon niet worden aangemaakt."));
             currentCompanyId = Number(created.id);
             currentCompanyData = { ...currentCompanyData, id: currentCompanyId, isDraft: false };
             document.getElementById("companyId").value = String(currentCompanyId);
@@ -274,9 +275,9 @@ async function saveCompanyDetails() {
         clearCompanyDetailsDraft();
         companyAutoSavePending = false;
         await loadCompanyList(currentCompanyId);
-        showCompanyFeedback("Bedrijfsgegevens opgeslagen.", "success");
+        showCompanyFeedback(aetherT("Bedrijfsgegevens opgeslagen."), "success");
     } catch (error) {
-        showCompanyFeedback(error?.message || "Kon de bedrijfsgegevens niet bewaren.", "danger");
+        showCompanyFeedback(error?.message || aetherT("Kon de bedrijfsgegevens niet bewaren."), "danger");
     } finally {
         companyDetailsSaving = false;
         renderCompanyDetailsMode();
@@ -321,7 +322,7 @@ async function loadCompanySnapshotEventOptions() {
             method: "POST",
             body: {}
         });
-        if (!Array.isArray(events)) throw new Error("Ongeldige eventlijst ontvangen.");
+        if (!Array.isArray(events)) throw new Error(aetherT("Ongeldige eventlijst ontvangen."));
         companySnapshotEventOptions = events.map((event) => ({
             idEvent: Number(event.id || 0),
             title: String(event.title || ""),
@@ -358,7 +359,7 @@ function setupCompanyPageListeners() {
     if (newCompanyButton) {
         newCompanyButton.addEventListener("click", async () => {
             if (aetherDataCard.hasActive()) {
-                showCompanyFeedback("Bewaar of annuleer eerst de geopende kaart.", "danger");
+                showCompanyFeedback(aetherT("Bewaar of annuleer eerst de geopende kaart."), "danger");
                 return;
             }
             if (!isCreatingCompany) {
@@ -544,7 +545,7 @@ async function loadCompanyList(selectedCompanyId = 0) {
             populateCompanyForm(null);
             renderCompanyList();
             if (companies.length === 0) {
-                showCompanyFeedback("Nog geen bedrijven beschikbaar.", "info");
+                showCompanyFeedback(aetherT("Nog geen bedrijven beschikbaar."), "info");
             } else {
                 hideCompanyFeedback();
             }
@@ -557,7 +558,7 @@ async function loadCompanyList(selectedCompanyId = 0) {
         console.error("Fout bij laden bedrijvenlijst:", err);
         setCompanyFormState(false);
         populateCompanyForm(null);
-        showCompanyFeedback("Kon de bedrijvenlijst niet laden.", "danger");
+        showCompanyFeedback(aetherT("Kon de bedrijvenlijst niet laden."), "danger");
     }
 }
 
@@ -566,7 +567,7 @@ function renderCompanyList() {
     if (!listEl) return;
     window.renderCompanySidebarCards(companies, listEl, async (company) => {
             if (aetherDataCard.hasActive()) {
-                showCompanyFeedback("Bewaar of annuleer eerst de geopende kaart.", "danger");
+                showCompanyFeedback(aetherT("Bewaar of annuleer eerst de geopende kaart."), "danger");
                 return;
             }
             if (!isCreatingCompany) {
@@ -608,7 +609,7 @@ async function loadCompany(idCompany) {
         return true;
     } catch (err) {
         console.error("Fout bij laden bedrijf:", err);
-        showCompanyFeedback("Kon het geselecteerde bedrijf niet laden.", "danger");
+        showCompanyFeedback(aetherT("Kon het geselecteerde bedrijf niet laden."), "danger");
         return false;
     }
 }
@@ -639,8 +640,8 @@ function populateCompanyForm(company) {
     if (company?.isDraft) {
         currentCompanyData = company;
         currentCompanyPersonnelState = [];
-        if (formTitle) formTitle.textContent = "Nieuw bedrijf";
-        if (formSubtitle) formSubtitle.textContent = "Vul de bedrijfsgegevens in en klik op Save.";
+        if (formTitle) formTitle.textContent = aetherT("Nieuw bedrijf");
+        if (formSubtitle) formSubtitle.textContent = aetherT("Vul de bedrijfsgegevens in en klik op Save.");
         if (idInput) idInput.value = "";
         if (nameInput) nameInput.value = company.companyName || "";
         if (descriptionInput) descriptionInput.value = company.description || "";
@@ -661,8 +662,8 @@ function populateCompanyForm(company) {
     if (!company) {
         currentCompanyData = null;
         currentCompanyPersonnelState = [];
-        if (formTitle) formTitle.textContent = "Bedrijfsgegevens";
-        if (formSubtitle) formSubtitle.textContent = "Kies links een bedrijf of maak een nieuw bedrijf aan.";
+        if (formTitle) formTitle.textContent = aetherT("Bedrijfsgegevens");
+        if (formSubtitle) formSubtitle.textContent = aetherT("Kies links een bedrijf of maak een nieuw bedrijf aan.");
         if (idInput) idInput.value = "";
         if (nameInput) nameInput.value = "";
         if (descriptionInput) descriptionInput.value = "";
@@ -682,8 +683,8 @@ function populateCompanyForm(company) {
 
     currentCompanyData = company;
     currentCompanyPersonnelState = cloneCompanyPersonnelEntries(company?.personnelEntries);
-    if (formTitle) formTitle.textContent = company.companyName || "Bedrijfsgegevens";
-    if (formSubtitle) formSubtitle.textContent = "Algemene gegevens van dit bedrijf.";
+    if (formTitle) formTitle.textContent = company.companyName || aetherT("Bedrijfsgegevens");
+    if (formSubtitle) formSubtitle.textContent = aetherT("Algemene gegevens van dit bedrijf.");
     if (idInput) idInput.value = String(company.id || "");
     if (nameInput) nameInput.value = company.companyName || "";
     if (descriptionInput) descriptionInput.value = company.description || "";
@@ -781,7 +782,7 @@ function updateCompanyLogo(logoUrl, hasLogo) {
     logoImage.src = "";
     logoImage.classList.add("d-none");
     logoPlaceholder.classList.remove("d-none");
-    logoPlaceholder.textContent = hasLogo ? "Logo laden..." : "Geen logo";
+    logoPlaceholder.textContent = hasLogo ? aetherT("Logo laden...") : aetherT("Geen logo");
 }
 
 function hasCompanyLogo() {
@@ -846,7 +847,7 @@ async function flushCompanyAutoSave(options = {}) {
     if (hasPendingPersonnelSave) {
         companyPersonnelSavePending = false;
         personnelSaveResult = await saveCompanyPersonnel({
-            successMessage: "Personeel automatisch opgeslagen.",
+            successMessage: aetherT("Personeel automatisch opgeslagen."),
             silentWhenUnavailable: true
         });
     }
@@ -861,7 +862,7 @@ async function flushCompanyAutoSave(options = {}) {
 
     companyAutoSavePending = false;
     return await saveCompany({
-        successMessage: "Automatisch opgeslagen.",
+        successMessage: aetherT("Automatisch opgeslagen."),
         silentWhenUnavailable: true
     });
 }
@@ -878,7 +879,7 @@ async function ensureCompanyCreated(force = false) {
 
     createCompanyRequestInFlight = true;
     setCompanyFormState(false);
-    showCompanyFeedback("Nieuw bedrijf wordt aangemaakt...", "info");
+    showCompanyFeedback(aetherT("Nieuw bedrijf wordt aangemaakt..."), "info");
 
     try {
         const createdCompany = await apiFetchIdempotentJson("api/companies/newCompany.php", {
@@ -890,17 +891,17 @@ async function ensureCompanyCreated(force = false) {
 
         const createdCompanyId = Number(createdCompany?.id || 0);
         if (createdCompanyId <= 0) {
-            throw new Error("Geen geldig bedrijf ID ontvangen.");
+            throw new Error(aetherT("Geen geldig bedrijf ID ontvangen."));
         }
 
         isCreatingCompany = false;
         setCompanyFormState(true);
         await loadCompanyList(createdCompanyId);
-        showCompanyFeedback("Nieuw bedrijf aangemaakt.", "success");
+        showCompanyFeedback(aetherT("Nieuw bedrijf aangemaakt."), "success");
     } catch (err) {
         console.error("Fout bij aanmaken bedrijf:", err);
         setCompanyFormState(true, { nameOnly: true });
-        showCompanyFeedback(force ? "Kon het nieuwe bedrijf niet aanmaken." : "Kon het nieuwe bedrijf niet automatisch aanmaken.", "danger");
+        showCompanyFeedback(force ? aetherT("Kon het nieuwe bedrijf niet aanmaken.") : aetherT("Kon het nieuwe bedrijf niet automatisch aanmaken."), "danger");
     } finally {
         createCompanyRequestInFlight = false;
     }
@@ -909,7 +910,7 @@ async function ensureCompanyCreated(force = false) {
 async function uploadCompanyLogo(file) {
     const id = Number(document.getElementById("companyId")?.value || 0);
     if (id <= 0) {
-        showCompanyFeedback("Maak eerst het bedrijf aan voor je een logo oplaadt.", "danger");
+        showCompanyFeedback(aetherT("Maak eerst het bedrijf aan voor je een logo oplaadt."), "danger");
         return;
     }
 
@@ -926,7 +927,7 @@ async function uploadCompanyLogo(file) {
     }
 
     updateCompanyLogoActions(false, previousHasLogo);
-    showCompanyFeedback("Bedrijfslogo wordt opgeladen...", "info");
+    showCompanyFeedback(aetherT("Bedrijfslogo wordt opgeladen..."), "info");
 
     try {
         const response = await fetch("api/companies/uploadCompanyLogo.php", {
@@ -944,7 +945,7 @@ async function uploadCompanyLogo(file) {
             } catch (error) {
                 text = "(geen body)";
             }
-            throw new Error(`API-fout ${response.status}: ${text}`);
+            throw new Error(aetherT("API-fout {0}: {1}",[response.status,text]));
         }
 
         const result = await response.json();
@@ -954,13 +955,13 @@ async function uploadCompanyLogo(file) {
         const listedCompany = companies.find((company) => Number(company.id) === id);
         if (listedCompany) listedCompany.logoUrl = result?.logoUrl || null;
         renderCompanyList();
-        showCompanyFeedback("Bedrijfslogo opgeslagen.", "success");
+        showCompanyFeedback(aetherT("Bedrijfslogo opgeslagen."), "success");
         return true;
     } catch (err) {
         console.error("Fout bij opladen bedrijfslogo:", err);
         updateCompanyLogo(previousLogoUrl, previousHasLogo);
         updateCompanyLogoActions(true, previousHasLogo);
-        showCompanyFeedback("Kon het bedrijfslogo niet opladen.", "danger");
+        showCompanyFeedback(aetherT("Kon het bedrijfslogo niet opladen."), "danger");
         return false;
     }
 }
@@ -968,12 +969,12 @@ async function uploadCompanyLogo(file) {
 async function deleteCompanyLogo() {
     const id = Number(document.getElementById("companyId")?.value || 0);
     if (id <= 0) {
-        showCompanyFeedback("Kies eerst een bedrijf.", "danger");
+        showCompanyFeedback(aetherT("Kies eerst een bedrijf."), "danger");
         return;
     }
 
     updateCompanyLogoActions(false, hasCompanyLogo());
-    showCompanyFeedback("Bedrijfslogo wordt verwijderd...", "info");
+    showCompanyFeedback(aetherT("Bedrijfslogo wordt verwijderd..."), "info");
 
     try {
         await apiFetchJson("api/companies/deleteCompanyLogo.php", {
@@ -987,12 +988,12 @@ async function deleteCompanyLogo() {
         const listedCompany = companies.find((company) => Number(company.id) === id);
         if (listedCompany) listedCompany.logoUrl = null;
         renderCompanyList();
-        showCompanyFeedback("Bedrijfslogo verwijderd.", "success");
+        showCompanyFeedback(aetherT("Bedrijfslogo verwijderd."), "success");
         return true;
     } catch (err) {
         console.error("Fout bij verwijderen bedrijfslogo:", err);
         updateCompanyLogoActions(true, hasCompanyLogo());
-        showCompanyFeedback("Kon het bedrijfslogo niet verwijderen.", "danger");
+        showCompanyFeedback(aetherT("Kon het bedrijfslogo niet verwijderen."), "danger");
         return false;
     }
 }
@@ -1097,7 +1098,7 @@ function getCompanyTypeDefinitionForValue(value) {
 function formatCompanyCurrencyValue(value, options = {}) {
     const numericValue = Number(value ?? 0);
     const resolvedValue = Number.isFinite(numericValue) ? numericValue : 0;
-    return new Intl.NumberFormat("fr-BE", options)
+    return new Intl.NumberFormat(globalThis.AetherI18n?.locale || "fr-BE", options)
         .formatToParts(resolvedValue)
         .map((part) => (part.type === "group" ? " " : part.value))
         .join("");
@@ -1125,11 +1126,11 @@ function formatCompanyTypeRange(type) {
     }
 
     if (hasFiniteMin && hasFiniteMax) {
-        return `Vanaf ${formatCompanyRangeCurrency(min)} t.e.m. ${formatCompanyRangeCurrency(max)}`;
+        return aetherT("Vanaf {0} t.e.m. {1}",[formatCompanyRangeCurrency(min),formatCompanyRangeCurrency(max)]);
     }
 
     if (hasFiniteMin) {
-        return `Vanaf ${formatCompanyRangeCurrency(min)}`;
+        return aetherT("Vanaf {0}",[formatCompanyRangeCurrency(min)]);
     }
 
     return "";
@@ -1158,7 +1159,7 @@ function updateCompanyTypePresentation() {
     if (!hasCompanyContext || !companyType) {
         typeCard.classList.add("d-none");
         typeLabel.textContent = "";
-        if (typeTitle) typeTitle.textContent = "Type bedrijf";
+        if (typeTitle) typeTitle.textContent = aetherT("Type bedrijf");
         typeRange.textContent = "";
         typeDescription.textContent = "";
         return;
@@ -1215,9 +1216,9 @@ function getCompanySnapshotAdjustedVariationAmounts(snapshot) {
 }
 
 function getCompanySnapshotAppliedActionLabel(action) {
-    if (action === "loss_adjustment") return "Bedrijfswaarde aangepast";
-    if (action === "reinvest") return "Herinvesteerd";
-    if (action === "dividend") return "Dividend uitbetaald";
+    if (action === "loss_adjustment") return aetherT("Bedrijfswaarde aangepast");
+    if (action === "reinvest") return aetherT("Herinvesteerd");
+    if (action === "dividend") return aetherT("Dividend uitbetaald");
     return "";
 }
 
@@ -1245,7 +1246,7 @@ function appendSnapshotDatum(parent, label, value) {
     const name = document.createElement("span");
     name.textContent = label;
     const content = document.createElement("strong");
-    content.textContent = value == null || value === "" ? "Onbekend" : String(value);
+    content.textContent = value == null || value === "" ? aetherT("Onbekend") : String(value);
     row.append(name, content);
     parent.appendChild(row);
 }
@@ -1280,29 +1281,29 @@ function renderFoundationSnapshot(list, company) {
     const titleWrap = document.createElement("div");
     const title = document.createElement("h3");
     title.className = "h5 mb-1";
-    title.textContent = "Oprichting";
+    title.textContent = aetherT("Oprichting");
     const date = document.createElement("p");
     date.className = "company-snapshot-subtitle";
-    date.textContent = foundation?.foundationDate || company.foundationDate || "Datum onbekend";
+    date.textContent = foundation?.foundationDate || company.foundationDate || aetherT("Datum onbekend");
     titleWrap.append(title, date);
     header.appendChild(titleWrap);
     item.appendChild(header);
     const explanation = document.createElement("p");
     explanation.className = "company-snapshot-subtitle mb-2";
-    explanation.textContent = "Startstand zonder winstberekening of dividend.";
+    explanation.textContent = aetherT("Startstand zonder winstberekening of dividend.");
     item.appendChild(explanation);
     if (!foundation) {
-        appendSnapshotDatum(item, "Gegevens", "Oprichtingssnapshot beschikbaar na migratie 0012");
+        appendSnapshotDatum(item, aetherT("Gegevens"), aetherT("Oprichtingssnapshot beschikbaar na migratie 0012"));
         list.appendChild(item);
         return;
     }
     const values = [
-        ["initialCompanyValue", "Beginwaarde bedrijf", foundation.initialCompanyValue],
-        ["initialShareCount", "Aandelen bij oprichting", foundation.initialShareCount],
-        ["shareMarketPrice", "Initiële marktprijs per aandeel", foundation.shareMarketPrice],
-        ["anonymousShareCount", "Aandelen in anonieme handen", foundation.anonymousShareCount],
-        ["stability", "Begin stabiliteit", foundation.stability],
-        ["profitability", "Begin rendabiliteit", foundation.profitability],
+        ["initialCompanyValue", aetherT("Beginwaarde bedrijf"), foundation.initialCompanyValue],
+        ["initialShareCount", aetherT("Aandelen bij oprichting"), foundation.initialShareCount],
+        ["shareMarketPrice", aetherT("Initiële marktprijs per aandeel"), foundation.shareMarketPrice],
+        ["anonymousShareCount", aetherT("Aandelen in anonieme handen"), foundation.anonymousShareCount],
+        ["stability", aetherT("Begin stabiliteit"), foundation.stability],
+        ["profitability", aetherT("Begin rendabiliteit"), foundation.profitability],
     ];
     const inputs = new Map();
     const grid = document.createElement("div");
@@ -1327,7 +1328,7 @@ function renderFoundationSnapshot(list, company) {
     aetherDataCard.controls(header, {
         key: cardKey,
         canEdit: true,
-        saveLabel: "Bewaren",
+        saveLabel: aetherT("Bewaren"),
         onEdit: () => { if (aetherDataCard.open(cardKey)) refreshCompanyDataCards(company); },
         onCancel: () => { aetherDataCard.close(cardKey); refreshCompanyDataCards(company); },
         onSave: async () => {
@@ -1339,7 +1340,7 @@ function renderFoundationSnapshot(list, company) {
             const n = integer ? Number(input.value) : Number(decimal);
             if (input.value.trim() === "" || (!integer && decimal === null) || !Number.isFinite(n) || n < Number(input.min)
                 || (input.max && n > Number(input.max)) || (input.step === "1" && !Number.isInteger(n))) {
-                showCompanyFeedback(`Controleer ${input.parentElement?.firstChild?.textContent || key}.`, "danger");
+                showCompanyFeedback(aetherT("Controleer {0}.",[input.parentElement?.firstChild?.textContent || key]), "danger");
                 return;
             }
             body[key] = integer ? n : decimal;
@@ -1348,12 +1349,12 @@ function renderFoundationSnapshot(list, company) {
             await aetherShareUi.mutateCompany("setCompanyFoundation", body);
             aetherDataCard.close(cardKey);
             await loadCompany(Number(company.id));
-            showCompanyFeedback("Oprichting bewaard.", "success");
+            showCompanyFeedback(aetherT("Oprichting bewaard."), "success");
         } catch (error) { showCompanyFeedback(aetherShareUi.errorMessage(error), "danger"); }
         }
     });
     if (foundation.sourceCode === "reconstructed") {
-        appendSnapshotDatum(item, "Herkomst", "Gereconstrueerd uit de migratie; historische onbekende waarden blijven leeg");
+        appendSnapshotDatum(item, aetherT("Herkomst"), aetherT("Gereconstrueerd uit de migratie; historische onbekende waarden blijven leeg"));
     }
     list.appendChild(item);
 }
@@ -1379,7 +1380,7 @@ function renderCompanySnapshots(company) {
         card.classList.add("d-none");
         list.innerHTML = "";
         empty.classList.add("d-none");
-        eventSelect.innerHTML = '<option value="0">Kies een event</option>';
+        eventSelect.innerHTML = `<option value="0">${aetherT("Kies een event")}</option>`;
         createButton.disabled = true;
         eventStatus?.classList.add("d-none");
         return;
@@ -1398,7 +1399,7 @@ function renderCompanySnapshots(company) {
     eventSelect.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "0";
-    placeholder.textContent = "Kies een event";
+    placeholder.textContent = aetherT("Kies een event");
     eventSelect.appendChild(placeholder);
     remainingEvents.forEach((option) => {
         const optionEl = document.createElement("option");
@@ -1410,9 +1411,9 @@ function renderCompanySnapshots(company) {
     if (eventStatus) {
         eventStatus.classList.toggle("d-none", remainingEvents.length > 0);
         eventStatus.textContent = remainingEvents.length ? ""
-            : sourceOptions.length ? "Elk beschikbaar event heeft al een snapshot."
-            : companySnapshotEventLoadError ? "De eventlijst kon niet geladen worden. Vernieuw de pagina of controleer de event-API."
-            : "Er zijn nog geen events beschikbaar.";
+            : sourceOptions.length ? aetherT("Elk beschikbaar event heeft al een snapshot.")
+            : companySnapshotEventLoadError ? aetherT("De eventlijst kon niet geladen worden. Vernieuw de pagina of controleer de event-API.")
+            : aetherT("Er zijn nog geen events beschikbaar.");
     }
 
     list.innerHTML = "";
@@ -1448,13 +1449,13 @@ function renderCompanySnapshots(company) {
         const buttonGroup = document.createElement("div");
         buttonGroup.className = "company-snapshot-actions button-group";
 
-        const recalculateButton = AetherActionButtons.button({ icon: "fa-rotate", label: "Herbereken" });
+        const recalculateButton = AetherActionButtons.button({ icon: "fa-rotate", label: aetherT("Herbereken") });
         recalculateButton.dataset.action = "recalculate-company-snapshot";
         recalculateButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
         recalculateButton.disabled = isApplied;
         buttonGroup.appendChild(recalculateButton);
 
-        const deleteButton = AetherActionButtons.button({ icon: "fa-trash", label: "Verwijderen" });
+        const deleteButton = AetherActionButtons.button({ icon: "fa-trash", label: aetherT("Verwijderen") });
         deleteButton.dataset.action = "delete-company-snapshot";
         deleteButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
         buttonGroup.appendChild(deleteButton);
@@ -1475,8 +1476,8 @@ function renderCompanySnapshots(company) {
                 });
                 aetherDataCard.close(cardKey);
                 await loadCompany(Number(company.id));
-                showCompanyFeedback("Snapshot bijgewerkt.", "success");
-            } catch (error) { showCompanyFeedback(error?.message || "Kon de snapshot niet bewaren.", "danger"); button.disabled = false; }
+                showCompanyFeedback(aetherT("Snapshot bijgewerkt."), "success");
+            } catch (error) { showCompanyFeedback(error?.message || aetherT("Kon de snapshot niet bewaren."), "danger"); button.disabled = false; }
         };
         const addEditableSnapshotValue = (key, label, value, options = {}) => {
             const col = document.createElement("div");
@@ -1485,12 +1486,12 @@ function renderCompanySnapshots(company) {
             valueFields.appendChild(col);
             snapshotInputs.set(key, { field, label, integer: Boolean(options.integer) });
         };
-        addEditableSnapshotValue("companyValue", "Bedrijfswaarde", snapshot.companyValue);
-        addEditableSnapshotValue("issuedShareCount", "Uitgegeven aandelen", snapshot.issuedShareCount,
+        addEditableSnapshotValue("companyValue", aetherT("Bedrijfswaarde"), snapshot.companyValue);
+        addEditableSnapshotValue("issuedShareCount", aetherT("Uitgegeven aandelen"), snapshot.issuedShareCount,
             { integer: true, min: 1 });
-        addEditableSnapshotValue("anonymousShareCount", "Aandelen in anonieme handen", snapshot.anonymousShareCount,
+        addEditableSnapshotValue("anonymousShareCount", aetherT("Aandelen in anonieme handen"), snapshot.anonymousShareCount,
             { integer: true });
-        addEditableSnapshotValue("shareMarketPrice", "Marktprijs per aandeel", snapshot.shareMarketPrice);
+        addEditableSnapshotValue("shareMarketPrice", aetherT("Marktprijs per aandeel"), snapshot.shareMarketPrice);
 
         const fields = document.createElement("div");
         fields.className = "row g-3";
@@ -1501,7 +1502,7 @@ function renderCompanySnapshots(company) {
         stabilityRow.className = "company-snapshot-inline-field";
         const stabilityLabel = document.createElement("label");
         stabilityLabel.className = "form-label mb-0";
-        stabilityLabel.textContent = "Stabiliteit";
+        stabilityLabel.textContent = aetherT("Stabiliteit");
         stabilityRow.appendChild(stabilityLabel);
         const stabilityInput = document.createElement("input");
         stabilityInput.type = "number";
@@ -1520,7 +1521,7 @@ function renderCompanySnapshots(company) {
         profitabilityRow.className = "company-snapshot-inline-field";
         const profitabilityLabel = document.createElement("label");
         profitabilityLabel.className = "form-label mb-0";
-        profitabilityLabel.textContent = "Rendabiliteit";
+        profitabilityLabel.textContent = aetherT("Rendabiliteit");
         profitabilityRow.appendChild(profitabilityLabel);
         const profitabilityInput = document.createElement("input");
         profitabilityInput.type = "number";
@@ -1539,7 +1540,7 @@ function renderCompanySnapshots(company) {
             const stability = Number(stabilityInput.value);
             const profitability = Number(profitabilityInput.value);
             if (![stability, profitability].every((value) => Number.isInteger(value) && value >= -7 && value <= 7)) {
-                showCompanyFeedback("Controleer stabiliteit en rendabiliteit.", "danger");
+                showCompanyFeedback(aetherT("Controleer stabiliteit en rendabiliteit."), "danger");
                 return;
             }
             const body = {};
@@ -1550,7 +1551,7 @@ function renderCompanySnapshots(company) {
                 const decimal = integer ? null : parseCompanySnapshotMoney(field.value);
                 const n = integer ? Number(field.value) : Number(decimal);
                 if ((!integer && decimal === null) || !Number.isFinite(n) || n < Number(field.min) || (integer && !Number.isInteger(n))) {
-                    showCompanyFeedback(`Controleer ${label.toLowerCase()}.`, "danger");
+                    showCompanyFeedback(aetherT("Controleer {0}.",[label.toLowerCase()]), "danger");
                     return;
                 }
                 if (snapshot[key] == null || (integer ? n !== Number(snapshot[key])
@@ -1570,10 +1571,10 @@ function renderCompanySnapshots(company) {
             const facts = document.createElement("div");
             facts.className = "data-card-facts";
             for (const [label, value] of [
-                ["Bedrijfswaarde", snapshot.companyValue == null ? null : formatCompanySnapshotCurrency(snapshot.companyValue)],
-                ["Uitgegeven aandelen", snapshot.issuedShareCount],
-                ["Aandelen in anonieme handen", snapshot.anonymousShareCount],
-                ["Marktprijs per aandeel", snapshot.shareMarketPrice == null ? null : formatCompanySnapshotCurrency(snapshot.shareMarketPrice)]
+                [aetherT("Bedrijfswaarde"), snapshot.companyValue == null ? null : formatCompanySnapshotCurrency(snapshot.companyValue)],
+                [aetherT("Uitgegeven aandelen"), snapshot.issuedShareCount],
+                [aetherT("Aandelen in anonieme handen"), snapshot.anonymousShareCount],
+                [aetherT("Marktprijs per aandeel"), snapshot.shareMarketPrice == null ? null : formatCompanySnapshotCurrency(snapshot.shareMarketPrice)]
             ]) aetherDataCard.fact(facts, label, value);
             item.appendChild(facts);
             aetherDataCard.controls(header, {
@@ -1594,25 +1595,25 @@ function renderCompanySnapshots(company) {
         const variationAmounts = getCompanySnapshotAdjustedVariationAmounts(snapshot);
         const resultLabel = document.createElement("div");
         resultLabel.className = "company-snapshot-profit-label";
-        resultLabel.textContent = isApplied ? "Historisch verwerkte winst/verlies" : "Winst/verlies periode";
+        resultLabel.textContent = isApplied ? aetherT("Historisch verwerkte winst/verlies") : aetherT("Winst/verlies periode");
         const resultValue = document.createElement("div");
         resultValue.className = "company-snapshot-profit-value";
         resultValue.textContent = formatCompanySnapshotCurrency(profitAmount);
         const resultMeta = document.createElement("div");
         resultMeta.className = "company-snapshot-profit-meta";
         const profitabilityLine = document.createElement("div");
-        profitabilityLine.textContent = `Rendabiliteit: ${formatCompanySnapshotCurrency(baseProfitAmount)}`;
+        profitabilityLine.textContent = aetherT("Rendabiliteit: {0}",[formatCompanySnapshotCurrency(baseProfitAmount)]);
         const stabilityLine = document.createElement("div");
-        stabilityLine.textContent = `Stabiliteit: ${formatCompanySnapshotCurrency(variationAmounts.minAmount)} tot ${formatCompanySnapshotCurrency(variationAmounts.maxAmount)}`;
+        stabilityLine.textContent = aetherT("Stabiliteit: {0} tot {1}",[formatCompanySnapshotCurrency(variationAmounts.minAmount),formatCompanySnapshotCurrency(variationAmounts.maxAmount)]);
         resultMeta.append(profitabilityLine, stabilityLine);
         result.append(resultLabel, resultValue);
         if (editing) result.appendChild(resultMeta);
         if (isApplied && !editing) {
             const outcome = document.createElement("div");
             outcome.className = "company-snapshot-profit-meta";
-            outcome.textContent = appliedAction === "dividend" ? "Uitbetaald aan de aandeelhouders."
-                : appliedAction === "reinvest" ? "Opnieuw geïnvesteerd in het bedrijf."
-                : "Verlies verwerkt in de bedrijfswaarde.";
+            outcome.textContent = appliedAction === "dividend" ? aetherT("Uitbetaald aan de aandeelhouders.")
+                : appliedAction === "reinvest" ? aetherT("Opnieuw geïnvesteerd in het bedrijf.")
+                : aetherT("Verlies verwerkt in de bedrijfswaarde.");
             result.appendChild(outcome);
         }
         item.appendChild(result);
@@ -1623,29 +1624,29 @@ function renderCompanySnapshots(company) {
 
         if (isApplied && editing) {
             const appliedInfo = document.createElement("div");
-            appliedInfo.textContent = `Toegepast: ${getCompanySnapshotAppliedActionLabel(appliedAction)}. Eerdere boekingen blijven bewaard bij correcties.`;
+            appliedInfo.textContent = aetherT("Toegepast: {0}. Eerdere boekingen blijven bewaard bij correcties.",[getCompanySnapshotAppliedActionLabel(appliedAction)]);
             actionSection.appendChild(appliedInfo);
         } else if (profitAmount < 0) {
-            const lossButton = AetherActionButtons.button({ icon: "fa-check", label: "Bedrijfswaarde aanpassen" });
+            const lossButton = AetherActionButtons.button({ icon: "fa-check", label: aetherT("Bedrijfswaarde aanpassen") });
             lossButton.dataset.action = "apply-company-snapshot";
             lossButton.dataset.applyAction = "loss_adjustment";
             lossButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
             actionSection.appendChild(AetherActionButtons.group([lossButton]));
         } else if (profitAmount > 0) {
             const dividendInfo = document.createElement("div");
-            dividendInfo.textContent = `Dividend voor 1%: ${formatCompanySnapshotCurrency(dividendPerPercentage)}`;
+            dividendInfo.textContent = aetherT("Dividend voor 1%: {0}",[formatCompanySnapshotCurrency(dividendPerPercentage)]);
             actionSection.appendChild(dividendInfo);
 
             const actionButtons = document.createElement("div");
             actionButtons.className = "company-snapshot-actions button-group mt-2";
 
-            const reinvestButton = AetherActionButtons.button({ icon: "fa-arrow-trend-up", label: "Herinvesteren" });
+            const reinvestButton = AetherActionButtons.button({ icon: "fa-arrow-trend-up", label: aetherT("Herinvesteren") });
             reinvestButton.dataset.action = "apply-company-snapshot";
             reinvestButton.dataset.applyAction = "reinvest";
             reinvestButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
             actionButtons.appendChild(reinvestButton);
 
-            const dividendButton = AetherActionButtons.button({ icon: "fa-coins", label: "Dividend uitbetalen" });
+            const dividendButton = AetherActionButtons.button({ icon: "fa-coins", label: aetherT("Dividend uitbetalen") });
             dividendButton.dataset.action = "apply-company-snapshot";
             dividendButton.dataset.applyAction = "dividend";
             dividendButton.dataset.idCompanySnapshot = String(snapshot.idCompanySnapshot || 0);
@@ -1689,14 +1690,14 @@ function getCompanyPersonnelSkillOptions() {
 function getCompanyPersonnelImportanceOptions() {
     return Array.isArray(currentCompanyData?.personnelImportanceOptions) && currentCompanyData.personnelImportanceOptions.length > 0
         ? currentCompanyData.personnelImportanceOptions
-        : ["Negligible", "Low", "Moderate", "High", "Critical"];
+        : [aetherT("Negligible"), aetherT("Low"), aetherT("Moderate"), aetherT("High"), aetherT("Critical")];
 }
 
 function createEmptyCompanyPersonnelEntry() {
     return {
         idCharacter: 0,
         functionDescription: "",
-        importance: "Moderate",
+        importance: aetherT("Moderate"),
         salaryIncreasePercentage: 0,
         isBoardMember: false,
         isCompanyLeader: false,
@@ -1718,7 +1719,7 @@ function findCompanyPersonnelSkillOption(idSkill) {
 
 function getCompanyPersonnelCharacterLabel(idCharacter) {
     const option = getCompanyPersonnelCharacterOptions().find((entry) => Number(entry?.idCharacter || 0) === Number(idCharacter));
-    return option?.nameLabel || option?.displayName || `Personage #${Number(idCharacter || 0)}`;
+    return option?.nameLabel || option?.displayName || aetherT("Personage #{0}",[Number(idCharacter || 0)]);
 }
 
 function getCompanyPersonnelCharacterProfessionLabel(idCharacter) {
@@ -1776,9 +1777,9 @@ function getAvailableSpecialisationOptionsForPersonnelSkill(skillEntry) {
 }
 
 function formatCompanyPersonnelSkillLevelLabel(level) {
-    if (Number(level) === 3) return "Meester";
-    if (Number(level) === 2) return "Deskundige";
-    return "Beginneling";
+    if (Number(level) === 3) return aetherT("Meester");
+    if (Number(level) === 2) return aetherT("Deskundige");
+    return aetherT("Beginneling");
 }
 
 function renderCompanyPersonnel(company) {
@@ -1839,7 +1840,7 @@ function renderCompanyPersonnel(company) {
         const title = document.createElement("h3");
         title.textContent = Number(entry?.idCharacter || 0) > 0
             ? entry.nameLabel || entry.displayName || getCompanyPersonnelCharacterLabel(entry.idCharacter)
-            : `Personeelslid ${entryIndex + 1}`;
+            : aetherT("Personeelslid {0}",[entryIndex + 1]);
         titleWrap.appendChild(title);
 
         const professionLabel = Number(entry?.idCharacter || 0) > 0
@@ -1854,7 +1855,7 @@ function renderCompanyPersonnel(company) {
         if (entry?.isCompanyLeader) {
             const leaderInfo = document.createElement("p");
             leaderInfo.className = "company-personnel-entry-subtitle";
-            leaderInfo.textContent = `Bedrijfsleider · basisloon Fr ${Number(entry.leaderMonthlyIncome || 0).toFixed(2)}/maand · ${Number(entry.leaderStatusPoints || 0)} statuspunten · personeelsvoorwaarde ${Number(entry.leaderPersonnelRequirement || 0)}`;
+            leaderInfo.textContent = aetherT("Bedrijfsleider · basisloon Fr {0}/maand · {1} statuspunten · personeelsvoorwaarde {2}",[Number(entry.leaderMonthlyIncome || 0).toFixed(2),Number(entry.leaderStatusPoints || 0),Number(entry.leaderPersonnelRequirement || 0)]);
             titleWrap.appendChild(leaderInfo);
         }
         header.appendChild(titleWrap);
@@ -1865,14 +1866,14 @@ function renderCompanyPersonnel(company) {
             const facts = document.createElement("div");
             facts.className = "data-card-facts mt-3";
             const skill = entry?.skills?.[0];
-            aetherDataCard.fact(facts, "Functiebeschrijving", entry?.functionDescription);
-            aetherDataCard.fact(facts, "Belang", entry?.importance || "Moderate");
-            aetherDataCard.fact(facts, "Loonsverhoging", `${Number(entry?.salaryIncreasePercentage || 0).toFixed(2)}%`);
-            aetherDataCard.fact(facts, "Winstdruk per jaar", formatCompanySnapshotCurrency(Number(entry?.monthlySalaryIncreaseAmount || 0) * 12));
-            aetherDataCard.fact(facts, "Raad van bestuur", entry?.isBoardMember ? "Ja" : "Nee");
-            aetherDataCard.fact(facts, "Vaardigheid", skill?.skillName || findCompanyPersonnelSkillOption(skill?.idSkill)?.name || null);
-            aetherDataCard.fact(facts, "Vereist niveau", skill?.idSkill ? formatCompanyPersonnelSkillLevelLabel(skill.level) : null);
-            aetherDataCard.fact(facts, "Specialisaties", skill?.specialisations?.map((value) => value.name).filter(Boolean).join(", "));
+            aetherDataCard.fact(facts, aetherT("Functiebeschrijving"), entry?.functionDescription);
+            aetherDataCard.fact(facts, aetherT("Belang"), entry?.importance || aetherT("Moderate"));
+            aetherDataCard.fact(facts, aetherT("Loonsverhoging"), `${Number(entry?.salaryIncreasePercentage || 0).toFixed(2)}%`);
+            aetherDataCard.fact(facts, aetherT("Winstdruk per jaar"), formatCompanySnapshotCurrency(Number(entry?.monthlySalaryIncreaseAmount || 0) * 12));
+            aetherDataCard.fact(facts, aetherT("Raad van bestuur"), entry?.isBoardMember ? aetherT("Ja") : aetherT("Nee"));
+            aetherDataCard.fact(facts, aetherT("Vaardigheid"), skill?.skillName || findCompanyPersonnelSkillOption(skill?.idSkill)?.name || null);
+            aetherDataCard.fact(facts, aetherT("Vereist niveau"), skill?.idSkill ? formatCompanyPersonnelSkillLevelLabel(skill.level) : null);
+            aetherDataCard.fact(facts, aetherT("Specialisaties"), skill?.specialisations?.map((value) => value.name).filter(Boolean).join(", "));
             cardEl.appendChild(facts);
             aetherDataCard.controls(header, {
                 key: cardKey,
@@ -1890,7 +1891,7 @@ function renderCompanyPersonnel(company) {
 
         const saveButton = AetherActionButtons.button({
             icon: "fa-check",
-            label: "Save",
+            label: aetherT("Save"),
             onClick: async () => {
                 saveButton.disabled = true;
                 try {
@@ -1905,7 +1906,7 @@ function renderCompanyPersonnel(company) {
             && (company.canManageCompany !== false || company.canAddPersonnel)) {
             const removeButton = AetherActionButtons.button({
                 icon: "fa-trash",
-                label: "Verwijderen",
+                label: aetherT("Verwijderen"),
                 onClick: () => { void removeCompanyPersonnelDraft(entryIndex, cardKey); }
             });
             editorActions.push(removeButton);
@@ -1925,13 +1926,13 @@ function renderCompanyPersonnel(company) {
         characterSelect.dataset.personnelIndex = String(entryIndex);
         const characterPlaceholder = document.createElement("option");
         characterPlaceholder.value = "0";
-        characterPlaceholder.textContent = "Kies een personage";
+        characterPlaceholder.textContent = aetherT("Kies een personage");
         characterSelect.appendChild(characterPlaceholder);
 
         getAvailableCharacterOptionsForPersonnelEntry(entryIndex).forEach((option) => {
             const optionEl = document.createElement("option");
             optionEl.value = String(option.idCharacter || 0);
-            optionEl.textContent = option.displayName || `Personage #${option.idCharacter || 0}`;
+            optionEl.textContent = option.displayName || aetherT("Personage #{0}",[option.idCharacter || 0]);
             optionEl.selected = Number(entry?.idCharacter || 0) === Number(option.idCharacter || 0);
             characterSelect.appendChild(optionEl);
         });
@@ -1945,7 +1946,7 @@ function renderCompanyPersonnel(company) {
         functionCol.className = "col-12";
         const functionLabel = document.createElement("label");
         functionLabel.className = "form-label";
-        functionLabel.textContent = "Functiebeschrijving";
+        functionLabel.textContent = aetherT("Functiebeschrijving");
         functionCol.appendChild(functionLabel);
         const functionInput = document.createElement("textarea");
         functionInput.className = "form-control";
@@ -1961,7 +1962,7 @@ function renderCompanyPersonnel(company) {
         importanceCol.className = "col-12 col-md-6";
         const importanceLabel = document.createElement("label");
         importanceLabel.className = "form-label";
-        importanceLabel.textContent = "Belang";
+        importanceLabel.textContent = aetherT("Belang");
         importanceCol.appendChild(importanceLabel);
 
         const importanceSelect = document.createElement("select");
@@ -1972,12 +1973,12 @@ function renderCompanyPersonnel(company) {
             const optionEl = document.createElement("option");
             optionEl.value = importance;
             optionEl.textContent = importance;
-            optionEl.selected = String(entry?.importance || "Moderate") === importance;
+            optionEl.selected = String(entry?.importance || aetherT("Moderate")) === importance;
             importanceSelect.appendChild(optionEl);
         });
         if (company.canManageCompany === false) {
             const value = document.createElement("span"); value.className = "d-block";
-            value.textContent = entry.importance || "Moderate"; importanceCol.appendChild(value);
+            value.textContent = entry.importance || aetherT("Moderate"); importanceCol.appendChild(value);
         } else importanceCol.appendChild(importanceSelect);
         fieldsRow.appendChild(importanceCol);
 
@@ -1985,7 +1986,7 @@ function renderCompanyPersonnel(company) {
         salaryCol.className = "col-12 col-md-6";
         const salaryLabel = document.createElement("label");
         salaryLabel.className = "form-label";
-        salaryLabel.textContent = "Loonsverhoging (%)";
+        salaryLabel.textContent = aetherT("Loonsverhoging (%)");
         salaryCol.appendChild(salaryLabel);
 
         const salaryInput = document.createElement("input");
@@ -1999,13 +2000,13 @@ function renderCompanyPersonnel(company) {
         salaryCol.appendChild(salaryInput);
         const pressure = document.createElement("small");
         pressure.className = "text-muted d-block mt-1";
-        pressure.textContent = `Winstdruk: Fr ${(Number(entry?.monthlySalaryIncreaseAmount || 0) * 12).toFixed(2)} per jaar`;
+        pressure.textContent = aetherT("Winstdruk: Fr {0} per jaar",[(Number(entry?.monthlySalaryIncreaseAmount || 0) * 12).toFixed(2)]);
         salaryCol.appendChild(pressure);
         fieldsRow.appendChild(salaryCol);
 
         const roleCol = document.createElement("div");
         roleCol.className = "col-12 d-flex flex-wrap gap-3";
-        for (const [field, label] of [["isBoardMember", "Raad van bestuur"]]) {
+        for (const [field, label] of [["isBoardMember", aetherT("Raad van bestuur")]]) {
             const wrap = document.createElement("label");
             wrap.className = "form-check";
             const check = document.createElement("input");
@@ -2025,9 +2026,9 @@ function renderCompanyPersonnel(company) {
         if (company.canManageCompany === false) {
             const facts = document.createElement("div"); facts.className = "data-card-facts mt-3";
             const skill = entry.skills?.[0];
-            aetherDataCard.fact(facts, "Vaardigheid", skill?.skillName);
-            aetherDataCard.fact(facts, "Vereist niveau", skill?.idSkill ? formatCompanyPersonnelSkillLevelLabel(skill.level) : null);
-            aetherDataCard.fact(facts, "Specialisaties", skill?.specialisations?.map(item => item.name).join(", "));
+            aetherDataCard.fact(facts, aetherT("Vaardigheid"), skill?.skillName);
+            aetherDataCard.fact(facts, aetherT("Vereist niveau"), skill?.idSkill ? formatCompanyPersonnelSkillLevelLabel(skill.level) : null);
+            aetherDataCard.fact(facts, aetherT("Specialisaties"), skill?.specialisations?.map(item => item.name).join(", "));
             cardEl.appendChild(facts);
             showCompanyPersonnelEditor(cardEl);
             return;
@@ -2048,7 +2049,7 @@ function renderCompanyPersonnel(company) {
         skillSelectCol.className = "col-12 col-md-8";
         const skillSelectLabel = document.createElement("label");
         skillSelectLabel.className = "form-label";
-        skillSelectLabel.textContent = "Vaardigheid";
+        skillSelectLabel.textContent = aetherT("Vaardigheid");
         skillSelectCol.appendChild(skillSelectLabel);
 
         const skillSelect = document.createElement("select");
@@ -2058,12 +2059,12 @@ function renderCompanyPersonnel(company) {
         skillSelect.dataset.skillIndex = "0";
         const skillPlaceholder = document.createElement("option");
         skillPlaceholder.value = "0";
-        skillPlaceholder.textContent = "Kies een vaardigheid";
+        skillPlaceholder.textContent = aetherT("Kies een vaardigheid");
         skillSelect.appendChild(skillPlaceholder);
         getAvailableSkillOptionsForPersonnelEntry(entry, 0).forEach((option) => {
             const optionEl = document.createElement("option");
             optionEl.value = String(option.idSkill || 0);
-            optionEl.textContent = option.name || `Vaardigheid #${option.idSkill || 0}`;
+            optionEl.textContent = option.name || aetherT("Vaardigheid #{0}",[option.idSkill || 0]);
             optionEl.selected = Number(skillEntry?.idSkill || 0) === Number(option.idSkill || 0);
             skillSelect.appendChild(optionEl);
         });
@@ -2074,7 +2075,7 @@ function renderCompanyPersonnel(company) {
         levelCol.className = "col-12 col-md-4";
         const levelLabel = document.createElement("label");
         levelLabel.className = "form-label";
-        levelLabel.textContent = "Vereist niveau";
+        levelLabel.textContent = aetherT("Vereist niveau");
         levelCol.appendChild(levelLabel);
 
         const levelSelect = document.createElement("select");
@@ -2099,10 +2100,10 @@ function renderCompanyPersonnel(company) {
         specialisationsHeader.className = "company-personnel-skills-header";
         const specialisationsLabel = document.createElement("div");
         specialisationsLabel.className = "company-personnel-specialisations-label";
-        specialisationsLabel.textContent = "Specialisaties";
+        specialisationsLabel.textContent = aetherT("Specialisaties");
         specialisationsHeader.appendChild(specialisationsLabel);
 
-        const addSpecialisationButton = AetherActionButtons.button({ icon: "fa-plus", label: "Specialisatie toevoegen" });
+        const addSpecialisationButton = AetherActionButtons.button({ icon: "fa-plus", label: aetherT("Specialisatie toevoegen") });
         addSpecialisationButton.dataset.action = "open-company-personnel-specialisation-modal";
         addSpecialisationButton.dataset.personnelIndex = String(entryIndex);
         addSpecialisationButton.dataset.skillIndex = "0";
@@ -2116,7 +2117,7 @@ function renderCompanyPersonnel(company) {
         if (selectedSpecialisations.length === 0) {
             const noSpecialisations = document.createElement("span");
             noSpecialisations.className = "company-personnel-specialisation-empty";
-            noSpecialisations.textContent = "Nog geen specialisaties.";
+            noSpecialisations.textContent = aetherT("Nog geen specialisaties.");
             specialisationsList.appendChild(noSpecialisations);
         } else {
             selectedSpecialisations.forEach((specialisation, specialisationIndex) => {
@@ -2124,10 +2125,10 @@ function renderCompanyPersonnel(company) {
                 badge.className = "company-personnel-specialisation-chip";
 
                 const text = document.createElement("span");
-                text.textContent = specialisation?.name || `Specialisatie #${specialisation?.idSkillSpecialisation || 0}`;
+                text.textContent = specialisation?.name || aetherT("Specialisatie #{0}",[specialisation?.idSkillSpecialisation || 0]);
                 badge.appendChild(text);
 
-                const deleteButton = AetherActionButtons.button({ icon: "fa-xmark", title: "Specialisatie verwijderen", ariaLabel: "Specialisatie verwijderen" });
+                const deleteButton = AetherActionButtons.button({ icon: "fa-xmark", title: aetherT("Specialisatie verwijderen"), ariaLabel: aetherT("Specialisatie verwijderen") });
                 deleteButton.dataset.action = "remove-company-personnel-specialisation";
                 deleteButton.dataset.personnelIndex = String(entryIndex);
                 deleteButton.dataset.skillIndex = "0";
@@ -2168,7 +2169,7 @@ function handleCompanyPersonnelCardChange(event) {
         if (entry.isCompanyLeader) entry.isBoardMember = true;
         renderCompanyPersonnel(currentCompanyData);
     } else if (field === "importance") {
-        entry.importance = String(target.value || "Moderate");
+        entry.importance = String(target.value || aetherT("Moderate"));
     } else if (field === "functionDescription") {
         entry.functionDescription = String(target.value || "");
     } else if (field === "salaryIncreasePercentage") {
@@ -2206,7 +2207,7 @@ function cancelCompanyPersonnelDraft(cardKey) {
 async function saveCompanyPersonnelDraft(index, cardKey) {
     if (!companyPersonnelDraft || index !== companyPersonnelDraftIndex) return false;
     if (Number(companyPersonnelDraft.idCharacter || 0) <= 0) {
-        showCompanyFeedback("Kies eerst een personage.", "danger");
+        showCompanyFeedback(aetherT("Kies eerst een personage."), "danger");
         return false;
     }
     if (currentCompanyData?.canManageCompany === false) {
@@ -2221,7 +2222,7 @@ async function saveCompanyPersonnelDraft(index, cardKey) {
             cancelCompanyPersonnelDraft(cardKey);
             await loadCompany(Number(currentCompanyData.id));
             return true;
-        } catch (error) { showCompanyFeedback(error?.message || "Bewaren mislukt.", "danger"); return false; }
+        } catch (error) { showCompanyFeedback(error?.message || aetherT("Bewaren mislukt."), "danger"); return false; }
     }
     const entries = cloneCompanyPersonnelEntries(currentCompanyPersonnelState);
     entries[index] = cloneCompanyPersonnelEntries([companyPersonnelDraft])[0];
@@ -2244,7 +2245,7 @@ async function removeCompanyPersonnelDraft(index, cardKey) {
             cancelCompanyPersonnelDraft(cardKey);
             await loadCompany(Number(currentCompanyData.id));
         } catch (error) {
-            showCompanyFeedback(error?.message || "Verwijderen mislukt.", "danger");
+            showCompanyFeedback(error?.message || aetherT("Verwijderen mislukt."), "danger");
         }
         return;
     }
@@ -2318,7 +2319,7 @@ function showCompanyPersonnelEditor(card) {
         modal.id = "companyPersonnelEditModal";
         modal.className = "modal fade"; modal.tabIndex = -1;
         modal.setAttribute("aria-labelledby", "companyPersonnelEditTitle");
-        modal.innerHTML = '<div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h3 class="modal-title" id="companyPersonnelEditTitle">Personeelslid</h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div><div class="modal-body"></div></div></div>';
+        modal.innerHTML = `<div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h3 class="modal-title" id="companyPersonnelEditTitle">${aetherT("Personeelslid")}</h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="${aetherT("Sluiten")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div><div class="modal-body"></div></div></div>`;
         modal.addEventListener("click", handleCompanyPersonnelCardClick);
         modal.addEventListener("change", handleCompanyPersonnelCardChange);
         modal.addEventListener("input", event => {
@@ -2331,7 +2332,7 @@ function showCompanyPersonnelEditor(card) {
         document.body.appendChild(modal);
     }
     document.getElementById("companyPersonnelEditTitle").textContent = companyPersonnelDraftIndex >= currentCompanyPersonnelState.length
-        ? "Personeelslid toevoegen" : "Personeelslid aanpassen";
+        ? aetherT("Personeelslid toevoegen") : aetherT("Personeelslid aanpassen");
     card.classList.remove("data-card");
     card.classList.remove("is-editing");
     modal.querySelector(".modal-body").replaceChildren(card);
@@ -2362,7 +2363,7 @@ function openCompanyPersonnelSpecialisationModal(personnelIndex, skillIndex) {
     const entry = personnelIndex === companyPersonnelDraftIndex ? companyPersonnelDraft : null;
     const skillEntry = entry?.skills?.[skillIndex];
     if (!skillEntry || Number(skillEntry.idSkill || 0) <= 0) {
-        alert("Kies eerst een vaardigheid.");
+        alert(aetherT("Kies eerst een vaardigheid."));
         return;
     }
     companyPersonnelSpecialisationOpen = true;
@@ -2381,12 +2382,12 @@ function openCompanyPersonnelSpecialisationModal(personnelIndex, skillIndex) {
     const options = getAvailableSpecialisationOptionsForPersonnelSkill(skillEntry);
     const placeholder = document.createElement("option");
     placeholder.value = "0";
-    placeholder.textContent = "Kies bestaande specialisatie";
+    placeholder.textContent = aetherT("Kies bestaande specialisatie");
     select.appendChild(placeholder);
     options.forEach((option) => {
         const optionEl = document.createElement("option");
         optionEl.value = String(option.idSkillSpecialisation || 0);
-        optionEl.textContent = option.name || `Specialisatie #${option.idSkillSpecialisation || 0}`;
+        optionEl.textContent = option.name || aetherT("Specialisatie #{0}",[option.idSkillSpecialisation || 0]);
         select.appendChild(optionEl);
     });
 
@@ -2436,7 +2437,7 @@ function saveCompanyPersonnelSpecialisationFromModal() {
     if (activeTab === "existing") {
         const idSkillSpecialisation = Number(select.value || 0);
         if (idSkillSpecialisation <= 0) {
-            alert("Kies een bestaande specialisatie of ga naar 'New'.");
+            alert(aetherT("Kies een bestaande specialisatie of ga naar 'New'."));
             return;
         }
 
@@ -2446,7 +2447,7 @@ function saveCompanyPersonnelSpecialisationFromModal() {
             : null;
 
         if (!specialisationOption) {
-            alert("De gekozen specialisatie is niet beschikbaar voor deze vaardigheid.");
+            alert(aetherT("De gekozen specialisatie is niet beschikbaar voor deze vaardigheid."));
             return;
         }
 
@@ -2458,7 +2459,7 @@ function saveCompanyPersonnelSpecialisationFromModal() {
     } else {
         const name = String(customInput.value || "").trim();
         if (!name) {
-            alert("Vul een naam in voor de nieuwe specialisatie.");
+            alert(aetherT("Vul een naam in voor de nieuwe specialisatie."));
             return;
         }
 
@@ -2477,12 +2478,12 @@ async function createCompanySnapshot() {
     const idCompany = Number(document.getElementById("companyId")?.value || 0);
     const idEvent = Number(document.getElementById("companySnapshotEventSelect")?.value || 0);
     if (idCompany <= 0) {
-        showCompanyFeedback("Kies eerst een bedrijf.", "danger");
+        showCompanyFeedback(aetherT("Kies eerst een bedrijf."), "danger");
         return;
     }
 
     if (idEvent <= 0) {
-        showCompanyFeedback("Kies eerst een event voor de snapshot.", "danger");
+        showCompanyFeedback(aetherT("Kies eerst een event voor de snapshot."), "danger");
         return;
     }
 
@@ -2508,10 +2509,10 @@ async function createCompanySnapshot() {
     if (!modal) return;
     modal.dataset.idCompany = String(idCompany);
     modal.dataset.idEvent = String(idEvent);
-    document.getElementById("companySnapshotCreateModalTitle").textContent = `Snapshot maken · ${chosenEvent?.title || "Event"}`;
+    document.getElementById("companySnapshotCreateModalTitle").textContent = aetherT("Snapshot maken · {0}",[chosenEvent?.title || "Event"]);
     document.getElementById("companySnapshotCreateContext").textContent = quarter
-        ? `Beginwaarden uit ${quarter.year} · kwartaal ${quarter.quarter}. Controleer de cijfers voordat je de snapshot maakt.`
-        : "Controleer de voorgestelde beginwaarden voordat je de snapshot maakt.";
+        ? aetherT("Beginwaarden uit {0} · kwartaal {1}. Controleer de cijfers voordat je de snapshot maakt.",[quarter.year,quarter.quarter])
+        : aetherT("Controleer de voorgestelde beginwaarden voordat je de snapshot maakt.");
     const values = {
         companySnapshotCreateValue: quarter?.companyValue ?? baseline?.companyValue ?? baseline?.initialCompanyValue ?? 0,
         companySnapshotCreateShares: quarter?.issuedShareCount ?? baseline?.issuedShareCount ?? currentCompanyData?.issuedShareCount ?? 1,
@@ -2551,7 +2552,7 @@ async function submitCompanySnapshotCreation() {
         const value = integer ? Number(input.value) : Number(decimal);
         if (!input.value || (!integer && decimal === null) || !Number.isFinite(value) || value < min || value > max
             || (integer && !Number.isInteger(value)) || !input.checkValidity()) {
-            error.textContent = `Controleer ${input.labels?.[0]?.textContent?.toLowerCase() || field}.`;
+            error.textContent = aetherT("Controleer {0}.",[input.labels?.[0]?.textContent?.toLowerCase() || field]);
             error.classList.remove("d-none");
             input.focus();
             return;
@@ -2568,10 +2569,10 @@ async function submitCompanySnapshotCreation() {
 
         bootstrap.Modal.getOrCreateInstance(modal).hide();
         await applyCompanySnapshotResponse(result, body.idCompany);
-        showCompanyFeedback("Snapshot opgeslagen.", "success");
+        showCompanyFeedback(aetherT("Snapshot opgeslagen."), "success");
     } catch (err) {
         console.error("Fout bij maken snapshot:", err);
-        error.textContent = err?.message || "Kon de snapshot niet bewaren.";
+        error.textContent = err?.message || aetherT("Kon de snapshot niet bewaren.");
         error.classList.remove("d-none");
     } finally {
         confirm.disabled = false;
@@ -2635,10 +2636,10 @@ async function recalculateCompanySnapshot(idCompanySnapshot) {
 
         aetherDataCard.close(`company:${idCompany}:snapshot:${idCompanySnapshot}`);
         await applyCompanySnapshotResponse(result, idCompany);
-        showCompanyFeedback("Snapshot herberekend.", "success");
+        showCompanyFeedback(aetherT("Snapshot herberekend."), "success");
     } catch (err) {
         console.error("Fout bij herberekenen snapshot:", err);
-        showCompanyFeedback(err?.message || "Kon de snapshot niet herberekenen.", "danger");
+        showCompanyFeedback(err?.message || aetherT("Kon de snapshot niet herberekenen."), "danger");
     }
 }
 
@@ -2665,10 +2666,10 @@ async function deleteCompanySnapshot(idCompanySnapshot) {
 
         aetherDataCard.close(`company:${idCompany}:snapshot:${idCompanySnapshot}`);
         await applyCompanySnapshotResponse(result, idCompany);
-        showCompanyFeedback("Snapshot verwijderd.", "success");
+        showCompanyFeedback(aetherT("Snapshot verwijderd."), "success");
     } catch (err) {
         console.error("Fout bij verwijderen snapshot:", err);
-        showCompanyFeedback(err?.message || "Kon de snapshot niet verwijderen.", "danger");
+        showCompanyFeedback(err?.message || aetherT("Kon de snapshot niet verwijderen."), "danger");
     }
 }
 
@@ -2696,10 +2697,10 @@ async function applyCompanySnapshot(idCompanySnapshot, applyAction) {
 
         aetherDataCard.close(`company:${idCompany}:snapshot:${idCompanySnapshot}`);
         await applyCompanySnapshotResponse(result, idCompany);
-        showCompanyFeedback("Snapshot toegepast.", "success");
+        showCompanyFeedback(aetherT("Snapshot toegepast."), "success");
     } catch (err) {
         console.error("Fout bij toepassen snapshot:", err);
-        showCompanyFeedback(err?.message || "Kon de snapshot niet toepassen.", "danger");
+        showCompanyFeedback(err?.message || aetherT("Kon de snapshot niet toepassen."), "danger");
     }
 }
 
@@ -2752,11 +2753,11 @@ async function saveCompanyCurrentSliders() {
                 stability, profitability
             });
         } else {
-            showCompanyFeedback("Voer eerst de snapshotmigratie uit.", "danger");
+            showCompanyFeedback(aetherT("Voer eerst de snapshotmigratie uit."), "danger");
             return;
         }
         await loadCompany(idCompany);
-        showCompanyFeedback("Snapshot bijgewerkt.", "success");
+        showCompanyFeedback(aetherT("Snapshot bijgewerkt."), "success");
     } catch (error) {
         showCompanyFeedback(error?.message || aetherShareUi.errorMessage(error), "danger");
         await loadCompany(idCompany);
@@ -2774,7 +2775,7 @@ async function saveCompany(options = {}) {
 
         try {
             const {
-                successMessage = "Bedrijf opgeslagen.",
+                successMessage = aetherT("Bedrijf opgeslagen."),
                 silentWhenUnavailable = false
             } = options;
             let id = Number(document.getElementById("companyId")?.value || 0);
@@ -2790,14 +2791,14 @@ async function saveCompany(options = {}) {
 
                 if (id <= 0) {
                     if (!silentWhenUnavailable) {
-                        showCompanyFeedback("Kies eerst een bedrijf of maak een nieuw bedrijf aan.", "danger");
+                        showCompanyFeedback(aetherT("Kies eerst een bedrijf of maak een nieuw bedrijf aan."), "danger");
                     }
                     return true;
                 }
             }
 
             if (!companyName) {
-                showCompanyFeedback("De bedrijfsnaam is verplicht.", "danger");
+                showCompanyFeedback(aetherT("De bedrijfsnaam is verplicht."), "danger");
                 return false;
             }
 
@@ -2816,7 +2817,7 @@ async function saveCompany(options = {}) {
             return true;
         } catch (err) {
             console.error("Fout bij bewaren bedrijf:", err);
-            showCompanyFeedback("Kon het bedrijf niet opslaan.", "danger");
+            showCompanyFeedback(aetherT("Kon het bedrijf niet opslaan."), "danger");
             return false;
         } finally {
             saveCompanyRequestInFlight = false;
@@ -2851,7 +2852,7 @@ async function saveCompanyPersonnel(options = {}) {
 
         try {
             const {
-                successMessage = "Personeel opgeslagen.",
+                successMessage = aetherT("Personeel opgeslagen."),
                 silentWhenUnavailable = false,
                 entries = currentCompanyPersonnelState,
                 closeCardKey = null
@@ -2859,7 +2860,7 @@ async function saveCompanyPersonnel(options = {}) {
             const idCompany = Number(document.getElementById("companyId")?.value || 0);
             if (idCompany <= 0) {
                 if (!silentWhenUnavailable) {
-                    showCompanyFeedback("Kies eerst een bedrijf.", "danger");
+                    showCompanyFeedback(aetherT("Kies eerst een bedrijf."), "danger");
                 }
                 return true;
             }
@@ -2905,7 +2906,7 @@ async function saveCompanyPersonnel(options = {}) {
             return true;
         } catch (err) {
             console.error("Fout bij bewaren bedrijfspersoneel:", err);
-            showCompanyFeedback(err?.message || "Kon het bedrijfspersoneel niet bewaren.", "danger");
+            showCompanyFeedback(err?.message || aetherT("Kon het bedrijfspersoneel niet bewaren."), "danger");
             return false;
         } finally {
             saveCompanyPersonnelRequestInFlight = false;

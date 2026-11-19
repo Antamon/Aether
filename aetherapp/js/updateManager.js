@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 (function (global) {
   'use strict';
 
@@ -51,14 +52,14 @@
     ].join(';');
 
     const message = document.createElement('span');
-    message.textContent = 'Er is een nieuwe versie van Aether beschikbaar. ';
+    message.textContent = aetherT("Er is een nieuwe versie van Aether beschikbaar. ");
 
     const refreshButton = document.createElement('button');
     refreshButton.type = 'button';
     refreshButton.className = 'btn btn-primary btn-sm';
-    refreshButton.textContent = 'Vernieuwen';
+    refreshButton.textContent = aetherT("Vernieuwen");
     refreshButton.addEventListener('click', function () {
-      if (hasUnsavedInput && !global.confirm('Er is mogelijk niet-opgeslagen invoer. Toch vernieuwen?')) {
+      if (hasUnsavedInput && !global.confirm(aetherT("Er is mogelijk niet-opgeslagen invoer. Toch vernieuwen?"))) {
         return;
       }
 

@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Traits-related logic (render grouped traits, tooltips and link/rank updates)
 
 const professionSectorSelectionByCharacter = {};
@@ -95,7 +96,7 @@ function canEditTraitsForCharacter(character) {
 }
 
 function formatTraitCurrency(amount) {
-    return `${Number(amount || 0).toLocaleString("nl-BE", {
+    return `${Number(amount || 0).toLocaleString((globalThis.AetherI18n?.locale || "nl-BE"), {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     })} Fr`;
@@ -111,7 +112,7 @@ function formatTraitRankLabel(trait) {
         return `${rank}%`;
     }
 
-    return `Rang ${rank}`;
+    return aetherT("Rang {0}",[rank]);
 }
 
 function canEditTraitRankInTraitList(link) {
@@ -171,7 +172,7 @@ function createTraitMetaLine(trait) {
     }
 
     if (staffRequirements > 0) {
-        parts.push(`Personeel: ${staffRequirements}`);
+        parts.push(aetherT("Personeel: {0}",[staffRequirements]));
     }
 
     return parts.join(" | ");
@@ -390,7 +391,7 @@ function createProfessionSectorSelector(character, canEdit) {
     if (groups.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted";
-        empty.textContent = "Geen beroepssectoren beschikbaar.";
+        empty.textContent = aetherT("Geen beroepssectoren beschikbaar.");
         return empty;
     }
 
@@ -402,7 +403,7 @@ function createProfessionSectorSelector(character, canEdit) {
     select.dataset.role = "profession-group-select";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Kies sector";
+    placeholder.textContent = aetherT("Kies sector");
     select.appendChild(placeholder);
     groups.forEach((group) => {
         const option = document.createElement("option");
@@ -474,7 +475,7 @@ function renderProfessionTraitModule(container, character, canEdit) {
     } else if (!canEdit) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Geen beroep gekozen.";
+        empty.textContent = aetherT("Geen beroep gekozen.");
         container.appendChild(empty);
     } else {
         container.appendChild(createProfessionSectorSelector(character, canEdit));
@@ -525,7 +526,7 @@ function renderProfessionLeftTraitModule(host, character, canEdit) {
     if (!host) return;
 
     host.innerHTML = "";
-    const { row, contentCol } = createLeftTraitModuleRow("Beroep");
+    const { row, contentCol } = createLeftTraitModuleRow(aetherT("Beroep"));
     row.classList.add("character-profession-fields");
     renderProfessionTraitModule(contentCol, character, canEdit);
     row.classList.toggle("d-none", contentCol.childElementCount === 0);
@@ -577,9 +578,9 @@ function updatePendingTraitRow(row) {
     if (!selectedOption || !bookBtn || !actionBtn) return;
 
     const description = selectedOption.dataset.description || "";
-    const popoverText = description || "Geen beschrijving.";
+    const popoverText = description || aetherT("Geen beschrijving.");
     bookBtn.setAttribute("data-bs-content", popoverText);
-    bookBtn.setAttribute("data-bs-title", "Trait");
+    bookBtn.setAttribute("data-bs-title", aetherT("Trait"));
     row.dataset.idTrait = selectedOption.value || "";
 
     if (window.bootstrap?.Popover) {
@@ -635,9 +636,9 @@ function createTraitBookButton(description, useActionButton = false) {
     btn.setAttribute("data-bs-toggle", "popover");
     btn.setAttribute("data-bs-trigger", "focus");
     btn.setAttribute("data-bs-placement", "top");
-    btn.setAttribute("data-bs-title", "Trait");
-    btn.setAttribute("data-bs-content", description || "Geen beschrijving.");
-    btn.setAttribute("aria-label", "Toon traitbeschrijving");
+    btn.setAttribute("data-bs-title", aetherT("Trait"));
+    btn.setAttribute("data-bs-content", description || aetherT("Geen beschrijving."));
+    btn.setAttribute("aria-label", aetherT("Toon traitbeschrijving"));
     btn.innerHTML = `<i class="fa-solid fa-book"></i>`;
     return btn;
 }
@@ -690,7 +691,7 @@ function createLinkedTraitRow(link, group, canEdit, { nameAsLabel = false } = {}
     const row = document.createElement("div");
     const professionTrait = usesTraitActionButtons(group);
     row.className = `input-group mb-2 trait-row${professionTrait ? " profession-trait-row" : ""}${link?.inactive ? " opacity-50" : ""}`;
-    if (link?.inactive) row.title = link.inactiveReason || "Deze beroepsrang is tijdelijk inactief.";
+    if (link?.inactive) row.title = link.inactiveReason || aetherT("Deze beroepsrang is tijdelijk inactief.");
     row.dataset.idTrait = link.idTrait;
     row.dataset.linked = "true";
 
@@ -824,8 +825,8 @@ function createPendingTraitRow(group, canEdit) {
         btnReset.type = "button";
         btnReset.className = professionTrait ? "action-button profession-trait-remove" : "btn btn-danger";
         btnReset.dataset.action = "trait-reset-profession-sector";
-        btnReset.setAttribute("aria-label", "Kies een andere beroepssector");
-        btnReset.title = "Kies een andere beroepssector";
+        btnReset.setAttribute("aria-label", aetherT("Kies een andere beroepssector"));
+        btnReset.title = aetherT("Kies een andere beroepssector");
         btnReset.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
         actions.push(btnReset);
     }
@@ -843,7 +844,7 @@ function createPendingTraitRow(group, canEdit) {
     return row;
 }
 
-function renderTraitGroups(container, traitGroups, canEdit, emptyMessage = "Geen traits beschikbaar.") {
+function renderTraitGroups(container, traitGroups, canEdit, emptyMessage = aetherT("Geen traits beschikbaar.")) {
     if (!container) return;
     container.innerHTML = "";
 

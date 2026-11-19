@@ -230,8 +230,13 @@ input[type=text], input[type=date], input[type=number], textarea, select {
 }
 
 @media (max-width: 767.98px) {
-  .aether-page {
+  .aether-page,
+  .container.aether-page-nav {
     padding-inline: 0.5rem;
+  }
+
+  .aether-page > .row {
+    --bs-gutter-x: 1rem;
   }
 }
 
@@ -2565,6 +2570,17 @@ a.company-sidebar-card { text-decoration: none; }
   color: #3b2c2c;
 }
 
+:is(#adminSkillsSection, #adminTraitsSection) [hidden] {display:none!important}
+:is(#adminSkillsSection, #adminTraitsSection) .admin-holder-group-list {padding-left:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem}
+:is(#adminSkillsSection, #adminTraitsSection) .admin-holder-group {padding:0;border:0;background:none;border-radius:0}
+:is(#adminSkillsSection, #adminTraitsSection) .admin-holders-list > hr {margin:.25rem 0;border-color:var(--primary-brown)}
+:is(#adminSkillsSection, #adminTraitsSection) .character-sidebar-card {border:0;background:none;padding:.2rem}
+:is(#adminSkillsSection, #adminTraitsSection) .admin-skill-view-edit {border-radius:8px!important}
+.admin-skill-levels td:first-child {width:8rem;font-weight:600}
+:is(#adminSkillsSection, #adminTraitsSection) .admin-holder-item {min-width:0;overflow-wrap:anywhere;margin:0}
+:is(#adminSkillsSection, #adminTraitsSection) .character-sidebar-card {width:100%;max-width:142px;margin-inline:auto}
+:is(#adminSkillsSection, #adminTraitsSection) .admin-holder-specialisations {text-align:center;margin-top:.35rem}
+.admin-skill-view-text {white-space:pre-line;overflow-wrap:anywhere}
 .admin-holder-item + .admin-holder-item {
   margin-top: 0.4rem;
 }

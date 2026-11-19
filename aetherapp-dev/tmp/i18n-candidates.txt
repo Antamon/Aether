@@ -1,0 +1,1401 @@
+0	"Europe/Brussels"	js/actionsCharacter.js:26
+1	"Fout bij laden characteracties:"	js/actionsCharacter.js:140
+2	"De eventacties konden niet worden geladen."	js/actionsCharacter.js:152
+3	"Wereldwijs"	js/actionsCharacter.js:197
+4	"Onderzoek"	js/actionsCharacter.js:202
+5	"card aether-panel character-sheet-card"	js/actionsCharacter.js:247
+6	"card-header character-actions-card-header d-flex justify-content-between align-items-center flex-wrap gap-3"	js/actionsCharacter.js:250
+7	"Event"	js/actionsCharacter.js:258
+8	"Kies een event"	js/actionsCharacter.js:268
+9	"Geen events beschikbaar"	js/actionsCharacter.js:269
+10	"Toon acties"	js/actionsCharacter.js:287
+11	"Actie"	js/actionsCharacter.js:319
+12	"Dit personage heeft momenteel geen acties beschikbaar."	js/actionsCharacter.js:333
+13	"Kies eerst een event om de wereldwijsroddels te bekijken."	js/actionsCharacter.js:373
+14	"Wereldwijsroddels laden..."	js/actionsCharacter.js:386
+15	"Voor dit event zijn er geen zichtbare wereldwijsroddels beschikbaar."	js/actionsCharacter.js:398
+16	"Portret"	js/actionsCharacter.js:421
+17	"Geen pasfoto"	js/actionsCharacter.js:426
+18	"Personage #"	js/actionsCharacter.js:432
+19	"Vrijgespeeld t.e.m. niveau "	js/actionsCharacter.js:439
+20	"Ontdekt t.e.m. niveau "	js/actionsCharacter.js:440
+21	"Nog niets vrijgespeeld"	js/actionsCharacter.js:442
+22	"Beginneling"	js/actionsCharacter.js:458
+23	"Deskundige"	js/actionsCharacter.js:462
+24	"Meester"	js/actionsCharacter.js:465
+25	"Kies eerst een event om een psi-vaardigheid te gebruiken."	js/actionsCharacter.js:474
+26	": huidige burn "	js/actionsCharacter.js:484
+27	"Psi"	js/actionsCharacter.js:484
+28	"Psi burn telt op bij je worp. Je kan alle burn in 1 keer wegwerken door deze activatie met een extra +5 modifier uit te voeren."	js/actionsCharacter.js:489
+29	"Verwijder alle psi burn voor deze activatie (+5 modifier, burn daarna terug naar 0)."	js/actionsCharacter.js:505
+30	"Kies hieronder welke vaardigheid je activeert. Het gebruik wordt geregistreerd met personage, event, tijdstip en resultaat."	js/actionsCharacter.js:516
+31	"Voor deze psi-categorie zijn geen bruikbare vaardigheden gevonden."	js/actionsCharacter.js:523
+32	"Vaardigheid #"	js/actionsCharacter.js:537
+33	"Niveau "	js/actionsCharacter.js:541
+34	"Bezig..."	js/actionsCharacter.js:550
+35	"Gebruik"	js/actionsCharacter.js:550
+36	"Event #"	js/actionsCharacter.js:563
+37	"Fout bij laden wereldwijsdoelen:"	js/actionsCharacter.js:592
+38	"Kon de wereldwijsroddels voor dit event niet laden."	js/actionsCharacter.js:593
+39	"Fout bij vrijspelen wereldwijsroddels:"	js/actionsCharacter.js:651
+40	"Kon de wereldwijsroddels niet vrijspelen."	js/actionsCharacter.js:652
+41	"Je bezit Wereldwijs op niveau "	js/actionsCharacter.js:662
+42	" poging"	js/actionsCharacter.js:662
+43	" ondernomen. Klik op een personage om vrijgespeelde roddels te lezen of een nieuwe poging te wagen."	js/actionsCharacter.js:662
+44	"Dit is je "	js/actionsCharacter.js:704
+45	"e poging om tijdens dit event informatie te verzamelen. Ben je zeker dat je een poging wilt gebruiken op "	js/actionsCharacter.js:704
+46	"dit personage"	js/actionsCharacter.js:704
+47	"Deze poging leverde nog geen nieuwe of eerder vrijgespeelde roddels op."	js/actionsCharacter.js:779
+48	" active"	js/actionsCharacter.js:795
+49	"tab-pane fade"	js/actionsCharacter.js:808
+50	" show active"	js/actionsCharacter.js:808
+51	"Vaardigheidsactie"	js/actionsCharacter.js:865
+52	"Event: "	js/actionsCharacter.js:869
+53	"Worp: "	js/actionsCharacter.js:870
+54	" + burn "	js/actionsCharacter.js:870
+55	" + modifier "	js/actionsCharacter.js:870
+56	"Tabelrij: "	js/actionsCharacter.js:871
+57	"Psi burn: "	js/actionsCharacter.js:872
+58	"Kies eerst een event en een geldige psi-vaardigheid."	js/actionsCharacter.js:901
+59	"Fout bij registreren psi-gebruik:"	js/actionsCharacter.js:925
+60	"Kon het gebruik van deze psi-vaardigheid niet registreren."	js/actionsCharacter.js:926
+61	"Fout bij laden actie-events:"	js/adminActions.js:94
+62	"Kon de eventlijst voor acties niet laden."	js/adminActions.js:96
+63	" actie"	js/adminActions.js:133
+64	"Fout bij laden acties:"	js/adminActions.js:165
+65	"Kon de acties van dit event niet laden."	js/adminActions.js:167
+66	"Acties laden..."	js/adminActions.js:181
+67	"Voor dit event zijn nog geen speleracties geregistreerd."	js/adminActions.js:210
+68	"Kies bovenaan een event om de geregistreerde acties te zien."	js/adminActions.js:211
+69	"Pasfoto"	js/adminActions.js:231
+70	"Bewerk actie"	js/adminActions.js:270
+71	"Verwijder actie"	js/adminActions.js:278
+72	"Resultaat: "	js/adminActions.js:326
+73	"Geen resultaattekst opgeslagen."	js/adminActions.js:336
+74	"Speler"	js/adminActions.js:356
+75	"Figurant"	js/adminActions.js:359
+76	"Onbekend"	js/adminActions.js:361
+77	"Onbekend tijdstip"	js/adminActions.js:382
+78	"Kon deze actie niet terugvinden."	js/adminActions.js:498
+79	"Geen vaardigheid"	js/adminActions.js:543
+80	"input, textarea, select, button"	js/adminActions.js:586
+81	"Opslaan..."	js/adminActions.js:605
+82	"Opslaan"	js/adminActions.js:605
+83	"Geen geldige actie geselecteerd."	js/adminActions.js:621
+84	"Actiecode en tijdstip zijn verplicht."	js/adminActions.js:628
+85	"Actie bijgewerkt."	js/adminActions.js:654
+86	"Fout bij bewaren actie:"	js/adminActions.js:656
+87	"Kon deze actie niet bewaren."	js/adminActions.js:657
+88	"Weet u zeker dat u deze actie van "	js/adminActions.js:666
+89	" wilt verwijderen?"	js/adminActions.js:666
+90	"Actie verwijderd."	js/adminActions.js:679
+91	"Fout bij verwijderen actie:"	js/adminActions.js:681
+92	"Kon deze actie niet verwijderen."	js/adminActions.js:682
+93	"Fout bij initialiseren adminpagina:"	js/adminFunctions.js:52
+94	"Welkom "	js/adminFunctions.js:67
+95	"Enter"	js/adminFunctions.js:284
+96	"Weet u zeker dat u de categorie \""	js/adminFunctions.js:310
+97	"\" wilt verwijderen?"	js/adminFunctions.js:310
+98	"deze categorie"	js/adminFunctions.js:310
+99	"Naam van de nieuwe categorie:"	js/adminFunctions.js:322
+100	"Kies een vaardigheid"	js/adminFunctions.js:459
+101	"Nieuwe vaardigheid (nog niet opgeslagen)"	js/adminFunctions.js:472
+102	"Fout bij laden wereldwijs-events:"	js/adminFunctions.js:504
+103	"Kon de eventlijst voor wereldwijs niet laden."	js/adminFunctions.js:505
+104	"Fout bij laden wereldwijs-gossip:"	js/adminFunctions.js:568
+105	"Kon de wereldwijsgegevens van dit event niet laden."	js/adminFunctions.js:569
+106	"Voor dit event heeft nog niemand gossip ingevuld."	js/adminFunctions.js:586
+107	"Kies bovenaan een event om de ingevulde gossip te zien."	js/adminFunctions.js:587
+108	"Personages"	js/adminFunctions.js:598
+109	"Zichtbaarheid uitschakelen"	js/adminFunctions.js:644
+110	"Zichtbaarheid inschakelen"	js/adminFunctions.js:644
+111	"Bekijk roddels"	js/adminFunctions.js:652
+112	"Ontdekt door"	js/adminFunctions.js:667
+113	"Nog door niemand vrijgespeeld."	js/adminFunctions.js:673
+114	"Verwijder wereldwijsontdekking van "	js/adminFunctions.js:695
+115	"deze gebruiker"	js/adminFunctions.js:695
+116	"Voor dit personage zijn geen roddels ingevuld."	js/adminFunctions.js:763
+117	"Fout bij bewaren wereldwijs-zichtbaarheid:"	js/adminFunctions.js:821
+118	"Kon de zichtbaarheid van deze wereldwijsgossip niet bewaren."	js/adminFunctions.js:822
+119	"Fout bij verwijderen wereldwijsontdekking:"	js/adminFunctions.js:840
+120	"Kon deze wereldwijsontdekking niet verwijderen."	js/adminFunctions.js:841
+121	"Fout bij laden vaardigheid:"	js/adminFunctions.js:875
+122	"Kon de geselecteerde vaardigheid niet laden."	js/adminFunctions.js:876
+123	"Selecteer de categorieën van deze vaardigheid. U kunt categorieën hier ook hernoemen, verwijderen en aanmaken."	js/adminFunctions.js:927
+124	"Selecteer de categorieën van deze vaardigheid."	js/adminFunctions.js:928
+125	"Vaardigheid"	js/adminFunctions.js:936
+126	"Kies bovenaan een vaardigheid of maak een nieuwe aan."	js/adminFunctions.js:938
+127	"Er zijn nog geen vaardigheden. Maak bovenaan een nieuwe vaardigheid aan."	js/adminFunctions.js:939
+128	"Nieuwe vaardigheid"	js/adminFunctions.js:958
+129	"Vul de vaardigheid in en kies Opslaan en bekijken om te bewaren."	js/adminFunctions.js:964
+130	"Geen"	js/adminFunctions.js:1024
+131	"Categorie"	js/adminFunctions.js:1025
+132	"Geheim"	js/adminFunctions.js:1025
+133	"Discipline"	js/adminFunctions.js:1027
+134	"Specialisaties"	js/adminFunctions.js:1028
+135	"table aether-table admin-skill-levels"	js/adminFunctions.js:1030
+136	"Bekwaamheidsniveaus"	js/adminFunctions.js:1030
+137	"Geen categorieën beschikbaar."	js/adminFunctions.js:1061
+138	"Categorie #"	js/adminFunctions.js:1082
+139	"Kies een vaardigheid om specialisaties te beheren."	js/adminFunctions.js:1105
+140	"Nog geen disciplines."	js/adminFunctions.js:1113
+141	"Nog geen specialisaties."	js/adminFunctions.js:1113
+142	"Naam van de discipline"	js/adminFunctions.js:1127
+143	"Naam van de specialisatie"	js/adminFunctions.js:1127
+144	"Specialisatie"	js/adminFunctions.js:1132
+145	"Verwijder specialisatie"	js/adminFunctions.js:1139
+146	"Kies een "	js/adminFunctions.js:1159
+147	" om de gekoppelde personages te zien."	js/adminFunctions.js:1159
+148	"Geen actieve personages gekoppeld aan deze "	js/adminFunctions.js:1168
+149	"company-sidebar-card character-sidebar-card"	js/adminFunctions.js:1195
+150	"company-sidebar-image-frame character-sidebar-portrait-frame"	js/adminFunctions.js:1196
+151	"company-sidebar-image character-sidebar-portrait-image"	js/adminFunctions.js:1198
+152	"company-sidebar-name character-sidebar-name"	js/adminFunctions.js:1199
+153	"small admin-holder-specialisations"	js/adminFunctions.js:1200
+154	"De naam van de vaardigheid is verplicht."	js/adminFunctions.js:1264
+155	"Vaardigheid aangemaakt."	js/adminFunctions.js:1287
+156	"Fout bij aanmaken vaardigheid:"	js/adminFunctions.js:1290
+157	"Kon de vaardigheid niet aanmaken."	js/adminFunctions.js:1291
+158	"Wijzigingen automatisch bewaard."	js/adminFunctions.js:1332
+159	"Vaardigheid opgeslagen."	js/adminFunctions.js:1348
+160	"Kies eerst een vaardigheid of maak er een nieuwe aan."	js/adminFunctions.js:1367
+161	"Fout bij opslaan vaardigheid:"	js/adminFunctions.js:1410
+162	"Kon de vaardigheid niet opslaan."	js/adminFunctions.js:1411
+163	"alert py-2 px-3 mb-4 alert-"	js/adminFunctions.js:1441
+164	"Verwijder categorie "	js/adminFunctions.js:1517
+165	"Geheime vaardigheid"	js/adminFunctions.js:1539
+166	"Alleen administrators kunnen categorieën beheren."	js/adminFunctions.js:1549
+167	"Categorie aangemaakt."	js/adminFunctions.js:1583
+168	"Categorie verwijderd."	js/adminFunctions.js:1584
+169	"Categorie bijgewerkt."	js/adminFunctions.js:1584
+170	"Fout bij bewaren categorie:"	js/adminFunctions.js:1589
+171	"Kon de categorie niet bewaren."	js/adminFunctions.js:1591
+172	"upper class"	js/adminTraits.js:6
+173	"Alle klassen"	js/adminTraits.js:7
+174	"Bovenklasse"	js/adminTraits.js:7
+175	"middle class"	js/adminTraits.js:7
+176	"Middenklasse"	js/adminTraits.js:7
+177	"lower class"	js/adminTraits.js:7
+178	"Onderklasse"	js/adminTraits.js:7
+179	"Statuseigenschap"	js/adminTraits.js:8
+180	"Beroep"	js/adminTraits.js:8
+181	"Kwaliteit"	js/adminTraits.js:8
+182	"Eenmalig"	js/adminTraits.js:9
+183	"Positieve rangen"	js/adminTraits.js:9
+184	"Positieve en negatieve rangen"	js/adminTraits.js:9
+185	"Alle groepen"	js/adminTraits.js:18
+186	"Geen groep"	js/adminTraits.js:20
+187	"Kies een eigenschap"	js/adminTraits.js:23
+188	"Geen eigenschappen voor deze filters"	js/adminTraits.js:23
+189	"Eigenschap bewerken"	js/adminTraits.js:26
+190	"Eigenschappen"	js/adminTraits.js:26
+191	"Kies een eigenschap of maak een nieuwe aan."	js/adminTraits.js:27
+192	"Edit"	js/adminTraits.js:28
+193	"Klasse"	js/adminTraits.js:30
+194	"Groep"	js/adminTraits.js:30
+195	"Rangtype"	js/adminTraits.js:30
+196	"Uniek"	js/adminTraits.js:31
+197	"Gegroepeerd"	js/adminTraits.js:31
+198	"table aether-table"	js/adminTraits.js:33
+199	"Eigenschapsgegevens"	js/adminTraits.js:33
+200	"Kost"	js/adminTraits.js:34
+201	"Inkomsten"	js/adminTraits.js:34
+202	"Evolutie"	js/adminTraits.js:34
+203	"Personeelsvoorwaarde"	js/adminTraits.js:34
+204	"Kon de eigenschap niet laden."	js/adminTraits.js:36
+205	"Nieuwe eigenschap"	js/adminTraits.js:40
+206	"Naam"	js/adminTraits.js:44
+207	"Beschrijving"	js/adminTraits.js:47
+208	"Deze eigenschap is al aan personages gekoppeld. Type, klasse, groep en ranginstellingen liggen vast."	js/adminTraits.js:51
+209	"Eigenschap opgeslagen."	js/adminTraits.js:58
+210	"Kon de eigenschap niet opslaan."	js/adminTraits.js:59
+211	"Annuleren"	js/adminTraits.js:62
+212	"Kon de eigenschappen niet laden."	js/adminTraits.js:65
+213	"Characters"	js/aetherSidebars.js:7
+214	"Evenementen"	js/aetherSidebars.js:8
+215	"Bedrijven"	js/aetherSidebars.js:9
+216	"Admin"	js/aetherSidebars.js:10
+217	"SidebarPanel"	js/aetherSidebars.js:26
+218	"SidebarTitle"	js/aetherSidebars.js:27
+219	"Deelnames van deelnemer"	js/aetherSidebars.js:68
+220	"company-list event-sidebar-list"	js/aetherSidebars.js:73
+221	"Vaardigheden"	js/aetherSidebars.js:81
+222	"Acties"	js/aetherSidebars.js:84
+223	"offcanvas-tab offcanvas-tab--"	js/aetherSidebars.js:110
+224	"SidebarTabToggle"	js/aetherSidebars.js:111
+225	" openen of sluiten"	js/aetherSidebars.js:116
+226	"Laden…"	js/aetherSidebars.js:145
+227	"Geen lijst ontvangen."	js/aetherSidebars.js:169
+228	"Deelnemer #"	js/aetherSidebars.js:178
+229	"Deelnemersfilter laden mislukt:"	js/aetherSidebars.js:183
+230	"Sidebarlijst laden mislukt:"	js/aetherSidebars.js:191
+231	"De lijst kon niet geladen worden. Sluit en open de tab om opnieuw te proberen."	js/aetherSidebars.js:192
+232	"Geen personages gevonden voor deze filters."	js/aetherSidebars.js:209
+233	"Open "	js/aetherSidebars.js:225
+234	"Nog geen bedrijven beschikbaar."	js/aetherSidebars.js:258
+235	"Bedrijf #"	js/aetherSidebars.js:263
+236	"Geen logo"	js/aetherSidebars.js:281
+237	"Nog geen events beschikbaar."	js/aetherSidebars.js:301
+238	"Geen afbeelding"	js/aetherSidebars.js:305
+239	"Kies een deelnemer"	js/aetherSidebars.js:322
+240	"Deelnemerskeuze laden mislukt:"	js/aetherSidebars.js:327
+241	"Sidebarrechten laden mislukt:"	js/aetherSidebars.js:396
+242	"Escape"	js/aetherSidebars.js:413
+243	"Personal background"	js/backgroundCharacter.js:5
+244	"Knowledge"	js/backgroundCharacter.js:9
+245	"Nature"	js/backgroundCharacter.js:16
+246	"Demeanour"	js/backgroundCharacter.js:20
+247	"Superior"	js/backgroundCharacter.js:26
+248	"Dependent"	js/backgroundCharacter.js:27
+249	"Landlord"	js/backgroundCharacter.js:28
+250	"Household staff"	js/backgroundCharacter.js:29
+251	"Spouse"	js/backgroundCharacter.js:30
+252	"Ally"	js/backgroundCharacter.js:31
+253	"Adversary"	js/backgroundCharacter.js:32
+254	"Person of interest"	js/backgroundCharacter.js:33
+255	"Je bent op een of andere manier afhankelijk van dit personage. Misschien is die een leidinggevende in het bedrijf of de organisatie waar je werkt of is die de leider van een geheim gezelschap waartoe je behoort. Voor jou is het een autoriteitsfiguur waar je naar moet luisteren op een of andere manier. Deze link help je leidinggevende om te voldoen aan diens personeelsvoorwaarde."	js/backgroundCharacter.js:37
+256	"Je bent een leidinggevend figuur voor dit personage. Misschien ben jij de leidinggevende van dat personage binnen het bedrijf of de organisatie waarvoor jullie werken, of maakt die deel uit van je geheime gezelschap. Op een of andere manier is die verplicht naar je te luisteren. Indien deze link door beide partijen correct is ingevoerd, telt dat personage mee om te voldoen aan je personeelsvoorwaarden."	js/backgroundCharacter.js:38
+257	"Je bent een inwonende werknemer van dit personage. Je loon wordt persoonlijk door je huisbaas betaald en jouw wooncomfort wordt rechtstreeks bepaald door diens woonplaats. Deze link help je leidinggevende om te voldoen aan diens personeelsvoorwaarde."	js/backgroundCharacter.js:39
+258	"Dit personage woont bij je in en maakt deel uit van het huishouden. Diens loon wordt afgetrokken van jouw inkomen. Jouw levensstandaard bepaalt de levensstandaard van dat personage. Indien deze link door beide partijen correct is ingevoerd, telt dat personage mee om te voldoen aan je personeelsvoorwaarden."	js/backgroundCharacter.js:40
+259	"Dit personage is je huwelijkspartner. Indien deze link door beide partijen correct is ingevoerd, telt deze link voor beide partijen mee om te voldoen aan jullie personeelsvoorwaarden."	js/backgroundCharacter.js:41
+260	"Dit personage is een bondgenoot of vriend. Deze link heeft geen speltechnische gevolgen."	js/backgroundCharacter.js:42
+261	"Dit personage is een vijand of tegenstrever. Deze link heeft geen speltechnische gevolgen."	js/backgroundCharacter.js:43
+262	"Dit is iemand die je kent of van wie je gehoord hebt. Jullie hebben verder geen speciale band. Deze link heeft geen speltechnische gevolgen."	js/backgroundCharacter.js:44
+263	" sections:"	js/backgroundCharacter.js:283
+264	"Background"	js/backgroundCharacter.js:283
+265	"Personality"	js/backgroundCharacter.js:283
+266	"Fout bij laden "	js/backgroundCharacter.js:291
+267	"Background blocks rendered:"	js/backgroundCharacter.js:308
+268	"Background container height:"	js/backgroundCharacter.js:309
+269	"backgroundTab style:"	js/backgroundCharacter.js:312
+270	"backgroundContent style:"	js/backgroundCharacter.js:313
+271	"backgroundContent innerHTML:"	js/backgroundCharacter.js:314
+272	"backgroundTab style (after timeout):"	js/backgroundCharacter.js:326
+273	"backgroundContent style (after timeout):"	js/backgroundCharacter.js:327
+274	"backgroundContent parent chain:"	js/backgroundCharacter.js:343
+275	"aether-panel mb-4 background-section"	js/backgroundCharacter.js:349
+276	" bewerken"	js/backgroundCharacter.js:368
+277	"Save"	js/backgroundCharacter.js:372
+278	" bewaren"	js/backgroundCharacter.js:373
+279	"Cancel"	js/backgroundCharacter.js:377
+280	" wijzigen annuleren"	js/backgroundCharacter.js:378
+281	"Geen tekst beschikbaar."	js/backgroundCharacter.js:386
+282	"De server gaf geen gesaniteerde rich text terug."	js/backgroundCharacter.js:419
+283	"Fout bij opslaan sectie:"	js/backgroundCharacter.js:426
+284	"Opslaan mislukt."	js/backgroundCharacter.js:427
+285	"Fout bij ophalen ties:"	js/backgroundCharacter.js:449
+286	"Fout bij ophalen tie opties:"	js/backgroundCharacter.js:454
+287	"Ties"	js/backgroundCharacter.js:465
+288	"Add tie"	js/backgroundCharacter.js:471
+289	"Tie toevoegen"	js/backgroundCharacter.js:472
+290	"Tie bewaren"	js/backgroundCharacter.js:477
+291	"Tie wijzigen annuleren"	js/backgroundCharacter.js:482
+292	"row g-2 align-items-center mb-3 d-none"	js/backgroundCharacter.js:493
+293	"col-lg-4 col-12"	js/backgroundCharacter.js:496
+294	"col-lg-3 col-6"	js/backgroundCharacter.js:502
+295	"col-lg-5 col-12"	js/backgroundCharacter.js:508
+296	"Description"	js/backgroundCharacter.js:513
+297	"character-tie-help-text text-muted small"	js/backgroundCharacter.js:523
+298	"Select character"	js/backgroundCharacter.js:559
+299	"No ties yet."	js/backgroundCharacter.js:633
+300	"Toon portret van "	js/backgroundCharacter.js:645
+301	"deze tie"	js/backgroundCharacter.js:645
+302	"Tie portrait"	js/backgroundCharacter.js:651
+303	"Weet u zeker dat u deze tie wilt verwijderen?"	js/backgroundCharacter.js:678
+304	"Fout bij verwijderen tie:"	js/backgroundCharacter.js:694
+305	"Verwijderen van tie mislukt."	js/backgroundCharacter.js:695
+306	"Fout bij opslaan tie:"	js/backgroundCharacter.js:751
+307	"Opslaan van tie mislukt."	js/backgroundCharacter.js:752
+308	"Portret laden..."	js/characterFunctions.js:67
+309	"Geen portret"	js/characterFunctions.js:67
+310	"Maak eerst het personage aan voor je een portret oplaadt."	js/characterFunctions.js:102
+311	"(geen body)"	js/characterFunctions.js:134
+312	"Fout bij opladen portret:"	js/characterFunctions.js:146
+313	"Kon het portret niet opladen."	js/characterFunctions.js:149
+314	"Kies eerst een personage."	js/characterFunctions.js:156
+315	"Fout bij verwijderen portret:"	js/characterFunctions.js:174
+316	"Kon het portret niet verwijderen."	js/characterFunctions.js:176
+317	"Fout bij initialiseren personagepagina:"	js/characterFunctions.js:222
+318	"Character from API:"	js/characterFunctions.js:239
+319	"Skills from API:"	js/characterFunctions.js:240
+320	"character type:"	js/characterFunctions.js:264
+321	"Fout bij ophalen personage:"	js/characterFunctions.js:379
+322	"User #"	js/characterFunctions.js:441
+323	"Fout bij ophalen users voor sidebarfilter:"	js/characterFunctions.js:460
+324	"Delete character"	js/characterFunctions.js:504
+325	"Weet u zeker dat u "	js/characterFunctions.js:593
+326	" definitief wilt verwijderen?"	js/characterFunctions.js:593
+327	"Fout bij verwijderen personage:"	js/characterFunctions.js:608
+328	"Het verwijderen van het personage is mislukt."	js/characterFunctions.js:609
+329	"Fout bij ophalen personagelijst:"	js/characterFunctions.js:653
+330	"Average person"	js/characterUtils.js:161
+331	"Professional"	js/characterUtils.js:162
+332	"Master"	js/characterUtils.js:163
+333	"Super human"	js/characterUtils.js:164
+334	"Extreem volatiel. Grote winsten mogelijk, maar even goed zware verliezen. Sterk afhankelijk van hype, innovatie of gebeurtenissen op de markten."	js/companyFunctions.js:5
+335	"Volatiel. Inkomsten kunnen sterk fluctueren. Gevoelig voor trends, marktschommelingen of externe invloeden. Risico begint een rol te spelen."	js/companyFunctions.js:10
+336	"Normale variatie. Het bedrijf kent duidelijke ups en downs, maar dit is ingecalculeerd en beheersbaar."	js/companyFunctions.js:15
+337	"Stabiel. Kleine schommelingen. Af en toe een kleine dip of piek, maar verrassingen zijn zeldzaam."	js/companyFunctions.js:20
+338	"Extreem stabiel. Inkomsten zijn voorspelbaar en nauwelijks gevoelig voor trends of externe factoren. Denk aan basisvoorzieningen of langdurige contracten."	js/companyFunctions.js:25
+339	"Verlieslatend. Kosten liggen duidelijk hoger dan de inkomsten. Mogelijk werkt het businessmodel niet meer, ontsporen de kosten of drukt concurrentie het bedrijf weg. Het kan ook zijn dat het bedrijf in een intensieve investeringsfase zit waarbij winst nog niet de focus is."	js/companyFunctions.js:33
+340	"Riskante toestand. Inkomsten zijn niet gegarandeerd. Potentiele marges zijn klein of worden opgeslorpt door kosten. Mogelijk kampt het bedrijf met sterke concurrentie, inefficientie of dalende vraag, of het investeert bewust in groei waardoor winst beperkt blijft."	js/companyFunctions.js:38
+341	"Normale winst. Inkomsten en kosten zijn meestal in balans. Het bedrijf is stabiel, maar bouwt weinig reserves op."	js/companyFunctions.js:43
+342	"Goed boerend bedrijf. Duidelijk winstgevend met goede marges. Efficiente werking, stabiele vraag en ruimte voor investeringen of uitbreiding."	js/companyFunctions.js:48
+343	"Uitzonderlijk winstgevend. Zeer hoge rendabiliteit. Sterke marktpositie, unieke diensten of quasi-monopolie zorgen voor uitzonderlijke winsten."	js/companyFunctions.js:53
+344	"Micro-onderneming"	js/companyFunctions.js:60
+345	"Dit type onderneming is klein, persoonlijk en volledig verweven met het leven van de eigenaar. De zaak is vaak gevestigd in of naast de woning, en draait op vakmanschap, reputatie en vaste klanten. Groei is beperkt, maar stabiliteit kan hoog zijn zolang de eigenaar gezond blijft. Innovatie gebeurt traag en meestal uit noodzaak, niet uit strategie. Dit zijn de stille radertjes van de stad: onmisbaar, maar zelden zichtbaar in het grote economische spel. Voorbeelden: bakkerij, kleermakerij, schoenmaker, kleine herberg, horlogemaker."	js/companyFunctions.js:63
+346	"Familiebedrijf"	js/companyFunctions.js:67
+347	"Een familiebedrijf vormt een eerste echte economische entiteit los van één individu. Meerdere familieleden of werknemers dragen bij aan de werking, en er is vaak sprake van specialisatie en eenvoudige organisatie. Investeringen in materiaal of infrastructuur zijn merkbaar, en het bedrijf kan lokale concurrentie aangaan of zelfs domineren. De continuïteit ligt in de familie: generaties bouwen verder op wat eerder is opgebouwd. Voorbeelden: drukkerij, brouwerij, transportbedrijf met paarden en vroege stoomwagens, kleine bouwonderneming, industriële wasserij."	js/companyFunctions.js:70
+348	"Nationale onderneming"	js/companyFunctions.js:74
+349	"Dit type bedrijf overstijgt de lokale markt en opereert op nationaal niveau, vaak met meerdere vestigingen of distributiepunten. Er ontstaat een duidelijke hiërarchie met management, administratie en gespecialiseerde arbeiders. De eigenaar is niet langer dagelijks betrokken bij de uitvoering, maar stuurt op afstand via leidinggevenden. Deze bedrijven zijn zichtbaar in het straatbeeld en beginnen een merkidentiteit op te bouwen. Ze beïnvloeden prijzen, werkgelegenheid en soms zelfs lokale politiek. Voorbeelden: warenhuisketen, nationale brouwerijgroep, spoorwegmaatschappij binnen één land, grote textielfabriek, gas- of elektriciteitsmaatschappij in opkomst."	js/companyFunctions.js:77
+350	"Kleine internationale groep"	js/companyFunctions.js:81
+351	"Deze bedrijven opereren over landsgrenzen heen en combineren productie, handel en financiën. Ze hebben dochterondernemingen in meerdere regio’s en werken vaak met complexe eigendomsstructuren. Beslissingen worden strategisch genomen en hebben impact op hele sectoren. Innovatie speelt een grotere rol, zeker in deze moderne tijd waar technologie een concurrentievoordeel biedt. Ze onderhouden banden met banken, adel en overheden. Voorbeelden: internationale staalproducent, chemisch bedrijf, spoorwegnetwerk tussen meerdere landen, fabrikant van industriële machines, telegraaf- of communicatienetwerk."	js/companyFunctions.js:84
+352	"Grote internationale groep"	js/companyFunctions.js:88
+353	"Dit zijn economische grootmachten die functioneren als staten binnen staten. Ze controleren volledige productieketens, van grondstof tot eindproduct, en hebben invloed op internationale handel en politiek. De leiding bestaat uit elites: industriëlen, bankiers en adel. Hun beslissingen kunnen oorlogen beïnvloeden, steden doen groeien of instorten, en technologische revoluties versnellen. In een steampunkwereld zijn dit de bedrijven die experimenteren met grensverleggende en soms gevaarlijke technologieën. Voorbeelden: continentaal spoorwegimperium, megaconglomeraat in staal en wapens, energiebedrijf met stoom- en elektrische netwerken, internationale bankholding, fabrikant van geavanceerde lucht- of oorlogsmachines."	js/companyFunctions.js:91
+354	"Display"	js/companyFunctions.js:174
+355	"Bedrijfsbeschrijving"	js/companyFunctions.js:195
+356	"Geen beschrijving beschikbaar."	js/companyFunctions.js:201
+357	"Ja"	js/companyFunctions.js:224
+358	"Nee"	js/companyFunctions.js:224
+359	"Beursgenoteerd"	js/companyFunctions.js:229
+360	"De bedrijfsnaam is verplicht."	js/companyFunctions.js:250
+361	"Het bedrijf kon niet worden aangemaakt."	js/companyFunctions.js:258
+362	"Bedrijfsgegevens opgeslagen."	js/companyFunctions.js:277
+363	"Kon de bedrijfsgegevens niet bewaren."	js/companyFunctions.js:279
+364	"Fout bij initialiseren bedrijvenpagina:"	js/companyFunctions.js:313
+365	"Ongeldige eventlijst ontvangen."	js/companyFunctions.js:324
+366	"Eventkeuze voor bedrijfssnapshots laden mislukt:"	js/companyFunctions.js:333
+367	"Bewaar of annuleer eerst de geopende kaart."	js/companyFunctions.js:361
+368	"Fout bij laden bedrijvenlijst:"	js/companyFunctions.js:557
+369	"Kon de bedrijvenlijst niet laden."	js/companyFunctions.js:560
+370	"Fout bij laden bedrijf:"	js/companyFunctions.js:610
+371	"Kon het geselecteerde bedrijf niet laden."	js/companyFunctions.js:611
+372	"Nieuw bedrijf"	js/companyFunctions.js:642
+373	"Vul de bedrijfsgegevens in en klik op Save."	js/companyFunctions.js:643
+374	"Bedrijfsgegevens"	js/companyFunctions.js:664
+375	"Kies links een bedrijf of maak een nieuw bedrijf aan."	js/companyFunctions.js:665
+376	"Algemene gegevens van dit bedrijf."	js/companyFunctions.js:686
+377	"Logo laden..."	js/companyFunctions.js:784
+378	"Personeel automatisch opgeslagen."	js/companyFunctions.js:849
+379	"Automatisch opgeslagen."	js/companyFunctions.js:864
+380	"Nieuw bedrijf wordt aangemaakt..."	js/companyFunctions.js:881
+381	"Geen geldig bedrijf ID ontvangen."	js/companyFunctions.js:893
+382	"Nieuw bedrijf aangemaakt."	js/companyFunctions.js:899
+383	"Fout bij aanmaken bedrijf:"	js/companyFunctions.js:901
+384	"Kon het nieuwe bedrijf niet aanmaken."	js/companyFunctions.js:903
+385	"Kon het nieuwe bedrijf niet automatisch aanmaken."	js/companyFunctions.js:903
+386	"Maak eerst het bedrijf aan voor je een logo oplaadt."	js/companyFunctions.js:912
+387	"Bedrijfslogo wordt opgeladen..."	js/companyFunctions.js:929
+388	"Bedrijfslogo opgeslagen."	js/companyFunctions.js:957
+389	"Fout bij opladen bedrijfslogo:"	js/companyFunctions.js:960
+390	"Kon het bedrijfslogo niet opladen."	js/companyFunctions.js:963
+391	"Kies eerst een bedrijf."	js/companyFunctions.js:971
+392	"Bedrijfslogo wordt verwijderd..."	js/companyFunctions.js:976
+393	"Bedrijfslogo verwijderd."	js/companyFunctions.js:990
+394	"Fout bij verwijderen bedrijfslogo:"	js/companyFunctions.js:993
+395	"Kon het bedrijfslogo niet verwijderen."	js/companyFunctions.js:995
+396	"Vanaf "	js/companyFunctions.js:1128
+397	"Type bedrijf"	js/companyFunctions.js:1161
+398	"Bedrijfswaarde aangepast"	js/companyFunctions.js:1218
+399	"Herinvesteerd"	js/companyFunctions.js:1219
+400	"Dividend uitbetaald"	js/companyFunctions.js:1220
+401	"company-snapshot-item data-card"	js/companyFunctions.js:1274
+402	"Oprichting"	js/companyFunctions.js:1283
+403	"Datum onbekend"	js/companyFunctions.js:1286
+404	"Startstand zonder winstberekening of dividend."	js/companyFunctions.js:1292
+405	"Gegevens"	js/companyFunctions.js:1295
+406	"Oprichtingssnapshot beschikbaar na migratie 0012"	js/companyFunctions.js:1295
+407	"Beginwaarde bedrijf"	js/companyFunctions.js:1300
+408	"Aandelen bij oprichting"	js/companyFunctions.js:1301
+409	"Initiële marktprijs per aandeel"	js/companyFunctions.js:1302
+410	"Aandelen in anonieme handen"	js/companyFunctions.js:1303
+411	"Begin stabiliteit"	js/companyFunctions.js:1304
+412	"Begin rendabiliteit"	js/companyFunctions.js:1305
+413	"col-12 col-xl-6"	js/companyFunctions.js:1318
+414	"Count"	js/companyFunctions.js:1320
+415	"Bewaren"	js/companyFunctions.js:1330
+416	"Controleer "	js/companyFunctions.js:1342
+417	"Oprichting bewaard."	js/companyFunctions.js:1351
+418	"Herkomst"	js/companyFunctions.js:1356
+419	"Gereconstrueerd uit de migratie; historische onbekende waarden blijven leeg"	js/companyFunctions.js:1356
+420	"Elk beschikbaar event heeft al een snapshot."	js/companyFunctions.js:1413
+421	"De eventlijst kon niet geladen worden. Vernieuw de pagina of controleer de event-API."	js/companyFunctions.js:1414
+422	"Er zijn nog geen events beschikbaar."	js/companyFunctions.js:1415
+423	"company-snapshot-actions button-group"	js/companyFunctions.js:1449
+424	"Herbereken"	js/companyFunctions.js:1451
+425	"Verwijderen"	js/companyFunctions.js:1457
+426	"Snapshot bijgewerkt."	js/companyFunctions.js:1478
+427	"Kon de snapshot niet bewaren."	js/companyFunctions.js:1479
+428	"Bedrijfswaarde"	js/companyFunctions.js:1488
+429	"Uitgegeven aandelen"	js/companyFunctions.js:1489
+430	"Marktprijs per aandeel"	js/companyFunctions.js:1493
+431	"col-12 col-md-6"	js/companyFunctions.js:1499
+432	"Stabiliteit"	js/companyFunctions.js:1504
+433	"Rendabiliteit"	js/companyFunctions.js:1523
+434	"Controleer stabiliteit en rendabiliteit."	js/companyFunctions.js:1542
+435	"Historisch verwerkte winst/verlies"	js/companyFunctions.js:1597
+436	"Winst/verlies periode"	js/companyFunctions.js:1597
+437	"Rendabiliteit: "	js/companyFunctions.js:1604
+438	"Stabiliteit: "	js/companyFunctions.js:1606
+439	" tot "	js/companyFunctions.js:1606
+440	"Uitbetaald aan de aandeelhouders."	js/companyFunctions.js:1613
+441	"Opnieuw geïnvesteerd in het bedrijf."	js/companyFunctions.js:1614
+442	"Verlies verwerkt in de bedrijfswaarde."	js/companyFunctions.js:1615
+443	"Toegepast: "	js/companyFunctions.js:1626
+444	"Bedrijfswaarde aanpassen"	js/companyFunctions.js:1629
+445	"Dividend voor 1%: "	js/companyFunctions.js:1636
+446	"company-snapshot-actions button-group mt-2"	js/companyFunctions.js:1640
+447	"Herinvesteren"	js/companyFunctions.js:1642
+448	"Dividend uitbetalen"	js/companyFunctions.js:1648
+449	"Negligible"	js/companyFunctions.js:1692
+450	"Low"	js/companyFunctions.js:1692
+451	"Moderate"	js/companyFunctions.js:1692
+452	"High"	js/companyFunctions.js:1692
+453	"Critical"	js/companyFunctions.js:1692
+454	"company-personnel-entry data-card"	js/companyFunctions.js:1829
+455	"Personeelslid "	js/companyFunctions.js:1842
+456	"Bedrijfsleider · basisloon Fr "	js/companyFunctions.js:1857
+457	" statuspunten · personeelsvoorwaarde "	js/companyFunctions.js:1857
+458	"Functiebeschrijving"	js/companyFunctions.js:1868
+459	"Belang"	js/companyFunctions.js:1869
+460	"Loonsverhoging"	js/companyFunctions.js:1870
+461	"Winstdruk per jaar"	js/companyFunctions.js:1871
+462	"Raad van bestuur"	js/companyFunctions.js:1872
+463	"Vereist niveau"	js/companyFunctions.js:1874
+464	"Kies een personage"	js/companyFunctions.js:1928
+465	"Loonsverhoging (%)"	js/companyFunctions.js:1988
+466	"Winstdruk: Fr "	js/companyFunctions.js:2002
+467	" per jaar"	js/companyFunctions.js:2002
+468	"col-12 d-flex flex-wrap gap-3"	js/companyFunctions.js:2007
+469	"col-12 col-md-8"	js/companyFunctions.js:2048
+470	"col-12 col-md-4"	js/companyFunctions.js:2074
+471	"Specialisatie toevoegen"	js/companyFunctions.js:2105
+472	"Specialisatie #"	js/companyFunctions.js:2127
+473	"Specialisatie verwijderen"	js/companyFunctions.js:2130
+474	"Bewaren mislukt."	js/companyFunctions.js:2224
+475	"Verwijderen mislukt."	js/companyFunctions.js:2247
+476	"Personeelslid toevoegen"	js/companyFunctions.js:2334
+477	"Personeelslid aanpassen"	js/companyFunctions.js:2334
+478	"Kies eerst een vaardigheid."	js/companyFunctions.js:2365
+479	"Kies bestaande specialisatie"	js/companyFunctions.js:2384
+480	"Kies een bestaande specialisatie of ga naar 'New'."	js/companyFunctions.js:2439
+481	"De gekozen specialisatie is niet beschikbaar voor deze vaardigheid."	js/companyFunctions.js:2449
+482	"Vul een naam in voor de nieuwe specialisatie."	js/companyFunctions.js:2461
+483	"Kies eerst een event voor de snapshot."	js/companyFunctions.js:2485
+484	"Snapshot maken · "	js/companyFunctions.js:2511
+485	"Beginwaarden uit "	js/companyFunctions.js:2513
+486	" · kwartaal "	js/companyFunctions.js:2513
+487	"Controleer de voorgestelde beginwaarden voordat je de snapshot maakt."	js/companyFunctions.js:2514
+488	"Snapshot opgeslagen."	js/companyFunctions.js:2571
+489	"Fout bij maken snapshot:"	js/companyFunctions.js:2573
+490	"Snapshot herberekend."	js/companyFunctions.js:2638
+491	"Fout bij herberekenen snapshot:"	js/companyFunctions.js:2640
+492	"Kon de snapshot niet herberekenen."	js/companyFunctions.js:2641
+493	"Snapshot verwijderd."	js/companyFunctions.js:2668
+494	"Fout bij verwijderen snapshot:"	js/companyFunctions.js:2670
+495	"Kon de snapshot niet verwijderen."	js/companyFunctions.js:2671
+496	"Snapshot toegepast."	js/companyFunctions.js:2699
+497	"Fout bij toepassen snapshot:"	js/companyFunctions.js:2701
+498	"Kon de snapshot niet toepassen."	js/companyFunctions.js:2702
+499	"Voer eerst de snapshotmigratie uit."	js/companyFunctions.js:2755
+500	"Bedrijf opgeslagen."	js/companyFunctions.js:2777
+501	"Kies eerst een bedrijf of maak een nieuw bedrijf aan."	js/companyFunctions.js:2793
+502	"Fout bij bewaren bedrijf:"	js/companyFunctions.js:2818
+503	"Kon het bedrijf niet opslaan."	js/companyFunctions.js:2819
+504	"Personeel opgeslagen."	js/companyFunctions.js:2854
+505	"Fout bij bewaren bedrijfspersoneel:"	js/companyFunctions.js:2907
+506	"Kon het bedrijfspersoneel niet bewaren."	js/companyFunctions.js:2908
+507	"alert py-2 px-3 mb-0 alert-"	js/companyFunctions.js:2936
+508	"use strict"	js/companyQuarters.js:2
+509	"Nog geen kwartalen beschikbaar vanaf de oprichtingsdatum."	js/companyQuarters.js:132
+510	" per kwartaal van "	js/companyQuarters.js:157
+511	"Snapshot, niet versleepbaar"	js/companyQuarters.js:267
+512	"Sleep om aan te passen"	js/companyQuarters.js:267
+513	"Kwartaal bewerken"	js/companyQuarters.js:268
+514	" gebeurtenissen"	js/companyQuarters.js:269
+515	" · Snapshot ontbreekt: "	js/companyQuarters.js:269
+516	" kwartaal"	js/companyQuarters.js:273
+517	" aangepast."	js/companyQuarters.js:273
+518	"Sleep een punt omhoog of omlaag. Snapshotpunten blijven vast."	js/companyQuarters.js:274
+519	" klaar om te bewaren."	js/companyQuarters.js:302
+520	"circle, polygon"	js/companyQuarters.js:311
+521	"small text-muted mt-2"	js/companyQuarters.js:336
+522	"Voor deze grafiek zijn nog geen historische waarden bekend."	js/companyQuarters.js:336
+523	"Van kwartaal"	js/companyQuarters.js:341
+524	"Tot kwartaal"	js/companyQuarters.js:341
+525	"Startjaar"	js/companyQuarters.js:343
+526	"Eindjaar"	js/companyQuarters.js:343
+527	"Jaar"	js/companyQuarters.js:344
+528	"Startkwartaal"	js/companyQuarters.js:348
+529	"Eindkwartaal"	js/companyQuarters.js:348
+530	"Kwartaal"	js/companyQuarters.js:349
+531	"Beginperiode wissen"	js/companyQuarters.js:379
+532	"Eindperiode wissen"	js/companyQuarters.js:379
+533	"Grote gebeurtenissen"	js/companyQuarters.js:394
+534	"data-card company-quarter-events-card"	js/companyQuarters.js:398
+535	"Verhuld"	js/companyQuarters.js:414
+536	"Beperkt"	js/companyQuarters.js:414
+537	"Gemengd"	js/companyQuarters.js:414
+538	"Publiek"	js/companyQuarters.js:414
+539	"Zeer publiek"	js/companyQuarters.js:414
+540	"small text-muted mt-2 mb-0"	js/companyQuarters.js:423
+541	"Sleep meerdere punten en bewaar ze daarna samen. Gouden snapshotpunten blijven vast."	js/companyQuarters.js:424
+542	"Klik op een punt om de kwartaalmodal te openen. Bewaar alle wijzigingen daarna samen."	js/companyQuarters.js:425
+543	"company-quarter-event row g-2 align-items-end mb-2"	js/companyQuarters.js:429
+544	"col-12 col-md-7"	js/companyQuarters.js:431
+545	"col-8 col-md-3"	js/companyQuarters.js:436
+546	"Zichtbaarheid (1–5)"	js/companyQuarters.js:437
+547	"zeer publiek"	js/companyQuarters.js:439
+548	"col-4 col-md-2"	js/companyQuarters.js:441
+549	" · bedrijfsevolutie"	js/companyQuarters.js:467
+550	"De cijfers van de snapshot voor "	js/companyQuarters.js:470
+551	" gelden voor dit kwartaal. Bedrijfsgebeurtenissen kun je aanpassen."	js/companyQuarters.js:470
+552	"small text-muted"	js/companyQuarters.js:471
+553	"Pas de kwartaalcijfers aan. De wijzigingen worden samen met de andere grafiekbewerkingen bewaard."	js/companyQuarters.js:472
+554	"col-12 col-sm-6"	js/companyQuarters.js:475
+555	"+ Gebeurtenis toevoegen"	js/companyQuarters.js:491
+556	"alert alert-danger d-none mt-3 mb-0 company-quarter-error"	js/companyQuarters.js:494
+557	"Vul bij elke gebeurtenis een beschrijving in."	js/companyQuarters.js:523
+558	"Grafiekbewerking bewaren…"	js/companyQuarters.js:539
+559	" bewaard."	js/companyQuarters.js:557
+560	"Kon de grafiekbewerking niet bewaren."	js/companyQuarters.js:560
+561	"Kwartaalhistoriek laden…"	js/companyQuarters.js:598
+562	"Kon de kwartaalhistoriek niet laden."	js/companyQuarters.js:613
+563	"Niet bewaarde wijzigingen zijn verwijderd."	js/companyQuarters.js:624
+564	"Horizontal"	js/companyQuarters.js:640
+565	"Vertical"	js/companyQuarters.js:640
+566	"Zoom"	js/companyQuarters.js:641
+567	"ZoomValue"	js/companyQuarters.js:645
+568	"Bedrijfsevolutie per kwartaal"	js/companyResearch.js:16
+569	"Geen kwartaalgegevens beschikbaar."	js/companyResearch.js:17
+570	"company-quarter-chart-scroll company-research-chart"	js/companyResearch.js:28
+571	"Grafiekzoom"	js/companyResearch.js:30
+572	"Bedrijfswaarde per kwartaal"	js/companyResearch.js:46
+573	"Horizontale zoom"	js/companyResearch.js:67
+574	"Verticale zoom"	js/companyResearch.js:68
+575	"Bedrijfsinformatie laden…"	js/companyResearch.js:97
+576	" company-research-back"	js/companyResearch.js:109
+577	"data-card-facts company-research-facts my-3"	js/companyResearch.js:111
+578	"Oprichtingsdatum"	js/companyResearch.js:112
+579	"Type"	js/companyResearch.js:113
+580	"Informatie bij "	js/companyResearch.js:125
+581	"Belangrijke gebeurtenissen"	js/companyResearch.js:131
+582	"De kennis van bedrijfsgebeurtenissen is beschikbaar na migratie 0022."	js/companyResearch.js:154
+583	"Geen belangrijke gebeurtenissen bekend."	js/companyResearch.js:156
+584	"data-card company-research-event-group mb-3"	js/companyResearch.js:159
+585	"Zichtbaarheid "	js/companyResearch.js:166
+586	"â€” Nog geen deelnemer koppelen â€”"	js/createCharacter.js:45
+587	"col-sm-9 col-form-label"	js/createCharacter.js:91
+588	"Draft"	js/createCharacter.js:92
+589	"0 (nog te berekenen na creatie)"	js/createCharacter.js:104
+590	"Spelerspersonage"	js/createCharacter.js:119
+591	"0 / (verzamelde EP na koppeling)"	js/createCharacter.js:127
+592	"input, select, textarea"	js/createCharacter.js:162
+593	"Er ging iets mis bij het starten van character creation."	js/createCharacter.js:339
+594	"Formulier niet volledig geladen."	js/createCharacter.js:392
+595	"Kies een klasse en geef minstens 2 letters voor voornaam en familienaam."	js/createCharacter.js:401
+596	"Geen geldig ID teruggekregen."	js/createCharacter.js:466
+597	"Het aanmaken van het personage is mislukt."	js/createCharacter.js:484
+598	"data-card-actions button-group"	js/dataCard.js:21
+599	"Bewerken"	js/dataCard.js:38
+600	"De wijziging kon niet worden bewaard."	js/dataTable.js:29
+601	"Sluiten"	js/dataTable.js:34
+602	"Details: "	js/dataTable.js:49
+603	"Gegevens bekijken"	js/dataTable.js:49
+604	"table aether-table align-middle mb-0"	js/dataTable.js:57
+605	"Vorige pagina"	js/dataTable.js:67
+606	"Volgende pagina"	js/dataTable.js:68
+607	"Pagina "	js/dataTable.js:80
+608	" van "	js/dataTable.js:80
+609	": pagina's"	js/dataTable.js:86
+610	"Fout bij laden diary:"	js/diaryCharacter.js:79
+611	"aether-panel diary-panel"	js/diaryCharacter.js:88
+612	"Select event"	js/diaryCharacter.js:99
+613	"Add diary"	js/diaryCharacter.js:113
+614	"Fout bij toevoegen diary:"	js/diaryCharacter.js:138
+615	"Kon diary entry niet toevoegen."	js/diaryCharacter.js:139
+616	"Gossip voor \""	js/diaryCharacter.js:158
+617	"\" is nog niet ingevuld. Alleen een admin of director kan de gossip van deze figurantenrol aanpassen."	js/diaryCharacter.js:158
+618	"No diary entries yet."	js/diaryCharacter.js:166
+619	"data-card mb-3 diary-entry"	js/diaryCharacter.js:191
+620	"Goals"	js/diaryCharacter.js:207
+621	"Achievements"	js/diaryCharacter.js:208
+622	"Gossip 1"	js/diaryCharacter.js:213
+623	"Gossip 2"	js/diaryCharacter.js:214
+624	"Gossip 3"	js/diaryCharacter.js:215
+625	"De server gaf geen gesaniteerde diary terug."	js/diaryCharacter.js:317
+626	"Fout bij opslaan diary:"	js/diaryCharacter.js:329
+627	"Opslaan van diary mislukt."	js/diaryCharacter.js:330
+628	"Spaarder"	js/economyCharacter.js:53
+629	"Eigen beheer"	js/economyCharacter.js:111
+630	"De Bank"	js/economyCharacter.js:112
+631	"Een derde"	js/economyCharacter.js:113
+632	"Profiel "	js/economyCharacter.js:124
+633	"De bank"	js/economyCharacter.js:146
+634	"Beheerder effectenportefeuille"	js/economyCharacter.js:204
+635	"Beheerder"	js/economyCharacter.js:208
+636	"Externe beheerder"	js/economyCharacter.js:219
+637	"Kies een actief personage"	js/economyCharacter.js:223
+638	"Kies een actief personage als beheerder."	js/economyCharacter.js:252
+639	"Kon de beheerder niet bewaren."	js/economyCharacter.js:264
+640	"Effectenbeheer wordt pas beschikbaar zodra het personage niet meer in draft staat."	js/economyCharacter.js:287
+641	"Beheerder aanpassen"	js/economyCharacter.js:310
+642	"Risicoprofiel"	js/economyCharacter.js:333
+643	"Risicoprofiel effectenportefeuille"	js/economyCharacter.js:354
+644	"De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event."	js/economyCharacter.js:370
+645	"Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd."	js/economyCharacter.js:386
+646	"Verwacht rendement"	js/economyCharacter.js:406
+647	"Geld storten"	js/economyCharacter.js:434
+648	"Geld opnemen"	js/economyCharacter.js:440
+649	"Opnemen kan zodra er een goedgekeurde snapshot beschikbaar is."	js/economyCharacter.js:451
+650	"Geen snapshot beschikbaar."	js/economyCharacter.js:592
+651	"Huidige opname voor deze snapshot: "	js/economyCharacter.js:607
+652	"Een bedrag van 0,00 Fr zet de snapshotopname terug."	js/economyCharacter.js:610
+653	"Opgepast: het event van deze snapshot is al afgelopen. Daarom geldt 25% verlies. Er wordt "	js/economyCharacter.js:613
+654	" op de bankrekening gezet."	js/economyCharacter.js:613
+655	"Opgepast: boven 30 000,00 Fr geldt 25% verlies. Er wordt "	js/economyCharacter.js:614
+656	"Deze opname blijft binnen de kosteloze grens van 30 000,00 Fr voor een lopend event."	js/economyCharacter.js:616
+657	"Niet van toepassing"	js/economyCharacter.js:782
+658	"Wacht op goedkeuring"	js/economyCharacter.js:782
+659	"Goedgekeurd"	js/economyCharacter.js:782
+660	"Datum"	js/economyCharacter.js:785
+661	"Saldo effectenportefeuille"	js/economyCharacter.js:787
+662	"Beheer"	js/economyCharacter.js:788
+663	"Vaardigheidsniveau beheerder"	js/economyCharacter.js:791
+664	"Basisrendement"	js/economyCharacter.js:792
+665	"Maximale afwijking"	js/economyCharacter.js:793
+666	"Afwijking"	js/economyCharacter.js:794
+667	"Rendementspercentage"	js/economyCharacter.js:795
+668	"Rendement"	js/economyCharacter.js:796
+669	"Status rendement"	js/economyCharacter.js:797
+670	"Opgenomen uit effectenportefeuille"	js/economyCharacter.js:798
+671	"Bijgeschreven op bankrekening"	js/economyCharacter.js:799
+672	"Einddatum event"	js/economyCharacter.js:800
+673	"Event afgelopen"	js/economyCharacter.js:801
+674	"Opnieuw genereren"	js/economyCharacter.js:808
+675	"Goedkeuren"	js/economyCharacter.js:809
+676	"Rendementen"	js/economyCharacter.js:820
+677	"Bedrag"	js/economyCharacter.js:823
+678	"Info"	js/economyCharacter.js:824
+679	"Rendement — "	js/economyCharacter.js:825
+680	"Effectenportefeuille"	js/economyCharacter.js:834
+681	"card aether-panel shadow-sm mb-4"	js/economyCharacter.js:947
+682	"Adeldom"	js/economyCharacter.js:1002
+683	"Trait #"	js/economyCharacter.js:1009
+684	"Geen trait-inkomsten of -uitgaven."	js/economyCharacter.js:1031
+685	"Loonsverhoging gekoppeld bedrijf"	js/economyCharacter.js:1060
+686	"economy-income-value text-success"	js/economyCharacter.js:1064
+687	"Inwonend personeel"	js/economyCharacter.js:1077
+688	"economy-income-value text-danger"	js/economyCharacter.js:1081
+689	"economy-income-row economy-income-row--total"	js/economyCharacter.js:1089
+690	"Eindbedrag"	js/economyCharacter.js:1093
+691	"Snapshots"	js/economyCharacter.js:1118
+692	"Maak per event een momentopname van de inkomsten van dit personage. Alle trait-inkomsten worden dan in een keer op de bankrekening gezet en een eventuele effectenportefeuille krijgt tegelijk een wachtend rendement."	js/economyCharacter.js:1124
+693	"row g-3 align-items-end mb-3"	js/economyCharacter.js:1128
+694	"Geen events meer beschikbaar"	js/economyCharacter.js:1149
+695	"Snapshot maken"	js/economyCharacter.js:1166
+696	"Nog geen snapshots beschikbaar."	js/economyCharacter.js:1183
+697	"Economische snapshots"	js/economyCharacter.js:1189
+698	"Economische snapshot — "	js/economyCharacter.js:1193
+699	"Saldo bankrekening"	js/economyCharacter.js:1207
+700	"Overschrijving"	js/economyCharacter.js:1273
+701	"Overschrijvingen zijn pas beschikbaar zodra het personage niet meer in draft staat."	js/economyCharacter.js:1293
+702	"Alleen administrator- en director-gebruikers kunnen een overschrijving uitvoeren."	js/economyCharacter.js:1298
+703	"Er zijn geen actieve doelpersonages beschikbaar."	js/economyCharacter.js:1303
+704	"Verrichtingen"	js/economyCharacter.js:1315
+705	"Nog geen verrichtingen beschikbaar."	js/economyCharacter.js:1321
+706	"Dit personage"	js/economyCharacter.js:1323
+707	"Inkomstensnapshot"	js/economyCharacter.js:1324
+708	"Bedrijfsdividend"	js/economyCharacter.js:1325
+709	"Rendement effectenportefeuille"	js/economyCharacter.js:1325
+710	"Opname effectenportefeuille"	js/economyCharacter.js:1326
+711	"Afzender / begunstigde"	js/economyCharacter.js:1329
+712	"Verrichting — "	js/economyCharacter.js:1333
+713	"Afzender"	js/economyCharacter.js:1336
+714	"Begunstigde"	js/economyCharacter.js:1337
+715	"Richting"	js/economyCharacter.js:1339
+716	"Uitgaand"	js/economyCharacter.js:1339
+717	"Inkomend"	js/economyCharacter.js:1339
+718	"Soort verrichting"	js/economyCharacter.js:1340
+719	"Verrichting"	js/economyCharacter.js:1340
+720	"Mededeling"	js/economyCharacter.js:1341
+721	"col-12 col-lg-6"	js/economyCharacter.js:1360
+722	"Bankrekening"	js/economyCharacter.js:1369
+723	"15x inkomsten"	js/economyCharacter.js:1371
+724	"10x inkomsten"	js/economyCharacter.js:1371
+725	"Draft-personages tonen een statisch startsaldo op basis van "	js/economyCharacter.js:1375
+726	"Geef een geldig saldo op."	js/economyCharacter.js:1406
+727	"Fout bij bewaren van banksaldo:"	js/economyCharacter.js:1418
+728	"Kon het banksaldo niet bewaren."	js/economyCharacter.js:1419
+729	"Fout bij bewaren van saldo effectenportefeuille:"	js/economyCharacter.js:1441
+730	"Kon het saldo van de effectenportefeuille niet bewaren."	js/economyCharacter.js:1442
+731	"Kies een ontvanger."	js/economyCharacter.js:1461
+732	"Kies een datum voor de overschrijving."	js/economyCharacter.js:1466
+733	"Geef een geldig bedrag op."	js/economyCharacter.js:1471
+734	"Je kan niet meer geld overschrijven dan het beschikbare saldo op de rekening."	js/economyCharacter.js:1477
+735	"Fout bij bewaren van overschrijving:"	js/economyCharacter.js:1496
+736	"Kon de overschrijving niet bewaren."	js/economyCharacter.js:1497
+737	"Deze verrichting verwijderen en het bedrag terugboeken?"	js/economyCharacter.js:1504
+738	"Fout bij verwijderen van verrichting:"	js/economyCharacter.js:1518
+739	"Kon de verrichting niet verwijderen."	js/economyCharacter.js:1519
+740	"Kies eerst een event."	js/economyCharacter.js:1532
+741	"Fout bij maken van economiesnapshot:"	js/economyCharacter.js:1550
+742	"Kon de economiesnapshot niet bewaren."	js/economyCharacter.js:1551
+743	"Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?"	js/economyCharacter.js:1559
+744	"Fout bij verwijderen van economiesnapshot:"	js/economyCharacter.js:1573
+745	"Kon de economiesnapshot niet verwijderen."	js/economyCharacter.js:1574
+746	"Geef een geldig bedrag op om te storten."	js/economyCharacter.js:1609
+747	"Fout bij storten naar effectenportefeuille:"	js/economyCharacter.js:1626
+748	"Kon het bedrag niet naar de effectenportefeuille storten."	js/economyCharacter.js:1627
+749	"Geef een geldig bedrag op om op te nemen."	js/economyCharacter.js:1640
+750	"Fout bij opname uit effectenportefeuille:"	js/economyCharacter.js:1656
+751	"Kon het bedrag niet uit de effectenportefeuille halen."	js/economyCharacter.js:1657
+752	"Fout bij opnieuw genereren van rendement:"	js/economyCharacter.js:1678
+753	"Kon het rendement niet opnieuw genereren."	js/economyCharacter.js:1679
+754	"Fout bij goedkeuren van rendement:"	js/economyCharacter.js:1701
+755	"Kon het rendement niet goedkeuren."	js/economyCharacter.js:1702
+756	"Kies een snapshot."	js/economyCharacter.js:1720
+757	"Geef een geldig bedrag op om uit de effectenportefeuille op te nemen."	js/economyCharacter.js:1725
+758	"Fout bij snapshotopname uit effectenportefeuille:"	js/economyCharacter.js:1743
+759	"Kon het snapshotbedrag niet opnemen."	js/economyCharacter.js:1744
+760	"Kon het risicoprofiel niet bewaren."	js/economyCharacter.js:1843
+761	"Kon eventgegevens niet verwerken."	js/eventDetails.js:16
+762	"Niet bewaarde eventgegevens verlaten?"	js/eventDetails.js:23
+763	"Nieuw event"	js/eventDetails.js:65
+764	"Eventafbeelding"	js/eventDetails.js:71
+765	"Nog geen afbeelding"	js/eventDetails.js:72
+766	"Titel"	js/eventDetails.js:77
+767	"Begindatum"	js/eventDetails.js:77
+768	"Einddatum"	js/eventDetails.js:78
+769	"Locatie"	js/eventDetails.js:78
+770	"Ervaringspunten"	js/eventDetails.js:79
+771	"Controleer de titel, datums en ervaringspunten."	js/eventDetails.js:105
+772	"Opladen"	js/eventDetails.js:116
+773	"Upload mislukt"	js/eventDetails.js:127
+774	"Eventafbeelding verwijderen?"	js/eventDetails.js:135
+775	"Afbeeldingen worden meteen bewaard."	js/eventDetails.js:136
+776	"Bewaar het event om een afbeelding op te laden."	js/eventDetails.js:137
+777	"Gossip"	js/eventDetails.js:153
+778	"Snapshot"	js/eventDetails.js:153
+779	"Rendementbedrag"	js/eventDetails.js:162
+780	"Status effectenrendement"	js/eventDetails.js:162
+781	"Spelerspersonages"	js/eventDetails.js:180
+782	"Figurantenrollen"	js/eventDetails.js:180
+783	"accordion event-character-accordion"	js/eventDetails.js:186
+784	"accordion-button collapsed"	js/eventDetails.js:187
+785	"accordion-collapse collapse"	js/eventDetails.js:192
+786	"Nog geen personages gekoppeld."	js/eventDetails.js:195
+787	"Snapshot voor dit event aanwezig"	js/eventDetails.js:212
+788	"Snapshot voor dit event ontbreekt"	js/eventDetails.js:212
+789	"Drie gossipniveaus ingevuld"	js/eventDetails.js:213
+790	"Nog geen drie gossipniveaus ingevuld"	js/eventDetails.js:213
+791	" van dit event verwijderen"	js/eventDetails.js:226
+792	"Van dit event verwijderen"	js/eventDetails.js:226
+793	" koppelen"	js/eventDetails.js:244
+794	"Koppelen"	js/eventDetails.js:245
+795	"Kon huidige gebruiker niet ophalen."	js/eventFunctions.js:11
+796	"Fout bij initialiseren eventpagina:"	js/eventFunctions.js:41
+797	"Deelnames — "	js/eventFunctions.js:62
+798	"Deelnemer"	js/eventFunctions.js:62
+799	"Mijn deelnames"	js/eventFunctions.js:62
+800	"Element #eventList niet gevonden."	js/eventFunctions.js:66
+801	"Aether "	js/eventFunctions.js:91
+802	"Yes"	js/eventFunctions.js:179
+803	"Fout bij ophalen eventlijst:"	js/eventFunctions.js:191
+804	"Adellijke titel"	js/formCharacter.js:93
+805	"Je vervalt in armoede en wordt lagere klasse."	js/formCharacter.js:216
+806	"Je behoort tot de verarmde middenklasse. Je huurt\neen klein appartement of kleine gezinswoning van\neen hospita in een minder goede wijk van de stad. Je\nmaaltijden zijn sober en soms karig, je kleding een\nbeetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont\nmaar zelden sociale evenementen bij door geldge-\nbrek."	js/formCharacter.js:220
+807	"Je maakt deel uit van de lagere middenklasse. Je\nwoont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de\neenvoudige pleziertjes van het leven veroorloven.\nJe sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega’s."	js/formCharacter.js:230
+808	"Je behoort tot de comfortabele middenmoot van\nje klasse. Je woont in een comfortabele stadswoning\nmet twee tot vier slaapkamers en een huishoudster. Je\nhebt een goed uitgebouwd professioneel netwerk en\nkomt regelmatig in contact met invloedrijke mensen.\nJe moet voorzichtig zijn met je geld, maar je kan\njezelf en je gezin af en toe verwennen met een luxe\nuitgave."	js/formCharacter.js:237
+809	"Je maakt deel uit van de gegoede middenklasse.\nJe woont in een mooi, groot herenhuis met 6 tot 8\nslaapkamers, een huishoudster, een butler en een\ntuinman of klusjesman. Je bent belangrijk genoeg\nom regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen."	js/formCharacter.js:248
+810	"Je behoort tot de hogere middenklasse. Je woont in\neen riante stadswoning of landhuis met vele kamers,\nmeerdere badkamers, salons en een grote tuin. Bij\nhet huis hoort een ploeg van ongeveer 10 bedienden.\nJe exclusieve diners bij kaarslicht zijn gelegenheden\nwaar reikhalzend naar wordt uitgekeken. Je persoon-\nlijk vermogen wordt geschat tussen de 1 700 000Fr\nen de 15 000 000Fr."	js/formCharacter.js:256
+811	"De levensstijl van de nouveau riche die de luxe van\nde hoge adel benadert. Je woont in een uniek kasteel\nof paleis buiten de stad. Bij de woonst horen de om-\nliggende velden en bossen. Je krijgt er een uitgebreide\nhuishoudploeg bij, alsook boswachters om je domein\nveilig te houden. Uitgebreide diners en exuberante\nfeestjes met belangrijke mensen, zijn de normale gang\nvan zaken."	js/formCharacter.js:266
+812	"Je leeft in armoede. Een eigendom is iets wat je nooit zal bereiken. Als je geluk hebt, kan je een schamel onderkomen huren waar je met het hele gezin woont. Hartig dagelijks voedsel is geen zekerheid, gezondheidszorg een onbereikbare droom. Je enige hoop op een comfortabel leven is als inwonend personeel bij een rijke werkgeven."	js/formCharacter.js:277
+813	"Je woont inwonend bij een adellijke familie die wel status heeft, maar weinig echte rijkdom. Je beschikt meestal over een kleine kamer onder het dak of in een achtervleugel van het huis, met enkel het strikt noodzakelijke meubilair. Je eet degelijk maar eenvoudig, vaak na de familie en het hogere personeel. Privacy is beperkt: je kamer is van jou, maar klein, sober en duidelijk ondergeschikt aan de rest van het huis."	js/formCharacter.js:282
+814	"Je woont op een landgoed, in een herenhuis of klein kasteel waar personeel een vaste plaats heeft binnen het huishouden. Je hebt een eenvoudige maar nette eigen kamer in de dienstvertrekken, meestal met bed, waskom, kast en een stoel. Je maaltijden zijn degelijk en regelmatig, en je leeft comfortabeler dan de meeste arbeiders. Je privévertrek is bescheiden, maar veilig, verwarmd en duidelijk beter dan wat de lagere klasse zich gewoonlijk kan veroorloven."	js/formCharacter.js:286
+815	"Je dient in een groot adellijk huishouden waar orde, hiërarchie en comfort belangrijk zijn. Je beschikt over een nette personeelskamer in de bediendenvleugel, met voldoende ruimte voor je persoonlijke spullen en een degelijk bed. Bad- en wasvoorzieningen zijn meestal gedeeld met ander personeel, maar goed onderhouden. Je leeft in zekerheid en comfort, al blijft duidelijk dat zelfs je privéruimte deel uitmaakt van het grotere huishouden van je meester."	js/formCharacter.js:290
+816	"Je woont in een voornaam huis of stadspaleis waar het personeel talrijk is en de organisatie strak verloopt. Je hebt een verzorgde kamer in de personeelsvertrekken, mogelijk met een klein zitgedeelte of gedeelde salon voor het hogere dienstpersoneel. Je eet goed, bent degelijk gekleed en leeft in een omgeving van luxe, al geniet je er slechts indirect van. Je privévertrekken zijn comfortabel, stil en respectabel, maar altijd ondergeschikt aan de pracht van de familie zelf."	js/formCharacter.js:294
+817	"Je maakt deel uit van een enorm huishouden dat bijna als een kleine instelling functioneert. Je woont in ruime en goed onderhouden dienstvertrekken, vaak in een aparte personeelsvleugel of bijgebouw, met veel meer comfort dan de meeste gewone burgers ooit kennen. Hogere personeelsleden kunnen zelfs over meerdere kleine kamers beschikken, zoals een slaapvertrek en een privézitkamer of kantoorhoek. Je leeft materieel comfortabel en in grote veiligheid, maar je bestaan blijft volledig ingebed in de discipline en verwachtingen van een machtige dynastie."	js/formCharacter.js:298
+818	"Je woont in een groot herenhuis waar personeel deel uitmaakt van het normale huishouden. Je kamer ligt in de personeelsvertrekken en is degelijk, verzorgd en ruim genoeg om echt als privéruimte te voelen. Voor hoger dienstpersoneel is een iets grotere kamer of een klein eigen salonnetje niet ondenkbaar. Je leeft onder goede materiële omstandigheden, met voldoende comfort, regelmaat en een zekere trots die hoort bij dienst in een voornaam burgerlijk huis."	js/formCharacter.js:310
+819	"Je woont inwonend in een groot landhuis of statige stadswoning waar personeel overvloediger aanwezig is. Je beschikt over comfortabele dienstvertrekken, en afhankelijk van je functie kan dat meer zijn dan één eenvoudige kamer. Het hogere personeel heeft soms toegang tot een kleine privézitruimte, beter meubilair en meer rust dan lager personeel. Je leeft zeer behoorlijk, met veel meer comfort, veiligheid en status dan de meeste mensen uit de middenklasse."	js/formCharacter.js:314
+820	"Je woont in een uitzonderlijk luxueus huishouden waar zelfs de personeelsvertrekken ruim en verzorgd zijn. Afhankelijk van je rang binnen het personeel kan je kamer bijna de allure hebben van een kleine burgerwoning: een ruim slaapvertrek, goed meubilair en soms een aparte privéruimte om te zitten of administratie te doen. Je leeft in overvloed en orde, maar ook in een omgeving waar uiterlijk vertoon, discipline en representatie zeer belangrijk zijn. Je geniet van comfort dat voor de meeste mensen onbereikbaar is, al blijft het comfort volledig verbonden aan je dienstbaarheid."	js/formCharacter.js:317
+821	"Fout bij ophalen ties voor levensstandaard:"	js/formCharacter.js:329
+822	"Op dit moment ben je dakloos."	js/formCharacter.js:363
+823	"Je maakt deel uit van de lagere middenklasse. Je\nwoont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de\neenvoudige pleziertjes van het leven veroorloven.\nJe sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega's."	js/formCharacter.js:390
+824	"Fout bij ophalen ties voor personeel:"	js/formCharacter.js:535
+825	"Personeelsvoorwaarde: "	js/formCharacter.js:572
+826	"Voldaan: "	js/formCharacter.js:573
+827	"Geen traits met personeelsvoorwaarde."	js/formCharacter.js:579
+828	"badge text-bg-secondary"	js/formCharacter.js:590
+829	"Geen dependent, household staff of spouse ties."	js/formCharacter.js:602
+830	"Bevestigd"	js/formCharacter.js:615
+831	"Onbevestigd"	js/formCharacter.js:615
+832	"ms-2 d-inline-flex flex-wrap align-items-center gap-1"	js/formCharacter.js:630
+833	"Fysieke gezondheid"	js/formCharacter.js:663
+834	"Mentale gezondheid"	js/formCharacter.js:671
+835	"me-2 d-flex flex-wrap align-items-center"	js/formCharacter.js:691
+836	" verlagen"	js/formCharacter.js:716
+837	" verhogen"	js/formCharacter.js:727
+838	"small text-nowrap"	js/formCharacter.js:742
+839	"gratis speciale aanpassing"	js/formCharacter.js:743
+840	" gratis verlagen"	js/formCharacter.js:752
+841	" gratis verhogen"	js/formCharacter.js:763
+842	"Fout bij autosave van veld"	js/formCharacter.js:810
+843	"Hogere klasse"	js/formCharacter.js:824
+844	"Lagere klasse"	js/formCharacter.js:826
+845	"Ongehuwd"	js/formCharacter.js:832
+846	"Gehuwd"	js/formCharacter.js:833
+847	"Weduwe/weduwnaar"	js/formCharacter.js:834
+848	"Portret opladen"	js/formCharacter.js:1030
+849	"Portret verwijderen"	js/formCharacter.js:1032
+850	"Personagegegevens bewerken"	js/formCharacter.js:1051
+851	"Personagegegevens bewaren"	js/formCharacter.js:1055
+852	"Wijzigingen annuleren"	js/formCharacter.js:1056
+853	"Kon de personagegegevens niet bewaren:"	js/formCharacter.js:1068
+854	"Kon de personagegegevens niet bewaren."	js/formCharacter.js:1069
+855	"Fout bij aanpassen van gezondheid:"	js/formCharacter.js:1195
+856	"Fout bij ophalen taalopties:"	js/languageCharacter.js:118
+857	"Kies een bestaande taal of ga naar 'New'."	js/languageCharacter.js:140
+858	"Vul een naam in voor de nieuwe taal."	js/languageCharacter.js:147
+859	"Onbekende tab-selectie."	js/languageCharacter.js:152
+860	"Fout bij toevoegen taal:"	js/languageCharacter.js:169
+861	"Toevoegen van taal mislukt."	js/languageCharacter.js:170
+862	"Fout bij verwijderen taal:"	js/languageCharacter.js:192
+863	"Verwijderen van taal mislukt."	js/languageCharacter.js:193
+864	"Iedereen mag binnen spel elke taal gebruiken die je logisch acht voor je personage en die je buitenspel effectief kan spreken. De talen die hieronder opgelijst staan, zijn uitsluitend om teksten uit boeken en documenten te lezen en schrijven."	js/languageCharacter.js:233
+865	" Je kan er nog "	js/languageCharacter.js:237
+866	" kiezen."	js/languageCharacter.js:237
+867	" Je kan nog extra talen aankopen voor 2 EP."	js/languageCharacter.js:240
+868	"Nog geen extra schrijftalen gekozen."	js/languageCharacter.js:274
+869	"list-unstyled mb-3 character-language-grid"	js/languageCharacter.js:278
+870	"Taal verwijderen"	js/languageCharacter.js:286
+871	"Content-Type"	js/mainFunctions.js:23
+872	"Geen geldige sessie."	js/mainFunctions.js:111
+873	"De server gaf geen geldig antwoord op de sessiecontrole."	js/mainFunctions.js:113
+874	"Idempotency-Key"	js/mainFunctions.js:187
+875	"Fout bij sessiecontrole:"	js/mainFunctions.js:221
+876	"DropdownInput: container #"	js/mainFunctions.js:251
+877	" niet gevonden."	js/mainFunctions.js:251
+878	"aether-modal-frame aether-modal-frame-"	js/modal.js:32
+879	"Fout bij omzetten van ervaringspunten naar statuspunten:"	js/navCharacter.js:38
+880	"Influential"	js/navCharacter.js:44
+881	"Elite"	js/navCharacter.js:45
+882	"Secret master"	js/navCharacter.js:46
+883	"Template niet gevonden:"	js/navCharacter.js:57
+884	"Fout bij koppelen/loskoppelen deelnemer:"	js/navCharacter.js:169
+885	"Fout bij ophalen userlist:"	js/navCharacter.js:176
+886	"Fout bij opslaan type:"	js/navCharacter.js:202
+887	"Fout bij opslaan status:"	js/navCharacter.js:223
+888	"Omgezet uit EP: "	js/navCharacter.js:261
+889	"CrimsonText-Regular"	js/passportCharacter.js:29
+890	"CrimsonText-Bold"	js/passportCharacter.js:30
+891	"MySoul-Regular"	js/passportCharacter.js:32
+892	"Paspoortaandelen:"	js/passportCharacter.js:86
+893	"Onbekend personage"	js/passportCharacter.js:93
+894	" - vervolg"	js/passportCharacter.js:443
+895	"naam - nom - name"	js/passportCharacter.js:566
+896	"voornaam - prénom - first name"	js/passportCharacter.js:567
+897	"burgerlijke staat - etat civil - marital status"	js/passportCharacter.js:568
+898	"geboren te / op - ne en / en - born at / on"	js/passportCharacter.js:569
+899	"nationaliteit - nationalite - nationality"	js/passportCharacter.js:570
+900	"predicaat - predicat - predicate"	js/passportCharacter.js:572
+901	"aanspreking - adresse - address"	js/passportCharacter.js:573
+902	"woonplaats - residence - place of residence"	js/passportCharacter.js:574
+903	"beroep - profession - profession"	js/passportCharacter.js:579
+904	"militaire rang - grade militaire - military rank"	js/passportCharacter.js:586
+905	"Welvaart"	js/passportCharacter.js:627
+906	"Onbekend bedrijf"	js/passportCharacter.js:632
+907	" aandelen"	js/passportCharacter.js:634
+908	"Statuseigenschappen"	js/passportCharacter.js:687
+909	"Ongetraind"	js/passportCharacter.js:739
+910	"Onbekende vaardigheid"	js/passportCharacter.js:795
+911	"Geen beschrijving."	js/passportCharacter.js:797
+912	"Persoonsgegevens"	js/passportCharacter.js:814
+913	"Economie"	js/passportCharacter.js:822
+914	"passport-section-option-meta text-muted"	js/passportCharacter.js:869
+915	"0 pagina's"	js/passportCharacter.js:872
+916	"mx-auto position-relative overflow-hidden shadow-sm"	js/passportCharacter.js:892
+917	"right center"	js/passportCharacter.js:898
+918	"1px solid rgba(0,0,0,0.08)"	js/passportCharacter.js:900
+919	"\"Crimson Text\", Georgia, serif"	js/passportCharacter.js:903
+920	"1px solid rgba(0,0,0,0.6)"	js/passportCharacter.js:930
+921	"1px solid rgba(0,0,0,0.3)"	js/passportCharacter.js:944
+922	"w-100 h-100 position-relative"	js/passportCharacter.js:959
+923	"Op iedere vervalsing van dit paspoort staat correctionele straf."	js/passportCharacter.js:981
+924	"Toute falsification de ce passeport est passible de sanctions correctionnelles."	js/passportCharacter.js:982
+925	"Any falsification of this passport is subject to criminal penalties."	js/passportCharacter.js:983
+926	"card aether-panel shadow-sm h-100"	js/passportCharacter.js:1021
+927	"Paspoort aanmaken"	js/passportCharacter.js:1028
+928	"Via deze functie kan je een kant en klare PDF aanmaken die je recto verso kan afdrukken. Snij uit volgens de snijlijnen (volle lijnen aan de rand van de pagina) en vouw dubbel langs de vouwlijnen (stippellijnen). Zo bekom je een handige kleine booklet die precies past in een paspoortkaftje dat je bij aanvang van het spel van ons kan krijgen. Je paspoort kan ook fungeren als personagekaart met referentie naar al je vaardigheden en andere eigenschappen. Kies hier welke informatie je mee wil opnemen."	js/passportCharacter.js:1033
+929	"Je kan kiezen om zoveel mogelijk paspoortpagina's op een A4 te printen, maar dan moet je printer netjes recto verso kunnen printen, of je kan gaan voor minder pagina's per A4. Dat gaat wat meer papier verbruiken, maar dan zal een verschuiving tussen voor- en achterkant minder hard opvallen."	js/passportCharacter.js:1047
+930	"Papier sparen"	js/passportCharacter.js:1078
+931	"Gebruik de bestaande impositie met zo veel mogelijk paspoortpagina's per A4."	js/passportCharacter.js:1078
+932	"Meer speling tussen recto verso druk"	js/passportCharacter.js:1079
+933	"Druk telkens maar 1 katern per A4-vel af."	js/passportCharacter.js:1079
+934	"PDF maken"	js/passportCharacter.js:1087
+935	"Totaal geselecteerd: "	js/passportCharacter.js:1093
+936	" paspoortpagina's op "	js/passportCharacter.js:1093
+937	"TTF mist verplichte tabellen."	js/passportCharacter.js:1325
+938	"Geen bruikbare cmap gevonden in TTF."	js/passportCharacter.js:1372
+939	"Promise"	js/passportCharacter.js:1422
+940	"Font niet gevonden ("	js/passportCharacter.js:1427
+941	"DeviceRGB"	js/passportCharacter.js:1519
+942	"Canvascontext niet beschikbaar."	js/passportCharacter.js:1645
+943	"handtekening houder"	js/passportCharacter.js:2044
+944	"Maandinkomen"	js/passportCharacter.js:2365
+945	"Levensstijl"	js/passportCharacter.js:2371
+946	"Aandelen"	js/passportCharacter.js:2381
+947	"Lichamelijke gezondheid"	js/passportCharacter.js:2600
+948	"Zolang je nog groene ringen over hebt, ben je lichamelijk in goede conditie en is er niets aan de hand."	js/passportCharacter.js:2603
+949	"Ben je al je groene ringen kwijt, maar heb je nog rode ringen over, dan ben je gewond. Speel uit dat je pijn hebt. Laat je wonden verzorgen, ander raken ze geinfecteerd."	js/passportCharacter.js:2606
+950	"Wanneer je al je fysieke ringen kwijt bent, krijg je een kritieke fysieke verwonde. Dat kan bijvoorbeeld een gebroken been zijn, of een doorboorde long. Tot je medische zorgen krijgt, kan je alleen over de grond kruipen en kermen van de pijn."	js/passportCharacter.js:2607
+951	"Zolang je nog witte ringen over hebt, ben je mentaal in goede stabiel en is er niets aan de hand."	js/passportCharacter.js:2614
+952	"Ben je al je witte ringen kwijt, maar heb je nog gele ringen over, dan ben je gestresseerd. Je hebt last van psychotische waanbeelden en bent emotioneel onstabiel. Kalmeringsmiddelen voorgeschreven door een bekwaam psycholoog, kunnen je kalmeren."	js/passportCharacter.js:2617
+953	"Wanneer je al je mentale ringen kwijt bent, krijg je een kritiekementale aandoening. Dat kan bijvoorbeeld oncontroleerbare kleptomanische neigingen krijgen, of krijg je een schitzofrene aandoening. Tot je medische zorgen krijgt, zit je in een vast in een ernstige episode van je aandoening en ben je in onhandelbare paniek of helemaal in jezelf gekeerd."	js/passportCharacter.js:2618
+954	"Ringen verliezen"	js/passportCharacter.js:2628
+955	"Fysieke ringen verlies je doorgaans door terecht te komen in geweldadige omstandigheden. Slag en steekwapens doen doorgaans 1 punt schade per rake klap, vuurwapens veroorzaken 2 punten schade."	js/passportCharacter.js:2633
+956	"Mentale schade wordt veroorzaakt door stresvolle situaties. Dat kan een hevige ruzie zijn waarin je verwikkeld bent geraakt, of betrokken zijn in een gevecht. Dit soort situaties kost je doorgaans 1 mentale ring. Extreme toestanden, zoals marteling, moord of aanraking met het bovennatuurlijke, geven je 2 tot 3 stress."	js/passportCharacter.js:2634
+957	"voornaam - prenom - first name"	js/passportCharacter.js:2889
+958	"ImPassportPage"	js/passportCharacter.js:3128
+959	" /Filter /ASCIIHexDecode >>\nstream\n"	js/passportCharacter.js:3170
+960	"\nendstream"	js/passportCharacter.js:3170
+961	" >>\nstream\n"	js/passportCharacter.js:3240
+962	" 0 obj\n"	js/passportCharacter.js:3267
+963	"\nendobj\n"	js/passportCharacter.js:3267
+964	" 0 R >>\nstartxref\n"	js/passportCharacter.js:3277
+965	"Er zijn geen pagina's geselecteerd voor het paspoort."	js/passportCharacter.js:3303
+966	"Geen personage geladen."	js/passportCharacter.js:3353
+967	"Kon het paspoort-PDF niet maken."	js/passportCharacter.js:3359
+968	"Aether-meting actief. Gebruik AetherPerformance.report() of AetherPerformance.download()."	js/performance.js:97
+969	"Durations overlap: do not add them to calculate page load time."	js/performance.js:132
+970	"API durations include network, server and JSON parsing; they do not isolate database time."	js/performance.js:133
+971	"Operation completion does not include unrelated fire-and-forget requests."	js/performance.js:134
+972	"nextFrameMs estimates a paint opportunity, not verified visual completion."	js/performance.js:135
+973	"Zero resource sizes can mean caching or unavailable cross-origin timing data."	js/performance.js:136
+974	"Only the last 500 measurements per category are retained."	js/performance.js:137
+975	"Meting gestopt. Bestaande resultaten blijven beschikbaar. Verwijder performance=1 uit de URL voor volgende pagina's."	js/performance.js:166
+976	"De PDF-module kon niet geladen worden. Herlaad de pagina en probeer opnieuw."	js/researchAdmin.js:12
+977	"De PDF-module is niet beschikbaar. Herlaad de pagina en probeer opnieuw."	js/researchAdmin.js:18
+978	"Beginner"	js/researchAdmin.js:23
+979	"Gevorderde"	js/researchAdmin.js:23
+980	"Specialist"	js/researchAdmin.js:23
+981	"accordion-item research-accordion"	js/researchAdmin.js:24
+982	"Alle events"	js/researchAdmin.js:31
+983	"Eventtijdzone"	js/researchAdmin.js:34
+984	"research-list event-character-accordion"	js/researchAdmin.js:39
+985	"Nieuwe challenge"	js/researchAdmin.js:40
+986	"accordion research-navigation"	js/researchAdmin.js:41
+987	"Challenge laden…"	js/researchAdmin.js:50
+988	"Nog geen challenges voor dit event."	js/researchAdmin.js:55
+989	"Al gevonden: routes en voorwaarden liggen vast. Je kunt de inhoud nog bijwerken."	js/researchAdmin.js:68
+990	"table aether-table align-middle"	js/researchAdmin.js:75
+991	"Vervolgstap"	js/researchAdmin.js:83
+992	"Niet gedefineerd. Gebruikt de feedback van "	js/researchAdmin.js:90
+993	"No additional information"	js/researchAdmin.js:90
+994	"Bevestiging nodig"	js/researchAdmin.js:91
+995	"Nog geen feedback"	js/researchAdmin.js:92
+996	"Media beheren"	js/researchAdmin.js:93
+997	" research-has-media"	js/researchAdmin.js:93
+998	"Media beheren (media gekoppeld)"	js/researchAdmin.js:93
+999	"Feedback bewerken"	js/researchAdmin.js:94
+1000	"Variant toevoegen"	js/researchAdmin.js:98
+1001	"\"] button"	js/researchAdmin.js:101
+1002	" · niet actief"	js/researchAdmin.js:109
+1003	"Universele voortgang (gedeeld binnen dit event)"	js/researchAdmin.js:110
+1004	"Persoonlijke voortgang"	js/researchAdmin.js:110
+1005	"Vaardigheid: "	js/researchAdmin.js:110
+1006	"Bonus-specialisaties"	js/researchAdmin.js:112
+1007	"Actief"	js/researchAdmin.js:117
+1008	"Universele voortgang (per event)"	js/researchAdmin.js:119
+1009	"Conclusie (zonder QR-code)"	js/researchAdmin.js:120
+1010	"Discovery bewerken"	js/researchAdmin.js:136
+1011	"Bonus-specialisaties (optioneel)"	js/researchAdmin.js:137
+1012	"Voortgang"	js/researchAdmin.js:137
+1013	"Challenge niet actief"	js/researchAdmin.js:148
+1014	"table-responsive research-discovery-navigation"	js/researchAdmin.js:149
+1015	"table aether-table align-middle mb-0 research-discovery-table"	js/researchAdmin.js:150
+1016	"Discoveries"	js/researchAdmin.js:151
+1017	"Conclusie"	js/researchAdmin.js:157
+1018	"badge text-bg-secondary ms-2"	js/researchAdmin.js:157
+1019	" bekijken"	js/researchAdmin.js:158
+1020	"Nog geen discoveries."	js/researchAdmin.js:164
+1021	"Discovery toevoegen"	js/researchAdmin.js:169
+1022	"Challenge bewerken"	js/researchAdmin.js:171
+1023	"Events (meerdere mogelijk)"	js/researchAdmin.js:173
+1024	"Nieuwe discovery"	js/researchAdmin.js:176
+1025	"Ongetraind begint met “No additional information”. Lege hogere niveaus gebruiken de feedback van het dichtstbijzijnde ingevulde lagere niveau."	js/researchAdmin.js:182
+1026	"Specialisatievariant"	js/researchAdmin.js:186
+1027	"Personagevariant"	js/researchAdmin.js:186
+1028	"Geen vereiste specialisatie"	js/researchAdmin.js:187
+1029	"Variant"	js/researchAdmin.js:190
+1030	"Verplichte specialisatie (geen niveaubonus)"	js/researchAdmin.js:190
+1031	"Feedbackvariant"	js/researchAdmin.js:193
+1032	"Stap "	js/researchAdmin.js:197
+1033	"Volgende feedbackstap"	js/researchAdmin.js:197
+1034	"Vervolgstap toevoegen"	js/researchAdmin.js:202
+1035	"Feedback"	js/researchAdmin.js:203
+1036	"Door deze optie aan te vinken, vraag je de deelnemer zelf aan te geven wanneer deze stap is afgerond."	js/researchAdmin.js:203
+1037	"Door deze optie aan te vinken zal er na deze stap een nieuwe stap toegevoegd worden. Die zal zichtbaar zijn door de huidige stap af te werken (de gebruiker drukt op \"stap afronden\" of na verloop van tijd, door een aftelklok/datum in te stellen)."	js/researchAdmin.js:204
+1038	"Tijd instellen"	js/researchAdmin.js:206
+1039	"Geen tijd"	js/researchAdmin.js:209
+1040	"Timer"	js/researchAdmin.js:209
+1041	"Vast tijdstip"	js/researchAdmin.js:209
+1042	"Dagen"	js/researchAdmin.js:215
+1043	"Uren"	js/researchAdmin.js:215
+1044	"Minuten"	js/researchAdmin.js:215
+1045	"Seconden"	js/researchAdmin.js:215
+1046	"Countdown tonen"	js/researchAdmin.js:220
+1047	"Vink Bevestiging nodig aan voor een vervolgstap zonder tijd."	js/researchAdmin.js:224
+1048	"Vul geldige dagen, uren, minuten en seconden in."	js/researchAdmin.js:227
+1049	"Stel een timer van minstens één seconde in."	js/researchAdmin.js:229
+1050	"Stap verwijderen"	js/researchAdmin.js:236
+1051	"alert alert-warning"	js/researchAdmin.js:237
+1052	"Deze stap en eventuele volgende stappen worden verwijderd. De vorige stap krijgt geen vervolg meer; haar timers en datums worden gewist."	js/researchAdmin.js:238
+1053	"Deze feedback en eventuele vervolgstappen worden verwijderd."	js/researchAdmin.js:238
+1054	" Ongetraind krijgt opnieuw de standaardtekst “No additional information”."	js/researchAdmin.js:238
+1055	"Verwijderen bevestigen"	js/researchAdmin.js:239
+1056	"Terug"	js/researchAdmin.js:241
+1057	"Media bij feedback"	js/researchAdmin.js:247
+1058	"Afbeelding, geluid of video, maximaal 8 MB per bestand. Media wordt alleen na een toegangscontrole aangeboden."	js/researchAdmin.js:248
+1059	"Bestand"	js/researchAdmin.js:249
+1060	"Uploaden"	js/researchAdmin.js:250
+1061	"Kies eerst een bestand."	js/researchAdmin.js:250
+1062	"Media uit andere discoveries"	js/researchAdmin.js:254
+1063	"Geen andere media beschikbaar."	js/researchAdmin.js:257
+1064	"Tijdzone · "	js/researchAdmin.js:261
+1065	"Tijdzone van het event"	js/researchAdmin.js:262
+1066	"Alle challenges"	js/researchAdmin.js:265
+1067	"Alle discoveries"	js/researchAdmin.js:265
+1068	"Alle statussen"	js/researchAdmin.js:265
+1069	"Challenge"	js/researchAdmin.js:266
+1070	"Discovery"	js/researchAdmin.js:266
+1071	"Status"	js/researchAdmin.js:266
+1072	"Geen gevonden discoveries voor deze selectie."	js/researchAdmin.js:269
+1073	"Personage"	js/researchAdmin.js:270
+1074	"Event / challenge"	js/researchAdmin.js:270
+1075	"Voortgang van dit personage"	js/researchAdmin.js:271
+1076	"Personage openen"	js/researchAdmin.js:277
+1077	" · gevonden "	js/researchAdmin.js:277
+1078	" UTC · effectief niveau "	js/researchAdmin.js:277
+1079	"Getoond: "	js/researchAdmin.js:278
+1080	"Universeel afgerond: "	js/researchAdmin.js:279
+1081	" UTC · personage "	js/researchAdmin.js:279
+1082	"Reden voor handmatige afronding"	js/researchAdmin.js:280
+1083	"Afronden als spelleider"	js/researchAdmin.js:280
+1084	"Klok · stap "	js/researchAdmin.js:281
+1085	" · gestart door "	js/researchAdmin.js:281
+1086	" UTC · eindigt "	js/researchAdmin.js:281
+1087	"Gedeeld"	js/researchAdmin.js:281
+1088	"Per personage"	js/researchAdmin.js:281
+1089	"Nieuw eindtijdstip ("	js/researchAdmin.js:283
+1090	"Reden"	js/researchAdmin.js:283
+1091	"Klok aanpassen"	js/researchAdmin.js:283
+1092	"Alleen admins en directors kunnen Onderzoek beheren."	js/researchAdmin.js:286
+1093	"Nog "	js/researchCharacter.js:8
+1094	" uur "	js/researchCharacter.js:8
+1095	" min "	js/researchCharacter.js:8
+1096	" sec"	js/researchCharacter.js:8
+1097	"Onderzoek laden…"	js/researchCharacter.js:12
+1098	"Scan QR-code"	js/researchCharacter.js:27
+1099	"Kies een gekoppeld event om te onderzoeken."	js/researchCharacter.js:38
+1100	"Je hebt voor dit event nog geen discoveries gevonden."	js/researchCharacter.js:41
+1101	"research-found-item data-card"	js/researchCharacter.js:43
+1102	"Tijdgestuurde feedback"	js/researchCharacter.js:59
+1103	"data-card research-step"	js/researchCharacter.js:63
+1104	"research-clock float-end"	js/researchCharacter.js:64
+1105	"Afgerond"	js/researchCharacter.js:67
+1106	"Richt de camera op een Aether-onderzoekscode."	js/researchCharacter.js:93
+1107	"Camera starten"	js/researchCharacter.js:96
+1108	"Camera niet beschikbaar. Gebruik HTTPS of kies een foto van de QR-code."	js/researchCharacter.js:97
+1109	"Geen toegang tot de camera. Geef cameratoestemming of kies een foto van de QR-code."	js/researchCharacter.js:98
+1110	"Geen leesbare QR-code gevonden in deze foto."	js/researchCharacter.js:101
+1111	"Of kies een foto"	js/researchCharacter.js:103
+1112	"Of plak een onderzoekscode"	js/researchCharacter.js:103
+1113	"Code openen"	js/researchCharacter.js:103
+1114	"Het lettertype voor de QR-kaarten kon niet geladen worden."	js/researchQrPdf.js:6
+1115	"Een titel of vaardigheidsnaam is te lang voor een QR-kaart. Verkort deze tekst en probeer opnieuw."	js/researchQrPdf.js:20
+1116	"Deze challenge heeft geen gewone discoveries met een QR-code om af te drukken."	js/researchQrPdf.js:29
+1117	"AetherQr.ttf"	js/researchQrPdf.js:32
+1118	"AetherQr"	js/researchQrPdf.js:32
+1119	"Aether"	js/researchQrPdf.js:33
+1120	"alert alert-danger"	js/researchUi.js:29
+1121	"share-ui-dialog research-dialog"	js/researchUi.js:32
+1122	"Opdracht bezig"	js/researchUi.js:43
+1123	"Wacht op tijd"	js/researchUi.js:43
+1124	"Wacht op vrijgave"	js/researchUi.js:43
+1125	"Nieuwe feedback beschikbaar"	js/researchUi.js:43
+1126	"Niet beschikbaar"	js/researchUi.js:43
+1127	"Geen inhoud."	js/richTextCharacter.js:11
+1128	"button-group mb-2 flex-wrap"	js/richTextCharacter.js:31
+1129	"Aankopen"	js/shareInterface.js:5
+1130	"Event onbekend"	js/shareInterface.js:5
+1131	"Aandelenaankoop toevoegen"	js/shareInterface.js:5
+1132	"Aankoopkwartaal"	js/shareInterface.js:6
+1133	"Overzicht"	js/shareInterface.js:6
+1134	"Bankrekening aanpassen"	js/shareInterface.js:6
+1135	"Event van aankoop"	js/shareInterface.js:7
+1136	"De aankoopprijs wordt van de bankrekening van het personage afgetrokken."	js/shareInterface.js:7
+1137	"Maak eerst een event en bedrijfsaandelen aan."	js/shareInterface.js:8
+1138	"Aandelenportefeuille"	js/shareInterface.js:10
+1139	"Dit personage bezit nog geen aandelen."	js/shareInterface.js:10
+1140	"Intrinsieke bezitswaarde"	js/shareInterface.js:11
+1141	"Aandelen-niveau"	js/shareInterface.js:11
+1142	"Gebruikte statuspunten"	js/shareInterface.js:11
+1143	"Uitgegeven"	js/shareInterface.js:12
+1144	"Verkocht"	js/shareInterface.js:12
+1145	"Vrij"	js/shareInterface.js:13
+1146	"Anoniem"	js/shareInterface.js:13
+1147	"Nominale waarde per aandeel"	js/shareInterface.js:13
+1148	"Intrinsieke waarde per aandeel"	js/shareInterface.js:14
+1149	"Marktprijs"	js/shareInterface.js:14
+1150	"Initiële bedrijfswaarde"	js/shareInterface.js:15
+1151	"Initieel aantal aandelen"	js/shareInterface.js:15
+1152	"Actuele bedrijfswaarde"	js/shareInterface.js:16
+1153	"Aantal aandelen"	js/shareInterface.js:16
+1154	"Prijs per aandeel"	js/shareInterface.js:16
+1155	"Aanbod maken"	js/shareInterface.js:17
+1156	"Aandelen verwijderen"	js/shareInterface.js:17
+1157	"Ontvangend personage"	js/shareInterface.js:18
+1158	"Verkopend personage"	js/shareInterface.js:18
+1159	"Rechtstreeks aanbod"	js/shareInterface.js:19
+1160	"Aandelen rechtstreeks aanbieden"	js/shareInterface.js:19
+1161	"Privéaanbod"	js/shareInterface.js:20
+1162	"Vrije aandelen intrekken"	js/shareInterface.js:20
+1163	"Aandelengegevens laden…"	js/shareInterface.js:21
+1164	"Aandelengegevens zijn niet beschikbaar."	js/shareInterface.js:21
+1165	"Controleer het aantal en de prijs. Gebruik gehele aantallen en bedragen met maximaal twee decimalen."	js/shareInterface.js:22
+1166	"Wijziging bewaard."	js/shareInterface.js:23
+1167	"Bedrijfsaandelen"	js/shareInterface.js:23
+1168	"Aandelenbeheer"	js/shareInterface.js:23
+1169	"Mijn open aanbiedingen"	js/shareInterface.js:24
+1170	"Geen open aanbiedingen."	js/shareInterface.js:24
+1171	"Intrekken"	js/shareInterface.js:24
+1172	"Je bent geen bestuurslid van dit bedrijf."	js/shareInterface.js:25
+1173	"Geen actieve ontvangers beschikbaar."	js/shareInterface.js:25
+1174	"Maak eerst een bedrijfssnapshot om aandelen voor die snapshot aan te bieden."	js/shareInterface.js:26
+1175	"De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst."	js/shareInterface.js:27
+1176	"Je hebt geen toegang tot deze aandelenactie."	js/shareInterface.js:28
+1177	"Name"	js/shareInterface.js:31
+1178	"Purchases"	js/shareInterface.js:31
+1179	"Unknown event"	js/shareInterface.js:31
+1180	"Add share purchase"	js/shareInterface.js:31
+1181	"Purchase quarter"	js/shareInterface.js:32
+1182	"Overview"	js/shareInterface.js:32
+1183	"Adjust bank account"	js/shareInterface.js:32
+1184	"Purchase event"	js/shareInterface.js:33
+1185	"The purchase price is deducted from the character's bank account."	js/shareInterface.js:33
+1186	"Create an event and company shares first."	js/shareInterface.js:34
+1187	"Economy"	js/shareInterface.js:35
+1188	"Share portfolio"	js/shareInterface.js:36
+1189	"This character owns no shares yet."	js/shareInterface.js:36
+1190	"Intrinsic portfolio value"	js/shareInterface.js:37
+1191	"Share level"	js/shareInterface.js:37
+1192	"Status points used"	js/shareInterface.js:37
+1193	"Staff requirement"	js/shareInterface.js:38
+1194	"Issued"	js/shareInterface.js:38
+1195	"Sold"	js/shareInterface.js:38
+1196	"Free"	js/shareInterface.js:39
+1197	"Anonymous"	js/shareInterface.js:39
+1198	"Nominal value per share"	js/shareInterface.js:39
+1199	"Intrinsic value per share"	js/shareInterface.js:40
+1200	"Market price"	js/shareInterface.js:40
+1201	"Listed"	js/shareInterface.js:40
+1202	"Initial company value"	js/shareInterface.js:41
+1203	"Initial share count"	js/shareInterface.js:41
+1204	"Current company value"	js/shareInterface.js:42
+1205	"Number of shares"	js/shareInterface.js:42
+1206	"Price per share"	js/shareInterface.js:42
+1207	"Create offer"	js/shareInterface.js:43
+1208	"Close"	js/shareInterface.js:43
+1209	"Remove shares"	js/shareInterface.js:43
+1210	"Recipient character"	js/shareInterface.js:44
+1211	"Selling character"	js/shareInterface.js:44
+1212	"Board of directors"	js/shareInterface.js:44
+1213	"Direct offer"	js/shareInterface.js:45
+1214	"Offer owned shares directly"	js/shareInterface.js:45
+1215	"Private offer"	js/shareInterface.js:46
+1216	"Retire free shares"	js/shareInterface.js:46
+1217	"Loading shares…"	js/shareInterface.js:47
+1218	"Share data is unavailable."	js/shareInterface.js:47
+1219	"Check the quantity and price. Use whole share counts and amounts with at most two decimals."	js/shareInterface.js:48
+1220	"Change saved."	js/shareInterface.js:49
+1221	"Company shares"	js/shareInterface.js:49
+1222	"Share management"	js/shareInterface.js:49
+1223	"My open offers"	js/shareInterface.js:50
+1224	"No open offers."	js/shareInterface.js:50
+1225	"Cancel offer"	js/shareInterface.js:50
+1226	"You are not a board member of this company."	js/shareInterface.js:51
+1227	"No active recipients available."	js/shareInterface.js:51
+1228	"Create a company snapshot before offering shares for it."	js/shareInterface.js:52
+1229	"The stock or offer changed. The data has been refreshed."	js/shareInterface.js:53
+1230	"You do not have access to this share action."	js/shareInterface.js:54
+1231	"Fr "	js/shareInterface.js:61
+1232	"share-ui-dialog share-company-dialog"	js/shareInterface.js:164
+1233	"Speljaar van aankoop"	js/shareInterface.js:215
+1234	"Kwartaal van aankoop"	js/shareInterface.js:216
+1235	"Geen afzonderlijke aankopen geregistreerd."	js/shareInterface.js:264
+1236	"data-card share-purchase-row mb-3"	js/shareInterface.js:266
+1237	"Aankoop aanpassen"	js/shareInterface.js:271
+1238	"Aankoop "	js/shareInterface.js:272
+1239	" aanpassen"	js/shareInterface.js:272
+1240	"Totaalbedrag"	js/shareInterface.js:278
+1241	"small text-muted mb-0"	js/shareInterface.js:279
+1242	"Aankoopkwartaal aangevuld op basis van de aanmaakdatum van het personage."	js/shareInterface.js:280
+1243	"Historisch bezit"	js/shareInterface.js:304
+1244	"Voor dit kwartaal is geen geldige snapshotprijs beschikbaar."	js/shareInterface.js:313
+1245	"De oorspronkelijke aankoopprijs is niet geregistreerd. Het aantal en kwartaal kunnen worden aangepast zonder bankboeking."	js/shareInterface.js:314
+1246	" per aandeel · totaal "	js/shareInterface.js:315
+1247	" · verschil "	js/shareInterface.js:316
+1248	"Het bankverschil wordt mee geboekt."	js/shareInterface.js:316
+1249	"De bankrekening wordt niet aangepast."	js/shareInterface.js:316
+1250	"Bestaand aankoopkwartaal: "	js/shareInterface.js:322
+1251	"Deze aankoop is betaald uit aandelenstartkapitaal. Het bestede startkapitaal wordt mee gecorrigeerd."	js/shareInterface.js:325
+1252	"Bij een bankcorrectie wordt ook de rekening van de oorspronkelijke verkoper aangepast."	js/shareInterface.js:326
+1253	"nav nav-tabs share-purchase-tabs mb-3"	js/shareInterface.js:352
+1254	"Opnieuw proberen"	js/shareInterface.js:378
+1255	"ArrowLeft"	js/shareInterface.js:403
+1256	"ArrowRight"	js/shareInterface.js:403
+1257	"Home"	js/shareInterface.js:403
+1258	"End"	js/shareInterface.js:403
+1259	"Aandeel in het bedrijf"	js/shareInterface.js:417
+1260	"Huidige marktwaarde per aandeel"	js/shareInterface.js:419
+1261	"Totale marktwaarde"	js/shareInterface.js:420
+1262	"Alle aandelen van dit personage worden naar naamloze handen verplaatst. Doorgaan?"	js/shareInterface.js:426
+1263	"Bied aandelen aan een ander personage aan. De verkoop wordt voltooid wanneer de ontvanger het aanbod koopt."	js/shareInterface.js:450
+1264	"card aether-panel shadow-sm mb-4 share-ui-portfolio"	js/shareInterface.js:472
+1265	"Startkapitaal Aandelen"	js/shareInterface.js:551
+1266	"Besteed startkapitaal"	js/shareInterface.js:552
+1267	"Beschikbaar aankoopbedrag"	js/shareInterface.js:553
+1268	"Alle beschikbare bedrijfsaandelen zijn zichtbaar tijdens Draft. Je betaalt de snapshotmarktprijs, zonder vaardigheidsaanpassing. Ongebruikt startkapitaal vervalt na Draft."	js/shareInterface.js:556
+1269	"Neem eerst de statuseigenschap Aandelen om tijdens Draft startkapitaal te gebruiken. Een eerder afgesloten budget wordt niet opnieuw beschikbaar."	js/shareInterface.js:557
+1270	"Geen bedrijfssnapshots met een marktprijs beschikbaar."	js/shareInterface.js:559
+1271	"Beschikbare aandelen"	js/shareInterface.js:560
+1272	"Je koopt aan de marktprijs van de gekozen snapshot. Het aankoopbedrag wordt van je beschikbare startkapitaal afgetrokken."	js/shareInterface.js:571
+1273	"Bedrijf en snapshot"	js/shareInterface.js:573
+1274	"Aandelen kopen tijdens Draft"	js/shareInterface.js:574
+1275	" vrij"	js/shareInterface.js:576
+1276	"Aandelen kopen"	js/shareInterface.js:582
+1277	"Aankoopbedrag: "	js/shareInterface.js:585
+1278	"Snapshot voor aandelenaankoop"	js/shareInterface.js:630
+1279	"Geen snapshots met vrije aandelen beschikbaar."	js/shareInterface.js:647
+1280	"mt-3 share-ui-purchase-manager"	js/shareInterface.js:653
+1281	"Geen geldige snapshotprijs voor dit kwartaal."	js/shareInterface.js:677
+1282	"Aandelenkaart kon niet worden getekend:"	js/shareInterface.js:765
+1283	"Aandeelhouders"	js/shareInterface.js:773
+1284	"table-responsive share-ui-holdings mt-2"	js/shareInterface.js:783
+1285	"data-info-button share-holder-character-link"	js/shareInterface.js:802
+1286	"Nog geen aandeelhouders."	js/shareInterface.js:816
+1287	"Aandelen moederbedrijf"	js/shareInterface.js:938
+1288	"Voer eerst migratie 0023_company_share_ownership uit."	js/shareInterface.js:940
+1289	" vrije aandelen"	js/shareInterface.js:1033
+1290	"Kies het moederbedrijf dat mede-eigenaar wordt."	js/shareInterface.js:1034
+1291	"Geen andere bedrijven beschikbaar."	js/shareInterface.js:1047
+1292	"Kies een bedrijf en 1 tot "	js/shareInterface.js:1062
+1293	" aandelen."	js/shareInterface.js:1062
+1294	"Aandelenmarkt doorzoeken"	js/shareMarketClient.js:19
+1295	"Onderzoek bedrijf"	js/shareMarketClient.js:19
+1296	"Geen koopbaar evenement."	js/shareMarketClient.js:19
+1297	"Nog geen aandelen gevonden."	js/shareMarketClient.js:20
+1298	"Beschikbare aanbiedingen"	js/shareMarketClient.js:20
+1299	"Geen aanbiedingen beschikbaar."	js/shareMarketClient.js:20
+1300	"Kopen"	js/shareMarketClient.js:21
+1301	"Delen"	js/shareMarketClient.js:21
+1302	"Gedeelde aandelen"	js/shareMarketClient.js:21
+1303	"Vrije voorraad"	js/shareMarketClient.js:21
+1304	"De aandelenmarkt kon niet worden geladen."	js/shareMarketClient.js:21
+1305	"De aandelenzoekactie kon niet worden uitgevoerd."	js/shareMarketClient.js:21
+1306	"bedrijven onderzocht"	js/shareMarketClient.js:21
+1307	"Bedrijven met een snapshot voor dit event"	js/shareMarketClient.js:22
+1308	"Nog niet doorzocht"	js/shareMarketClient.js:22
+1309	"Gevonden"	js/shareMarketClient.js:22
+1310	"Niet gevonden"	js/shareMarketClient.js:22
+1311	"niet beursgenoteerd"	js/shareMarketClient.js:22
+1312	"Search share market"	js/shareMarketClient.js:23
+1313	"Research company"	js/shareMarketClient.js:23
+1314	"No tradeable event."	js/shareMarketClient.js:23
+1315	"No shares discovered yet."	js/shareMarketClient.js:24
+1316	"Available offers"	js/shareMarketClient.js:24
+1317	"No offers available."	js/shareMarketClient.js:24
+1318	"Buy"	js/shareMarketClient.js:25
+1319	"Share"	js/shareMarketClient.js:25
+1320	"Shared shares"	js/shareMarketClient.js:25
+1321	"Choose a character"	js/shareMarketClient.js:25
+1322	"Free stock"	js/shareMarketClient.js:25
+1323	"The share market could not be loaded."	js/shareMarketClient.js:25
+1324	"The share search could not be completed."	js/shareMarketClient.js:25
+1325	"companies checked"	js/shareMarketClient.js:25
+1326	"Companies with a snapshot for this event"	js/shareMarketClient.js:26
+1327	"Not searched yet"	js/shareMarketClient.js:26
+1328	"Found"	js/shareMarketClient.js:26
+1329	"Not found"	js/shareMarketClient.js:26
+1330	"discovery roll"	js/shareMarketClient.js:26
+1331	"share quantity roll"	js/shareMarketClient.js:26
+1332	"price roll"	js/shareMarketClient.js:26
+1333	"purchase price"	js/shareMarketClient.js:26
+1334	"market price"	js/shareMarketClient.js:26
+1335	"not listed"	js/shareMarketClient.js:26
+1336	"Aandelenmarkt:"	js/shareMarketClient.js:72
+1337	"data-card share-market-card mt-3"	js/shareMarketClient.js:140
+1338	"Ontvangers aandelenmarkt:"	js/shareMarketClient.js:153
+1339	"Gevonden aandelen aanpassen"	js/shareMarketClient.js:178
+1340	"Gevonden aandelen toevoegen"	js/shareMarketClient.js:178
+1341	"Geen vrije aandelen beschikbaar."	js/shareMarketClient.js:183
+1342	"Een vondst vereist een beursgenoteerd bedrijf met een snapshotmarktprijs."	js/shareMarketClient.js:184
+1343	"Controleer het aantal, de vrije voorraad en de prijs."	js/shareMarketClient.js:207
+1344	"Bedrijfsonderzoek:"	js/shareMarketClient.js:244
+1345	"Alle bedrijven tonen"	js/shareMarketClient.js:254
+1346	"Bedrijf onderzoeken…"	js/shareMarketClient.js:258
+1347	"Gevonden aandelen"	js/shareMarketClient.js:269
+1348	"Event voor aandelenaankoop"	js/shareMarketClient.js:356
+1349	"). Kies het aantal aandelen dat je wilt kopen. Het aankoopbedrag wordt van de bankrekening afgetrokken. De voorraad wordt bij aankoop opnieuw gecontroleerd."	js/shareMarketClient.js:397
+1350	"Totaal: "	js/shareMarketClient.js:422
+1351	"Kies een geldig aankoopkwartaal voor dit event."	js/shareMarketClient.js:433
+1352	"Kies een geheel aantal van 1 tot "	js/shareMarketClient.js:435
+1353	"Fout bij toevoegen vaardigheid:"	js/skillsCharacter.js:100
+1354	"Fout bij ophalen nieuwe skills:"	js/skillsCharacter.js:105
+1355	"Lege response van updateSkill.php"	js/skillsCharacter.js:162
+1356	"Fout bij updateSkillLevel:"	js/skillsCharacter.js:174
+1357	"Type "	js/skillsCharacter.js:262
+1358	"Specialisations:"	js/skillsCharacter.js:282
+1359	"Onvoldoende ervaringspunten voor een extra specialisatie."	js/skillsCharacter.js:329
+1360	"Learn"	js/skillsCharacter.js:372
+1361	"Unlearn"	js/skillsCharacter.js:383
+1362	"Delete"	js/skillsCharacter.js:394
+1363	"Fout bij ophalen specialisaties:"	js/skillsCharacter.js:601
+1364	"Fout bij opslaan specialisatie:"	js/skillsCharacter.js:669
+1365	"Fout bij verwijderen specialisatie:"	js/skillsCharacter.js:693
+1366	"Kies een bestaande discipline of ga naar 'New'."	js/skillsCharacter.js:718
+1367	"Geef een naam in voor de nieuwe discipline."	js/skillsCharacter.js:724
+1368	"Fout bij opslaan discipline:"	js/skillsCharacter.js:756
+1369	"disciplineModal element niet gevonden"	js/skillsCharacter.js:768
+1370	"Fout bij ophalen discipline-lijst:"	js/skillsCharacter.js:812
+1371	"Rang "	js/traitsCharacter.js:114
+1372	"Personeel: "	js/traitsCharacter.js:174
+1373	"badge trait-rank ms-2"	js/traitsCharacter.js:216
+1374	"mb-1 text-muted trait-readonly-meta"	js/traitsCharacter.js:226
+1375	"Fout bij bijwerken trait:"	js/traitsCharacter.js:287
+1376	"Fout bij wisselen van grouped trait:"	js/traitsCharacter.js:330
+1377	"Geen beroepssectoren beschikbaar."	js/traitsCharacter.js:393
+1378	"Kies sector"	js/traitsCharacter.js:405
+1379	"Geen beroep gekozen."	js/traitsCharacter.js:477
+1380	"mb-3 row"	js/traitsCharacter.js:490
+1381	"col-sm-4 col-form-label"	js/traitsCharacter.js:493
+1382	"Trait"	js/traitsCharacter.js:582
+1383	"action-button trait-book profession-trait-book"	js/traitsCharacter.js:633
+1384	"Toon traitbeschrijving"	js/traitsCharacter.js:640
+1385	"input-group-text trait-rank"	js/traitsCharacter.js:647
+1386	"input-group mb-2 trait-row"	js/traitsCharacter.js:692
+1387	" profession-trait-row"	js/traitsCharacter.js:692
+1388	" opacity-50"	js/traitsCharacter.js:692
+1389	"Deze beroepsrang is tijdelijk inactief."	js/traitsCharacter.js:693
+1390	"input-group-text trait-name-label"	js/traitsCharacter.js:733
+1391	"action-button profession-trait-remove"	js/traitsCharacter.js:763
+1392	"button-group profession-trait-actions"	js/traitsCharacter.js:771
+1393	"Kies een andere beroepssector"	js/traitsCharacter.js:827
+1394	"Geen traits beschikbaar."	js/traitsCharacter.js:846
+1395	"input, textarea, select, [contenteditable=\"true\"]"	js/updateManager.js:26
+1396	"border:1px solid #0d6efd"	js/updateManager.js:46
+1397	"box-shadow:0 .5rem 1rem rgba(0,0,0,.15)"	js/updateManager.js:50
+1398	"Er is een nieuwe versie van Aether beschikbaar. "	js/updateManager.js:54
+1399	"Vernieuwen"	js/updateManager.js:59
+1400	"Er is mogelijk niet-opgeslagen invoer. Toch vernieuwen?"	js/updateManager.js:61

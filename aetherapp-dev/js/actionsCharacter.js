@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const aetherCharacterActionsState = {
     characterId: 0,
     events: [],
@@ -124,7 +125,7 @@ async function renderCharacterActionsTab(character) {
 
     if (!aetherCharacterActionsState.isLoadingCatalog && aetherCharacterActionsState.events.length === 0) {
         aetherCharacterActionsState.isLoadingCatalog = true;
-        container.innerHTML = `<div class="text-muted">Acties laden...</div>`;
+        container.innerHTML = `<div class="text-muted">${aetherT("Acties laden...")}</div>`;
 
         try {
             const result = await fetchCharacterActionEvents(character.id);
@@ -149,7 +150,7 @@ async function renderCharacterActionsTab(character) {
     if (catalogError) {
         const warning = document.createElement("p");
         warning.className = "text-danger";
-        warning.textContent = "De eventacties konden niet worden geladen.";
+        warning.textContent = aetherT("De eventacties konden niet worden geladen.");
         container.appendChild(warning);
     }
     container.appendChild(buildCharacterActionsLayout(character));
@@ -194,12 +195,12 @@ function getCharacterActionsCatalog(character) {
         catalog.push({
             actionCode: "knowledge",
             buttonAction: "character-action-knowledge",
-            label: "Wereldwijs",
+            label: aetherT("Wereldwijs"),
             imageSrc: "img/actionWereldwijs.png",
         });
     }
 
-    catalog.push({actionCode: "research", buttonAction: "character-action-research", label: "Onderzoek", imageSrc: "img/actionSpeuren.png"});
+    catalog.push({actionCode: "research", buttonAction: "character-action-research", label: aetherT("Onderzoek"), imageSrc: "img/actionSpeuren.png"});
     if (characterHasFiscalityAction(character)) {
         catalog.push({
             actionCode: "economy",
@@ -265,8 +266,8 @@ function buildCharacterActionsLayout(character) {
     const placeholder = document.createElement("option");
     placeholder.value = "0";
     placeholder.textContent = aetherCharacterActionsState.events.length > 0
-        ? "Kies een event"
-        : "Geen events beschikbaar";
+        ? aetherT("Kies een event")
+        : aetherT("Geen events beschikbaar");
     select.appendChild(placeholder);
 
     aetherCharacterActionsState.events.forEach((eventOption) => {
@@ -284,7 +285,7 @@ function buildCharacterActionsLayout(character) {
     headerRow.appendChild(select);
     if (characterActionsCanChooseEvent() && aetherCharacterActionsState.activeAction !== "research") header.appendChild(headerRow);
     if (aetherCharacterActionsState.activeAction) {
-        const back = AetherActionButtons.button({icon: "fa-arrow-left", label: "Toon acties"});
+        const back = AetherActionButtons.button({icon: "fa-arrow-left", label: aetherT("Toon acties")});
         back.addEventListener("click", () => {
             aetherCharacterActionsState.activeAction = "";
             aetherShareMarketClient.resetActionView();
@@ -316,11 +317,11 @@ function buildCharacterActionsLayout(character) {
         const image = document.createElement("img");
         image.className = "character-action-tile-image";
         image.src = String(action.imageSrc || "img/actionPsy.png");
-        image.alt = String(action.label || "Actie");
+        image.alt = String(action.label || aetherT("Actie"));
 
         const label = document.createElement("span");
         label.className = "character-action-tile-label";
-        label.textContent = String(action.label || "Actie");
+        label.textContent = String(action.label || aetherT("Actie"));
 
         actionButton.appendChild(image);
         actionButton.appendChild(label);
@@ -330,7 +331,7 @@ function buildCharacterActionsLayout(character) {
     if (actionButtonRow.childNodes.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Dit personage heeft momenteel geen acties beschikbaar.";
+        empty.textContent = aetherT("Dit personage heeft momenteel geen acties beschikbaar.");
         body.appendChild(empty);
     } else {
         if (!aetherCharacterActionsState.activeAction || aetherCharacterActionsState.activeAction === "research") body.appendChild(actionButtonRow);
@@ -370,7 +371,7 @@ function buildKnowledgeActionContent(character) {
     if (Number(aetherCharacterActionsState.selectedEventId || 0) <= 0) {
         const note = document.createElement("p");
         note.className = "text-muted mb-0";
-        note.textContent = "Kies eerst een event om de wereldwijsroddels te bekijken.";
+        note.textContent = aetherT("Kies eerst een event om de wereldwijsroddels te bekijken.");
         wrapper.appendChild(note);
         return wrapper;
     }
@@ -383,7 +384,7 @@ function buildKnowledgeActionContent(character) {
     if (aetherCharacterActionsState.isLoadingKnowledgeTargets) {
         const loading = document.createElement("div");
         loading.className = "text-muted";
-        loading.textContent = "Wereldwijsroddels laden...";
+        loading.textContent = aetherT("Wereldwijsroddels laden...");
         wrapper.appendChild(loading);
         return wrapper;
     }
@@ -395,7 +396,7 @@ function buildKnowledgeActionContent(character) {
     if (targets.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Voor dit event zijn er geen zichtbare wereldwijsroddels beschikbaar.";
+        empty.textContent = aetherT("Voor dit event zijn er geen zichtbare wereldwijsroddels beschikbaar.");
         wrapper.appendChild(empty);
         return wrapper;
     }
@@ -418,28 +419,28 @@ function buildKnowledgeActionContent(character) {
             const portrait = document.createElement("img");
             portrait.className = "character-action-portrait-image";
             portrait.src = portraitUrl;
-            portrait.alt = target.displayName || "Portret";
+            portrait.alt = target.displayName || aetherT("Portret");
             portraitWrap.appendChild(portrait);
         } else {
             const placeholder = document.createElement("div");
             placeholder.className = "character-action-portrait-placeholder";
-            placeholder.textContent = "Geen pasfoto";
+            placeholder.textContent = aetherT("Geen pasfoto");
             portraitWrap.appendChild(placeholder);
         }
 
         const name = document.createElement("div");
         name.className = "character-action-portrait-name";
-        name.textContent = target.displayName || `Personage #${target.idCharacter || 0}`;
+        name.textContent = target.displayName || aetherT("Personage #{0}",[target.idCharacter || 0]);
 
         const status = document.createElement("div");
         status.className = "character-action-portrait-status";
         const unlockedLevel = Number(target.unlockedGossipLevel || 0);
         if (unlockedLevel > 0) {
             status.textContent = target.isFullyUnlocked
-                ? `Vrijgespeeld t.e.m. niveau ${unlockedLevel}`
-                : `Ontdekt t.e.m. niveau ${unlockedLevel}`;
+                ? aetherT("Vrijgespeeld t.e.m. niveau {0}",[unlockedLevel])
+                : aetherT("Ontdekt t.e.m. niveau {0}",[unlockedLevel]);
         } else {
-            status.textContent = "Nog niets vrijgespeeld";
+            status.textContent = aetherT("Nog niets vrijgespeeld");
         }
 
         button.appendChild(portraitWrap);
@@ -455,14 +456,14 @@ function buildKnowledgeActionContent(character) {
 function getCharacterActionSkillLevelLabel(level) {
     const numericLevel = Number(level || 0);
     if (numericLevel <= 1) {
-        return "Beginneling";
+        return aetherT("Beginneling");
     }
 
     if (numericLevel === 2) {
-        return "Deskundige";
+        return aetherT("Deskundige");
     }
 
-    return "Meester";
+    return aetherT("Meester");
 }
 
 function buildPsiActionContent(character, action) {
@@ -471,7 +472,7 @@ function buildPsiActionContent(character, action) {
     if (Number(aetherCharacterActionsState.selectedEventId || 0) <= 0) {
         const note = document.createElement("p");
         note.className = "text-muted mb-0";
-        note.textContent = "Kies eerst een event om een psi-vaardigheid te gebruiken.";
+        note.textContent = aetherT("Kies eerst een event om een psi-vaardigheid te gebruiken.");
         wrapper.appendChild(note);
         return wrapper;
     }
@@ -481,12 +482,12 @@ function buildPsiActionContent(character, action) {
 
     const burnTitle = document.createElement("div");
     burnTitle.className = "character-skill-action-panel-title";
-    burnTitle.textContent = `${action?.label || "Psi"}: huidige burn ${Number(aetherCharacterActionsState.psiBurn || 0)}`;
+    burnTitle.textContent = aetherT("{0}: huidige burn {1}",[action?.label || "Psi",Number(aetherCharacterActionsState.psiBurn || 0)]);
     burnPanel.appendChild(burnTitle);
 
     const burnText = document.createElement("p");
     burnText.className = "text-muted mb-3";
-    burnText.textContent = "Psi burn telt op bij je worp. Je kan alle burn in 1 keer wegwerken door deze activatie met een extra +5 modifier uit te voeren.";
+    burnText.textContent = aetherT("Psi burn telt op bij je worp. Je kan alle burn in 1 keer wegwerken door deze activatie met een extra +5 modifier uit te voeren.");
     burnPanel.appendChild(burnText);
 
     if (Number(aetherCharacterActionsState.psiBurn || 0) > 0) {
@@ -502,7 +503,7 @@ function buildPsiActionContent(character, action) {
         const clearLabel = document.createElement("label");
         clearLabel.className = "form-check-label";
         clearLabel.htmlFor = "characterPsiClearBurn";
-        clearLabel.textContent = "Verwijder alle psi burn voor deze activatie (+5 modifier, burn daarna terug naar 0).";
+        clearLabel.textContent = aetherT("Verwijder alle psi burn voor deze activatie (+5 modifier, burn daarna terug naar 0).");
 
         clearWrap.appendChild(clearInput);
         clearWrap.appendChild(clearLabel);
@@ -513,14 +514,14 @@ function buildPsiActionContent(character, action) {
 
     const intro = document.createElement("p");
     intro.className = "text-muted mb-3";
-    intro.textContent = "Kies hieronder welke vaardigheid je activeert. Het gebruik wordt geregistreerd met personage, event, tijdstip en resultaat.";
+    intro.textContent = aetherT("Kies hieronder welke vaardigheid je activeert. Het gebruik wordt geregistreerd met personage, event, tijdstip en resultaat.");
     wrapper.appendChild(intro);
 
     const skills = Array.isArray(action?.skills) ? action.skills : [];
     if (skills.length < 1) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Voor deze psi-categorie zijn geen bruikbare vaardigheden gevonden.";
+        empty.textContent = aetherT("Voor deze psi-categorie zijn geen bruikbare vaardigheden gevonden.");
         wrapper.appendChild(empty);
         return wrapper;
     }
@@ -534,11 +535,11 @@ function buildPsiActionContent(character, action) {
 
         const name = document.createElement("div");
         name.className = "character-skill-action-name";
-        name.textContent = String(skill?.name || `Vaardigheid #${skill?.idSkill || 0}`);
+        name.textContent = String(skill?.name || aetherT("Vaardigheid #{0}",[skill?.idSkill || 0]));
 
         const level = document.createElement("div");
         level.className = "character-skill-action-meta";
-        level.textContent = `Niveau ${Number(skill?.level || 0)} - ${getCharacterActionSkillLevelLabel(skill?.level)}`;
+        level.textContent = aetherT("Niveau {0} - {1}",[Number(skill?.level || 0),getCharacterActionSkillLevelLabel(skill?.level)]);
 
         const useButton = document.createElement("button");
         useButton.type = "button";
@@ -547,7 +548,7 @@ function buildPsiActionContent(character, action) {
         useButton.dataset.idSkill = String(skill?.idSkill || 0);
         useButton.dataset.psiCategory = String(action?.categoryCode || "");
         useButton.disabled = aetherCharacterActionsState.isUsingSkillAction;
-        useButton.textContent = aetherCharacterActionsState.isUsingSkillAction ? "Bezig..." : "Gebruik";
+        useButton.textContent = aetherCharacterActionsState.isUsingSkillAction ? aetherT("Bezig...") : aetherT("Gebruik");
 
         card.appendChild(name);
         card.appendChild(level);
@@ -571,7 +572,7 @@ function formatCharacterActionEventLabel(eventOption) {
         return title;
     }
 
-    return `${title} (${date.toLocaleDateString("nl-BE")})`;
+    return `${title} (${date.toLocaleDateString((globalThis.AetherI18n?.locale || "nl-BE"))})`;
 }
 
 async function loadCharacterKnowledgeTargets(character) {
@@ -590,7 +591,7 @@ async function loadCharacterKnowledgeTargets(character) {
         aetherCharacterActionsState.knowledgeTargetsEventId = Number(aetherCharacterActionsState.selectedEventId || 0);
     } catch (err) {
         console.error("Fout bij laden wereldwijsdoelen:", err);
-        alert("Kon de wereldwijsroddels voor dit event niet laden.");
+        alert(aetherT("Kon de wereldwijsroddels voor dit event niet laden."));
     } finally {
         aetherCharacterActionsState.isLoadingKnowledgeTargets = false;
         await renderCharacterActionsTab(character);
@@ -649,7 +650,7 @@ async function revealCharacterKnowledgeTarget(character, idSourceCharacter) {
         openKnowledgeGossipModal(result);
     } catch (err) {
         console.error("Fout bij vrijspelen wereldwijsroddels:", err);
-        alert(err?.message || "Kon de wereldwijsroddels niet vrijspelen.");
+        alert(err?.message || aetherT("Kon de wereldwijsroddels niet vrijspelen."));
     } finally {
         aetherCharacterActionsState.isRevealingKnowledge = false;
     }
@@ -674,15 +675,15 @@ function ensureKnowledgeConfirmModal() {
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Wereldwijs</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">${aetherT("Wereldwijs")}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${aetherT("Close")}"></button>
                     </div>
                     <div class="modal-body">
                         <p class="mb-0" data-role="knowledge-reveal-confirm-text"></p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-primary" data-role="knowledge-reveal-confirm-accept">Poging gebruiken</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${aetherT("Annuleren")}</button>
+                        <button type="button" class="btn btn-primary" data-role="knowledge-reveal-confirm-accept">${aetherT("Poging gebruiken")}</button>
                     </div>
                 </div>
             </div>
@@ -701,7 +702,7 @@ function confirmKnowledgeReveal(target, nextAttemptNumber) {
         return Promise.resolve(false);
     }
 
-    text.textContent = `Dit is je ${nextAttemptNumber}e poging om tijdens dit event informatie te verzamelen. Ben je zeker dat je een poging wilt gebruiken op ${target?.displayName || "dit personage"}?`;
+    text.textContent = aetherT("Dit is je {0}e poging om tijdens dit event informatie te verzamelen. Ben je zeker dat je een poging wilt gebruiken op {1}?",[nextAttemptNumber,target?.displayName || "dit personage"]);
 
     return new Promise((resolve) => {
         const modal = new bootstrap.Modal(modalEl);
@@ -739,8 +740,8 @@ function ensureKnowledgeGossipModal() {
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Wereldwijs</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">${aetherT("Wereldwijs")}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${aetherT("Close")}"></button>
                     </div>
                     <div class="modal-body">
                         <ul class="nav nav-tabs mb-3" id="knowledgeGossipModalTabs" role="tablist"></ul>
@@ -768,7 +769,7 @@ function openKnowledgeGossipModal(result) {
         return;
     }
 
-    title.textContent = result?.displayName || "Wereldwijs";
+    title.textContent = result?.displayName || aetherT("Wereldwijs");
     tabs.innerHTML = "";
     content.innerHTML = "";
 
@@ -776,7 +777,7 @@ function openKnowledgeGossipModal(result) {
     if (unlockedGossips.length === 0) {
         const empty = document.createElement("div");
         empty.className = "text-muted";
-        empty.textContent = "Deze poging leverde nog geen nieuwe of eerder vrijgespeelde roddels op.";
+        empty.textContent = aetherT("Deze poging leverde nog geen nieuwe of eerder vrijgespeelde roddels op.");
         content.appendChild(empty);
         aetherKnowledgeModalInstance.show();
         return;
@@ -792,7 +793,7 @@ function openKnowledgeGossipModal(result) {
         li.role = "presentation";
 
         const button = document.createElement("button");
-        button.className = `nav-link${index === 0 ? " active" : ""}`;
+        button.className = `nav-link${index === 0 ? aetherT(" active") : ""}`;
         button.id = tabId;
         button.dataset.bsToggle = "tab";
         button.dataset.bsTarget = `#${paneId}`;
@@ -800,7 +801,7 @@ function openKnowledgeGossipModal(result) {
         button.role = "tab";
         button.setAttribute("aria-controls", paneId);
         button.setAttribute("aria-selected", index === 0 ? "true" : "false");
-        button.textContent = `Niveau ${level}`;
+        button.textContent = aetherT("Niveau {0}",[level]);
         li.appendChild(button);
         tabs.appendChild(li);
 
@@ -832,8 +833,8 @@ function ensureCharacterSkillActionResultModal() {
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Vaardigheidsactie</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">${aetherT("Vaardigheidsactie")}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${aetherT("Close")}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="character-skill-action-result-meta" data-role="skill-action-result-meta"></div>
@@ -862,13 +863,13 @@ function openCharacterSkillActionResultModal(result) {
         return;
     }
 
-    title.textContent = `${result?.skill?.name || "Vaardigheidsactie"} - ${result?.categoryLabel || ""}`.trim();
+    title.textContent = `${result?.skill?.name || aetherT("Vaardigheidsactie")} - ${result?.categoryLabel || ""}`.trim();
     meta.innerHTML = "";
 
     const details = [
         `Event: ${result?.event?.title || `#${result?.event?.idEvent || 0}`}`,
-        `Worp: ${Number(result?.roll?.base || 0)} + burn ${Number(result?.roll?.burnBefore || 0)} + modifier ${Number(result?.roll?.clearBurnModifier || 0)} = ${Number(result?.roll?.final || 0)}`,
-        `Tabelrij: ${result?.roll?.rangeLabel || "-"}`,
+        aetherT("Worp: {0} + burn {1} + modifier {2} = {3}",[Number(result?.roll?.base || 0),Number(result?.roll?.burnBefore || 0),Number(result?.roll?.clearBurnModifier || 0),Number(result?.roll?.final || 0)]),
+        aetherT("Tabelrij: {0}",[result?.roll?.rangeLabel || "-"]),
         `Psi burn: ${Number(result?.burn?.before || 0)} -> ${Number(result?.burn?.after || 0)}${result?.burn?.cleared ? " (gewist)" : ""}`,
     ];
 
@@ -898,7 +899,7 @@ async function useCharacterPsiSkill(character, idSkill, categoryCode) {
 
     const idEvent = Number(aetherCharacterActionsState.selectedEventId || 0);
     if (idEvent <= 0 || Number(idSkill || 0) <= 0 || !categoryCode) {
-        alert("Kies eerst een event en een geldige psi-vaardigheid.");
+        alert(aetherT("Kies eerst een event en een geldige psi-vaardigheid."));
         return;
     }
 
@@ -923,7 +924,7 @@ async function useCharacterPsiSkill(character, idSkill, categoryCode) {
         openCharacterSkillActionResultModal(result);
     } catch (err) {
         console.error("Fout bij registreren psi-gebruik:", err);
-        alert(err?.message || "Kon het gebruik van deze psi-vaardigheid niet registreren.");
+        alert(err?.message || aetherT("Kon het gebruik van deze psi-vaardigheid niet registreren."));
     } finally {
         aetherCharacterActionsState.isUsingSkillAction = false;
         await renderCharacterActionsTab(character);

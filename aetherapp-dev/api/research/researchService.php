@@ -4,23 +4,28 @@ require_once __DIR__.'/researchAccess.php';
 
 function researchTimer(PDO $pdo,int $event,int $character,array $step,array $condition): ?array
 {
-    $scope=$condition['scope']==='shared' ? 0 : $character;
+    $target=researchOne($pdo,'SELECT d.* FROM tblResearchDiscovery d JOIN tblResearchRoute r ON r.idDiscovery=d.id WHERE r.id=?',[$step['idRoute']]);
+    $scope=$condition['scope']==='shared' || ($target['progressionMode']??'personal')==='universal' ? 0 : $character;
     $timer=researchOne($pdo,'SELECT * FROM tblResearchTimer WHERE idEvent = ? AND idStep = ? AND scopeCharacter = ?',[$event,$step['id'],$scope]);
     if ($timer) return $timer;
     $params=[$event,$condition['discoveryId'],$condition['stepId'],$condition['action']];
     $where=$scope ? ' AND idCharacter = ?' : '';
     if ($scope) $params[]=$character;
-    $action=researchOne($pdo,'SELECT * FROM tblResearchAction WHERE idEvent = ? AND idDiscovery = ? AND idStep = ? AND actionCode = ?'.$where.' ORDER BY occurredAt,id LIMIT 1',$params);
+    $source=researchDiscovery($pdo,(int)$condition['discoveryId']);
+    $stepFilter='idStep = ?';
+    if ($condition['stepId'] && ($source['progressionMode']??'personal')==='universal') $stepFilter='idStep IN (SELECT s.id FROM tblResearchStep s JOIN tblResearchRoute r ON r.id=s.idRoute WHERE r.idDiscovery='.((int)$source['id']).' AND s.position=(SELECT position FROM tblResearchStep WHERE id=?))';
+    $action=researchOne($pdo,'SELECT * FROM tblResearchAction WHERE idEvent = ? AND idDiscovery = ? AND '.$stepFilter.' AND actionCode = ?'.$where.' ORDER BY occurredAt,id LIMIT 1',$params);
     if (!$action) return null;
     $end=(new DateTimeImmutable($action['occurredAt'],new DateTimeZone('UTC')))->modify('+'.$condition['seconds'].' seconds')->format('Y-m-d H:i:s.u');
     researchQuery($pdo,'INSERT IGNORE INTO tblResearchTimer(idEvent,idStep,scopeCharacter,idStartedByCharacter,idStartAction,startedAt,endsAt) VALUES (?,?,?,?,?,?,?)',
         [$event,$step['id'],$scope,$action['idCharacter'],$action['id'],$action['occurredAt'],$end]);
     return researchOne($pdo,'SELECT * FROM tblResearchTimer WHERE idEvent = ? AND idStep = ? AND scopeCharacter = ?',[$event,$step['id'],$scope]);
 }
-function researchGate(PDO $pdo,int $event,int $character,array $step,string $now): array
+function researchGate(PDO $pdo,int $event,int $character,array $step,string $now,string $phase='visibility'): array
 {
     $ready=true;$timed=false;$waitingTime=false;$countdown=null;
     foreach ($step['conditions'] as $c) {
+        if ($phase==='visibility' && in_array($c['target']??'visibility',['completion','transition'],true)) continue;
         if ($c['type']==='discoveries') {
             foreach ($c['ids'] as $id) {
                 $row=researchOne($pdo,'SELECT completedAt FROM tblResearchFound WHERE idEvent = ? AND idCharacter = ? AND idDiscovery = ?',[$event,$character,$id]);
@@ -28,7 +33,9 @@ function researchGate(PDO $pdo,int $event,int $character,array $step,string $now
             }
         } elseif ($c['type']==='step') {
             $row=researchOne($pdo,'SELECT completedAt FROM tblResearchStepProgress WHERE idEvent = ? AND idCharacter = ? AND idStep = ?',[$event,$character,$c['id']]);
-            if (!$row || !$row['completedAt']) $ready=false;
+            $previous=researchOne($pdo,'SELECT s.*,r.idDiscovery FROM tblResearchStep s JOIN tblResearchRoute r ON r.id=s.idRoute WHERE s.id=?',[$c['id']]);
+            $shared=$previous?researchSharedStep($pdo,$event,researchDiscovery($pdo,(int)$previous['idDiscovery']),$previous):null;
+            if ((!$row || !$row['completedAt']) && !$shared) $ready=false;
         } elseif (in_array($c['type'],['duration','absolute'],true)) {
             $timed=true;
             $end=$c['type']==='duration' ? (researchTimer($pdo,$event,$character,$step,$c)['endsAt']??null) : ($c['utc'][(string)$event]??null);
@@ -40,6 +47,11 @@ function researchGate(PDO $pdo,int $event,int $character,array $step,string $now
         }
     }
     return ['ready'=>$ready,'timed'=>$timed,'waitingTime'=>$waitingTime,'countdownSeconds'=>$countdown];
+}
+function researchSharedStep(PDO $pdo,int $event,array $discovery,array $step): ?array
+{
+    if (($discovery['progressionMode']??'personal')!=='universal') return null;
+    return researchOne($pdo,'SELECT * FROM tblResearchSharedProgress WHERE idEvent=? AND idDiscovery=? AND position=?',[$event,$discovery['id'],$step['position']]);
 }
 function researchStepContent(PDO $pdo,array $step,int $event,int $character,array $progress=[]): array
 {
@@ -59,12 +71,14 @@ function researchState(PDO $pdo,int $event,int $character,array $found,bool $inc
     $d=researchDiscovery($pdo,(int)$found['idDiscovery']);
     $base=['id'=>(int)$d['id'],'title'=>$d['title'],'status'=>'unavailable','timed'=>false,'countdownSeconds'=>null,'current'=>null,'currents'=>[],'history'=>[]];
     try { researchDiscoveryEvent($pdo,$d,$event); } catch(AetherResearchException $e) { return $base; }
+    if (!empty($d['isConclusion']) && !researchConclusionReady($pdo,$event,$character,(int)$d['idChallenge'])) return $base;
     $steps=researchFoundSteps($pdo,$character,$found);
     if (!$steps) return $base;
     $pending=[];$blocked=[];
     foreach ($steps as $step) {
         $p=researchOne($pdo,'SELECT * FROM tblResearchStepProgress WHERE idEvent = ? AND idCharacter = ? AND idStep = ?',[$event,$character,$step['id']])??[];
-        if (!empty($p['completedAt'])) {
+        $shared=researchSharedStep($pdo,$event,$d,$step);
+        if (!empty($p['completedAt']) || $shared) {
             if ($includeContent && !empty($p['shownAt'])) $base['history'][]=researchStepContent($pdo,$step,$event,$character,$p);
             continue;
         }
@@ -74,8 +88,17 @@ function researchState(PDO $pdo,int $event,int $character,array $found,bool $inc
         $base['timed']=$base['timed'] || $gate['timed'];
         if ($gate['countdownSeconds']!==null) $base['countdownSeconds']=min($base['countdownSeconds']??PHP_INT_MAX,$gate['countdownSeconds']);
         if (!$gate['ready']) { $pending[]=$gate['waitingTime']?'waiting_time':'waiting';continue; }
-        $pending[]=!empty($p['shownAt']) && (bool)$step['confirmationRequired'] ? 'awaiting_confirmation' : 'new_feedback';
-        if ($includeContent) $base['currents'][]=researchStepContent($pdo,$step,$event,$character,$p);
+        $completion=researchGate($pdo,$event,$character,$step,researchNow(),'completion');
+        if (!empty($p['shownAt']) && !(bool)$step['confirmationRequired'] && $completion['ready']) {
+            $owner=researchOne($pdo,'SELECT u.* FROM tblUser u JOIN tblResearchAction a ON a.actorUserId=u.id WHERE a.idEvent=? AND a.idCharacter=? AND a.idStep=? AND a.actionCode=\'shown\' LIMIT 1',[$event,$character,$step['id']]);
+            if (!$owner) throw new AetherResearchException(409,'De oorspronkelijke weergaveregistratie ontbreekt.');
+            researchAdvance($pdo,$owner,['idEvent'=>$event,'idCharacter'=>$character,'idDiscovery'=>$d['id'],'idStep'=>$step['id']],'shown');
+            return researchState($pdo,$event,$character,$found,$includeContent);
+        }
+        $base['timed']=$base['timed'] || $completion['timed'];
+        if ($completion['countdownSeconds']!==null) $base['countdownSeconds']=min($base['countdownSeconds']??PHP_INT_MAX,$completion['countdownSeconds']);
+        $pending[]=!$completion['ready'] ? ($completion['waitingTime']?'waiting_time':'waiting') : (!empty($p['shownAt']) && (bool)$step['confirmationRequired'] ? 'awaiting_confirmation' : 'new_feedback');
+        if ($includeContent) $base['currents'][]=array_merge(researchStepContent($pdo,$step,$event,$character,$p),['canConfirm'=>$completion['ready']]);
     }
     $base['status']='completed';
     foreach (['new_feedback','awaiting_confirmation','waiting_time','waiting'] as $status) if (in_array($status,$pending,true)) {$base['status']=$status;break;}
@@ -100,7 +123,7 @@ function researchFinishIfComplete(PDO $pdo,array $user,int $event,int $character
     $steps=researchFoundSteps($pdo,$character,$found);
     foreach ($steps as $step) {
         $p=researchOne($pdo,'SELECT completedAt FROM tblResearchStepProgress WHERE idEvent = ? AND idCharacter = ? AND idStep = ?',[$event,$character,$step['id']]);
-        if (!$p || !$p['completedAt']) return;
+        if ((!$p || !$p['completedAt']) && !researchSharedStep($pdo,$event,researchDiscovery($pdo,(int)$found['idDiscovery']),$step)) return;
     }
     if (!$steps) return;
     researchQuery($pdo,'UPDATE tblResearchFound SET completedAt = COALESCE(completedAt,?) WHERE idEvent = ? AND idCharacter = ? AND idDiscovery = ?',[$now,$event,$character,$found['idDiscovery']]);
@@ -116,20 +139,51 @@ function researchScan(PDO $pdo,array $user,array $input): array
     $row=researchOne($pdo,'SELECT id FROM tblResearchDiscovery WHERE qrToken = ?',[$token]);
     if (!$row) throw new AetherResearchException(404,'Deze onderzoekscode bestaat niet.');
     $d=researchDiscovery($pdo,(int)$row['id']);researchDiscoveryEvent($pdo,$d,$event);
+    if (!empty($d['isConclusion'])) throw new AetherResearchException(403,'Conclusies worden automatisch beschikbaar na het afronden van de challenge.');
+    researchRegisterFound($pdo,$user,$event,$character,$d);
+    return ['idDiscovery'=>(int)$d['id']];
+}
+function researchRegisterFound(PDO $pdo,array $user,int $event,int $character,array $d,string $registrationAction='scanned'): void
+{
     $existing=researchOne($pdo,'SELECT * FROM tblResearchFound WHERE idEvent = ? AND idCharacter = ? AND idDiscovery = ?',[$event,$character,$d['id']]);
-    if (!$existing) {
+    if (!$existing || $registrationAction==='scanned') {
         $base=researchOne($pdo,'SELECT level FROM tblLinkCharacterSkill WHERE idCharacter = ? AND idSkill = ?',[$character,$d['idSkill']]);
         $owned=array_map('intval',researchQuery($pdo,'SELECT cs.idSkillSpecialisation FROM tblCharacterSpecialisation cs
             JOIN tblSkillSpecialisation sp ON sp.id = cs.idSkillSpecialisation AND sp.idSkill = cs.idSkill WHERE cs.idCharacter = ? AND sp.kind = \'specialisation\'',[$character])->fetchAll(PDO::FETCH_COLUMN));
         $bonus=array_map('intval',researchQuery($pdo,'SELECT idSpecialisation FROM tblResearchBonus WHERE idDiscovery = ?',[$d['id']])->fetchAll(PDO::FETCH_COLUMN));
         $level=researchLevel((int)($base['level']??0),$owned,$bonus);
         $route=researchSelectRoute(researchFeedbackRoutes($pdo,(int)$d['id']),$level,$character,$owned);
-        researchQuery($pdo,'INSERT INTO tblResearchFound(idEvent,idCharacter,idDiscovery,idRoute,effectiveLevel,foundAt) VALUES (?,?,?,?,?,?)',[$event,$character,$d['id'],$route['id'],$level,researchNow()]);
+        if (!$existing) researchQuery($pdo,'INSERT INTO tblResearchFound(idEvent,idCharacter,idDiscovery,idRoute,effectiveLevel,foundAt) VALUES (?,?,?,?,?,?)',[$event,$character,$d['id'],$route['id'],$level,researchNow()]);
+        else {
+            $before=array_map('intval',array_column(researchFoundRoutes($pdo,$character,$existing),'id'));
+            $after=array_map('intval',array_column(researchSelectRoutes(researchFeedbackRoutes($pdo,(int)$d['id']),$level,$character,$owned),'id'));
+            $changed=(bool)(array_diff($before,$after)||array_diff($after,$before));
+            researchQuery($pdo,'UPDATE tblResearchFound SET idRoute=?,effectiveLevel=?'.($changed?',completedAt=NULL':'').' WHERE idEvent=? AND idCharacter=? AND idDiscovery=?',[$route['id'],$level,$event,$character,$d['id']]);
+            if ($changed) {
+                researchQuery($pdo,"DELETE FROM tblResearchAction WHERE idEvent=? AND idCharacter=? AND idDiscovery=? AND actionCode='feedback_selected'",[$event,$character,$d['id']]);
+            }
+            if ($changed || (int)$existing['effectiveLevel']!==$level) researchAudit($pdo,$user,'scan_refresh',['idEvent'=>$event,'idCharacter'=>$character,'idDiscovery'=>(int)$d['id'],'levelBefore'=>(int)$existing['effectiveLevel'],'levelAfter'=>$level,'routesBefore'=>$before,'routesAfter'=>$after]);
+        }
     }
-    researchRecordAction($pdo,$user,$event,$character,(int)$d['id'],0,'scanned',researchNow());
+    researchRecordAction($pdo,$user,$event,$character,(int)$d['id'],0,$registrationAction,researchNow());
     $found=researchOne($pdo,'SELECT * FROM tblResearchFound WHERE idEvent=? AND idCharacter=? AND idDiscovery=?',[$event,$character,$d['id']]);
     researchFoundRoutes($pdo,$character,$found);
-    return ['idDiscovery'=>(int)$d['id']];
+    researchFinishIfComplete($pdo,$user,$event,$character,$found,researchNow());
+}
+function researchConclusionReady(PDO $pdo,int $event,int $character,int $challenge): bool
+{
+    $counts=researchOne($pdo,'SELECT COUNT(*) AS total,COUNT(f.completedAt) AS completed FROM tblResearchDiscovery d LEFT JOIN tblResearchFound f ON f.idDiscovery=d.id AND f.idEvent=? AND f.idCharacter=? WHERE d.idChallenge=? AND d.isConclusion=0',[$event,$character,$challenge]);
+    return (int)$counts['total']>0 && (int)$counts['total']===(int)$counts['completed'];
+}
+function researchUnlockConclusions(PDO $pdo,array $user,int $event,int $character): void
+{
+    // Reevaluate elapsed timers before deciding whether the complete challenge is done.
+    foreach (researchAll($pdo,'SELECT f.* FROM tblResearchFound f JOIN tblResearchDiscovery d ON d.id=f.idDiscovery WHERE f.idEvent=? AND f.idCharacter=? AND d.isConclusion=0',[$event,$character]) as $found) researchState($pdo,$event,$character,$found,false);
+    $conclusions=researchAll($pdo,'SELECT d.id FROM tblResearchDiscovery d JOIN tblResearchChallenge c ON c.id=d.idChallenge JOIN tblResearchChallengeEvent ce ON ce.idChallenge=c.id WHERE ce.idEvent=? AND d.isConclusion=1 AND d.active=1 AND c.active=1',[$event]);
+    foreach ($conclusions as $row) {
+        $d=researchDiscovery($pdo,(int)$row['id']);
+        if (researchConclusionReady($pdo,$event,$character,(int)$d['idChallenge'])) researchRegisterFound($pdo,$user,$event,$character,$d,'conclusion_available');
+    }
 }
 function researchAdvance(PDO $pdo,array $user,array $input,string $action,bool $override=false): array
 {
@@ -139,6 +193,7 @@ function researchAdvance(PDO $pdo,array $user,array $input,string $action,bool $
     $found=researchOne($pdo,'SELECT * FROM tblResearchFound WHERE idEvent = ? AND idCharacter = ? AND idDiscovery = ?',[$event,$character,$id]);
     if (!$found) throw new AetherResearchException(404,'Scan deze discovery eerst.');
     $d=researchDiscovery($pdo,$id);researchDiscoveryEvent($pdo,$d,$event);
+    if (!empty($d['isConclusion']) && !researchConclusionReady($pdo,$event,$character,(int)$d['idChallenge'])) throw new AetherResearchException(403,'Rond eerst alle gewone discoveries van deze challenge af.');
     $step=researchOne($pdo,'SELECT * FROM tblResearchStep WHERE id = ?',[$stepId]);
     if (!$step) throw new AetherResearchException(403,'Deze feedbackstap is niet beschikbaar voor dit personage.');
     $allowed=array_map('intval',array_column(researchFoundRoutes($pdo,$character,$found),'id'));
@@ -146,18 +201,20 @@ function researchAdvance(PDO $pdo,array $user,array $input,string $action,bool $
     if (!researchStepHasFeedback($pdo,$step)) throw new AetherResearchException(403,'Deze feedbackstap is nog niet ingevuld.');
     $progress=researchOne($pdo,'SELECT * FROM tblResearchStepProgress WHERE idEvent = ? AND idCharacter = ? AND idStep = ?',[$event,$character,$stepId])??[];
     if (!empty($progress['completedAt'])) return ['saved'=>true];
+    if (researchSharedStep($pdo,$event,$d,$step)) return ['saved'=>true];
     foreach (researchSteps($pdo,(int)$step['idRoute'],true) as $earlier) {
         if ((int)$earlier['position'] >= (int)$step['position']) break;
         $p=researchOne($pdo,'SELECT completedAt FROM tblResearchStepProgress WHERE idEvent = ? AND idCharacter = ? AND idStep = ?',[$event,$character,$earlier['id']]);
-        if (!$p || !$p['completedAt']) throw new AetherResearchException(409,'Rond eerst de vorige feedbackstap af.');
+        if ((!$p || !$p['completedAt']) && !researchSharedStep($pdo,$event,$d,$earlier)) throw new AetherResearchException(409,'Rond eerst de vorige feedbackstap af.');
     }
     $step['conditions']=json_decode($step['conditionsJson'],true,512,JSON_THROW_ON_ERROR);
     $now=researchNow();
     if (!$override && !researchGate($pdo,$event,$character,$step,$now)['ready']) throw new AetherResearchException(409,'Deze feedback is nog niet beschikbaar.');
+    if ($action==='confirm' && !$override && !researchGate($pdo,$event,$character,$step,$now,'completion')['ready']) throw new AetherResearchException(409,'Deze opdracht kan nog niet afgerond worden.');
     if ($action==='confirm' && !$override && (!(bool)$step['confirmationRequired'] || empty($progress['shownAt']))) {
         throw new AetherResearchException(409,'Bekijk eerst de opdracht voordat je haar bevestigt.');
     }
-    $complete=$override || $action==='confirm' || !(bool)$step['confirmationRequired'];
+    $complete=$override || $action==='confirm' || (!(bool)$step['confirmationRequired'] && researchGate($pdo,$event,$character,$step,$now,'completion')['ready']);
     // An AD override is not proof that the SF actually saw or confirmed the feedback.
     $shown=$override ? ($progress['shownAt']??null) : ($progress['shownAt']??$now);
     $confirmed=$action==='confirm' && !$override ? $now : ($progress['confirmedAt']??null);
@@ -166,6 +223,10 @@ function researchAdvance(PDO $pdo,array $user,array $input,string $action,bool $
     if (!$override) researchRecordAction($pdo,$user,$event,$character,$id,$stepId,'shown',$shown);
     if ($confirmed) researchRecordAction($pdo,$user,$event,$character,$id,$stepId,'confirmed',$confirmed);
     if ($complete) researchRecordAction($pdo,$user,$event,$character,$id,$stepId,'step_completed',$now);
+    if ($complete && ($d['progressionMode']??'personal')==='universal') {
+        researchQuery($pdo,'INSERT IGNORE INTO tblResearchSharedProgress(idEvent,idDiscovery,position,idStep,idCharacter,completedAt) VALUES (?,?,?,?,?,?)',[$event,$id,$step['position'],$stepId,$character,$now]);
+        foreach (researchAll($pdo,'SELECT * FROM tblResearchFound WHERE idEvent=? AND idDiscovery=?',[$event,$id]) as $other) researchFinishIfComplete($pdo,$user,$event,(int)$other['idCharacter'],$other,$now);
+    }
     if ($override) researchAudit($pdo,$user,'progress_override',$input);
     researchFinishIfComplete($pdo,$user,$event,$character,$found,$now);
     return ['saved'=>true];

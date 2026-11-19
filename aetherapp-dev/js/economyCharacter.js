@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 function canEditBankAccountForCharacter(character) {
     if (!currentUser || !character) return false;
     if (typeof character.canEditBankAccount === "boolean") {
@@ -50,7 +51,7 @@ function getDraftBankAccountAmount(character) {
     }
 
     const totalIncome = getCharacterTraitIncomeTotal(character);
-    const multiplier = characterHasTraitFlagClient(character, "savings_bank_multiplier", "Spaarder") ? 15 : 10;
+    const multiplier = characterHasTraitFlagClient(character, "savings_bank_multiplier", aetherT("Spaarder")) ? 15 : 10;
     return totalIncome * multiplier;
 }
 
@@ -100,7 +101,7 @@ function getCharacterSecuritiesSnapshots(character) {
 function formatEconomyPercentage(value) {
     const numeric = Number(value ?? 0);
     const resolved = Number.isFinite(numeric) ? numeric : 0;
-    return `${resolved.toLocaleString("nl-BE", {
+    return `${resolved.toLocaleString((globalThis.AetherI18n?.locale || "nl-BE"), {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
     })}%`;
@@ -108,20 +109,20 @@ function formatEconomyPercentage(value) {
 
 function getSecuritiesManagerTypeOptions() {
     return [
-        { value: "self", label: "Eigen beheer" },
-        { value: "bank", label: "De Bank" },
-        { value: "third", label: "Een derde" }
+        { value: "self", label: aetherT("Eigen beheer") },
+        { value: "bank", label: aetherT("De Bank") },
+        { value: "third", label: aetherT("Een derde") }
     ];
 }
 
 function getSecuritiesManagerTypeLabel(value) {
     const option = getSecuritiesManagerTypeOptions().find((entry) => entry.value === value);
-    return option?.label || "Eigen beheer";
+    return option?.label || aetherT("Eigen beheer");
 }
 
 function getSecuritiesRiskProfileLabel(character, riskProfile) {
     const options = character?.securitiesRiskProfileOptions || {};
-    return options?.[riskProfile]?.label || `Profiel ${riskProfile}`;
+    return options?.[riskProfile]?.label || aetherT("Profiel {0}",[riskProfile]);
 }
 
 function updateSecuritiesRiskProfileDisplay(input) {
@@ -143,7 +144,7 @@ function updateSecuritiesRiskProfileDisplay(input) {
 function getCharacterSecuritiesManagerDisplayName(character) {
     const managerType = String(character?.securitiesManagerType || "self");
     if (managerType === "bank") {
-        return "De bank";
+        return aetherT("De bank");
     }
 
     if (managerType === "third") {
@@ -154,11 +155,11 @@ function getCharacterSecuritiesManagerDisplayName(character) {
 
         const selectedManager = (Array.isArray(character?.securitiesManagerOptions) ? character.securitiesManagerOptions : [])
             .find((option) => Number(option?.id || 0) === Number(character?.securitiesManagerCharacterId || 0));
-        return String(selectedManager?.displayName || "").trim() || "Onbekend";
+        return String(selectedManager?.displayName || "").trim() || aetherT("Onbekend");
     }
 
     const ownName = `${String(character?.firstName || "").trim()} ${String(character?.lastName || "").trim()}`.trim();
-    return ownName || "Eigen beheer";
+    return ownName || aetherT("Eigen beheer");
 }
 
 function getCharacterSecuritiesExpectedReturnSummary(character) {
@@ -201,11 +202,11 @@ function openSecuritiesManagerModal(character, trigger) {
     const dialog = node("div", "modal-dialog modal-dialog-centered");
     const content = node("div", "modal-content");
     const header = node("div", "modal-header");
-    const title = node("h2", "modal-title h5", "Beheerder effectenportefeuille");
+    const title = node("h2", "modal-title h5", aetherT("Beheerder effectenportefeuille"));
     title.id = "securities-manager-modal-title";
     header.append(title);
     const body = node("div", "modal-body");
-    const managerLabel = node("label", "form-label", "Beheerder");
+    const managerLabel = node("label", "form-label", aetherT("Beheerder"));
     managerLabel.htmlFor = "securities-manager-type";
     const managerSelect = node("select", "form-select");
     managerSelect.id = "securities-manager-type";
@@ -216,15 +217,15 @@ function openSecuritiesManagerModal(character, trigger) {
     }
     managerSelect.value = character.securitiesManagerType || "self";
     const thirdWrap = node("div", "mt-3");
-    const thirdLabel = node("label", "form-label", "Externe beheerder");
+    const thirdLabel = node("label", "form-label", aetherT("Externe beheerder"));
     thirdLabel.htmlFor = "securities-manager-character";
     const thirdSelect = node("select", "form-select");
     thirdSelect.id = "securities-manager-character";
-    const empty = node("option", "", "Kies een actief personage");
+    const empty = node("option", "", aetherT("Kies een actief personage"));
     empty.value = "";
     thirdSelect.append(empty);
     for (const option of character.securitiesManagerOptions || []) {
-        const item = node("option", "", option.displayName || `Personage #${option.id}`);
+        const item = node("option", "", option.displayName || aetherT("Personage #{0}",[option.id]));
         item.value = String(option.id);
         thirdSelect.append(item);
     }
@@ -236,8 +237,8 @@ function openSecuritiesManagerModal(character, trigger) {
     const error = node("p", "text-danger mt-3 mb-0");
     error.setAttribute("role", "alert");
     body.append(managerLabel, managerSelect, thirdWrap, error);
-    const save = AetherActionButtons.button({ icon: "fa-check", label: "Save" });
-    const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel" });
+    const save = AetherActionButtons.button({ icon: "fa-check", label: aetherT("Save") });
+    const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: aetherT("Cancel") });
     cancel.dataset.bsDismiss = "modal";
     const footer = node("div", "modal-footer");
     footer.append(AetherActionButtons.group([save, cancel]));
@@ -249,7 +250,7 @@ function openSecuritiesManagerModal(character, trigger) {
     save.addEventListener("click", async () => {
         error.textContent = "";
         if (managerSelect.value === "third" && Number(thirdSelect.value) <= 0) {
-            error.textContent = "Kies een actief personage als beheerder.";
+            error.textContent = aetherT("Kies een actief personage als beheerder.");
             return;
         }
         save.disabled = true;
@@ -261,7 +262,7 @@ function openSecuritiesManagerModal(character, trigger) {
             });
             instance.hide();
         } catch (failure) {
-            error.textContent = getApiErrorMessage(failure, "Kon de beheerder niet bewaren.");
+            error.textContent = getApiErrorMessage(failure, aetherT("Kon de beheerder niet bewaren."));
         } finally {
             save.disabled = false;
             cancel.disabled = false;
@@ -284,7 +285,7 @@ function renderSecuritiesSettingsSection(host, character) {
     if (isDraft) {
         const help = document.createElement("p");
         help.className = "text-muted mb-0";
-        help.textContent = "Effectenbeheer wordt pas beschikbaar zodra het personage niet meer in draft staat.";
+        help.textContent = aetherT("Effectenbeheer wordt pas beschikbaar zodra het personage niet meer in draft staat.");
         settingsWrap.appendChild(help);
         host.appendChild(settingsWrap);
         return;
@@ -294,7 +295,7 @@ function renderSecuritiesSettingsSection(host, character) {
     managerRow.className = "economy-securities-manager mb-3";
 
     const managerLabel = document.createElement("span");
-    managerLabel.textContent = "Beheerder";
+    managerLabel.textContent = aetherT("Beheerder");
     managerRow.appendChild(managerLabel);
 
     const managerValue = document.createElement("span");
@@ -307,8 +308,8 @@ function renderSecuritiesSettingsSection(host, character) {
         edit.className = "economy-securities-manager-edit";
         edit.tabIndex = 0;
         edit.setAttribute("role", "button");
-        edit.setAttribute("aria-label", "Beheerder aanpassen");
-        edit.title = "Beheerder aanpassen";
+        edit.setAttribute("aria-label", aetherT("Beheerder aanpassen"));
+        edit.title = aetherT("Beheerder aanpassen");
         const icon = document.createElement("i");
         icon.className = "fa-solid fa-pen-nib";
         icon.setAttribute("aria-hidden", "true");
@@ -330,7 +331,7 @@ function renderSecuritiesSettingsSection(host, character) {
 
     const riskLabel = document.createElement("div");
     riskLabel.className = "form-label";
-    riskLabel.textContent = "Risicoprofiel";
+    riskLabel.textContent = aetherT("Risicoprofiel");
     riskRow.appendChild(riskLabel);
 
     const selectedRisk = Math.max(1, Math.min(5, Number(character?.securitiesRiskProfile || 3)));
@@ -351,7 +352,7 @@ function renderSecuritiesSettingsSection(host, character) {
         riskSlider.step = "1";
         riskSlider.value = String(selectedRisk);
         riskSlider.dataset.role = "securities-risk-profile";
-        riskSlider.setAttribute("aria-label", "Risicoprofiel effectenportefeuille");
+        riskSlider.setAttribute("aria-label", aetherT("Risicoprofiel effectenportefeuille"));
         riskSlider.setAttribute("aria-valuetext", riskValue.textContent);
         riskRow.appendChild(riskSlider);
 
@@ -367,7 +368,7 @@ function renderSecuritiesSettingsSection(host, character) {
 
         const riskHelp = document.createElement("div");
         riskHelp.className = "text-muted small";
-        riskHelp.textContent = "De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event.";
+        riskHelp.textContent = aetherT("De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event.");
         riskRow.appendChild(riskHelp);
     }
     settingsWrap.appendChild(riskRow);
@@ -383,7 +384,7 @@ function renderSecuritiesSettingsSection(host, character) {
 function renderSecuritiesIntroduction(host) {
     const intro = document.createElement("p");
     intro.className = "text-muted mb-3";
-    intro.textContent = "Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.";
+    intro.textContent = aetherT("Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.");
     host.appendChild(intro);
 }
 
@@ -403,17 +404,17 @@ function renderSecuritiesExpectedReturn(host, character) {
 
     const expectedTitle = document.createElement("div");
     expectedTitle.className = "fw-semibold mb-1";
-    expectedTitle.textContent = "Verwacht rendement";
+    expectedTitle.textContent = aetherT("Verwacht rendement");
     expectedWrap.appendChild(expectedTitle);
 
     const expectedPercentages = document.createElement("div");
     expectedPercentages.className = "text-muted small";
-    expectedPercentages.textContent = `${formatEconomyPercentage(expected.minPercentage)} tot ${formatEconomyPercentage(expected.maxPercentage)}`;
+    expectedPercentages.textContent = aetherT("{0} tot {1}",[formatEconomyPercentage(expected.minPercentage),formatEconomyPercentage(expected.maxPercentage)]);
     expectedWrap.appendChild(expectedPercentages);
 
     const expectedAmounts = document.createElement("div");
     expectedAmounts.className = "text-muted small";
-    expectedAmounts.textContent = `${formatCharacterCurrency(expected.minAmount)} tot ${formatCharacterCurrency(expected.maxAmount)}`;
+    expectedAmounts.textContent = aetherT("{0} tot {1}",[formatCharacterCurrency(expected.minAmount),formatCharacterCurrency(expected.maxAmount)]);
     expectedWrap.appendChild(expectedAmounts);
 
     host.appendChild(expectedWrap);
@@ -431,13 +432,13 @@ function renderSecuritiesActionButtons(host, character) {
     const actionWrap = document.createElement("div");
     actionWrap.className = "button-group";
 
-    const depositButton = AetherActionButtons.button({ icon: "fa-arrow-down", label: "Geld storten" });
+    const depositButton = AetherActionButtons.button({ icon: "fa-arrow-down", label: aetherT("Geld storten") });
     depositButton.dataset.action = "open-securities-deposit-modal";
     depositButton.disabled = !canManage;
     actionWrap.appendChild(depositButton);
 
     if (balance > 0) {
-        const withdrawButton = AetherActionButtons.button({ icon: "fa-arrow-up", label: "Geld opnemen" });
+        const withdrawButton = AetherActionButtons.button({ icon: "fa-arrow-up", label: aetherT("Geld opnemen") });
         withdrawButton.dataset.action = "open-securities-withdrawal-modal";
         withdrawButton.disabled = !canManage || approvedSnapshots.length === 0;
         actionWrap.appendChild(withdrawButton);
@@ -448,7 +449,7 @@ function renderSecuritiesActionButtons(host, character) {
     if (balance > 0 && approvedSnapshots.length === 0) {
         const help = document.createElement("div");
         help.className = "form-text";
-        help.textContent = "Opnemen kan zodra er een goedgekeurde snapshot beschikbaar is.";
+        help.textContent = aetherT("Opnemen kan zodra er een goedgekeurde snapshot beschikbaar is.");
         host.appendChild(help);
     }
 }
@@ -468,20 +469,20 @@ function ensureSecuritiesDepositModal() {
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Geld storten</h5>
-                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                        <h5 class="modal-title">${aetherT("Geld storten")}</h5>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="${aetherT("Sluiten")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
-                        <p class="text-muted">Opgepast, geld dat je stort op je effectenportefeuille staat vast voor langere tijd. Jaarlijks (per event) kan je er tot 30 000Fr kosteloos afhalen. Voor hogere bedragen verlies je 25%.</p>
+                        <p class="text-muted">${aetherT("Opgepast, geld dat je stort op je effectenportefeuille staat vast voor langere tijd. Jaarlijks (per event) kan je er tot 30 000Fr kosteloos afhalen. Voor hogere bedragen verlies je 25%.")}</p>
                         <div class="mb-0">
-                            <label class="form-label">Bedrag</label>
+                            <label class="form-label">${aetherT("Bedrag")}</label>
                             <input type="text" inputmode="decimal" class="form-control" data-currency-input="true" data-role="securities-deposit-amount">
                         </div>
                     </div>
                     <div class="modal-footer">
                         <div class="button-group">
-                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
-                        <button type="button" class="action-button" data-action="confirm-securities-deposit"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Geld storten</span></button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>${aetherT("Cancel")}</span></button>
+                        <button type="button" class="action-button" data-action="confirm-securities-deposit"><i class="fa-solid fa-check" aria-hidden="true"></i><span>${aetherT("Geld storten")}</span></button>
                         </div>
                     </div>
                 </div>
@@ -533,16 +534,16 @@ function ensureSecuritiesWithdrawalModal() {
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Geld opnemen</h5>
-                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                        <h5 class="modal-title">${aetherT("Geld opnemen")}</h5>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="${aetherT("Sluiten")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Snapshot</label>
+                            <label class="form-label">${aetherT("Snapshot")}</label>
                             <select class="form-select" data-role="securities-withdraw-snapshot"></select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Bedrag</label>
+                            <label class="form-label">${aetherT("Bedrag")}</label>
                             <input type="text" inputmode="decimal" class="form-control" data-currency-input="true" data-role="securities-withdraw-amount">
                         </div>
                         <div class="small text-muted mb-2" data-role="securities-withdraw-summary"></div>
@@ -550,8 +551,8 @@ function ensureSecuritiesWithdrawalModal() {
                     </div>
                     <div class="modal-footer">
                         <div class="button-group">
-                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
-                        <button type="button" class="action-button" data-action="confirm-securities-withdrawal"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Geld opnemen</span></button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>${aetherT("Cancel")}</span></button>
+                        <button type="button" class="action-button" data-action="confirm-securities-withdrawal"><i class="fa-solid fa-check" aria-hidden="true"></i><span>${aetherT("Geld opnemen")}</span></button>
                         </div>
                     </div>
                 </div>
@@ -589,7 +590,7 @@ function updateSecuritiesWithdrawalModalState() {
     }
 
     if (!snapshot) {
-        summary.textContent = "Geen snapshot beschikbaar.";
+        summary.textContent = aetherT("Geen snapshot beschikbaar.");
         warning.textContent = "";
         submitButton.disabled = true;
         return;
@@ -604,16 +605,16 @@ function updateSecuritiesWithdrawalModalState() {
     const hasLoss = Boolean(snapshot?.securitiesEventEnded) || resolvedAmount > 30000;
     const bankAmount = hasLoss ? resolvedAmount * 0.75 : resolvedAmount;
 
-    summary.textContent = `Huidige opname voor deze snapshot: ${formatCharacterCurrency(currentWithdrawalAmount)}. Maximaal beschikbaar om aan te passen: ${formatCharacterCurrency(availableAmount)}.`;
+    summary.textContent = aetherT("Huidige opname voor deze snapshot: {0}. Maximaal beschikbaar om aan te passen: {1}.",[formatCharacterCurrency(currentWithdrawalAmount),formatCharacterCurrency(availableAmount)]);
 
     if (resolvedAmount <= 0) {
-        warning.textContent = "Een bedrag van 0,00 Fr zet de snapshotopname terug.";
+        warning.textContent = aetherT("Een bedrag van 0,00 Fr zet de snapshotopname terug.");
     } else if (hasLoss) {
         warning.textContent = Boolean(snapshot?.securitiesEventEnded)
-            ? `Opgepast: het event van deze snapshot is al afgelopen. Daarom geldt 25% verlies. Er wordt ${formatCharacterCurrency(bankAmount)} op de bankrekening gezet.`
-            : `Opgepast: boven 30 000,00 Fr geldt 25% verlies. Er wordt ${formatCharacterCurrency(bankAmount)} op de bankrekening gezet.`;
+            ? aetherT("Opgepast: het event van deze snapshot is al afgelopen. Daarom geldt 25% verlies. Er wordt {0} op de bankrekening gezet.",[formatCharacterCurrency(bankAmount)])
+            : aetherT("Opgepast: boven 30 000,00 Fr geldt 25% verlies. Er wordt {0} op de bankrekening gezet.",[formatCharacterCurrency(bankAmount)]);
     } else {
-        warning.textContent = "Deze opname blijft binnen de kosteloze grens van 30 000,00 Fr voor een lopend event.";
+        warning.textContent = aetherT("Deze opname blijft binnen de kosteloze grens van 30 000,00 Fr voor een lopend event.");
     }
 
     submitButton.disabled = resolvedAmount > availableAmount;
@@ -672,35 +673,35 @@ function ensureBankTransferModal() {
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Overschrijving</h5>
-                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                        <h5 class="modal-title">${aetherT("Overschrijving")}</h5>
+                        <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="${aetherT("Sluiten")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                     </div>
                     <div class="modal-body">
                         <div data-role="bank-transfer-form">
                             <div class="mb-3">
-                                <label class="form-label">Ontvanger</label>
+                                <label class="form-label">${aetherT("Ontvanger")}</label>
                                 <select class="form-select" data-role="bank-transfer-target"></select>
                             </div>
                             <div class="row g-3">
                                 <div class="col-12 col-md-6 mb-3">
-                                    <label class="form-label">Datum</label>
+                                    <label class="form-label">${aetherT("Datum")}</label>
                                     <input type="date" class="form-control" data-role="bank-transfer-date">
                                 </div>
                                 <div class="col-12 col-md-6 mb-3">
-                                    <label class="form-label">Bedrag</label>
+                                    <label class="form-label">${aetherT("Bedrag")}</label>
                                     <input type="text" inputmode="decimal" class="form-control" data-currency-input="true" data-role="bank-transfer-amount">
                                 </div>
                             </div>
                             <div class="mb-0">
-                                <label class="form-label">Mededeling</label>
+                                <label class="form-label">${aetherT("Mededeling")}</label>
                                 <input type="text" class="form-control" maxlength="255" data-role="bank-transfer-description">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <div class="button-group">
-                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Cancel</span></button>
-                        <button type="button" class="action-button" data-action="create-bank-transfer"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Overschrijving</span></button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>${aetherT("Cancel")}</span></button>
+                        <button type="button" class="action-button" data-action="create-bank-transfer"><i class="fa-solid fa-check" aria-hidden="true"></i><span>${aetherT("Overschrijving")}</span></button>
                         </div>
                     </div>
                 </div>
@@ -737,7 +738,7 @@ function populateBankTransferModal(character) {
     transferTargets.forEach((target) => {
         const option = document.createElement("option");
         option.value = String(target.id || 0);
-        option.textContent = target.displayName || `Personage #${target.id || 0}`;
+        option.textContent = target.displayName || aetherT("Personage #{0}",[target.id || 0]);
         targetSelect.appendChild(option);
     });
 
@@ -779,37 +780,37 @@ function economyAmountCell(value) {
 }
 
 function economySnapshotFields(snapshot, character) {
-    const status = { none: "Niet van toepassing", pending: "Wacht op goedkeuring", approved: "Goedgekeurd" };
+    const status = { none: aetherT("Niet van toepassing"), pending: aetherT("Wacht op goedkeuring"), approved: aetherT("Goedgekeurd") };
     return [
         ["Event", snapshot.eventTitle || "Event #" + snapshot.idEvent],
-        ["Datum", formatEconomyDate(snapshot.transactionDate)],
-        ["Inkomsten", formatCharacterCurrency(snapshot.amount || 0)],
-        ["Saldo effectenportefeuille", formatCharacterCurrency(snapshot.securitiesBalanceSnapshot || 0)],
-        ["Beheer", snapshot.securitiesManagerType === "none" ? "Niet van toepassing" : getSecuritiesManagerTypeLabel(snapshot.securitiesManagerType || "self")],
-        ["Beheerder", snapshot.securitiesManagerDisplayName || "—"],
-        ["Risicoprofiel", getSecuritiesRiskProfileLabel(character, Number(snapshot.securitiesRiskProfile || 3))],
-        ["Vaardigheidsniveau beheerder", snapshot.securitiesManagerSkillLevel || 0],
-        ["Basisrendement", formatEconomyPercentage(snapshot.securitiesBasePercentage || 0)],
-        ["Maximale afwijking", formatEconomyPercentage(snapshot.securitiesVariationLimitPercentage || 0)],
-        ["Afwijking", formatEconomyPercentage(snapshot.securitiesVariationPercentage || 0)],
-        ["Rendementspercentage", formatEconomyPercentage(snapshot.securitiesReturnPercentage || 0)],
-        ["Rendement", formatCharacterCurrency(snapshot.securitiesReturnAmount || 0)],
-        ["Status rendement", status[snapshot.securitiesStatus] || "Niet van toepassing"],
-        ["Opgenomen uit effectenportefeuille", formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalAmount || 0)],
-        ["Bijgeschreven op bankrekening", formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalBankAmount || snapshot.securitiesSnapshotWithdrawalAmount || 0)],
-        ["Einddatum event", formatEconomyDate(snapshot.eventDateEnd)],
-        ["Event afgelopen", snapshot.securitiesEventEnded ? "Ja" : "Nee"]
+        [aetherT("Datum"), formatEconomyDate(snapshot.transactionDate)],
+        [aetherT("Inkomsten"), formatCharacterCurrency(snapshot.amount || 0)],
+        [aetherT("Saldo effectenportefeuille"), formatCharacterCurrency(snapshot.securitiesBalanceSnapshot || 0)],
+        [aetherT("Beheer"), snapshot.securitiesManagerType === "none" ? aetherT("Niet van toepassing") : getSecuritiesManagerTypeLabel(snapshot.securitiesManagerType || "self")],
+        [aetherT("Beheerder"), snapshot.securitiesManagerDisplayName || "—"],
+        [aetherT("Risicoprofiel"), getSecuritiesRiskProfileLabel(character, Number(snapshot.securitiesRiskProfile || 3))],
+        [aetherT("Vaardigheidsniveau beheerder"), snapshot.securitiesManagerSkillLevel || 0],
+        [aetherT("Basisrendement"), formatEconomyPercentage(snapshot.securitiesBasePercentage || 0)],
+        [aetherT("Maximale afwijking"), formatEconomyPercentage(snapshot.securitiesVariationLimitPercentage || 0)],
+        [aetherT("Afwijking"), formatEconomyPercentage(snapshot.securitiesVariationPercentage || 0)],
+        [aetherT("Rendementspercentage"), formatEconomyPercentage(snapshot.securitiesReturnPercentage || 0)],
+        [aetherT("Rendement"), formatCharacterCurrency(snapshot.securitiesReturnAmount || 0)],
+        [aetherT("Status rendement"), status[snapshot.securitiesStatus] || aetherT("Niet van toepassing")],
+        [aetherT("Opgenomen uit effectenportefeuille"), formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalAmount || 0)],
+        [aetherT("Bijgeschreven op bankrekening"), formatCharacterCurrency(snapshot.securitiesSnapshotWithdrawalBankAmount || snapshot.securitiesSnapshotWithdrawalAmount || 0)],
+        [aetherT("Einddatum event"), formatEconomyDate(snapshot.eventDateEnd)],
+        [aetherT("Event afgelopen"), snapshot.securitiesEventEnded ? aetherT("Ja") : aetherT("Nee")]
     ];
 }
 
 function economySnapshotActions(snapshot, character, includeDelete = false) {
     const actions = [];
     if (snapshot.securitiesStatus === "pending" && character.canApproveSecuritiesSnapshots) {
-        actions.push({ icon: "fa-rotate", label: "Opnieuw genereren", run: () => rerollSecuritiesSnapshot(Number(snapshot.id)) },
-            { icon: "fa-check", label: "Goedkeuren", run: () => approveSecuritiesSnapshot(Number(snapshot.id)) });
+        actions.push({ icon: "fa-rotate", label: aetherT("Opnieuw genereren"), run: () => rerollSecuritiesSnapshot(Number(snapshot.id)) },
+            { icon: "fa-check", label: aetherT("Goedkeuren"), run: () => approveSecuritiesSnapshot(Number(snapshot.id)) });
     }
     if (includeDelete && character.canCreateEconomySnapshots) {
-        actions.push({ icon: "fa-trash-can", label: "Verwijderen", run: () => deleteCharacterEconomySnapshot(Number(snapshot.id)) });
+        actions.push({ icon: "fa-trash-can", label: aetherT("Verwijderen"), run: () => deleteCharacterEconomySnapshot(Number(snapshot.id)) });
     }
     return actions;
 }
@@ -817,12 +818,12 @@ function economySnapshotActions(snapshot, character, includeDelete = false) {
 function renderSecuritiesSnapshotsSection(host, character) {
     const snapshots = economyRowsNewestFirst(getCharacterSecuritiesSnapshots(character));
     if (!snapshots.length) return;
-    appendEconomySubsectionTitle(host, "Rendementen");
-    AetherDataTable.render(host, { label: "Rendementen", rows: snapshots, columns: [
+    appendEconomySubsectionTitle(host, aetherT("Rendementen"));
+    AetherDataTable.render(host, { label: aetherT("Rendementen"), rows: snapshots, columns: [
         { label: "Event", render: snapshot => snapshot.eventTitle || "Event #" + snapshot.idEvent },
-        { label: "Bedrag", className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.securitiesReturnAmount || 0) },
+        { label: aetherT("Bedrag"), className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.securitiesReturnAmount || 0) },
         { label: "Info", className: "text-end", render: snapshot => AetherDataTable.infoButton({
-            title: "Rendement — " + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
+            title: aetherT("Rendement — ") + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
             fields: economySnapshotFields(snapshot, character), actions: economySnapshotActions(snapshot, character)
         }) }
     ] });
@@ -831,7 +832,7 @@ function renderSecuritiesSnapshotsSection(host, character) {
 function renderCharacterSecuritiesSection(host, character) {
     if (!host || !character) return;
 
-    const card = buildEconomyCard("Effectenportefeuille");
+    const card = buildEconomyCard(aetherT("Effectenportefeuille"));
     renderSecuritiesIntroduction(card.body);
     renderSecuritiesSettingsSection(card.body, character);
     renderSecuritiesProfileSummary(card.body, character);
@@ -849,7 +850,7 @@ function formatEconomyDate(dateValue) {
         return value;
     }
 
-    return new Intl.DateTimeFormat("nl-BE").format(parsedDate);
+    return new Intl.DateTimeFormat((globalThis.AetherI18n?.locale || "nl-BE")).format(parsedDate);
 }
 
 function formatCharacterEconomySnapshotEventLabel(eventOption) {
@@ -1016,7 +1017,7 @@ function getCharacterIncomeTraitEntries(character) {
 }
 
 function renderIncomeSection(host, character) {
-    const incomeCard = buildEconomyCard("Inkomsten");
+    const incomeCard = buildEconomyCard(aetherT("Inkomsten"));
     const entries = getCharacterIncomeTraitEntries(character);
     const salaryIncreaseAmount = Number(character?.salaryIncreaseAmount || 0);
     const householdStaffExpenseAmount = Number(character?.householdStaffExpenseAmount || 0);
@@ -1028,7 +1029,7 @@ function renderIncomeSection(host, character) {
     if (entries.length === 0 && salaryIncreaseAmount <= 0 && householdStaffExpenseAmount <= 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Geen trait-inkomsten of -uitgaven.";
+        empty.textContent = aetherT("Geen trait-inkomsten of -uitgaven.");
         incomeCard.body.appendChild(empty);
     } else {
         entries.forEach((entry) => {
@@ -1057,7 +1058,7 @@ function renderIncomeSection(host, character) {
 
             const label = document.createElement("span");
             label.className = "economy-income-label";
-            label.textContent = "Loonsverhoging gekoppeld bedrijf";
+            label.textContent = aetherT("Loonsverhoging gekoppeld bedrijf");
             salaryRow.appendChild(label);
 
             const value = document.createElement("span");
@@ -1074,7 +1075,7 @@ function renderIncomeSection(host, character) {
 
             const label = document.createElement("span");
             label.className = "economy-income-label";
-            label.textContent = "Inwonend personeel";
+            label.textContent = aetherT("Inwonend personeel");
             expenseRow.appendChild(label);
 
             const value = document.createElement("span");
@@ -1090,7 +1091,7 @@ function renderIncomeSection(host, character) {
 
         const totalLabel = document.createElement("span");
         totalLabel.className = "economy-income-label";
-        totalLabel.textContent = "Eindbedrag";
+        totalLabel.textContent = aetherT("Eindbedrag");
         totalRow.appendChild(totalLabel);
 
         const totalValue = document.createElement("span");
@@ -1121,7 +1122,7 @@ function renderCharacterEconomySnapshotsSection(host, character) {
 
     const help = document.createElement("p");
     help.className = "text-muted mb-3";
-    help.textContent = "Maak per event een momentopname van de inkomsten van dit personage. Alle trait-inkomsten worden dan in een keer op de bankrekening gezet en een eventuele effectenportefeuille krijgt tegelijk een wachtend rendement.";
+    help.textContent = aetherT("Maak per event een momentopname van de inkomsten van dit personage. Alle trait-inkomsten worden dan in een keer op de bankrekening gezet en een eventuele effectenportefeuille krijgt tegelijk een wachtend rendement.");
     snapshotCard.body.appendChild(help);
 
     const form = document.createElement("div");
@@ -1145,8 +1146,8 @@ function renderCharacterEconomySnapshotsSection(host, character) {
     const emptyOption = document.createElement("option");
     emptyOption.value = "";
     emptyOption.textContent = eventOptions.length > 0
-        ? "Kies een event"
-        : "Geen events meer beschikbaar";
+        ? aetherT("Kies een event")
+        : aetherT("Geen events meer beschikbaar");
     select.appendChild(emptyOption);
 
     eventOptions.forEach((eventOption) => {
@@ -1163,7 +1164,7 @@ function renderCharacterEconomySnapshotsSection(host, character) {
     const actionCol = document.createElement("div");
     actionCol.className = "col-12 col-md-4";
 
-    const button = AetherActionButtons.button({ icon: "fa-camera", label: "Snapshot maken" });
+    const button = AetherActionButtons.button({ icon: "fa-camera", label: aetherT("Snapshot maken") });
     button.dataset.action = "create-character-economy-snapshot";
     button.disabled = eventOptions.length === 0;
     actionCol.appendChild(AetherActionButtons.group([button]));
@@ -1180,17 +1181,17 @@ function renderCharacterEconomySnapshotsSection(host, character) {
     if (snapshots.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Nog geen snapshots beschikbaar.";
+        empty.textContent = aetherT("Nog geen snapshots beschikbaar.");
         snapshotCard.body.appendChild(empty);
         host.appendChild(snapshotCard.card);
         return;
     }
 
-    AetherDataTable.render(snapshotCard.body, { label: "Economische snapshots", rows: economyRowsNewestFirst(snapshots), columns: [
+    AetherDataTable.render(snapshotCard.body, { label: aetherT("Economische snapshots"), rows: economyRowsNewestFirst(snapshots), columns: [
         { label: "Event", render: snapshot => snapshot.eventTitle || "Event #" + snapshot.idEvent },
-        { label: "Bedrag", className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.amount || 0) },
+        { label: aetherT("Bedrag"), className: "text-end text-nowrap", render: snapshot => economyAmountCell(snapshot.amount || 0) },
         { label: "Info", className: "text-end", render: snapshot => AetherDataTable.infoButton({
-            title: "Economische snapshot — " + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
+            title: aetherT("Economische snapshot — ") + (snapshot.eventTitle || "Event #" + snapshot.idEvent),
             fields: economySnapshotFields(snapshot, character), actions: economySnapshotActions(snapshot, character, true)
         }) }
     ] });
@@ -1204,7 +1205,7 @@ function renderBankAccountEditor(host, character, balance) {
 
     const label = document.createElement("label");
     label.className = "form-label";
-    label.textContent = "Saldo bankrekening";
+    label.textContent = aetherT("Saldo bankrekening");
     fieldWrap.appendChild(label);
 
     if (!canEdit) {
@@ -1239,7 +1240,7 @@ function renderSecuritiesBalanceEditor(host, character, balance) {
 
     const label = document.createElement("label");
     label.className = "form-label";
-    label.textContent = "Saldo effectenportefeuille";
+    label.textContent = aetherT("Saldo effectenportefeuille");
     fieldWrap.appendChild(label);
 
     if (!canEdit) {
@@ -1270,19 +1271,19 @@ function renderSecuritiesBalanceEditor(host, character, balance) {
 function renderTransferSection(host, character, options = {}) {
     const canTransfer = canTransferMoneyForCharacter(character);
     const embedded = options.embedded === true;
-    const transferCard = embedded ? null : buildEconomyCard("Overschrijving");
+    const transferCard = embedded ? null : buildEconomyCard(aetherT("Overschrijving"));
     const targetHost = embedded ? host : transferCard.body;
     const transferTargets = Array.isArray(character?.bankTransferTargets) ? character.bankTransferTargets : [];
     const isDraft = String(character?.state || "") === "draft";
 
     if (embedded) {
-        appendEconomySubsectionTitle(targetHost, "Overschrijving");
+        appendEconomySubsectionTitle(targetHost, aetherT("Overschrijving"));
     }
 
     const actionWrap = document.createElement("div");
     actionWrap.className = "d-flex flex-column gap-2";
 
-    const button = AetherActionButtons.button({ icon: "fa-money-bill-transfer", label: "Overschrijving" });
+    const button = AetherActionButtons.button({ icon: "fa-money-bill-transfer", label: aetherT("Overschrijving") });
     button.dataset.action = "open-bank-transfer-modal";
     button.disabled = isDraft || !canTransfer || transferTargets.length === 0;
     actionWrap.appendChild(AetherActionButtons.group([button]));
@@ -1290,17 +1291,17 @@ function renderTransferSection(host, character, options = {}) {
     if (isDraft) {
         const help = document.createElement("p");
         help.className = "text-muted mb-0";
-        help.textContent = "Overschrijvingen zijn pas beschikbaar zodra het personage niet meer in draft staat.";
+        help.textContent = aetherT("Overschrijvingen zijn pas beschikbaar zodra het personage niet meer in draft staat.");
         actionWrap.appendChild(help);
     } else if (!canTransfer) {
         const help = document.createElement("p");
         help.className = "text-muted mb-0";
-        help.textContent = "Alleen administrator- en director-gebruikers kunnen een overschrijving uitvoeren.";
+        help.textContent = aetherT("Alleen administrator- en director-gebruikers kunnen een overschrijving uitvoeren.");
         actionWrap.appendChild(help);
     } else if (transferTargets.length === 0) {
         const help = document.createElement("p");
         help.className = "text-muted mb-0";
-        help.textContent = "Er zijn geen actieve doelpersonages beschikbaar.";
+        help.textContent = aetherT("Er zijn geen actieve doelpersonages beschikbaar.");
         actionWrap.appendChild(help);
     }
 
@@ -1312,36 +1313,36 @@ function renderTransferSection(host, character, options = {}) {
 
 function renderTransactionsSection(host, character, options = {}) {
     const embedded = options.embedded === true;
-    const transactionCard = embedded ? null : buildEconomyCard("Verrichtingen");
+    const transactionCard = embedded ? null : buildEconomyCard(aetherT("Verrichtingen"));
     const targetHost = embedded ? host : transactionCard.body;
     const transactions = economyRowsNewestFirst(Array.isArray(character.bankTransactions) ? character.bankTransactions : []);
-    if (embedded) appendEconomySubsectionTitle(targetHost, "Verrichtingen");
+    if (embedded) appendEconomySubsectionTitle(targetHost, aetherT("Verrichtingen"));
     if (!transactions.length) {
         const empty = document.createElement("p"); empty.className = "text-muted mb-0";
-        empty.textContent = "Nog geen verrichtingen beschikbaar."; targetHost.append(empty);
+        empty.textContent = aetherT("Nog geen verrichtingen beschikbaar."); targetHost.append(empty);
     } else {
-        const name = [character.title, character.firstName, character.lastName].filter(Boolean).join(" ") || "Dit personage";
-        const types = { bank_transfer: "Overschrijving", character_income_snapshot: "Inkomstensnapshot",
-            company_snapshot_dividend: "Bedrijfsdividend", character_securities_snapshot_return: "Rendement effectenportefeuille",
-            character_securities_snapshot_withdrawal: "Opname effectenportefeuille" };
-        AetherDataTable.render(targetHost, { label: "Verrichtingen", rows: transactions, columns: [
-            { label: "Datum", className: "text-nowrap", render: transaction => formatEconomyDate(transaction.transactionDate) },
-            { label: "Afzender / begunstigde", render: transaction => transaction.counterpartyName || "Onbekend" },
-            { label: "Bedrag", className: "text-end text-nowrap", render: transaction =>
+        const name = [character.title, character.firstName, character.lastName].filter(Boolean).join(" ") || aetherT("Dit personage");
+        const types = { bank_transfer: aetherT("Overschrijving"), character_income_snapshot: aetherT("Inkomstensnapshot"),
+            company_snapshot_dividend: aetherT("Bedrijfsdividend"), character_securities_snapshot_return: aetherT("Rendement effectenportefeuille"),
+            character_securities_snapshot_withdrawal: aetherT("Opname effectenportefeuille") };
+        AetherDataTable.render(targetHost, { label: aetherT("Verrichtingen"), rows: transactions, columns: [
+            { label: aetherT("Datum"), className: "text-nowrap", render: transaction => formatEconomyDate(transaction.transactionDate) },
+            { label: aetherT("Afzender / begunstigde"), render: transaction => transaction.counterpartyName || aetherT("Onbekend") },
+            { label: aetherT("Bedrag"), className: "text-end text-nowrap", render: transaction =>
                 economyAmountCell((transaction.direction === "outgoing" ? -1 : 1) * Math.abs(Number(transaction.amount || 0))) },
             { label: "Info", className: "text-end", render: transaction => AetherDataTable.infoButton({
-                title: "Verrichting — " + formatEconomyDate(transaction.transactionDate),
+                title: aetherT("Verrichting — ") + formatEconomyDate(transaction.transactionDate),
                 fields: [
-                    ["Datum", formatEconomyDate(transaction.transactionDate)],
-                    ["Afzender", transaction.direction === "outgoing" ? name : transaction.counterpartyName || "Onbekend"],
-                    ["Begunstigde", transaction.direction === "outgoing" ? transaction.counterpartyName || "Onbekend" : name],
-                    ["Bedrag", formatCharacterCurrency(Math.abs(Number(transaction.amount || 0)))],
-                    ["Richting", transaction.direction === "outgoing" ? "Uitgaand" : "Inkomend"],
-                    ["Soort verrichting", types[transaction.type] || "Verrichting"],
-                    ["Mededeling", transaction.description]
+                    [aetherT("Datum"), formatEconomyDate(transaction.transactionDate)],
+                    [aetherT("Afzender"), transaction.direction === "outgoing" ? name : transaction.counterpartyName || aetherT("Onbekend")],
+                    [aetherT("Begunstigde"), transaction.direction === "outgoing" ? transaction.counterpartyName || aetherT("Onbekend") : name],
+                    [aetherT("Bedrag"), formatCharacterCurrency(Math.abs(Number(transaction.amount || 0)))],
+                    [aetherT("Richting"), transaction.direction === "outgoing" ? aetherT("Uitgaand") : aetherT("Inkomend")],
+                    [aetherT("Soort verrichting"), types[transaction.type] || aetherT("Verrichting")],
+                    [aetherT("Mededeling"), transaction.description]
                 ],
                 actions: character.canDeleteBankTransactions && transaction.canDelete
-                    ? [{ icon: "fa-trash-can", label: "Verwijderen", run: () => deleteBankTransaction(Number(transaction.id)) }] : []
+                    ? [{ icon: "fa-trash-can", label: aetherT("Verwijderen"), run: () => deleteBankTransaction(Number(transaction.id)) }] : []
             }) }
         ] });
     }
@@ -1366,13 +1367,13 @@ function renderCharacterEconomyTab(character) {
 
     renderIncomeSection(leftCol, character);
 
-    const accountCard = buildEconomyCard("Bankrekening");
+    const accountCard = buildEconomyCard(aetherT("Bankrekening"));
     if (character.state === "draft") {
-        const multiplierText = characterHasTraitFlagClient(character, "savings_bank_multiplier", "Spaarder") ? "15x inkomsten" : "10x inkomsten";
+        const multiplierText = characterHasTraitFlagClient(character, "savings_bank_multiplier", aetherT("Spaarder")) ? aetherT("15x inkomsten") : aetherT("10x inkomsten");
 
         const help = document.createElement("p");
         help.className = "text-muted small mb-3";
-        help.textContent = `Draft-personages tonen een statisch startsaldo op basis van ${multiplierText}.`;
+        help.textContent = aetherT("Draft-personages tonen een statisch startsaldo op basis van {0}.",[multiplierText]);
         accountCard.body.appendChild(help);
     }
 
@@ -1403,7 +1404,7 @@ async function saveBankBalance() {
 
     const amount = parseBankAmount(input.value);
     if (amount === null) {
-        alert("Geef een geldig saldo op.");
+        alert(aetherT("Geef een geldig saldo op."));
         return;
     }
 
@@ -1416,7 +1417,7 @@ async function saveBankBalance() {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij bewaren van banksaldo:", err);
-        alert("Kon het banksaldo niet bewaren.");
+        alert(aetherT("Kon het banksaldo niet bewaren."));
     }
 }
 
@@ -1426,7 +1427,7 @@ async function saveSecuritiesBalance() {
 
     const amount = parseBankAmount(input.value);
     if (amount === null || amount < 0) {
-        alert("Geef een geldig saldo op.");
+        alert(aetherT("Geef een geldig saldo op."));
         return;
     }
 
@@ -1439,7 +1440,7 @@ async function saveSecuritiesBalance() {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij bewaren van saldo effectenportefeuille:", err);
-        alert("Kon het saldo van de effectenportefeuille niet bewaren.");
+        alert(aetherT("Kon het saldo van de effectenportefeuille niet bewaren."));
     }
 }
 
@@ -1458,23 +1459,23 @@ async function submitBankTransfer() {
     const description = descriptionInput?.value || "";
 
     if (idTargetCharacter <= 0) {
-        alert("Kies een ontvanger.");
+        alert(aetherT("Kies een ontvanger."));
         return;
     }
 
     if (!transactionDate) {
-        alert("Kies een datum voor de overschrijving.");
+        alert(aetherT("Kies een datum voor de overschrijving."));
         return;
     }
 
     if (amount === null || amount <= 0) {
-        alert("Geef een geldig bedrag op.");
+        alert(aetherT("Geef een geldig bedrag op."));
         return;
     }
 
     const availableBalance = bankAmountFromCharacter(currentCharacter);
     if (amount > availableBalance) {
-        alert("Je kan niet meer geld overschrijven dan het beschikbare saldo op de rekening.");
+        alert(aetherT("Je kan niet meer geld overschrijven dan het beschikbare saldo op de rekening."));
         return;
     }
 
@@ -1494,14 +1495,14 @@ async function submitBankTransfer() {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij bewaren van overschrijving:", err);
-        alert("Kon de overschrijving niet bewaren.");
+        alert(aetherT("Kon de overschrijving niet bewaren."));
     }
 }
 
 async function deleteBankTransaction(idTransaction) {
     if (!currentCharacter?.id || idTransaction <= 0) return false;
 
-    const shouldDelete = window.confirm("Deze verrichting verwijderen en het bedrag terugboeken?");
+    const shouldDelete = window.confirm(aetherT("Deze verrichting verwijderen en het bedrag terugboeken?"));
     if (!shouldDelete) {
         return false;
     }
@@ -1516,7 +1517,7 @@ async function deleteBankTransaction(idTransaction) {
         return true;
     } catch (err) {
         console.error("Fout bij verwijderen van verrichting:", err);
-        alert("Kon de verrichting niet verwijderen.");
+        alert(aetherT("Kon de verrichting niet verwijderen."));
         return false;
     }
 }
@@ -1529,7 +1530,7 @@ async function createCharacterEconomySnapshot(button) {
 
     const idEvent = Number(select.value || 0);
     if (idEvent <= 0) {
-        alert("Kies eerst een event.");
+        alert(aetherT("Kies eerst een event."));
         return;
     }
 
@@ -1548,7 +1549,7 @@ async function createCharacterEconomySnapshot(button) {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij maken van economiesnapshot:", err);
-        alert(getApiErrorMessage(err, "Kon de economiesnapshot niet bewaren."));
+        alert(getApiErrorMessage(err, aetherT("Kon de economiesnapshot niet bewaren.")));
         await getCharacter(currentCharacter.id, null, "economy");
     }
 }
@@ -1556,7 +1557,7 @@ async function createCharacterEconomySnapshot(button) {
 async function deleteCharacterEconomySnapshot(idSnapshot) {
     if (!currentCharacter?.id || idSnapshot <= 0) return false;
 
-    const shouldDelete = window.confirm("Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?");
+    const shouldDelete = window.confirm(aetherT("Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?"));
     if (!shouldDelete) {
         return false;
     }
@@ -1571,7 +1572,7 @@ async function deleteCharacterEconomySnapshot(idSnapshot) {
         return true;
     } catch (err) {
         console.error("Fout bij verwijderen van economiesnapshot:", err);
-        alert(getApiErrorMessage(err, "Kon de economiesnapshot niet verwijderen."));
+        alert(getApiErrorMessage(err, aetherT("Kon de economiesnapshot niet verwijderen.")));
         await getCharacter(currentCharacter.id, null, "economy");
         return false;
     }
@@ -1606,7 +1607,7 @@ async function depositSecuritiesBalance() {
 
     const amount = parseBankAmount(input.value);
     if (amount === null || amount <= 0) {
-        alert("Geef een geldig bedrag op om te storten.");
+        alert(aetherT("Geef een geldig bedrag op om te storten."));
         return;
     }
 
@@ -1624,7 +1625,7 @@ async function depositSecuritiesBalance() {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij storten naar effectenportefeuille:", err);
-        alert(getApiErrorMessage(err, "Kon het bedrag niet naar de effectenportefeuille storten."));
+        alert(getApiErrorMessage(err, aetherT("Kon het bedrag niet naar de effectenportefeuille storten.")));
         await getCharacter(currentCharacter.id, null, "economy");
     }
 }
@@ -1637,7 +1638,7 @@ async function withdrawSecuritiesBalance() {
 
     const amount = parseBankAmount(input.value);
     if (amount === null || amount <= 0) {
-        alert("Geef een geldig bedrag op om op te nemen.");
+        alert(aetherT("Geef een geldig bedrag op om op te nemen."));
         return;
     }
 
@@ -1654,7 +1655,7 @@ async function withdrawSecuritiesBalance() {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij opname uit effectenportefeuille:", err);
-        alert(getApiErrorMessage(err, "Kon het bedrag niet uit de effectenportefeuille halen."));
+        alert(getApiErrorMessage(err, aetherT("Kon het bedrag niet uit de effectenportefeuille halen.")));
         await getCharacter(currentCharacter.id, null, "economy");
     }
 }
@@ -1676,7 +1677,7 @@ async function rerollSecuritiesSnapshot(idSnapshot) {
         return true;
     } catch (err) {
         console.error("Fout bij opnieuw genereren van rendement:", err);
-        alert(getApiErrorMessage(err, "Kon het rendement niet opnieuw genereren."));
+        alert(getApiErrorMessage(err, aetherT("Kon het rendement niet opnieuw genereren.")));
         await getCharacter(currentCharacter.id, null, "economy");
         return false;
     }
@@ -1699,7 +1700,7 @@ async function approveSecuritiesSnapshot(idSnapshot) {
         return true;
     } catch (err) {
         console.error("Fout bij goedkeuren van rendement:", err);
-        alert(getApiErrorMessage(err, "Kon het rendement niet goedkeuren."));
+        alert(getApiErrorMessage(err, aetherT("Kon het rendement niet goedkeuren.")));
         await getCharacter(currentCharacter.id, null, "economy");
         return false;
     }
@@ -1717,12 +1718,12 @@ async function saveSecuritiesSnapshotWithdrawal() {
     const amount = parseBankAmount(amountInput.value);
 
     if (idSnapshot <= 0) {
-        alert("Kies een snapshot.");
+        alert(aetherT("Kies een snapshot."));
         return;
     }
 
     if (amount === null || amount < 0) {
-        alert("Geef een geldig bedrag op om uit de effectenportefeuille op te nemen.");
+        alert(aetherT("Geef een geldig bedrag op om uit de effectenportefeuille op te nemen."));
         return;
     }
 
@@ -1741,7 +1742,7 @@ async function saveSecuritiesSnapshotWithdrawal() {
         await getCharacter(currentCharacter.id, null, "economy");
     } catch (err) {
         console.error("Fout bij snapshotopname uit effectenportefeuille:", err);
-        alert(getApiErrorMessage(err, "Kon het snapshotbedrag niet opnemen."));
+        alert(getApiErrorMessage(err, aetherT("Kon het snapshotbedrag niet opnemen.")));
         await getCharacter(currentCharacter.id, null, "economy");
     }
 }
@@ -1840,7 +1841,7 @@ function setupEconomySectionListeners() {
             try {
                 await saveSecuritiesSettings();
             } catch (failure) {
-                alert(getApiErrorMessage(failure, "Kon het risicoprofiel niet bewaren."));
+                alert(getApiErrorMessage(failure, aetherT("Kon het risicoprofiel niet bewaren.")));
                 securitiesRiskProfileSlider.value = String(currentCharacter?.securitiesRiskProfile || 3);
                 updateSecuritiesRiskProfileDisplay(securitiesRiskProfileSlider);
             } finally {

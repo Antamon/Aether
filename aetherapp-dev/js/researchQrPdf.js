@@ -1,9 +1,10 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 /* Printable vector QR cards: millimetres throughout, no external service. */
 window.AetherResearchQrPdf = (() => {
     let fontRequest;
     async function font() {
         if (!fontRequest) fontRequest = fetch('fonts/Amarante-Regular.ttf').then(async response => {
-            if (!response.ok) throw new Error('Het lettertype voor de QR-kaarten kon niet geladen worden.');
+            if (!response.ok) throw new Error(aetherT("Het lettertype voor de QR-kaarten kon niet geladen worden."));
             const bytes = new Uint8Array(await response.arrayBuffer());
             let binary = ''; for (let i=0;i<bytes.length;i+=8192) binary += String.fromCharCode(...bytes.subarray(i,i+8192));
             return btoa(binary);
@@ -17,7 +18,7 @@ window.AetherResearchQrPdf = (() => {
             doc.setFontSize(s);lines=doc.splitTextToSize(clean,maxWidth);
             if (lines.length<=maxLines) {doc.text(lines,x,y,{align:'center',lineHeightFactor:1.05});return;}
         }
-        throw new Error('Een titel of vaardigheidsnaam is te lang voor een QR-kaart. Verkort deze tekst en probeer opnieuw.');
+        throw new Error(aetherT("Een titel of vaardigheidsnaam is te lang voor een QR-kaart. Verkort deze tekst en probeer opnieuw."));
     }
     function stopwatch(doc,x,y) {
         doc.setFillColor(0);doc.circle(x,y,2.7,'F');
@@ -25,7 +26,8 @@ window.AetherResearchQrPdf = (() => {
         doc.circle(x+2.15,y-2.3,.65,'F');doc.setDrawColor(255);doc.setLineWidth(.5);doc.setLineCap('round');doc.line(x,y-1.55,x,y);doc.setDrawColor(0);
     }
     async function create(challenge,skills) {
-        if (!challenge.discoveries?.length) throw new Error('Deze challenge heeft nog geen discoveries om af te drukken.');
+        challenge={...challenge,discoveries:(challenge.discoveries||[]).filter(d=>!Number(d.isConclusion)&&d.qrToken)};
+        if (!challenge.discoveries?.length) throw new Error(aetherT("Deze challenge heeft geen gewone discoveries met een QR-code om af te drukken."));
         const {jsPDF}=window.jspdf;
         const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
         doc.addFileToVFS('AetherQr.ttf',await font());doc.addFont('AetherQr.ttf','AetherQr','normal');doc.setFont('AetherQr');
@@ -46,7 +48,7 @@ window.AetherResearchQrPdf = (() => {
                 doc.rect(left+start*module,top+row*module,(col-start+1)*module,module,'F');
             }
             const skill=skills.find(s=>Number(s.id)===Number(d.idSkill));
-            label(doc,(skill?.name||'Onbekende vaardigheid').toLocaleUpperCase('nl'),x+32.5,y+58,43,12,1);
+            label(doc,(skill?.name||aetherT("Onbekende vaardigheid")).toLocaleUpperCase('nl'),x+32.5,y+58,43,12,1);
             if (timed) stopwatch(doc,x+57,y+57.5);
         });
         return doc;

@@ -39,7 +39,10 @@ if (defined('AETHER_ADMIN_USER_TEST_BOOTSTRAP')) {
             } elseif (str_contains($q, 'SELECT DISTINCT visibility FROM tblSkill')) {
                 $this->rows = [['visibility' => 'public'], ['visibility' => 'secret']];
             } elseif (preg_match('/FROM tblSkill\\b/', $q)) $this->rows = array_values($db->skills);
-            elseif (str_contains($q, 'FROM tblLinkSkillType AS lst')) {
+            elseif (str_contains($q, 'FROM tblLinkCharacterSkill AS lcs') && $db->scenario==='active_holders') {
+                $rows=[['idCharacter'=>101,'firstName'=>'Active','lastName'=>'One','title'=>'','level'=>1,'specialisationName'=>'Known','state'=>'active'],['idCharacter'=>102,'firstName'=>'Inactive','lastName'=>'Two','title'=>'','level'=>1,'specialisationName'=>'','state'=>'inactive'],['idCharacter'=>103,'firstName'=>'Active','lastName'=>'Three','title'=>'','level'=>3,'specialisationName'=>'','state'=>'active']];
+                $this->rows=str_contains($q,"c.state = 'active'")?array_values(array_filter($rows,static fn($r)=>$r['state']==='active')):$rows;
+            } elseif (str_contains($q, 'FROM tblLinkSkillType AS lst')) {
                 foreach ($db->links as $link) if ($link['idSkill'] === $p['idSkill'] && isset($db->types[$link['idSkillType']])) $this->rows[] = $db->types[$link['idSkillType']];
             } elseif (str_contains($q, 'FROM tblSkillSpecialisation')) {
                 foreach ($db->specs as $row) if ($row['idSkill'] === $p['idSkill']) $this->rows[] = $row;
@@ -124,6 +127,7 @@ if (defined('AETHER_ADMIN_USER_TEST_BOOTSTRAP')) {
     session_start(); $_SESSION = ['user'=>['id'=>$id,'role'=>'administrator'],'aetherCsrfToken'=>'csrf-test'];
     if ($scenario !== 'missing_csrf') $_SERVER['HTTP_X_CSRF_TOKEN'] = $scenario === 'bad_csrf' ? 'bad' : 'csrf-test';
     if ($scenario !== 'missing_key') $_SERVER['HTTP_IDEMPOTENCY_KEY'] = (string)($argv[3] ?? 'admin-skill-request-0001');
+    if(basename((string)($_SERVER['SCRIPT_FILENAME']??''))==='traits.php')$_SERVER['REQUEST_METHOD']=in_array($scenario,['missing_csrf','bad_csrf','missing_key'],true)?'POST':'GET';
     register_shutdown_function(static function () use ($pdo,$stateFile): void {
         if ($stateFile) file_put_contents($stateFile, json_encode($pdo->export(), JSON_THROW_ON_ERROR));
         fwrite(STDERR, '__ADMIN_STATE__:' . json_encode(['status'=>http_response_code() ?: 200,'writes'=>$pdo->writes,'log'=>$pdo->writeLog], JSON_THROW_ON_ERROR) . "\n");
@@ -149,6 +153,7 @@ adminCopy($root.'/api',$fixture.'/api'); copy($root.'/sessionUserBootstrap.php',
 file_put_contents($fixture.'/db.php',"<?php\ndefine('AETHER_ADMIN_USER_TEST_BOOTSTRAP',true);\nrequire ".var_export(__FILE__,true).";\n");
 $routes=[]; foreach (['getSkillList','getSkill','newSkill','saveSkill','saveSkillType'] as $route) $routes[$route]=$fixture.'/api/admin/'.$route.'.php';
 $routes['getUserList']=$fixture.'/api/users/getUserList.php';
+$routes['traits']=$fixture.'/api/admin/traits.php';
 $stateFiles=[];
 try {
     $initial=[
@@ -160,10 +165,15 @@ try {
         'nextSkillId'=>1,'nextTypeId'=>2,'nextSpecId'=>3,'lastId'=>0,
     ];
     $stateFiles[]=$state=adminState($initial);
+    foreach(['administrator','director'] as $role){$r=adminRun($routes['traits'],$role,[],$stateFiles[]=adminState($initial));adminCheck($r['status']===200&&isset($r['json']['traits']),'Traits catalog available to '.$role);}
+    foreach([['participant',403],['unauthenticated',401],['missing_csrf',403],['bad_csrf',403]] as [$role,$status]){$r=adminRun($routes['traits'],$role,[],$stateFiles[]=adminState($initial));adminCheck($r['status']===$status&&$r['writes']===0,'Traits auth/CSRF rejects '.$role);}
     $r=adminRun($routes['getSkillList'],'director',[],$state);
     adminCheck($r['status']===200 && isset($r['json']['skills'],$r['json']['skillTypes']),'Director catalog');
     $r=adminRun($routes['getSkill'],'administrator',['idSkill'=>1],$state);
     adminCheck($r['status']===200 && ($r['json']['idSkill']??null)===1 && isset($r['json']['holders'],$r['json']['specialisations']),'Skilldetail response');
+    $r=adminRun($routes['getSkill'],'active_holders',['idSkill'=>1],$stateFiles[]=adminState($initial));
+    $holderIds=array_merge(...array_map(static fn($g)=>array_column($g['characters'],'idCharacter'),$r['json']['holders']??[]));
+    adminCheck($r['status']===200&&$holderIds===[101,103],'Only active characters are included in skill holders');
     $r=adminRun($routes['getUserList'],'director',[],$state);
     adminCheck($r['status']===200 && ($r['json'][0]['displayName']??null)==='P A','Gebruikerslijst response');
     $r=adminRun($routes['newSkill'],'director',['name'=>'New'],$stateFiles[]=adminState($initial));
@@ -174,6 +184,13 @@ try {
     $r=adminRun($routes['saveSkill'],'director',$payload,$stateFiles[]=adminState($initial));
     adminCheck($r['status']===200 && ($r['json']['skill']['isSecret']??null)===true && ($r['state']['skills'][1]['description']??null)==='<script>x</script>' && ($r['state']['specs'][3]['name']??null)==='Known','Skillupdate en plain-text opslag: '.json_encode($r));
     $withNew=$payload; $withNew['specialisations'][]=['idSkillSpecialisation'=>0,'name'=>'New specialisation'];
+    $mixed=$payload;$mixed['specialisations'][]=['idSkillSpecialisation'=>0,'name'=>'Craft discipline','kind'=>'discipline'];$mixed['specialisations'][]=['idSkillSpecialisation'=>0,'name'=>'Craft specialisation','kind'=>'specialisation'];
+    $r=adminRun($routes['saveSkill'],'director',$mixed,$stateFiles[]=adminState($initial));
+    adminCheck($r['status']===200&&count(array_filter($r['state']['specs'],static fn($s)=>$s['kind']==='discipline'))===2&&count(array_filter($r['state']['specs'],static fn($s)=>$s['kind']==='specialisation'))===1,'Discipline skill can store both kinds independently');
+    $badKind=$mixed;$badKind['specialisations'][0]['kind']='specialisation';
+    $r=adminRun($routes['saveSkill'],'director',$badKind,$stateFiles[]=adminState($initial));adminCheck($r['status']===422&&$r['writes']===0,'Existing disciplines cannot silently change kind');
+    $badKind=$mixed;$badKind['specialisations'][1]['kind']='invalid';
+    $r=adminRun($routes['saveSkill'],'director',$badKind,$stateFiles[]=adminState($initial));adminCheck($r['status']===422&&$r['writes']===0,'Invalid kind rejected');
     $retryState=$stateFiles[]=adminState($initial);
     $first=adminRun($routes['saveSkill'],'administrator',$withNew,$retryState,'admin-skill-new-spec-0001');
     $second=adminRun($routes['saveSkill'],'administrator',$withNew,$retryState,'admin-skill-new-spec-0001');

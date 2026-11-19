@@ -1,0 +1,13 @@
+const fs=require('fs');const p='tests/research_feedback_browser_test.cjs';let s=fs.readFileSync(p,'utf8');
+s=s.replace("writes.push({op,data});if(op==='step_save')", "writes.push({op,data});if(op==='step_delete'){const route=fixture.discoveries[0].routes.find(r=>r.steps.some(s=>s.id===data.id));const step=route.steps.find(s=>s.id===data.id);const previous=route.steps.filter(s=>s.position<step.position).sort((a,b)=>b.position-a.position)[0];route.steps=route.steps.filter(s=>s.position<step.position);previous.conditions=[];previous.revision++;}if(op==='step_save')");
+s=s.replace("        await page.setViewportSize({width:390,height:844});",`        await section.locator('tr').nth(1).getByRole('button',{name:'Feedback bewerken',exact:true}).click();
+        dialog=page.locator('dialog[open]');await dialog.getByRole('button',{name:'Stap verwijderen',exact:true}).click();
+        assert((await dialog.innerText()).includes('eventuele volgende stappen'));
+        await dialog.getByRole('button',{name:'Verwijderen bevestigen',exact:true}).click();
+        await dialog.waitFor({state:'detached'});assert.equal(await section.locator('tr').count(),2);
+        await section.locator('tr').first().getByRole('button',{name:'Feedback bewerken',exact:true}).click();dialog=page.locator('dialog[open]');
+        assert.equal(await dialog.getByLabel('Vervolgstap toevoegen',{exact:true}).isChecked(),false);
+        assert.equal(await dialog.getByText('Tijd instellen',{exact:true}).isVisible(),false);
+        assert.equal(await dialog.getByRole('button',{name:'Stap verwijderen',exact:true}).count(),0);await dialog.evaluate(n=>n.close());
+        await page.setViewportSize({width:390,height:844});`);
+fs.writeFileSync(p,s);

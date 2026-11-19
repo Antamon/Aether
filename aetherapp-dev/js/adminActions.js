@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const adminActionsState = {
     events: [],
     catalogLoaded: false,
@@ -93,8 +94,8 @@ async function loadAdminActionEvents() {
     } catch (err) {
         console.error("Fout bij laden actie-events:", err);
         adminActionsState.items = [];
-        showAdminFeedback("Kon de eventlijst voor acties niet laden.", "danger");
-        renderAdminActionsError("Kon de eventlijst voor acties niet laden.");
+        showAdminFeedback(aetherT("Kon de eventlijst voor acties niet laden."), "danger");
+        renderAdminActionsError(aetherT("Kon de eventlijst voor acties niet laden."));
     }
 }
 
@@ -109,8 +110,8 @@ function syncAdminActionEventSelect() {
     const placeholder = document.createElement("option");
     placeholder.value = "0";
     placeholder.textContent = adminActionsState.events.length > 0
-        ? "Kies een event"
-        : "Geen events beschikbaar";
+        ? aetherT("Kies een event")
+        : aetherT("Geen events beschikbaar");
     select.appendChild(placeholder);
 
     adminActionsState.events.forEach((eventOption) => {
@@ -130,7 +131,7 @@ function formatAdminActionEventLabel(eventOption) {
     const title = String(eventOption?.title || "").trim() || `Event #${eventOption?.idEvent || 0}`;
     const dateStart = String(eventOption?.dateStart || "").trim();
     const actionCount = Number(eventOption?.actionCount || 0);
-    const countLabel = actionCount > 0 ? ` - ${actionCount} actie${actionCount === 1 ? "" : "s"}` : "";
+    const countLabel = actionCount > 0 ? ` - ${actionCount} actie${actionCount === 1 ? "" : aetherT("s")}` : "";
     if (dateStart === "") {
         return `${title}${countLabel}`;
     }
@@ -140,7 +141,7 @@ function formatAdminActionEventLabel(eventOption) {
         return `${title}${countLabel}`;
     }
 
-    return `${title} (${date.toLocaleDateString("nl-BE")})${countLabel}`;
+    return `${title} (${date.toLocaleDateString((globalThis.AetherI18n?.locale || "nl-BE"))})${countLabel}`;
 }
 
 async function loadAdminActionEventUses(idEvent) {
@@ -164,8 +165,8 @@ async function loadAdminActionEventUses(idEvent) {
     } catch (err) {
         console.error("Fout bij laden acties:", err);
         adminActionsState.items = [];
-        showAdminFeedback("Kon de acties van dit event niet laden.", "danger");
-        renderAdminActionsError("Kon de acties van dit event niet laden.");
+        showAdminFeedback(aetherT("Kon de acties van dit event niet laden."), "danger");
+        renderAdminActionsError(aetherT("Kon de acties van dit event niet laden."));
     }
 }
 
@@ -178,7 +179,7 @@ function renderAdminActionsLoading() {
     container.innerHTML = "";
     const loading = document.createElement("div");
     loading.className = "text-muted";
-    loading.textContent = "Acties laden...";
+    loading.textContent = aetherT("Acties laden...");
     container.appendChild(loading);
 }
 
@@ -207,8 +208,8 @@ function renderAdminActionItems(items) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
         empty.textContent = adminActionsState.selectedEventId > 0
-            ? "Voor dit event zijn nog geen speleracties geregistreerd."
-            : "Kies bovenaan een event om de geregistreerde acties te zien.";
+            ? aetherT("Voor dit event zijn nog geen speleracties geregistreerd.")
+            : aetherT("Kies bovenaan een event om de geregistreerde acties te zien.");
         container.appendChild(empty);
         return;
     }
@@ -228,12 +229,12 @@ function renderAdminActionItems(items) {
             const portrait = document.createElement("img");
             portrait.className = "admin-action-portrait-image";
             portrait.src = portraitUrl;
-            portrait.alt = item?.character?.displayName || "Pasfoto";
+            portrait.alt = item?.character?.displayName || aetherT("Pasfoto");
             portraitWrap.appendChild(portrait);
         } else {
             const placeholder = document.createElement("div");
             placeholder.className = "admin-action-portrait-placeholder";
-            placeholder.textContent = "Geen pasfoto";
+            placeholder.textContent = aetherT("Geen pasfoto");
             portraitWrap.appendChild(placeholder);
         }
         card.appendChild(portraitWrap);
@@ -248,7 +249,7 @@ function renderAdminActionItems(items) {
 
         const title = document.createElement("h3");
         title.className = "admin-action-character-name";
-        title.textContent = item?.character?.displayName || `Personage #${item?.character?.idCharacter || 0}`;
+        title.textContent = item?.character?.displayName || aetherT("Personage #{0}",[item?.character?.idCharacter || 0]);
         titleWrap.appendChild(title);
 
         const timestamp = document.createElement("div");
@@ -267,7 +268,7 @@ function renderAdminActionItems(items) {
         editButton.dataset.adminActionEdit = "true";
         editButton.dataset.idActionUse = String(item?.idActionUse || 0);
         editButton.innerHTML = '<i class="fa-solid fa-pen"></i>';
-        editButton.setAttribute("aria-label", "Bewerk actie");
+        editButton.setAttribute("aria-label", aetherT("Bewerk actie"));
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -275,7 +276,7 @@ function renderAdminActionItems(items) {
         deleteButton.dataset.adminActionDelete = "true";
         deleteButton.dataset.idActionUse = String(item?.idActionUse || 0);
         deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
-        deleteButton.setAttribute("aria-label", "Verwijder actie");
+        deleteButton.setAttribute("aria-label", aetherT("Verwijder actie"));
 
         buttonRow.appendChild(editButton);
         buttonRow.appendChild(deleteButton);
@@ -285,7 +286,7 @@ function renderAdminActionItems(items) {
         const badges = document.createElement("div");
         badges.className = "admin-action-badges";
 
-        badges.appendChild(createAdminActionBadge(item?.actionLabel || item?.actionCode || "Actie"));
+        badges.appendChild(createAdminActionBadge(item?.actionLabel || item?.actionCode || aetherT("Actie")));
 
         if (String(item?.character?.type || "").trim() !== "") {
             badges.appendChild(createAdminActionBadge(formatAdminActionCharacterType(item.character.type)));
@@ -309,7 +310,7 @@ function renderAdminActionItems(items) {
         const rollFinal = item?.roll?.final;
         if (rollBase !== null || rollFinal !== null) {
             const rollLine = document.createElement("div");
-            rollLine.textContent = `Worp: ${formatAdminActionRoll(rollBase, rollModifier, rollFinal)}`;
+            rollLine.textContent = aetherT("Worp: {0}",[formatAdminActionRoll(rollBase, rollModifier, rollFinal)]);
             meta.appendChild(rollLine);
         }
 
@@ -323,7 +324,7 @@ function renderAdminActionItems(items) {
 
         if (String(item?.result?.title || "").trim() !== "") {
             const resultLine = document.createElement("div");
-            resultLine.textContent = `Resultaat: ${item.result.title}`;
+            resultLine.textContent = aetherT("Resultaat: {0}",[item.result.title]);
             meta.appendChild(resultLine);
         }
 
@@ -333,7 +334,7 @@ function renderAdminActionItems(items) {
 
         const resultText = document.createElement("div");
         resultText.className = "admin-action-result-text";
-        resultText.textContent = String(item?.result?.text || "").trim() || "Geen resultaattekst opgeslagen.";
+        resultText.textContent = String(item?.result?.text || "").trim() || aetherT("Geen resultaattekst opgeslagen.");
         body.appendChild(resultText);
 
         card.appendChild(body);
@@ -353,12 +354,12 @@ function createAdminActionBadge(label) {
 function formatAdminActionCharacterType(type) {
     const normalized = String(type || "").trim().toLowerCase();
     if (normalized === "player") {
-        return "Speler";
+        return aetherT("Speler");
     }
     if (normalized === "extra") {
-        return "Figurant";
+        return aetherT("Figurant");
     }
-    return normalized !== "" ? normalized : "Onbekend";
+    return normalized !== "" ? normalized : aetherT("Onbekend");
 }
 
 function formatAdminActionRoll(base, modifier, finalValue) {
@@ -379,7 +380,7 @@ function formatAdminActionRoll(base, modifier, finalValue) {
 function formatAdminActionTimestamp(value) {
     const trimmed = String(value || "").trim();
     if (trimmed === "") {
-        return "Onbekend tijdstip";
+        return aetherT("Onbekend tijdstip");
     }
 
     const normalized = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
@@ -388,7 +389,7 @@ function formatAdminActionTimestamp(value) {
         return trimmed;
     }
 
-    return `${date.toLocaleDateString("nl-BE")} ${date.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${date.toLocaleDateString((globalThis.AetherI18n?.locale || "nl-BE"))} ${date.toLocaleTimeString((globalThis.AetherI18n?.locale || "nl-BE"), { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function getAdminActionItemById(idActionUse) {
@@ -409,16 +410,16 @@ function ensureAdminActionEditModal() {
             <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Actie bewerken</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">${aetherT("Actie bewerken")}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${aetherT("Close")}"></button>
                     </div>
                     <div class="modal-body">
                         <form id="adminActionEditForm" class="admin-action-form" novalidate>
                             <input type="hidden" id="adminActionEditId">
-                            <div class="admin-action-form-note">Deze bewerking past enkel de opgeslagen actieregistratie aan. Bestaande psi burn-status wordt niet automatisch herberekend.</div>
+                            <div class="admin-action-form-note">${aetherT("Deze bewerking past enkel de opgeslagen actieregistratie aan. Bestaande psi burn-status wordt niet automatisch herberekend.")}</div>
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label" for="adminActionEditCharacter">Personage</label>
+                                    <label class="form-label" for="adminActionEditCharacter">${aetherT("Personage")}</label>
                                     <input type="text" class="form-control" id="adminActionEditCharacter" disabled>
                                 </div>
                                 <div class="col-md-6">
@@ -426,15 +427,15 @@ function ensureAdminActionEditModal() {
                                     <input type="text" class="form-control" id="adminActionEditEvent" disabled>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="adminActionEditSkill">Vaardigheid</label>
+                                    <label class="form-label" for="adminActionEditSkill">${aetherT("Vaardigheid")}</label>
                                     <select class="form-select" id="adminActionEditSkill"></select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="adminActionEditCreatedAt">Tijdstip</label>
+                                    <label class="form-label" for="adminActionEditCreatedAt">${aetherT("Tijdstip")}</label>
                                     <input type="datetime-local" class="form-control" id="adminActionEditCreatedAt">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="adminActionEditCode">Actiecode</label>
+                                    <label class="form-label" for="adminActionEditCode">${aetherT("Actiecode")}</label>
                                     <input type="text" class="form-control" id="adminActionEditCode" maxlength="100">
                                 </div>
                                 <div class="col-md-6">
@@ -442,7 +443,7 @@ function ensureAdminActionEditModal() {
                                     <input type="text" class="form-control" id="adminActionEditSubtype" maxlength="100">
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label" for="adminActionEditRollBase">Worp basis</label>
+                                    <label class="form-label" for="adminActionEditRollBase">${aetherT("Worp basis")}</label>
                                     <input type="number" class="form-control" id="adminActionEditRollBase">
                                 </div>
                                 <div class="col-md-4">
@@ -450,23 +451,23 @@ function ensureAdminActionEditModal() {
                                     <input type="number" class="form-control" id="adminActionEditRollModifier">
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label" for="adminActionEditRollFinal">Worp totaal</label>
+                                    <label class="form-label" for="adminActionEditRollFinal">${aetherT("Worp totaal")}</label>
                                     <input type="number" class="form-control" id="adminActionEditRollFinal">
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label" for="adminActionEditResultTitle">Resultaattitel</label>
+                                    <label class="form-label" for="adminActionEditResultTitle">${aetherT("Resultaattitel")}</label>
                                     <input type="text" class="form-control" id="adminActionEditResultTitle" maxlength="255">
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label" for="adminActionEditResultText">Resultaattekst</label>
+                                    <label class="form-label" for="adminActionEditResultText">${aetherT("Resultaattekst")}</label>
                                     <textarea class="form-control" id="adminActionEditResultText" rows="8"></textarea>
                                 </div>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="button" class="btn btn-primary" id="adminActionEditSaveButton">Opslaan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${aetherT("Annuleren")}</button>
+                        <button type="button" class="btn btn-primary" id="adminActionEditSaveButton">${aetherT("Opslaan")}</button>
                     </div>
                 </div>
             </div>
@@ -495,7 +496,7 @@ function ensureAdminActionEditModal() {
 function openAdminActionEditModal(idActionUse) {
     const item = getAdminActionItemById(idActionUse);
     if (!item) {
-        showAdminFeedback("Kon deze actie niet terugvinden.", "danger");
+        showAdminFeedback(aetherT("Kon deze actie niet terugvinden."), "danger");
         return;
     }
 
@@ -540,13 +541,13 @@ function fillAdminActionSkillSelect(modalEl, selectedIdSkill) {
 
     const noneOption = document.createElement("option");
     noneOption.value = "0";
-    noneOption.textContent = "Geen vaardigheid";
+    noneOption.textContent = aetherT("Geen vaardigheid");
     select.appendChild(noneOption);
 
     adminSkillList.forEach((skill) => {
         const option = document.createElement("option");
         option.value = String(skill.idSkill || 0);
-        option.textContent = skill.name || `Vaardigheid #${skill.idSkill || 0}`;
+        option.textContent = skill.name || aetherT("Vaardigheid #{0}",[skill.idSkill || 0]);
         select.appendChild(option);
     });
 
@@ -602,7 +603,7 @@ function setAdminActionModalSavingState(isSaving) {
     });
 
     if (saveButton instanceof HTMLButtonElement) {
-        saveButton.textContent = isSaving ? "Opslaan..." : "Opslaan";
+        saveButton.textContent = isSaving ? aetherT("Opslaan...") : aetherT("Opslaan");
     }
 }
 
@@ -618,14 +619,14 @@ async function saveAdminActionFromModal() {
 
     const idActionUse = Number(modalEl.querySelector("#adminActionEditId")?.value || 0);
     if (idActionUse <= 0) {
-        showAdminFeedback("Geen geldige actie geselecteerd.", "danger");
+        showAdminFeedback(aetherT("Geen geldige actie geselecteerd."), "danger");
         return;
     }
 
     const createdAt = String(modalEl.querySelector("#adminActionEditCreatedAt")?.value || "").trim();
     const actionCode = String(modalEl.querySelector("#adminActionEditCode")?.value || "").trim();
     if (createdAt === "" || actionCode === "") {
-        showAdminFeedback("Actiecode en tijdstip zijn verplicht.", "danger");
+        showAdminFeedback(aetherT("Actiecode en tijdstip zijn verplicht."), "danger");
         return;
     }
 
@@ -651,10 +652,10 @@ async function saveAdminActionFromModal() {
         hideAdminFeedback();
         adminActionsState.modalInstance?.hide();
         await loadAdminActionEventUses(adminActionsState.selectedEventId);
-        showAdminFeedback("Actie bijgewerkt.", "success");
+        showAdminFeedback(aetherT("Actie bijgewerkt."), "success");
     } catch (err) {
         console.error("Fout bij bewaren actie:", err);
-        showAdminFeedback(err?.message || "Kon deze actie niet bewaren.", "danger");
+        showAdminFeedback(err?.message || aetherT("Kon deze actie niet bewaren."), "danger");
     } finally {
         setAdminActionModalSavingState(false);
     }
@@ -662,8 +663,8 @@ async function saveAdminActionFromModal() {
 
 async function deleteAdminActionUseRecord(idActionUse) {
     const item = getAdminActionItemById(idActionUse);
-    const label = item?.character?.displayName || "dit personage";
-    const confirmed = window.confirm(`Weet u zeker dat u deze actie van ${label} wilt verwijderen?`);
+    const label = item?.character?.displayName || aetherT("dit personage");
+    const confirmed = window.confirm(aetherT("Weet u zeker dat u deze actie van {0} wilt verwijderen?",[label]));
     if (!confirmed) {
         return;
     }
@@ -676,9 +677,9 @@ async function deleteAdminActionUseRecord(idActionUse) {
 
         hideAdminFeedback();
         await loadAdminActionEventUses(adminActionsState.selectedEventId);
-        showAdminFeedback("Actie verwijderd.", "success");
+        showAdminFeedback(aetherT("Actie verwijderd."), "success");
     } catch (err) {
         console.error("Fout bij verwijderen actie:", err);
-        showAdminFeedback(err?.message || "Kon deze actie niet verwijderen.", "danger");
+        showAdminFeedback(err?.message || aetherT("Kon deze actie niet verwijderen."), "danger");
     }
 }

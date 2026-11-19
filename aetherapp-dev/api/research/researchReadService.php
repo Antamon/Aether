@@ -16,6 +16,7 @@ function researchRead(PDO $pdo,array $user,string $op,array $in): array {
             $found=researchOne($pdo,'SELECT * FROM tblResearchFound WHERE idEvent=? AND idCharacter=? AND idDiscovery=?',[$event,$character,researchInt($in['idDiscovery']??0)])??throw new AetherResearchException(404,'Scan deze discovery eerst.');
             return researchState($pdo,$event,$character,$found);
         }
+        researchUnlockConclusions($pdo,$user,$event,$character);
         return ['discoveries'=>array_map(fn($f)=>researchState($pdo,$event,$character,$f,false),researchAll($pdo,'SELECT * FROM tblResearchFound WHERE idEvent=? AND idCharacter=? ORDER BY foundAt,idDiscovery',[$event,$character]))];
     }
     researchManager($user);
@@ -71,7 +72,8 @@ function researchRead(PDO $pdo,array $user,string $op,array $in): array {
             $routes=researchFoundRoutes($pdo,(int)$row['idCharacter'],$row);
             foreach (researchFoundSteps($pdo,(int)$row['idCharacter'],$row) as $s) {
                 $p=researchOne($pdo,'SELECT shownAt,completedAt,confirmedAt FROM tblResearchStepProgress WHERE idEvent=? AND idCharacter=? AND idStep=?',[$row['idEvent'],$row['idCharacter'],$s['id']])??[];
-                $row['steps'][]=array_merge(['id'=>$s['id'],'position'=>$s['position'],'confirmationRequired'=>(bool)$s['confirmationRequired'],'shownAt'=>null,'completedAt'=>null,'confirmedAt'=>null],$p);
+                $shared=researchSharedStep($pdo,(int)$row['idEvent'],researchDiscovery($pdo,(int)$row['idDiscovery']),$s);
+                $row['steps'][]=array_merge(['id'=>$s['id'],'position'=>$s['position'],'confirmationRequired'=>(bool)$s['confirmationRequired'],'shownAt'=>null,'completedAt'=>null,'confirmedAt'=>null],$p,['sharedCompletedAt'=>$shared['completedAt']??null,'sharedCompletedBy'=>$shared['idCharacter']??null]);
             }
             $row['timers']=[];
             foreach ($routes as $route) $row['timers']=array_merge($row['timers'],researchAll($pdo,'SELECT t.*,s.position,c.firstName,c.lastName FROM tblResearchTimer t JOIN tblResearchStep s ON s.id=t.idStep JOIN tblCharacter c ON c.id=t.idStartedByCharacter WHERE t.idEvent=? AND s.idRoute=? AND t.scopeCharacter IN (0,?)',[$row['idEvent'],$route['id'],$row['idCharacter']]));

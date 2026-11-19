@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Kleine, centrale helper om JSON van de server op te halen
 // - endpoint: bv. "checkLogin.php" of "api/events/getEventList.php"
 // - options: { method: 'POST', body: {...} }
@@ -34,7 +35,16 @@ async function aetherRequestJson(endpoint, options = {}) {
         } catch (e) {
             text = "(geen body)";
         }
-        const error = new Error(`API-fout ${response.status}: ${text}`);
+        let translated = text;
+        try {
+            const payload = JSON.parse(text);
+            const translateError=window.AetherI18n?.errorText || aetherT;
+            if (typeof payload.error === 'string') payload.error = translateError(payload.error);
+            if (typeof payload.message === 'string') payload.message = translateError(payload.message);
+            if (Array.isArray(payload.validationErrors)) payload.validationErrors = payload.validationErrors.map(value=>translateError(value));
+            translated = JSON.stringify(payload);
+        } catch { translated = aetherT(text); }
+        const error = new Error(aetherT('API-fout {0}: {1}', [response.status, translated]));
         error.status = response.status;
         error.responseBody = text;
         throw error;
@@ -108,11 +118,15 @@ function aetherGetCurrentUser() {
         aetherCurrentUserRequest = apiFetchJson("checkLogin.php").then((data) => {
             if (data?.status !== "ok" || !data.user) {
                 if (data?.status === "redirect") {
-                    throw Object.assign(new Error("Geen geldige sessie."), { status: 401 });
+                    throw Object.assign(new Error(aetherT("Geen geldige sessie.")), { status: 401 });
                 }
-                throw Object.assign(new Error("De server gaf geen geldig antwoord op de sessiecontrole."), { status: 502 });
+                throw Object.assign(new Error(aetherT("De server gaf geen geldig antwoord op de sessiecontrole.")), { status: 502 });
             }
             const user = { ...data.user, csrfToken: data.csrfToken };
+            if (window.AetherI18n?.initialize(user) === false) {
+                // The correct language must load before screens can start their work.
+                return new Promise(() => {});
+            }
             window.AETHER_CURRENT_USER = user;
             return user;
         }).catch((error) => {
@@ -213,7 +227,8 @@ async function checkLoginOnLoad() {
 
         const navbarName = document.getElementById("navbarName");
         if (navbarName) {
-            navbarName.textContent = "Welkom " + user.displayName;
+            if (window.AetherI18n) window.AetherI18n.initialize(user);
+            else navbarName.textContent = aetherT("Welkom ") + user.displayName;
         }
 
         syncPrivilegedNavbar(user);
@@ -275,12 +290,12 @@ class DropdownInput {
               <button type="button" class="btn btn-outline-secondary" id="${this.container.id}-clear">
                   <i class="fa-solid fa-xmark text-light"></i>
               </button>
-              <input id="${this.inputId}" type="text" class="form-control" aria-label="Text input with dropdown">
+              <input id="${this.inputId}" type="text" class="form-control" aria-label="${aetherT("Text input with dropdown")}">
               <button type="button" class="btn btn-outline-secondary" id="${this.container.id}-reset">
                   <i class="fa-solid fa-trash text-light"></i>
               </button>
               <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" id="${this.buttonId}">
-                  <span class="visually-hidden">Toggle Dropdown</span>
+                  <span class="visually-hidden">${aetherT("Toggle Dropdown")}</span>
               </button>
           </div>
           <ul class="dropdown-menu" id="${this.dropdownId}">

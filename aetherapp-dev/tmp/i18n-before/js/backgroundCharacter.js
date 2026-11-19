@@ -1,0 +1,758 @@
+// Background tab logic (personal background & knowledge)
+
+const AETHER_BACKGROUND_SECTIONS = {
+    personal_background: {
+        title: "Personal background",
+        maxLength: 10000
+    },
+    knowledge: {
+        title: "Knowledge",
+        maxLength: 10000
+    }
+};
+
+const AETHER_PERSONALITY_SECTIONS = {
+    nature: {
+        title: "Nature",
+        maxLength: 1000
+    },
+    demeanour: {
+        title: "Demeanour",
+        maxLength: 1000
+    }
+};
+
+const AETHER_TIE_TYPES = [
+    { value: "superior", label: "Superior" },
+    { value: "dependent", label: "Dependent" },
+    { value: "landlord", label: "Landlord" },
+    { value: "household_staff", label: "Household staff" },
+    { value: "spouse", label: "Spouse" },
+    { value: "ally", label: "Ally" },
+    { value: "adversary", label: "Adversary" },
+    { value: "person_of_interest", label: "Person of interest" }
+];
+
+const AETHER_TIE_TYPE_HELP_TEXT = {
+    superior: "Je bent op een of andere manier afhankelijk van dit personage. Misschien is die een leidinggevende in het bedrijf of de organisatie waar je werkt of is die de leider van een geheim gezelschap waartoe je behoort. Voor jou is het een autoriteitsfiguur waar je naar moet luisteren op een of andere manier. Deze link help je leidinggevende om te voldoen aan diens personeelsvoorwaarde.",
+    dependent: "Je bent een leidinggevend figuur voor dit personage. Misschien ben jij de leidinggevende van dat personage binnen het bedrijf of de organisatie waarvoor jullie werken, of maakt die deel uit van je geheime gezelschap. Op een of andere manier is die verplicht naar je te luisteren. Indien deze link door beide partijen correct is ingevoerd, telt dat personage mee om te voldoen aan je personeelsvoorwaarden.",
+    landlord: "Je bent een inwonende werknemer van dit personage. Je loon wordt persoonlijk door je huisbaas betaald en jouw wooncomfort wordt rechtstreeks bepaald door diens woonplaats. Deze link help je leidinggevende om te voldoen aan diens personeelsvoorwaarde.",
+    household_staff: "Dit personage woont bij je in en maakt deel uit van het huishouden. Diens loon wordt afgetrokken van jouw inkomen. Jouw levensstandaard bepaalt de levensstandaard van dat personage. Indien deze link door beide partijen correct is ingevoerd, telt dat personage mee om te voldoen aan je personeelsvoorwaarden.",
+    spouse: "Dit personage is je huwelijkspartner. Indien deze link door beide partijen correct is ingevoerd, telt deze link voor beide partijen mee om te voldoen aan jullie personeelsvoorwaarden.",
+    ally: "Dit personage is een bondgenoot of vriend. Deze link heeft geen speltechnische gevolgen.",
+    adversary: "Dit personage is een vijand of tegenstrever. Deze link heeft geen speltechnische gevolgen.",
+    person_of_interest: "Dit is iemand die je kent of van wie je gehoord hebt. Jullie hebben verder geen speciale band. Deze link heeft geen speltechnische gevolgen.",
+};
+
+let aetherTiePortraitModalInstance = null;
+
+function canEditCharacterContent(character) {
+    if (!currentUser || !character) return false;
+    const role = currentUser.role;
+    if (role === "administrator" || role === "director") return true;
+    if (role === "participant") {
+        return character.type === "player" && Number(character.idUser) === Number(currentUser.id);
+    }
+    return false;
+}
+
+function canCharacterBeLandlordClient(character) {
+    const characterClass = String(character?.class || "").trim();
+    if (characterClass === "upper class") {
+        return true;
+    }
+
+    if (characterClass !== "middle class") {
+        return false;
+    }
+
+    return Number(getCharacterTraitIncomeTotal(character) || 0) >= 350;
+}
+
+function ensureTiePortraitModal() {
+    let modalEl = document.getElementById("tiePortraitModal");
+    if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.className = "modal fade";
+        modalEl.id = "tiePortraitModal";
+        modalEl.tabIndex = -1;
+        modalEl.setAttribute("aria-hidden", "true");
+        modalEl.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Portret</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="tiePortraitModalImage" class="tie-portrait-modal-image" src="" alt="">
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalEl);
+    }
+
+    if (!aetherTiePortraitModalInstance) {
+        aetherTiePortraitModalInstance = new bootstrap.Modal(modalEl);
+    }
+
+    return modalEl;
+}
+
+function openTiePortraitModal(src, label) {
+    if (!src) return;
+
+    const modalEl = ensureTiePortraitModal();
+    const image = modalEl.querySelector("#tiePortraitModalImage");
+    const title = modalEl.querySelector(".modal-title");
+    if (!image || !title) return;
+
+    image.src = src;
+    image.alt = label || "Portret";
+    title.textContent = label || "Portret";
+    aetherTiePortraitModalInstance.show();
+}
+
+async function fetchCharacterSections(idCharacter) {
+    return apiFetchJson("api/characters/getCharacterSections.php", {
+        method: "POST",
+        body: { idCharacter }
+    });
+}
+
+async function fetchCharacterTies(idCharacter) {
+    return apiFetchJson("api/characters/getCharacterTies.php", {
+        method: "POST",
+        body: { idCharacter }
+    });
+}
+
+async function fetchTieOptions() {
+    return apiFetchJson("api/characters/getCharacterTieOptions.php", {
+        method: "GET"
+    });
+}
+
+async function saveCharacterTie(payload) {
+    return apiFetchJson("api/characters/saveCharacterTie.php", {
+        method: "POST",
+        body: payload
+    });
+}
+
+async function deleteCharacterTie(payload) {
+    return apiFetchJson("api/characters/deleteCharacterTie.php", {
+        method: "POST",
+        body: payload
+    });
+}
+
+async function saveCharacterSection(idCharacter, section, content) {
+    return apiFetchJson("api/characters/saveCharacterSection.php", {
+        method: "POST",
+        body: { idCharacter, section, content }
+    });
+}
+
+function showSheetTab() {
+    const sheetRow = document.querySelector("#sheetBody .row");
+    if (sheetRow) sheetRow.classList.remove("d-none");
+    const bgTab = document.getElementById("backgroundTab");
+    if (bgTab) bgTab.classList.add("d-none");
+    const diaryTab = document.getElementById("diaryTab");
+    if (diaryTab) diaryTab.classList.add("d-none");
+    const persTab = document.getElementById("personalityTab");
+    if (persTab) persTab.classList.add("d-none");
+    const economyTab = document.getElementById("economyTab");
+    if (economyTab) economyTab.classList.add("d-none");
+    const actionsTab = document.getElementById("actionsTab");
+    if (actionsTab) actionsTab.classList.add("d-none");
+    const passportTab = document.getElementById("passportTab");
+    if (passportTab) passportTab.classList.add("d-none");
+    const characterForm = document.getElementById("characterForm");
+    if (characterForm) characterForm.classList.remove("d-none");
+    const skills = document.getElementById("skills");
+    if (skills) skills.classList.remove("d-none");
+}
+
+async function showBackgroundTab(character) {
+    // Laat de hoofd-row zichtbaar; we verbergen alleen de inhoud (form/skills).
+    const sheetRow = document.querySelector("#sheetBody .row");
+    if (sheetRow) sheetRow.classList.remove("d-none");
+    const sheetBody = document.getElementById("sheetBody");
+    if (sheetBody) sheetBody.classList.remove("d-none");
+    const characterForm = document.getElementById("characterForm");
+    if (characterForm) characterForm.classList.add("d-none");
+    const skills = document.getElementById("skills");
+    if (skills) skills.classList.add("d-none");
+
+    // Andere tab verbergen
+    const diaryTabHide = document.getElementById("diaryTab");
+    if (diaryTabHide) diaryTabHide.classList.add("d-none");
+    const persTabHide = document.getElementById("personalityTab");
+    if (persTabHide) persTabHide.classList.add("d-none");
+    const economyTabHide = document.getElementById("economyTab");
+    if (economyTabHide) economyTabHide.classList.add("d-none");
+    const actionsTabHide = document.getElementById("actionsTab");
+    if (actionsTabHide) actionsTabHide.classList.add("d-none");
+    const passportTabHide = document.getElementById("passportTab");
+    if (passportTabHide) passportTabHide.classList.add("d-none");
+
+    const bgTab = document.getElementById("backgroundTab");
+    if (!bgTab) return;
+    bgTab.classList.remove("d-none");
+    bgTab.style.display = "block";
+    bgTab.hidden = false;
+    bgTab.classList.add("p-3");
+    bgTab.style.backgroundColor = "#fff";
+    bgTab.style.minHeight = "300px";
+    bgTab.style.position = "relative";
+    bgTab.style.zIndex = "1";
+    bgTab.style.clear = "both";
+
+    const container = document.getElementById("backgroundContent");
+    if (!container) return;
+    container.classList.remove("d-none");
+    container.style.display = "block";
+    container.hidden = false;
+    container.style.minHeight = "400px";
+    container.style.border = "0";
+    container.style.visibility = "visible";
+    container.style.overflow = "visible";
+    container.style.padding = "0";
+    container.style.height = "auto";
+
+    container.innerHTML = `<div class="text-muted">Loading background...</div>`;
+    await loadAndRenderSections(container, character, AETHER_BACKGROUND_SECTIONS, "background");
+}
+
+async function showPersonalityTab(character) {
+    const sheetRow = document.querySelector("#sheetBody .row");
+    if (sheetRow) sheetRow.classList.remove("d-none");
+    const sheetBody = document.getElementById("sheetBody");
+    if (sheetBody) sheetBody.classList.remove("d-none");
+    const characterForm = document.getElementById("characterForm");
+    if (characterForm) characterForm.classList.add("d-none");
+    const skills = document.getElementById("skills");
+    if (skills) skills.classList.add("d-none");
+
+    // Andere tab verbergen
+    const bgTabHide = document.getElementById("backgroundTab");
+    if (bgTabHide) bgTabHide.classList.add("d-none");
+    const diaryTabHide = document.getElementById("diaryTab");
+    if (diaryTabHide) diaryTabHide.classList.add("d-none");
+    const economyTabHide = document.getElementById("economyTab");
+    if (economyTabHide) economyTabHide.classList.add("d-none");
+    const actionsTabHide = document.getElementById("actionsTab");
+    if (actionsTabHide) actionsTabHide.classList.add("d-none");
+    const passportTabHide = document.getElementById("passportTab");
+    if (passportTabHide) passportTabHide.classList.add("d-none");
+
+    const persTab = document.getElementById("personalityTab");
+    if (!persTab) return;
+    persTab.classList.remove("d-none");
+    persTab.style.display = "block";
+    persTab.hidden = false;
+    persTab.classList.add("p-3");
+    persTab.style.backgroundColor = "#fff";
+    persTab.style.minHeight = "300px";
+    persTab.style.position = "relative";
+    persTab.style.zIndex = "1";
+    persTab.style.clear = "both";
+
+    const container = document.getElementById("personalityContent");
+    if (!container) return;
+    container.classList.remove("d-none");
+    container.style.display = "block";
+    container.hidden = false;
+    container.style.minHeight = "400px";
+    container.style.border = "0";
+    container.style.visibility = "visible";
+    container.style.overflow = "visible";
+    container.style.padding = "0";
+    container.style.height = "auto";
+
+    container.innerHTML = `<div class="text-muted">Loading personality...</div>`;
+    await loadAndRenderSections(container, character, AETHER_PERSONALITY_SECTIONS, "personality");
+}
+
+async function loadAndRenderSections(container, character, metaMap, tabName) {
+    try {
+        const data = await fetchCharacterSections(character.id);
+        console.log(`${tabName === "background" ? "Background" : "Personality"} sections:`, data);
+        renderSections(container, character, data || {}, metaMap, tabName);
+        container.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Enkel bij background: ties laden en renderen
+        if (tabName === "background") {
+            await renderTies(container, character);
+        }
+    } catch (err) {
+        console.error(`Fout bij laden ${tabName}:`, err);
+        container.innerHTML = `<div class="text-danger">Kon ${tabName} niet laden.</div>`;
+        renderSections(container, character, {}, metaMap, tabName);
+    }
+}
+
+function renderSections(container, character, sections, metaMap, tabName) {
+    container.style.display = "block";
+    container.hidden = false;
+    container.innerHTML = "";
+    const canEdit = canEditCharacterContent(character);
+
+    Object.entries(metaMap).forEach(([key, meta]) => {
+        const block = renderSectionBlock(character, key, meta.title, sections[key] || "", canEdit);
+        container.appendChild(block);
+    });
+
+    console.log("Background blocks rendered:", container.children.length);
+    console.log("Background container height:", container.clientHeight);
+    const csTab = getComputedStyle(tabName === "background" ? document.getElementById("backgroundTab") : document.getElementById("personalityTab"));
+    const csCont = getComputedStyle(container);
+    console.log("backgroundTab style:", { display: csTab.display, height: csTab.height });
+    console.log("backgroundContent style:", { display: csCont.display, height: csCont.height });
+    console.log("backgroundContent innerHTML:", container.innerHTML);
+
+    // Force height based on content in case parent collapse
+    container.style.height = container.scrollHeight + "px";
+    const bgTab = tabName === "background" ? document.getElementById("backgroundTab") : document.getElementById("personalityTab");
+    if (bgTab) {
+        bgTab.style.height = "auto";
+    }
+
+    setTimeout(() => {
+        const csTab2 = getComputedStyle(tabName === "background" ? document.getElementById("backgroundTab") : document.getElementById("personalityTab"));
+        const csCont2 = getComputedStyle(container);
+        console.log("backgroundTab style (after timeout):", { display: csTab2.display, height: csTab2.height });
+        console.log("backgroundContent style (after timeout):", { display: csCont2.display, height: csCont2.height });
+        // Log parent chain for visibility/debug
+        let p = container;
+        const chain = [];
+        while (p) {
+            const cs = getComputedStyle(p);
+            chain.push({
+                node: p.id || p.className || p.nodeName,
+                display: cs.display,
+                visibility: cs.visibility,
+                height: cs.height,
+                clientHeight: p.clientHeight
+            });
+            p = p.parentElement;
+            if (p && p.id === "sheetBody") break;
+        }
+        console.log("backgroundContent parent chain:", chain);
+    }, 200);
+}
+
+function renderSectionBlock(character, sectionKey, title, content, canEdit) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "aether-panel mb-4 background-section";
+
+    const header = document.createElement("div");
+    header.className = "background-section-header";
+
+    const h4 = document.createElement("h4");
+    h4.className = "mb-0";
+    h4.textContent = title;
+    header.appendChild(h4);
+
+    let editBtn = null;
+    let btnSave = null;
+    let btnCancel = null;
+    let actionGroup = null;
+    if (canEdit) {
+        actionGroup = AetherActionButtons.group();
+        editBtn = AetherActionButtons.button({
+            icon: "fa-pen-nib",
+            label: "Edit",
+            ariaLabel: `${title} bewerken`
+        });
+        btnSave = AetherActionButtons.button({
+            icon: "fa-check",
+            label: "Save",
+            ariaLabel: `${title} bewaren`
+        });
+        btnCancel = AetherActionButtons.button({
+            icon: "fa-xmark",
+            label: "Cancel",
+            ariaLabel: `${title} wijzigen annuleren`
+        });
+        actionGroup.appendChild(editBtn);
+        header.appendChild(actionGroup);
+    }
+
+    const viewDiv = document.createElement("div");
+    viewDiv.className = "p-3";
+    renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
+
+    // Editor
+    const richEditor = createCharacterRichTextEditor(content, { minHeight: "180px" });
+    const editorWrap = richEditor.wrapper;
+    editorWrap.classList.add("d-none");
+    const editor = richEditor.editor;
+
+    const setEditing = (editing) => {
+        if (actionGroup) actionGroup.replaceChildren(editing ? btnSave : editBtn, ...(editing ? [btnCancel] : []));
+        editorWrap.classList.toggle("d-none", !editing);
+        viewDiv.classList.toggle("d-none", editing);
+    };
+
+    // Wire buttons
+    if (editBtn) {
+        editBtn.addEventListener("click", () => {
+            setEditing(true);
+            editor.focus();
+        });
+    }
+
+    if (canEdit) {
+        btnCancel.addEventListener("click", () => {
+            richEditor.setHtml(content);
+            setEditing(false);
+        });
+
+        btnSave.addEventListener("click", async () => {
+            const newContent = richEditor.getHtml();
+            try {
+                const result = await saveCharacterSection(character.id, sectionKey, newContent);
+                if (typeof result?.content !== "string") {
+                    throw new Error("De server gaf geen gesaniteerde rich text terug.");
+                }
+                content = result.content;
+                richEditor.setHtml(content);
+                renderCharacterRichText(viewDiv, content, "Geen tekst beschikbaar.");
+                setEditing(false);
+            } catch (err) {
+                console.error("Fout bij opslaan sectie:", err);
+                alert("Opslaan mislukt.");
+            }
+        });
+    }
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(viewDiv);
+    if (canEdit) {
+        wrapper.appendChild(editorWrap);
+    }
+
+    return wrapper;
+}
+
+// -------- Ties ----------
+async function renderTies(container, character) {
+    const canEdit = canEditCharacterContent(character);
+    let ties = [];
+    let options = [];
+    try {
+        ties = await fetchCharacterTies(character.id) || [];
+    } catch (err) {
+        console.error("Fout bij ophalen ties:", err);
+    }
+    try {
+        options = await fetchTieOptions() || [];
+    } catch (err) {
+        console.error("Fout bij ophalen tie opties:", err);
+    }
+
+    const block = document.createElement("div");
+    block.className = "aether-panel mb-4 background-section";
+
+    const header = document.createElement("div");
+    header.className = "background-section-header";
+
+    const h4 = document.createElement("h4");
+    h4.className = "mb-0";
+    h4.textContent = "Ties";
+    header.appendChild(h4);
+
+    const actionGroup = AetherActionButtons.group();
+    const addBtn = AetherActionButtons.button({
+        icon: "fa-plus",
+        label: "Add tie",
+        ariaLabel: "Tie toevoegen"
+    });
+    const saveBtn = AetherActionButtons.button({
+        icon: "fa-check",
+        label: "Save",
+        ariaLabel: "Tie bewaren"
+    });
+    const cancelBtn = AetherActionButtons.button({
+        icon: "fa-xmark",
+        label: "Cancel",
+        ariaLabel: "Tie wijzigen annuleren"
+    });
+    if (canEdit) {
+        actionGroup.appendChild(addBtn);
+        header.appendChild(actionGroup);
+    }
+
+    block.appendChild(header);
+
+    // Editor row
+    const editorRow = document.createElement("div");
+    editorRow.className = "row g-2 align-items-center mb-3 d-none";
+
+    const selCharCol = document.createElement("div");
+    selCharCol.className = "col-lg-4 col-12";
+    const selChar = document.createElement("select");
+    selChar.className = "form-select form-select-sm";
+    selCharCol.appendChild(selChar);
+
+    const selTypeCol = document.createElement("div");
+    selTypeCol.className = "col-lg-3 col-6";
+    const selType = document.createElement("select");
+    selType.className = "form-select form-select-sm";
+    selTypeCol.appendChild(selType);
+
+    const descCol = document.createElement("div");
+    descCol.className = "col-lg-5 col-12";
+    const descInput = document.createElement("input");
+    descInput.type = "text";
+    descInput.maxLength = 255;
+    descInput.className = "form-control form-control-sm";
+    descInput.placeholder = "Description";
+    descCol.appendChild(descInput);
+
+    editorRow.appendChild(selCharCol);
+    editorRow.appendChild(selTypeCol);
+    editorRow.appendChild(descCol);
+
+    const helpCol = document.createElement("div");
+    helpCol.className = "col-12";
+    const tieTypeHelp = document.createElement("div");
+    tieTypeHelp.className = "character-tie-help-text text-muted small";
+    helpCol.appendChild(tieTypeHelp);
+    editorRow.appendChild(helpCol);
+
+    block.appendChild(editorRow);
+
+    // List
+    const list = document.createElement("div");
+    block.appendChild(list);
+
+    // Populate options
+    const fillTypeOptions = () => {
+        const currentValue = selType.value;
+        selType.innerHTML = "";
+
+        AETHER_TIE_TYPES
+            .filter((type) => type.value !== "household_staff" || canCharacterBeLandlordClient(character))
+            .forEach((type) => {
+                const option = document.createElement("option");
+                option.value = type.value;
+                option.textContent = type.label;
+                selType.appendChild(option);
+            });
+
+        if ([...selType.options].some((option) => option.value === currentValue)) {
+            selType.value = currentValue;
+        } else if (selType.options.length > 0) {
+            selType.value = selType.options[0].value;
+        }
+    };
+
+    const fillOptions = () => {
+        const currentValue = selChar.value;
+        selChar.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select character";
+        selChar.appendChild(placeholder);
+
+        const selectedRelationType = selType.value;
+        options
+            .filter((option) => Number(option.id || 0) !== Number(character?.id || 0))
+            .filter((option) => selectedRelationType !== "landlord" || Boolean(option.canBeLandlord))
+            .forEach((opt) => {
+                const o = document.createElement("option");
+                o.value = opt.id;
+                o.textContent = opt.displayName;
+                selChar.appendChild(o);
+            });
+
+        if ([...selChar.options].some((option) => option.value === String(currentValue || ""))) {
+            selChar.value = currentValue;
+        }
+    };
+    fillTypeOptions();
+    fillOptions();
+
+    const updateTieTypeHelpText = () => {
+        tieTypeHelp.textContent = AETHER_TIE_TYPE_HELP_TEXT[selType.value] || "";
+    };
+    updateTieTypeHelpText();
+
+    let editTieId = null;
+
+    function hideEditor() {
+        editTieId = null;
+        editorRow.classList.add("d-none");
+        actionGroup.replaceChildren(addBtn);
+        fillTypeOptions();
+        fillOptions();
+        updateTieTypeHelpText();
+        selChar.value = "";
+        descInput.value = "";
+    }
+
+    function showEditor(tie) {
+        if (!canEdit) return;
+        editorRow.classList.remove("d-none");
+        actionGroup.replaceChildren(saveBtn, cancelBtn);
+        editTieId = tie ? tie.id : null;
+        fillTypeOptions();
+        if (tie && ![...selType.options].some((option) => option.value === tie.relationType)) {
+            const fallbackOption = document.createElement("option");
+            fallbackOption.value = tie.relationType;
+            fallbackOption.textContent = tie.relationTypeLabel || tie.relationType;
+            selType.appendChild(fallbackOption);
+        }
+        selType.value = tie ? tie.relationType : (selType.options[0]?.value || "");
+        fillOptions();
+        if (tie && ![...selChar.options].some((option) => option.value === String(tie.idOtherCharacter))) {
+            const fallbackCharacterOption = document.createElement("option");
+            fallbackCharacterOption.value = String(tie.idOtherCharacter);
+            fallbackCharacterOption.textContent = tie.otherName || `Personage #${tie.idOtherCharacter}`;
+            selChar.appendChild(fallbackCharacterOption);
+        }
+        selChar.value = tie ? tie.idOtherCharacter : "";
+        descInput.value = tie ? (tie.description || "") : "";
+        updateTieTypeHelpText();
+    }
+
+    selType.addEventListener("change", () => {
+        fillOptions();
+        updateTieTypeHelpText();
+    });
+
+    function renderList() {
+        list.innerHTML = "";
+        if (!ties || ties.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "text-muted";
+            empty.textContent = "No ties yet.";
+            list.appendChild(empty);
+            return;
+        }
+        ties.forEach(t => {
+            const row = document.createElement("div");
+            row.className = "character-tie-item";
+
+            if (t.portraitUrl) {
+                const portraitButton = document.createElement("button");
+                portraitButton.type = "button";
+                portraitButton.className = "character-tie-portrait-button";
+                portraitButton.setAttribute("aria-label", `Toon portret van ${t.otherName || "deze tie"}`);
+                portraitButton.addEventListener("click", () => openTiePortraitModal(t.portraitUrl, t.otherName || "Portret"));
+
+                const portrait = document.createElement("img");
+                portrait.className = "character-tie-portrait";
+                portrait.src = t.portraitUrl;
+                portrait.alt = t.otherName || "Tie portrait";
+                portraitButton.appendChild(portrait);
+                row.appendChild(portraitButton);
+            }
+
+            const content = document.createElement("div");
+            content.className = "character-tie-content";
+
+            const headerRow = document.createElement("div");
+            headerRow.className = "character-tie-header";
+
+            if (canEdit) {
+                const actions = document.createElement("div");
+                actions.className = "character-tie-actions";
+
+                const editBtn = document.createElement("button");
+                editBtn.type = "button";
+                editBtn.className = "btn btn-link p-0 me-1";
+                editBtn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
+                editBtn.addEventListener("click", () => showEditor(t));
+                actions.appendChild(editBtn);
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "btn btn-link text-danger p-0 me-2";
+                deleteBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+                deleteBtn.addEventListener("click", async () => {
+                    const confirmed = window.confirm("Weet u zeker dat u deze tie wilt verwijderen?");
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    try {
+                        const result = await deleteCharacterTie({
+                            idCharacter: character.id,
+                            idTie: t.id
+                        });
+                        ties = result && result.ties ? result.ties : await fetchCharacterTies(character.id);
+                        if (editTieId === t.id) {
+                            hideEditor();
+                        }
+                        renderList();
+                    } catch (err) {
+                        console.error("Fout bij verwijderen tie:", err);
+                        alert("Verwijderen van tie mislukt.");
+                    }
+                });
+                actions.appendChild(deleteBtn);
+                headerRow.appendChild(actions);
+            }
+
+            const name = document.createElement("strong");
+            name.textContent = t.otherName || "Onbekend";
+            headerRow.appendChild(name);
+
+            const typeSpan = document.createElement("span");
+            typeSpan.className = "text-muted ms-1";
+            typeSpan.textContent = `(${t.relationTypeLabel || t.relationType || ""})`;
+            headerRow.appendChild(typeSpan);
+
+            content.appendChild(headerRow);
+
+            if (t.description) {
+                const descSpan = document.createElement("div");
+                descSpan.className = "character-tie-description";
+                descSpan.textContent = t.description;
+                content.appendChild(descSpan);
+            }
+
+            row.appendChild(content);
+
+            list.appendChild(row);
+        });
+    }
+
+    renderList();
+
+    if (canEdit) {
+        addBtn.addEventListener("click", () => showEditor(null));
+        cancelBtn.addEventListener("click", () => hideEditor());
+        saveBtn.addEventListener("click", async () => {
+            const payload = {
+                idCharacter: character.id,
+                idTie: editTieId,
+                idOtherCharacter: selChar.value ? Number(selChar.value) : 0,
+                relationType: selType.value,
+                description: descInput.value.trim()
+            };
+            try {
+                const result = await saveCharacterTie(payload);
+                if (result?.syncedAddress && Number(result.syncedAddress.idCharacter || 0) === Number(character.id || 0) && currentCharacter) {
+                    currentCharacter.street = result.syncedAddress.street || "";
+                    currentCharacter.houseNumber = result.syncedAddress.houseNumber || "";
+                    currentCharacter.postalCode = result.syncedAddress.postalCode || "";
+                    currentCharacter.municipality = result.syncedAddress.municipality || "";
+                }
+                ties = result && result.ties ? result.ties : await fetchCharacterTies(character.id);
+                renderList();
+                hideEditor();
+            } catch (err) {
+                console.error("Fout bij opslaan tie:", err);
+                alert("Opslaan van tie mislukt.");
+            }
+        });
+    }
+
+    container.appendChild(block);
+}

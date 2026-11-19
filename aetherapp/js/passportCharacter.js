@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const PASSPORT_PDF_PT_PER_MM = 72 / 25.4;
 const PASSPORT_PDF_WIDTH_PT = 87 * PASSPORT_PDF_PT_PER_MM;
 const PASSPORT_PDF_HEIGHT_PT = 125 * PASSPORT_PDF_PT_PER_MM;
@@ -90,7 +91,7 @@ function getPassportPageCharacterName(character) {
     const title = String(character?.title || "").trim();
     const firstName = String(character?.firstName || "").trim();
     const lastName = String(character?.lastName || "").trim();
-    return [title, firstName, lastName].filter(Boolean).join(" ") || "Onbekend personage";
+    return [title, firstName, lastName].filter(Boolean).join(" ") || aetherT("Onbekend personage");
 }
 
 function getPassportTextContent(value) {
@@ -440,7 +441,7 @@ function createPassportSectionPages(sectionTitle, subtitle, lineItems) {
 
     return pages.map((page, index) => ({
         sectionTitle: page.sectionTitle,
-        subtitle: index === 0 ? page.subtitle : `${page.subtitle} - vervolg`,
+        subtitle: index === 0 ? page.subtitle : aetherT("{0} - vervolg",[page.subtitle]),
         lines: page.lines
     }));
 }
@@ -624,14 +625,14 @@ function buildPassportEconomyPages(character) {
         lines: [],
         template: "wealth_overview",
         templateData: {
-            title: "Welvaart",
+            title: aetherT("Welvaart"),
             monthlyIncome: formatCharacterCurrency(totalIncome),
             livingStandardText,
             shareEntries: holdings.map((share) => ({
                 companyName: normalizePassportPdfText(
-                    String(share?.companyName || "").trim() || String(share?.name || "").trim() || "Onbekend bedrijf"
+                    String(share?.companyName || "").trim() || String(share?.name || "").trim() || aetherT("Onbekend bedrijf")
                 ),
-                quantityLabel: `${Number(share?.shareCount || 0)} aandelen`
+                quantityLabel: aetherT("{0} aandelen",[Number(share?.shareCount || 0)])
             })),
             securitiesAmount: securitiesAmount > 0 ? formatCharacterCurrency(securitiesAmount) : ""
         }
@@ -684,7 +685,7 @@ function buildPassportTraitPages(character) {
             lines: [],
             template: "trait_overview",
             templateData: {
-                title: "Statuseigenschappen",
+                title: aetherT("Statuseigenschappen"),
                 entries: []
             }
         }];
@@ -703,7 +704,7 @@ function buildPassportTraitPages(character) {
                 lines: [],
                 template: "trait_overview",
                 templateData: {
-                    title: "Statuseigenschappen",
+                    title: aetherT("Statuseigenschappen"),
                     entries: currentEntries
                 }
             });
@@ -722,7 +723,7 @@ function buildPassportTraitPages(character) {
             lines: [],
             template: "trait_overview",
             templateData: {
-                title: "Statuseigenschappen",
+                title: aetherT("Statuseigenschappen"),
                 entries: currentEntries
             }
         });
@@ -733,10 +734,10 @@ function buildPassportTraitPages(character) {
 
 function getPassportSkillLevelLabel(skill) {
     const level = Number(skill?.level || 0);
-    if (level >= 3) return "Meester";
-    if (level === 2) return "Deskundige";
-    if (level === 1) return "Beginneling";
-    return "Ongetraind";
+    if (level >= 3) return aetherT("Meester");
+    if (level === 2) return aetherT("Deskundige");
+    if (level === 1) return aetherT("Beginneling");
+    return aetherT("Ongetraind");
 }
 
 function fitPassportLinesToSinglePage(lines, subtitle) {
@@ -792,9 +793,9 @@ function buildPassportSkillPages(character) {
             lines: [],
             template: "skill_detail",
             templateData: {
-                name: capitalizePassportFirstLetter(skill?.name || "Onbekende vaardigheid"),
+                name: capitalizePassportFirstLetter(skill?.name || aetherT("Onbekende vaardigheid")),
                 levelLabel: getPassportSkillLevelLabel(skill),
-                description: normalizePassportInlineText(skill?.description || "") || "Geen beschrijving.",
+                description: normalizePassportInlineText(skill?.description || "") || aetherT("Geen beschrijving."),
                 levelSections
             }
         };
@@ -811,7 +812,7 @@ function getPassportSectionDefinitions(character) {
     return [
         {
             id: "personal",
-            title: "Persoonsgegevens",
+            title: aetherT("Persoonsgegevens"),
             required: true,
             available: true,
             pageCount: 2,
@@ -819,7 +820,7 @@ function getPassportSectionDefinitions(character) {
         },
         {
             id: "economy",
-            title: "Economie",
+            title: aetherT("Economie"),
             required: false,
             available: true,
             pageCount: 1,
@@ -827,7 +828,7 @@ function getPassportSectionDefinitions(character) {
         },
         {
             id: "traits",
-            title: "Statuseigenschappen",
+            title: aetherT("Statuseigenschappen"),
             required: false,
             pageCount: traitPages.length,
             available: linkedTraits.length > 0,
@@ -835,7 +836,7 @@ function getPassportSectionDefinitions(character) {
         },
         {
             id: "skills",
-            title: "Vaardigheden",
+            title: aetherT("Vaardigheden"),
             required: false,
             pageCount: skillPages.length,
             available: skillPages.length > 0,
@@ -868,8 +869,8 @@ function renderPassportSectionOption(section, selected) {
     const meta = document.createElement("span");
     meta.className = "passport-section-option-meta text-muted";
     meta.textContent = section.available
-        ? `${section.pageCount} ${section.pageCount === 1 ? "pagina" : "pagina's"}`
-        : "0 pagina's";
+        ? `${section.pageCount} ${aetherT(section.pageCount === 1 ? "pagina" : "pagina's")}`
+        : aetherT("0 pagina's");
 
     wrapper.appendChild(left);
     wrapper.appendChild(meta);
@@ -949,7 +950,7 @@ function renderPassportPreview(container, character) {
     if (String(character?.portraitUrl || "").trim()) {
         const portrait = document.createElement("img");
         portrait.src = String(character.portraitUrl).trim();
-        portrait.alt = "Pasfoto";
+        portrait.alt = aetherT("Pasfoto");
         portrait.style.width = "100%";
         portrait.style.height = "100%";
         portrait.style.objectFit = "cover";
@@ -1025,12 +1026,12 @@ function renderPassportTab(character) {
 
     const heading = document.createElement("h4");
     heading.className = "card-title h5 mb-3";
-    heading.textContent = "Paspoort aanmaken";
+    heading.textContent = aetherT("Paspoort aanmaken");
     leftBody.appendChild(heading);
 
     const introText = document.createElement("p");
     introText.className = "text-muted";
-    introText.textContent = "Via deze functie kan je een kant en klare PDF aanmaken die je recto verso kan afdrukken. Snij uit volgens de snijlijnen (volle lijnen aan de rand van de pagina) en vouw dubbel langs de vouwlijnen (stippellijnen). Zo bekom je een handige kleine booklet die precies past in een paspoortkaftje dat je bij aanvang van het spel van ons kan krijgen. Je paspoort kan ook fungeren als personagekaart met referentie naar al je vaardigheden en andere eigenschappen. Kies hier welke informatie je mee wil opnemen.";
+    introText.textContent = aetherT("Via deze functie kan je een kant en klare PDF aanmaken die je recto verso kan afdrukken. Snij uit volgens de snijlijnen (volle lijnen aan de rand van de pagina) en vouw dubbel langs de vouwlijnen (stippellijnen). Zo bekom je een handige kleine booklet die precies past in een paspoortkaftje dat je bij aanvang van het spel van ons kan krijgen. Je paspoort kan ook fungeren als personagekaart met referentie naar al je vaardigheden en andere eigenschappen. Kies hier welke informatie je mee wil opnemen.");
     leftBody.appendChild(introText);
 
     sections.forEach((section) => {
@@ -1044,7 +1045,7 @@ function renderPassportTab(character) {
 
     const printText = document.createElement("p");
     printText.className = "text-muted mt-4 mb-3";
-    printText.textContent = "Je kan kiezen om zoveel mogelijk paspoortpagina's op een A4 te printen, maar dan moet je printer netjes recto verso kunnen printen, of je kan gaan voor minder pagina's per A4. Dat gaat wat meer papier verbruiken, maar dan zal een verschuiving tussen voor- en achterkant minder hard opvallen.";
+    printText.textContent = aetherT("Je kan kiezen om zoveel mogelijk paspoortpagina's op een A4 te printen, maar dan moet je printer netjes recto verso kunnen printen, of je kan gaan voor minder pagina's per A4. Dat gaat wat meer papier verbruiken, maar dan zal een verschuiving tussen voor- en achterkant minder hard opvallen.");
     leftBody.appendChild(printText);
 
     const renderPrintOption = (value, labelText, description) => {
@@ -1075,8 +1076,8 @@ function renderPassportTab(character) {
         return label;
     };
 
-    leftBody.appendChild(renderPrintOption("paper-save", "Papier sparen", "Gebruik de bestaande impositie met zo veel mogelijk paspoortpagina's per A4."));
-    leftBody.appendChild(renderPrintOption("one-signature", "Meer speling tussen recto verso druk", "Druk telkens maar 1 katern per A4-vel af."));
+    leftBody.appendChild(renderPrintOption("paper-save", aetherT("Papier sparen"), aetherT("Gebruik de bestaande impositie met zo veel mogelijk paspoortpagina's per A4.")));
+    leftBody.appendChild(renderPrintOption("one-signature", aetherT("Meer speling tussen recto verso druk"), aetherT("Druk telkens maar 1 katern per A4-vel af.")));
 
     const actionRow = document.createElement("div");
     actionRow.className = "d-flex justify-content-end mt-4";
@@ -1084,13 +1085,13 @@ function renderPassportTab(character) {
     button.type = "button";
     button.className = "btn btn-primary";
     button.dataset.action = "generate-character-passport-pdf";
-    button.textContent = "PDF maken";
+    button.textContent = aetherT("PDF maken");
     actionRow.appendChild(button);
     leftBody.appendChild(actionRow);
 
     const totalInfo = document.createElement("div");
     totalInfo.className = "passport-total-pages mt-3";
-    totalInfo.textContent = `Totaal geselecteerd: ${totalPages} ${totalPages === 1 ? "pagina" : "pagina's"}. PDF: ${imposedPageCount} paspoortpagina's op ${imposedSheetCount} ${imposedSheetCount === 1 ? "A4-vel" : "A4-vellen"}.`;
+    totalInfo.textContent = aetherT("Totaal geselecteerd: {0} {1}. PDF: {2} paspoortpagina's op {3} {4}.",[totalPages,aetherT(totalPages === 1 ? "pagina" : "pagina's"),imposedPageCount,imposedSheetCount,aetherT(imposedSheetCount === 1 ? "A4-vel" : "A4-vellen")]);
     leftBody.appendChild(totalInfo);
 
     leftCol.appendChild(leftCard);
@@ -1322,7 +1323,7 @@ function parsePassportTtfFont(bytes, fallbackBaseName) {
     const post = tables.post;
 
     if (!head || !hhea || !hmtx || !maxp || !cmap || !post) {
-        throw new Error("TTF mist verplichte tabellen.");
+        throw new Error(aetherT("TTF mist verplichte tabellen."));
     }
 
     const unitsPerEm = readPassportUInt16(bytes, head.offset + 18);
@@ -1369,7 +1370,7 @@ function parsePassportTtfFont(bytes, fallbackBaseName) {
     }
 
     if (!cmapMapper) {
-        throw new Error("Geen bruikbare cmap gevonden in TTF.");
+        throw new Error(aetherT("Geen bruikbare cmap gevonden in TTF."));
     }
 
     const os2 = tables["OS/2"];
@@ -1424,7 +1425,7 @@ async function loadPassportPdfFontAsset(path, cacheKey, fallbackBaseName) {
         window[promiseKey] = fetch(path, { cache: "force-cache" })
             .then(async (response) => {
                 if (!response.ok) {
-                    throw new Error(`Font niet gevonden (${response.status}).`);
+                    throw new Error(aetherT("Font niet gevonden ({0}).",[response.status]));
                 }
 
                 const bytes = new Uint8Array(await response.arrayBuffer());
@@ -1642,7 +1643,7 @@ async function createPassportPdfPageBackgroundAsset(page, sidePosition, layout, 
 
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-        throw new Error("Canvascontext niet beschikbaar.");
+        throw new Error(aetherT("Canvascontext niet beschikbaar."));
     }
 
     ctx.fillStyle = "#ffffff";
@@ -2115,9 +2116,9 @@ function buildPassportPdfSkillDetailPageContentWithMetrics(page, slot, options =
     const levelNumberColumnWidth = 10;
     const textColumnX = contentLeft + levelNumberColumnWidth + 4;
     const separatorWidth = 0.45;
-    const skillName = normalizePassportPdfText(page?.templateData?.name || "Onbekende vaardigheid");
+    const skillName = normalizePassportPdfText(page?.templateData?.name || aetherT("Onbekende vaardigheid"));
     const levelLabel = normalizePassportPdfText(page?.templateData?.levelLabel || "");
-    const description = normalizePassportPdfText(page?.templateData?.description || "Geen beschrijving.");
+    const description = normalizePassportPdfText(page?.templateData?.description || aetherT("Geen beschrijving."));
     const levelSections = Array.isArray(page?.templateData?.levelSections)
         ? page.templateData.levelSections
         : [];
@@ -2269,7 +2270,7 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
     const contentLeft = margin;
     const contentRight = PASSPORT_PDF_WIDTH_PT - margin;
     const contentWidth = contentRight - contentLeft;
-    const title = normalizePassportPdfText(page?.templateData?.title || "Welvaart");
+    const title = normalizePassportPdfText(page?.templateData?.title || aetherT("Welvaart"));
     const monthlyIncome = normalizePassportPdfText(page?.templateData?.monthlyIncome || "");
     const livingStandardText = normalizePassportInlineText(page?.templateData?.livingStandardText || "");
     const shareEntries = Array.isArray(page?.templateData?.shareEntries) ? page.templateData.shareEntries : [];
@@ -2362,13 +2363,13 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
     ));
 
     cursorY -= 16;
-    renderLeftRightRow("Maandinkomen", monthlyIncome);
+    renderLeftRightRow(aetherT("Maandinkomen"), monthlyIncome);
 
     if (securitiesAmount) {
-        renderLeftRightRow("Effectenportefeuille", securitiesAmount);
+        renderLeftRightRow(aetherT("Effectenportefeuille"), securitiesAmount);
     }
 
-    renderTitleDescriptionBlock("Levensstijl", livingStandardText);
+    renderTitleDescriptionBlock(aetherT("Levensstijl"), livingStandardText);
 
     if (shareEntries.length > 0) {
         content.push(renderPassportLogicalPdfText(
@@ -2378,7 +2379,7 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
             pageBottom,
             contentLeft,
             cursorY,
-            "Aandelen",
+            aetherT("Aandelen"),
             rotate180
         ));
         cursorY -= bodyLineHeight;
@@ -2386,7 +2387,7 @@ function buildPassportPdfWealthOverviewPageContent(page, slot) {
     }
 
     shareEntries.forEach((share) => {
-        const companyName = normalizePassportPdfText(share?.companyName || "Onbekend bedrijf");
+        const companyName = normalizePassportPdfText(share?.companyName || aetherT("Onbekend bedrijf"));
         const quantityLabel = normalizePassportPdfText(share?.quantityLabel || "");
         const quantityLines = wrapPassportTextToWidth(
             quantityLabel,
@@ -2597,25 +2598,25 @@ function buildPassportPdfHealthReferencePageContent(page, slot) {
     };
 
     renderSection(
-        "Lichamelijke gezondheid",
+        aetherT("Lichamelijke gezondheid"),
         Number(page?.templateData?.physicalGreenCount || 0),
         { stroke: [0.16, 0.55, 0.25] },
-        "Zolang je nog groene ringen over hebt, ben je lichamelijk in goede conditie en is er niets aan de hand.",
+        aetherT("Zolang je nog groene ringen over hebt, ben je lichamelijk in goede conditie en is er niets aan de hand."),
         Number(page?.templateData?.physicalRedCount || 0),
         { stroke: [0.72, 0.15, 0.12] },
-        "Ben je al je groene ringen kwijt, maar heb je nog rode ringen over, dan ben je gewond. Speel uit dat je pijn hebt. Laat je wonden verzorgen, ander raken ze geinfecteerd.",
-        "Wanneer je al je fysieke ringen kwijt bent, krijg je een kritieke fysieke verwonde. Dat kan bijvoorbeeld een gebroken been zijn, of een doorboorde long. Tot je medische zorgen krijgt, kan je alleen over de grond kruipen en kermen van de pijn."
+        aetherT("Ben je al je groene ringen kwijt, maar heb je nog rode ringen over, dan ben je gewond. Speel uit dat je pijn hebt. Laat je wonden verzorgen, ander raken ze geinfecteerd."),
+        aetherT("Wanneer je al je fysieke ringen kwijt bent, krijg je een kritieke fysieke verwonde. Dat kan bijvoorbeeld een gebroken been zijn, of een doorboorde long. Tot je medische zorgen krijgt, kan je alleen over de grond kruipen en kermen van de pijn.")
     );
 
     renderSection(
-        "Mentale gezondheid",
+        aetherT("Mentale gezondheid"),
         Number(page?.templateData?.mentalWhiteCount || 0),
         { stroke: [0.78, 0.78, 0.78], fill: [1, 1, 1], textColor: [0, 0, 0] },
-        "Zolang je nog witte ringen over hebt, ben je mentaal in goede stabiel en is er niets aan de hand.",
+        aetherT("Zolang je nog witte ringen over hebt, ben je mentaal in goede stabiel en is er niets aan de hand."),
         Number(page?.templateData?.mentalYellowCount || 0),
         { stroke: [0.8, 0.68, 0.05] },
-        "Ben je al je witte ringen kwijt, maar heb je nog gele ringen over, dan ben je gestresseerd. Je hebt last van psychotische waanbeelden en bent emotioneel onstabiel. Kalmeringsmiddelen voorgeschreven door een bekwaam psycholoog, kunnen je kalmeren.",
-        "Wanneer je al je mentale ringen kwijt bent, krijg je een kritiekementale aandoening. Dat kan bijvoorbeeld oncontroleerbare kleptomanische neigingen krijgen, of krijg je een schitzofrene aandoening. Tot je medische zorgen krijgt, zit je in een vast in een ernstige episode van je aandoening en ben je in onhandelbare paniek of helemaal in jezelf gekeerd."
+        aetherT("Ben je al je witte ringen kwijt, maar heb je nog gele ringen over, dan ben je gestresseerd. Je hebt last van psychotische waanbeelden en bent emotioneel onstabiel. Kalmeringsmiddelen voorgeschreven door een bekwaam psycholoog, kunnen je kalmeren."),
+        aetherT("Wanneer je al je mentale ringen kwijt bent, krijg je een kritiekementale aandoening. Dat kan bijvoorbeeld oncontroleerbare kleptomanische neigingen krijgen, of krijg je een schitzofrene aandoening. Tot je medische zorgen krijgt, zit je in een vast in een ernstige episode van je aandoening en ben je in onhandelbare paniek of helemaal in jezelf gekeerd.")
     );
 
     content.push(renderPassportLogicalPdfText(
@@ -2625,13 +2626,13 @@ function buildPassportPdfHealthReferencePageContent(page, slot) {
         pageBottom,
         contentLeft,
         cursorY,
-        "Ringen verliezen",
+        aetherT("Ringen verliezen"),
         rotate180
     ));
     cursorY -= 10;
 
-    renderParagraph("Fysieke ringen verlies je doorgaans door terecht te komen in geweldadige omstandigheden. Slag en steekwapens doen doorgaans 1 punt schade per rake klap, vuurwapens veroorzaken 2 punten schade.", 5);
-    renderParagraph("Mentale schade wordt veroorzaakt door stresvolle situaties. Dat kan een hevige ruzie zijn waarin je verwikkeld bent geraakt, of betrokken zijn in een gevecht. Dit soort situaties kost je doorgaans 1 mentale ring. Extreme toestanden, zoals marteling, moord of aanraking met het bovennatuurlijke, geven je 2 tot 3 stress.", 4);
+    renderParagraph(aetherT("Fysieke ringen verlies je doorgaans door terecht te komen in geweldadige omstandigheden. Slag en steekwapens doen doorgaans 1 punt schade per rake klap, vuurwapens veroorzaken 2 punten schade."), 5);
+    renderParagraph(aetherT("Mentale schade wordt veroorzaakt door stresvolle situaties. Dat kan een hevige ruzie zijn waarin je verwikkeld bent geraakt, of betrokken zijn in een gevecht. Dit soort situaties kost je doorgaans 1 mentale ring. Extreme toestanden, zoals marteling, moord of aanraking met het bovennatuurlijke, geven je 2 tot 3 stress."), 4);
 
     const pageNumberText = `P${getPassportPhysicalPageNumber(page)}`;
     const pageNumberWidth = estimatePassportPdfTextWidth(pageNumberText, PASSPORT_PDF_SMALL_FONT_SIZE);
@@ -2662,7 +2663,7 @@ function buildPassportPdfTraitOverviewPageContent(page, slot) {
     const contentLeft = margin;
     const contentRight = PASSPORT_PDF_WIDTH_PT - margin;
     const contentWidth = contentRight - contentLeft;
-    const title = normalizePassportPdfText(page?.templateData?.title || "Statuseigenschappen");
+    const title = normalizePassportPdfText(page?.templateData?.title || aetherT("Statuseigenschappen"));
     const entries = Array.isArray(page?.templateData?.entries) ? page.templateData.entries : [];
     const titleSize = 12;
     const bodySize = 7;
@@ -3300,7 +3301,7 @@ async function downloadCharacterPassportPdf(character) {
     const portfolio = await apiFetchJson(`api/shares/getCharacterPortfolio.php?idCharacter=${encodeURIComponent(character.id)}`);
     const pages = collectSelectedPassportPages({ ...character, shareHoldings: portfolio?.holdings || [] });
     if (pages.length === 0) {
-        alert("Er zijn geen pagina's geselecteerd voor het paspoort.");
+        alert(aetherT("Er zijn geen pagina's geselecteerd voor het paspoort."));
         return;
     }
 
@@ -3350,13 +3351,13 @@ function setupPassportSectionListeners() {
         if (!button) return;
 
         if (!currentCharacter) {
-            alert("Geen personage geladen.");
+            alert(aetherT("Geen personage geladen."));
             return;
         }
 
         button.disabled = true;
         downloadCharacterPassportPdf(currentCharacter).catch(() => {
-            alert("Kon het paspoort-PDF niet maken.");
+            alert(aetherT("Kon het paspoort-PDF niet maken."));
         }).finally(() => {
             button.disabled = false;
         });

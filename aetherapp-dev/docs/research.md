@@ -74,13 +74,18 @@ prioriteit speelt geen rol. Meerdere varianten mogen dezelfde specialisatie of
 hetzelfde personage als voorwaarde hebben. De API geeft alle beschikbare
 stappen terug in `currents`; `current` bevat voor oudere clients de eerste stap.
 
-Het effectieve niveau en de passende feedbackroutes worden vastgelegd bij de
-eerste scan, afzonderlijk per personage en event. De actielog registreert de
-selectie met `feedback_selected`; hiervoor is geen nieuwe databasemigratie nodig.
-Bestaande vondsten krijgen eenmalig alle toepasselijke routes bij de eerste
-scan of leesactie met de nieuwe code. Latere wijzigingen in specialisaties
-veranderen deze selectie niet. Vanaf die eerste scan staan vaardigheidskeuze, bonussen, varianten,
-stapvolgorde, bevestigingsregels en voorwaarden van die discovery vast. Inhoud,
+Bij elke QR-scan worden het vaardigheidsniveau, de aanwezige specialisaties en
+de bonus opnieuw bepaald. De passende feedbackroutes vervangen de vorige
+selectie, afzonderlijk per personage en event. De actielog registreert de actuele
+selectie met `feedback_selected`; veranderingen worden apart geaudit met
+`scan_refresh`. Hiervoor is geen nieuwe databasemigratie nodig. Gewoon opnieuw
+openen behoudt de selectie van de laatste scan. Bij een andere selectie wordt de
+afrondingsstatus opnieuw afgeleid. Getoonde en afgeronde stappen, bevestigingen,
+de oorspronkelijke vinddatum en lopende timers blijven behouden. Terugkeren
+naar een eerder doorlopen route hervat dus de bestaande voortgang. Niet meer
+passende feedback en media zijn niet meer via de API toegankelijk.
+Vanaf de eerste scan staan de instellingen van de discovery zelf (vaardigheidskeuze, bonussen, varianten,
+stapvolgorde, bevestigingsregels en voorwaarden) vast. Inhoud,
 media en activering blijven bewerkbaar, zolang een ingevulde stap daardoor niet
 leeg wordt of omgekeerd. Voor een structureel andere route maak
 je een nieuwe discovery. Dit voorkomt dat reeds bevestigde opdrachten of lopende

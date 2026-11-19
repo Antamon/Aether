@@ -56,7 +56,7 @@ function aetherValidateAdminRequest(string $route, array $input): array
             $errors[] = 'Veld specialisations moet een lijst zijn.';
         } else {
             foreach ($specialisations as $item) {
-                if (!is_array($item) || count($item) !== 2 || !array_key_exists('idSkillSpecialisation', $item) || !array_key_exists('name', $item)) {
+                if (!is_array($item) || array_diff(array_keys($item),['idSkillSpecialisation','name','kind']) || !array_key_exists('idSkillSpecialisation', $item) || !array_key_exists('name', $item)) {
                     $errors[] = 'Een specialisatie bevat ontbrekende of onverwachte velden.';
                     continue;
                 }
@@ -64,6 +64,7 @@ function aetherValidateAdminRequest(string $route, array $input): array
                     aetherValidateInput($item, [
                         'idSkillSpecialisation' => ['type' => 'int', 'required' => true, 'min' => 0],
                         'name' => ['type' => 'string', 'required' => true, 'trim' => true, 'minLength' => 1, 'maxLength' => 100],
+                        'kind' => ['type'=>'enum','required'=>false,'values'=>['discipline','specialisation']],
                     ]);
                 } catch (AetherValidationException $e) {
                     array_push($errors, ...$e->getValidationErrors());
@@ -74,6 +75,7 @@ function aetherValidateAdminRequest(string $route, array $input): array
         $validated['categoryIds'] = array_values(array_unique($categories));
         $validated['specialisations'] = array_map(static fn(array $item): array => [
             'idSkillSpecialisation' => $item['idSkillSpecialisation'], 'name' => trim($item['name']),
+            ...(isset($item['kind'])?['kind'=>$item['kind']]:[]),
         ], $specialisations);
     }
     if ($route === 'saveSkillType') {

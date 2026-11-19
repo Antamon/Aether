@@ -6,7 +6,8 @@ let detailRequests = [];
 let enabled = null;
 let populated = undefined;
 const context = {
-    window: { addEventListener() {} }, console,
+    window: { addEventListener() {}, AETHER_CURRENT_USER: {role:'director'} }, console,
+    userHasPrivilegedRole: user => ['administrator','director'].includes(user?.role),
     apiFetchJson: async () => [{ id: 1 }, { id: 2 }],
     document: { getElementById: () => null }
 };

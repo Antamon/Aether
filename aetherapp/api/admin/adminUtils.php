@@ -309,7 +309,8 @@ function fetchAdminSkillHolderGroups(PDO $pdo, int $idSkill): array
           AND cs.idSkill = lcs.idSkill
          LEFT JOIN tblSkillSpecialisation AS ss
            ON ss.id = cs.idSkillSpecialisation
-         WHERE lcs.idSkill = :idSkill
+          AND ss.idSkill = lcs.idSkill
+         WHERE lcs.idSkill = :idSkill AND c.state = \'active\'
          ORDER BY
             CASE
                 WHEN lcs.level = 1 THEN 1
@@ -340,6 +341,7 @@ function fetchAdminSkillHolderGroups(PDO $pdo, int $idSkill): array
             $groups[$level][$idCharacter] = [
                 'idCharacter' => $idCharacter,
                 'displayName' => buildAdminSkillHolderDisplayName($row),
+                'portraitUrl' => getCharacterPortraitUrl($idCharacter),
                 'specialisations' => [],
             ];
         }

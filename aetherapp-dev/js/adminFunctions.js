@@ -1,3 +1,7 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
+let adminSkillBeforeDraft = null;
+let adminSkillEditing = false;
+let adminSkillSaving = false;
 let adminCurrentUser = null;
 let adminSkillList = [];
 let adminSkillTypeOptions = [];
@@ -52,6 +56,7 @@ async function initAdminPage() {
 }
 
 function syncAdminNavbarName(user) {
+    if (window.AetherI18n) { window.AetherI18n.initialize(user); return; }
     const navbarName = document.getElementById("navbarName");
     if (!navbarName || navbarName.textContent.trim() !== "") {
         return;
@@ -61,7 +66,7 @@ function syncAdminNavbarName(user) {
         .map((value) => String(value || "").trim())
         .filter(Boolean);
     if (parts.length > 0) {
-        navbarName.textContent = "Welkom " + parts.join(" ");
+        navbarName.textContent = aetherT("Welkom ") + parts.join(" ");
     }
 }
 
@@ -186,6 +191,8 @@ function setupAdminPageListeners() {
         });
     }
 
+    document.getElementById("adminSkillModeButton")?.addEventListener("click",()=>void toggleAdminSkillMode());
+    document.getElementById('adminSkillCancelButton')?.addEventListener('click',cancelCreatingAdminSkill);
     const form = document.getElementById("adminSkillForm");
     if (form) {
         form.addEventListener("submit", (event) => {
@@ -302,7 +309,7 @@ function setupAdminPageListeners() {
             }
 
             const category = adminSkillTypeOptions.find((item) => Number(item.idSkillType || 0) === idSkillType);
-            const confirmed = window.confirm(`Weet u zeker dat u de categorie "${category?.name || "deze categorie"}" wilt verwijderen?`);
+            const confirmed = window.confirm(aetherT("Weet u zeker dat u de categorie \"{0}\" wilt verwijderen?",[category?.name || "deze categorie"]));
             if (!confirmed) {
                 return;
             }
@@ -314,7 +321,7 @@ function setupAdminPageListeners() {
     const addCategoryButton = document.getElementById("adminAddCategoryButton");
     if (addCategoryButton) {
         addCategoryButton.addEventListener("click", async () => {
-            const name = window.prompt("Naam van de nieuwe categorie:");
+            const name = window.prompt(aetherT("Naam van de nieuwe categorie:"));
             if (name === null) {
                 return;
             }
@@ -323,34 +330,9 @@ function setupAdminPageListeners() {
         });
     }
 
-    const addSpecialisationButton = document.getElementById("adminAddSpecialisationButton");
-    if (addSpecialisationButton) {
-        addSpecialisationButton.addEventListener("click", () => {
-            if (Number(currentAdminSkill?.idSkill || 0) <= 0) {
-                showAdminFeedback("Geef eerst een naam op zodat de vaardigheid kan worden aangemaakt.", "danger");
-                return;
-            }
-
-            currentAdminSkill.specialisations = Array.isArray(currentAdminSkill.specialisations)
-                ? currentAdminSkill.specialisations
-                : [];
-
-            currentAdminSkill.specialisations.push({
-                idSkillSpecialisation: 0,
-                name: "",
-                kind: getDefaultAdminSpecialisationKind(currentAdminSkill),
-                clientKey: createAdminSpecialisationClientKey(),
-            });
-
-            renderAdminSpecialisations(currentAdminSkill);
-
-            const rows = document.querySelectorAll(".admin-specialisation-row input");
-            const lastInput = rows.length > 0 ? rows[rows.length - 1] : null;
-            lastInput?.focus();
-        });
-    }
-
-    const specialisationsContainer = document.getElementById("adminSkillSpecialisations");
+    document.getElementById('adminAddSpecialisationButton')?.addEventListener('click',()=>addAdminSkillOption('specialisation'));
+    document.getElementById('adminAddDisciplineButton')?.addEventListener('click',()=>addAdminSkillOption('discipline'));
+    const specialisationsContainer = document.getElementById("adminSkillForm");
     if (specialisationsContainer) {
         specialisationsContainer.addEventListener("input", (event) => {
             const input = event.target;
@@ -413,7 +395,7 @@ function bindAdminTextField(fieldId, propertyName, options = {}) {
             }
 
             event.preventDefault();
-            void ensureAdminSkillCreated(true);
+            // New skills are created only when leaving edit mode.
         });
     }
 }
@@ -427,9 +409,13 @@ function setActiveAdminTab(tabName) {
         else tab.removeAttribute("aria-current");
     });
 
+    document.getElementById('pageNav')?.classList.toggle('d-none',!['skills','traits'].includes(tabName));
     const skillsToolbar = document.getElementById("adminSkillsToolbar");
     skillsToolbar?.classList.toggle("d-none", tabName !== "skills");
 
+    document.getElementById('adminTraitsToolbar')?.classList.toggle('d-none',tabName!=='traits');
+    document.getElementById('adminTraitClassTabs')?.classList.toggle('d-none',tabName!=='traits');
+    document.dispatchEvent(new CustomEvent('aether:admin-tab',{detail:tabName}));
     const knowledgeToolbar = document.getElementById("adminKnowledgeToolbar");
     knowledgeToolbar?.classList.toggle("d-none", tabName !== "knowledge");
 
@@ -472,20 +458,20 @@ function syncAdminSkillSelect() {
 
     const placeholder = document.createElement("option");
     placeholder.value = "0";
-    placeholder.textContent = "Kies een vaardigheid";
+    placeholder.textContent = aetherT("Kies een vaardigheid");
     select.appendChild(placeholder);
 
     adminSkillList.forEach((skill) => {
         const option = document.createElement("option");
         option.value = String(skill.idSkill || 0);
-        option.textContent = skill.name || `Vaardigheid #${skill.idSkill || 0}`;
+        option.textContent = skill.name || aetherT("Vaardigheid #{0}",[skill.idSkill || 0]);
         select.appendChild(option);
     });
 
     if (isCreatingAdminSkill && Number(currentAdminSkill?.idSkill || 0) <= 0) {
         const draftOption = document.createElement("option");
         draftOption.value = "__draft__";
-        draftOption.textContent = "Nieuwe vaardigheid (nog niet opgeslagen)";
+        draftOption.textContent = aetherT("Nieuwe vaardigheid (nog niet opgeslagen)");
         select.appendChild(draftOption);
     }
 
@@ -518,8 +504,8 @@ async function loadAdminKnowledgeEvents() {
         renderAdminKnowledgeGroups([]);
     } catch (err) {
         console.error("Fout bij laden wereldwijs-events:", err);
-        showAdminFeedback("Kon de eventlijst voor wereldwijs niet laden.", "danger");
-        renderAdminKnowledgeError("Kon de eventlijst voor wereldwijs niet laden.");
+        showAdminFeedback(aetherT("Kon de eventlijst voor wereldwijs niet laden."), "danger");
+        renderAdminKnowledgeError(aetherT("Kon de eventlijst voor wereldwijs niet laden."));
     }
 }
 
@@ -534,8 +520,8 @@ function syncAdminKnowledgeEventSelect() {
     const placeholder = document.createElement("option");
     placeholder.value = "0";
     placeholder.textContent = adminKnowledgeEvents.length > 0
-        ? "Kies een event"
-        : "Geen events beschikbaar";
+        ? aetherT("Kies een event")
+        : aetherT("Geen events beschikbaar");
     select.appendChild(placeholder);
 
     adminKnowledgeEvents.forEach((eventOption) => {
@@ -563,7 +549,7 @@ function formatAdminKnowledgeEventLabel(eventOption) {
         return title;
     }
 
-    return `${title} (${date.toLocaleDateString("nl-BE")})`;
+    return `${title} (${date.toLocaleDateString((globalThis.AetherI18n?.locale || "nl-BE"))})`;
 }
 
 async function loadAdminKnowledgeEventGossip(idEvent) {
@@ -582,8 +568,8 @@ async function loadAdminKnowledgeEventGossip(idEvent) {
         renderAdminKnowledgeGroups(Array.isArray(result?.groups) ? result.groups : []);
     } catch (err) {
         console.error("Fout bij laden wereldwijs-gossip:", err);
-        showAdminFeedback("Kon de wereldwijsgegevens van dit event niet laden.", "danger");
-        renderAdminKnowledgeError("Kon de wereldwijsgegevens van dit event niet laden.");
+        showAdminFeedback(aetherT("Kon de wereldwijsgegevens van dit event niet laden."), "danger");
+        renderAdminKnowledgeError(aetherT("Kon de wereldwijsgegevens van dit event niet laden."));
     }
 }
 
@@ -599,8 +585,8 @@ function renderAdminKnowledgeGroups(groups) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
         empty.textContent = adminKnowledgeSelectedEventId > 0
-            ? "Voor dit event heeft nog niemand gossip ingevuld."
-            : "Kies bovenaan een event om de ingevulde gossip te zien.";
+            ? aetherT("Voor dit event heeft nog niemand gossip ingevuld.")
+            : aetherT("Kies bovenaan een event om de ingevulde gossip te zien.");
         container.appendChild(empty);
         return;
     }
@@ -611,7 +597,7 @@ function renderAdminKnowledgeGroups(groups) {
 
         const title = document.createElement("h2");
         title.className = "admin-knowledge-group-title";
-        title.textContent = group.label || "Personages";
+        title.textContent = group.label || aetherT("Personages");
         groupCard.appendChild(title);
 
         const list = document.createElement("div");
@@ -629,19 +615,19 @@ function renderAdminKnowledgeGroups(groups) {
                 const portrait = document.createElement("img");
                 portrait.className = "admin-knowledge-portrait-image";
                 portrait.src = portraitUrl;
-                portrait.alt = character.displayName || "Pasfoto";
+                portrait.alt = character.displayName || aetherT("Pasfoto");
                 portraitWrap.appendChild(portrait);
             } else {
                 const portraitPlaceholder = document.createElement("div");
                 portraitPlaceholder.className = "admin-knowledge-portrait-placeholder";
-                portraitPlaceholder.textContent = "Geen pasfoto";
+                portraitPlaceholder.textContent = aetherT("Geen pasfoto");
                 portraitWrap.appendChild(portraitPlaceholder);
             }
             characterCard.appendChild(portraitWrap);
 
             const name = document.createElement("h3");
             name.className = "admin-knowledge-character-name";
-            name.textContent = character.displayName || `Personage #${character.idCharacter || 0}`;
+            name.textContent = character.displayName || aetherT("Personage #{0}",[character.idCharacter || 0]);
             characterCard.appendChild(name);
 
             const actionRow = document.createElement("div");
@@ -657,7 +643,7 @@ function renderAdminKnowledgeGroups(groups) {
             visibilityButton.innerHTML = character.isVisible
                 ? '<i class="fa-solid fa-eye"></i>'
                 : '<i class="fa-solid fa-eye-slash"></i>';
-            visibilityButton.title = character.isVisible ? "Zichtbaarheid uitschakelen" : "Zichtbaarheid inschakelen";
+            visibilityButton.title = character.isVisible ? aetherT("Zichtbaarheid uitschakelen") : aetherT("Zichtbaarheid inschakelen");
 
             const gossipButton = document.createElement("button");
             gossipButton.type = "button";
@@ -665,7 +651,7 @@ function renderAdminKnowledgeGroups(groups) {
             gossipButton.dataset.adminKnowledgeGossipView = "true";
             gossipButton.dataset.idCharacter = String(character.idCharacter || 0);
             gossipButton.innerHTML = '<i class="fa-solid fa-book"></i>';
-            gossipButton.title = "Bekijk roddels";
+            gossipButton.title = aetherT("Bekijk roddels");
             gossipButton.addEventListener("click", () => {
                 openAdminKnowledgeGossipModal(character);
             });
@@ -680,13 +666,13 @@ function renderAdminKnowledgeGroups(groups) {
 
             const discovererTitle = document.createElement("h4");
             discovererTitle.className = "admin-knowledge-discoverers-title";
-            discovererTitle.textContent = "Ontdekt door";
+            discovererTitle.textContent = aetherT("Ontdekt door");
             discovererSection.appendChild(discovererTitle);
 
             if (discoverers.length === 0) {
                 const emptyDiscoverers = document.createElement("p");
                 emptyDiscoverers.className = "text-muted mb-0";
-                emptyDiscoverers.textContent = "Nog door niemand vrijgespeeld.";
+                emptyDiscoverers.textContent = aetherT("Nog door niemand vrijgespeeld.");
                 discovererSection.appendChild(emptyDiscoverers);
             } else {
                 const discovererList = document.createElement("div");
@@ -698,7 +684,7 @@ function renderAdminKnowledgeGroups(groups) {
 
                     const label = document.createElement("span");
                     label.className = "admin-knowledge-discoverer-label";
-                    label.textContent = `${discoverer.displayName || "Onbekend"} (${discoverer.unlockedGossipLevelLabel || `Niveau ${discoverer.unlockedGossipLevel || 0}`})`;
+                    label.textContent = `${discoverer.displayName || aetherT("Onbekend")} (${discoverer.unlockedGossipLevelLabel || aetherT("Niveau {0}",[discoverer.unlockedGossipLevel || 0])})`;
 
                     const removeButton = document.createElement("button");
                     removeButton.type = "button";
@@ -708,7 +694,7 @@ function renderAdminKnowledgeGroups(groups) {
                     removeButton.dataset.idSourceCharacter = String(character.idCharacter || 0);
                     removeButton.dataset.idViewerCharacter = String(discoverer.idViewerCharacter || 0);
                     removeButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
-                    removeButton.setAttribute("aria-label", `Verwijder wereldwijsontdekking van ${discoverer.displayName || "deze gebruiker"}`);
+                    removeButton.setAttribute("aria-label", aetherT("Verwijder wereldwijsontdekking van {0}",[discoverer.displayName || "deze gebruiker"]));
 
                     item.appendChild(label);
                     item.appendChild(removeButton);
@@ -739,8 +725,8 @@ function ensureAdminKnowledgeGossipModal() {
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Wereldwijs</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">${aetherT("Wereldwijs")}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${aetherT("Close")}"></button>
                     </div>
                     <div class="modal-body">
                         <ul class="nav nav-tabs mb-3" id="adminKnowledgeGossipModalTabs" role="tablist"></ul>
@@ -768,7 +754,7 @@ function openAdminKnowledgeGossipModal(character) {
         return;
     }
 
-    title.textContent = character?.displayName || "Wereldwijs";
+    title.textContent = character?.displayName || aetherT("Wereldwijs");
     tabs.innerHTML = "";
     content.innerHTML = "";
 
@@ -776,7 +762,7 @@ function openAdminKnowledgeGossipModal(character) {
     if (gossips.length === 0) {
         const empty = document.createElement("div");
         empty.className = "text-muted";
-        empty.textContent = "Voor dit personage zijn geen roddels ingevuld.";
+        empty.textContent = aetherT("Voor dit personage zijn geen roddels ingevuld.");
         content.appendChild(empty);
         adminKnowledgeModalInstance.show();
         return;
@@ -792,7 +778,7 @@ function openAdminKnowledgeGossipModal(character) {
         li.role = "presentation";
 
         const button = document.createElement("button");
-        button.className = `nav-link${index === 0 ? " active" : ""}`;
+        button.className = `nav-link${index === 0 ? aetherT(" active") : ""}`;
         button.id = tabId;
         button.dataset.bsToggle = "tab";
         button.dataset.bsTarget = `#${paneId}`;
@@ -800,7 +786,7 @@ function openAdminKnowledgeGossipModal(character) {
         button.role = "tab";
         button.setAttribute("aria-controls", paneId);
         button.setAttribute("aria-selected", index === 0 ? "true" : "false");
-        button.textContent = gossip.label || `Niveau ${level}`;
+        button.textContent = gossip.label || aetherT("Niveau {0}",[level]);
         li.appendChild(button);
         tabs.appendChild(li);
 
@@ -835,7 +821,7 @@ async function saveAdminKnowledgeVisibility(idEvent, idCharacter, isVisible) {
         await loadAdminKnowledgeEventGossip(idEvent);
     } catch (err) {
         console.error("Fout bij bewaren wereldwijs-zichtbaarheid:", err);
-        showAdminFeedback("Kon de zichtbaarheid van deze wereldwijsgossip niet bewaren.", "danger");
+        showAdminFeedback(aetherT("Kon de zichtbaarheid van deze wereldwijsgossip niet bewaren."), "danger");
     }
 }
 
@@ -854,7 +840,7 @@ async function deleteAdminKnowledgeUnlock(idEvent, idSourceCharacter, idViewerCh
         await loadAdminKnowledgeEventGossip(idEvent);
     } catch (err) {
         console.error("Fout bij verwijderen wereldwijsontdekking:", err);
-        showAdminFeedback("Kon deze wereldwijsontdekking niet verwijderen.", "danger");
+        showAdminFeedback(aetherT("Kon deze wereldwijsontdekking niet verwijderen."), "danger");
     }
 }
 
@@ -885,14 +871,21 @@ async function loadAdminSkill(idSkill) {
 
         isCreatingAdminSkill = false;
         hideAdminFeedback();
+        adminSkillEditing = false;
         populateAdminSkillForm(skill);
     } catch (err) {
         console.error("Fout bij laden vaardigheid:", err);
-        showAdminFeedback("Kon de geselecteerde vaardigheid niet laden.", "danger");
+        showAdminFeedback(aetherT("Kon de geselecteerde vaardigheid niet laden."), "danger");
     }
 }
 
+function cancelCreatingAdminSkill(){
+    if(adminSkillSaving||!adminSkillEditing)return;
+    adminSkillEditing=false;isCreatingAdminSkill=false;populateAdminSkillForm(adminSkillBeforeDraft);adminSkillBeforeDraft=null;hideAdminFeedback();
+}
 function startCreatingAdminSkill() {
+    adminSkillBeforeDraft=currentAdminSkill?JSON.parse(JSON.stringify(currentAdminSkill)):null;
+    adminSkillEditing = true;
     isCreatingAdminSkill = true;
     populateAdminSkillForm({
         idSkill: 0,
@@ -933,8 +926,8 @@ function populateAdminSkillForm(skill) {
 
     if (categoryHelp) {
         categoryHelp.textContent = adminUserCanManageSkillTypes()
-            ? "Selecteer de categorieën van deze vaardigheid. U kunt categorieën hier ook hernoemen, verwijderen en aanmaken."
-            : "Selecteer de categorieën van deze vaardigheid.";
+            ? aetherT("Selecteer de categorieën van deze vaardigheid. U kunt categorieën hier ook hernoemen, verwijderen en aanmaken.")
+            : aetherT("Selecteer de categorieën van deze vaardigheid.");
     }
 
     if (addCategoryButton) {
@@ -942,10 +935,10 @@ function populateAdminSkillForm(skill) {
     }
 
     if (!currentAdminSkill) {
-        if (title) title.textContent = "Vaardigheid";
+        if (title) title.textContent = aetherT("Vaardigheid");
         if (subtitle) subtitle.textContent = adminSkillList.length > 0
-            ? "Kies bovenaan een vaardigheid of maak een nieuwe aan."
-            : "Er zijn nog geen vaardigheden. Maak bovenaan een nieuwe vaardigheid aan.";
+            ? aetherT("Kies bovenaan een vaardigheid of maak een nieuwe aan.")
+            : aetherT("Er zijn nog geen vaardigheden. Maak bovenaan een nieuwe vaardigheid aan.");
         if (idInput) idInput.value = "";
         if (nameInput) nameInput.value = "";
         if (descriptionInput) descriptionInput.value = "";
@@ -964,13 +957,13 @@ function populateAdminSkillForm(skill) {
     if (title) {
         title.textContent = currentAdminSkill.name?.trim() !== ""
             ? currentAdminSkill.name
-            : "Nieuwe vaardigheid";
+            : aetherT("Nieuwe vaardigheid");
     }
 
     if (subtitle) {
         subtitle.textContent = Number(currentAdminSkill.idSkill || 0) > 0
-            ? "Wijzigingen worden automatisch bewaard zodra u klaar bent met bewerken."
-            : "Geef eerst een naam op. Zodra die naam ingevuld is, wordt de vaardigheid aangemaakt en kunt u de overige velden invullen.";
+            ? ""
+            : aetherT("Vul de vaardigheid in en kies Opslaan en bekijken om te bewaren.");
     }
 
     if (idInput) idInput.value = Number(currentAdminSkill.idSkill || 0) > 0 ? String(currentAdminSkill.idSkill) : "";
@@ -1015,49 +1008,45 @@ function normalizeAdminSkillState(skill) {
 }
 
 function applyAdminSkillFormEditability(skill) {
-    const hasSkill = Boolean(skill);
-    const isPersistedSkill = Number(skill?.idSkill || 0) > 0;
-    const nameInput = document.getElementById("adminSkillName");
-    const addSpecialisationButton = document.getElementById("adminAddSpecialisationButton");
-
-    const fieldIds = [
-        "adminSkillDescription",
-        "adminSkillBeginner",
-        "adminSkillProfessional",
-        "adminSkillMaster",
-    ];
-
-    if (nameInput) {
-        nameInput.disabled = !hasSkill;
+    const editing=!!skill&&adminSkillEditing;
+    document.getElementById('adminSkillForm').hidden=!editing;
+    document.getElementById('adminSkillView').hidden=editing;
+    document.querySelectorAll('#adminSkillForm input,#adminSkillForm textarea,#adminSkillForm button').forEach(n=>n.disabled=!editing||adminSkillSaving);
+    const addCategory=document.getElementById('adminAddCategoryButton');if(addCategory)addCategory.disabled=!editing||adminSkillSaving||!adminUserCanManageSkillTypes();
+    const mode=document.getElementById('adminSkillModeButton');mode.disabled=!skill||adminSkillSaving;mode.innerHTML=editing?`<i class="fa-solid fa-check" aria-hidden="true"></i> ${aetherT("Opslaan")}`:`<i class="fa-solid fa-pen-nib" aria-hidden="true"></i> ${aetherT("Edit")}`;
+    document.getElementById('adminSkillSelect').disabled=editing;
+    document.getElementById('adminNewSkillButton').disabled=editing;
+    const cancel=document.getElementById('adminSkillCancelButton');cancel.hidden=!editing;cancel.disabled=adminSkillSaving;
+    mode.classList.toggle('admin-skill-view-edit',!editing);
+    const subtitle=document.getElementById('adminSkillSubtitle');if(subtitle)subtitle.hidden=!!skill;
+    renderAdminSkillView(skill);
+}
+function renderAdminSkillView(skill){
+    const view=document.getElementById('adminSkillView');view.replaceChildren();if(!skill)return;
+    const line=(label,items)=>{const row=document.createElement('p'),name=document.createElement('strong');name.textContent=label+': ';row.append(name,document.createTextNode(items.length?items.join(', '):aetherT("Geen")));view.append(row);};
+    line(aetherT("Categorie"),adminSkillTypeOptions.filter(c=>skill.categoryIds.includes(Number(c.idSkillType))).map(c=>c.name).concat(skill.isSecret?[aetherT("Geheim")]:[]));
+    const disciplines=skill.specialisations.filter(s=>s.kind==='discipline').map(s=>s.name);
+    if(disciplines.length||getDefaultAdminSpecialisationKind(skill)==='discipline')line('Discipline',disciplines);
+    line(aetherT("Specialisaties"),skill.specialisations.filter(s=>s.kind==='specialisation').map(s=>s.name));
+    const description=document.createElement('p');description.className='admin-skill-view-text';description.textContent=skill.description||'—';view.append(description);
+    const table=document.createElement('table');table.className='table aether-table admin-skill-levels';table.setAttribute('aria-label',aetherT("Bekwaamheidsniveaus"));
+    const body=document.createElement('tbody');
+    for(const [label,value] of [[aetherT("Beginneling"),skill.beginner],[aetherT("Deskundige"),skill.professional],[aetherT("Meester"),skill.master]]){
+        const row=document.createElement('tr'),name=document.createElement('td'),text=document.createElement('td');name.textContent=label;text.className='admin-skill-view-text';text.textContent=value||'—';row.append(name,text);body.append(row);
     }
-
-    fieldIds.forEach((fieldId) => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.disabled = !isPersistedSkill;
-        }
-    });
-
-    document.querySelectorAll("#adminSkillCategories input[type='checkbox']").forEach((input) => {
-        input.disabled = !isPersistedSkill;
-    });
-
-    document.querySelectorAll("#adminSkillCategories input[data-admin-category-name='true'], #adminSkillCategories button[data-admin-category-delete]").forEach((element) => {
-        element.disabled = !adminUserCanManageSkillTypes();
-    });
-
-    const addCategoryButton = document.getElementById("adminAddCategoryButton");
-    if (addCategoryButton) {
-        addCategoryButton.disabled = !adminUserCanManageSkillTypes();
-    }
-
-    document.querySelectorAll("#adminSkillSpecialisations input, #adminSkillSpecialisations button").forEach((element) => {
-        element.disabled = !isPersistedSkill;
-    });
-
-    if (addSpecialisationButton) {
-        addSpecialisationButton.disabled = !isPersistedSkill;
-    }
+    table.append(body);view.append(table);
+}
+function addAdminSkillOption(kind){
+    if(!currentAdminSkill||!adminSkillEditing||adminSkillSaving)return;
+    currentAdminSkill.specialisations.push({idSkillSpecialisation:0,name:'',kind,clientKey:createAdminSpecialisationClientKey()});renderAdminSpecialisations(currentAdminSkill);markAdminSkillAutoSavePending();
+    const target=document.getElementById(kind==='discipline'?'adminSkillDisciplines':'adminSkillSpecialisations');target.querySelector('.admin-specialisation-row:last-child input')?.focus();
+}
+async function toggleAdminSkillMode(){
+    if(!currentAdminSkill||adminSkillSaving)return;
+    if(!adminSkillEditing){adminSkillBeforeDraft=JSON.parse(JSON.stringify(currentAdminSkill));adminSkillEditing=true;applyAdminSkillFormEditability(currentAdminSkill);return;}
+    adminSkillSaving=true;applyAdminSkillFormEditability(currentAdminSkill);
+    try{if(await saveAdminSkill()){adminSkillEditing=false;adminSkillAutoSavePending=false;}}
+    finally{adminSkillSaving=false;applyAdminSkillFormEditability(currentAdminSkill);}
 }
 
 function renderAdminCategories(skill) {
@@ -1071,7 +1060,7 @@ function renderAdminCategories(skill) {
     if (!Array.isArray(adminSkillTypeOptions) || adminSkillTypeOptions.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Geen categorieën beschikbaar.";
+        empty.textContent = aetherT("Geen categorieën beschikbaar.");
         container.appendChild(empty);
         return;
     }
@@ -1092,7 +1081,7 @@ function renderAdminCategories(skill) {
         input.checked = selectedIds.includes(Number(category.idSkillType || 0));
 
         const text = document.createElement("span");
-        text.textContent = category.name || `Categorie #${category.idSkillType || 0}`;
+        text.textContent = category.name || aetherT("Categorie #{0}",[category.idSkillType || 0]);
 
         label.appendChild(input);
         label.appendChild(text);
@@ -1101,7 +1090,11 @@ function renderAdminCategories(skill) {
 }
 
 function renderAdminSpecialisations(skill) {
-    const container = document.getElementById("adminSkillSpecialisations");
+    const discipline=!!skill&&(getDefaultAdminSpecialisationKind(skill)==='discipline'||skill.specialisations.some(s=>s.kind==='discipline'));document.getElementById('adminDisciplineBlock').hidden=!discipline;
+    renderAdminSkillOptions(skill,'discipline','adminSkillDisciplines');renderAdminSkillOptions(skill,'specialisation','adminSkillSpecialisations');
+}
+function renderAdminSkillOptions(skill,kind,containerId) {
+    const container = document.getElementById(containerId);
     if (!container) {
         return;
     }
@@ -1111,48 +1104,41 @@ function renderAdminSpecialisations(skill) {
     if (!skill) {
         const info = document.createElement("p");
         info.className = "text-muted mb-0";
-        info.textContent = "Kies een vaardigheid om specialisaties te beheren.";
+        info.textContent = aetherT("Kies een vaardigheid om specialisaties te beheren.");
         container.appendChild(info);
         return;
     }
 
-    if (Number(skill.idSkill || 0) <= 0) {
-        const note = document.createElement("p");
-        note.className = "admin-form-disabled-note mb-0";
-        note.textContent = "Geef eerst een naam op. Daarna kunnen specialisaties toegevoegd en bewerkt worden.";
-        container.appendChild(note);
-        return;
-    }
-
-    if (!Array.isArray(skill.specialisations) || skill.specialisations.length === 0) {
+    if (!Array.isArray(skill.specialisations) || !skill.specialisations.some(s=>s.kind===kind)) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Nog geen specialisaties.";
+        empty.textContent = kind==='discipline'?aetherT("Nog geen disciplines."):aetherT("Nog geen specialisaties.");
         container.appendChild(empty);
         return;
     }
 
-    skill.specialisations.forEach((specialisation) => {
+    skill.specialisations.filter(s=>s.kind===kind).forEach((specialisation) => {
         const row = document.createElement("div");
         row.className = "admin-specialisation-row";
 
         const input = document.createElement("input");
         input.type = "text";
         input.className = "form-control";
+        input.maxLength = 100;
         input.value = specialisation.name || "";
-        input.placeholder = "Naam van de specialisatie";
+        input.placeholder = kind==='discipline'?aetherT("Naam van de discipline"):aetherT("Naam van de specialisatie");
         input.dataset.adminSpecKey = String(specialisation.clientKey || "");
 
         const meta = document.createElement("div");
         meta.className = "admin-specialisation-meta";
-        meta.textContent = specialisation.kind === "discipline" ? "Discipline" : "Specialisatie";
+        meta.textContent = specialisation.kind === "discipline" ? "Discipline" : aetherT("Specialisatie");
 
         const removeButton = document.createElement("button");
         removeButton.type = "button";
         removeButton.className = "btn btn-outline-danger";
         removeButton.dataset.adminSpecRemove = String(specialisation.clientKey || "");
         removeButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
-        removeButton.setAttribute("aria-label", "Verwijder specialisatie");
+        removeButton.setAttribute("aria-label", aetherT("Verwijder specialisatie"));
 
         row.appendChild(input);
         row.appendChild(meta);
@@ -1161,8 +1147,8 @@ function renderAdminSpecialisations(skill) {
     });
 }
 
-function renderAdminHolders(skill) {
-    const container = document.getElementById("adminSkillHolders");
+function renderAdminHolders(skill,containerId='adminSkillHolders',kind='vaardigheid') {
+    const container = document.getElementById(containerId);
     if (!container) {
         return;
     }
@@ -1172,7 +1158,7 @@ function renderAdminHolders(skill) {
     if (!skill || Number(skill.idSkill || 0) <= 0) {
         const info = document.createElement("p");
         info.className = "text-muted mb-0";
-        info.textContent = "Kies een vaardigheid om de gekoppelde personages te zien.";
+        info.textContent = aetherT("Kies een ")+kind+aetherT(" om de gekoppelde personages te zien.");
         container.appendChild(info);
         return;
     }
@@ -1181,18 +1167,19 @@ function renderAdminHolders(skill) {
     if (groups.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Geen personages gekoppeld aan deze vaardigheid.";
+        empty.textContent = aetherT("Geen actieve personages gekoppeld aan deze ")+kind+'.';
         container.appendChild(empty);
         return;
     }
 
     groups.forEach((group) => {
         const groupEl = document.createElement("div");
+        if(container.children.length)container.append(document.createElement('hr'));
         groupEl.className = "admin-holder-group";
 
         const title = document.createElement("h3");
         title.className = "admin-holder-group-title";
-        title.textContent = group.label || `Niveau ${group.level || ""}`;
+        title.textContent = group.label || aetherT("Niveau {0}",[group.level || ""]);
         groupEl.appendChild(title);
 
         const list = document.createElement("ul");
@@ -1206,10 +1193,13 @@ function renderAdminHolders(skill) {
                 ? character.specialisations.filter(Boolean)
                 : [];
 
-            const baseName = character.displayName || `Personage #${character.idCharacter || 0}`;
-            item.textContent = specs.length > 0
-                ? `${baseName} (${specs.join(", ")})`
-                : baseName;
+            const baseName = character.displayName || aetherT("Personage #{0}",[character.idCharacter || 0]);
+            const card=document.createElement('a');card.className='company-sidebar-card character-sidebar-card';card.href='index.html?character='+Number(character.idCharacter)+'&tab=character_sheet';
+            const frame=document.createElement('span');frame.className='company-sidebar-image-frame character-sidebar-portrait-frame';
+            const placeholder=()=>{frame.replaceChildren();frame.classList.add('character-sidebar-portrait-placeholder');frame.textContent=aetherT("Geen pasfoto");};
+            if(character.portraitUrl){const portrait=document.createElement('img');portrait.className='company-sidebar-image character-sidebar-portrait-image';portrait.alt='';portrait.loading='lazy';portrait.src=character.portraitUrl;portrait.addEventListener('error',placeholder,{once:true});frame.append(portrait);}else placeholder();
+            const name=document.createElement('span');name.className='company-sidebar-name character-sidebar-name';name.textContent=baseName;card.append(frame,name);item.append(card);
+            if(specs.length){const names=document.createElement('div');names.className='small admin-holder-specialisations';names.textContent=specs.join(', ');item.append(names);}
 
             list.appendChild(item);
         });
@@ -1258,9 +1248,7 @@ function markAdminSkillAutoSavePending() {
 
     adminSkillAutoSavePending = true;
     clearAdminSkillAutoSaveTimer();
-    adminSkillAutoSaveTimer = window.setTimeout(() => {
-        void flushAdminSkillAutoSave({ force: false });
-    }, 700);
+
 }
 
 async function ensureAdminSkillCreated(force = false) {
@@ -1275,7 +1263,7 @@ async function ensureAdminSkillCreated(force = false) {
     const name = String(currentAdminSkill.name || "").trim();
     if (name === "") {
         if (force) {
-            showAdminFeedback("De naam van de vaardigheid is verplicht.", "danger");
+            showAdminFeedback(aetherT("De naam van de vaardigheid is verplicht."), "danger");
         }
         return !force;
     }
@@ -1284,6 +1272,7 @@ async function ensureAdminSkillCreated(force = false) {
         return createAdminSkillPromise;
     }
 
+    const draft=normalizeAdminSkillState(currentAdminSkill);
     createAdminSkillPromise = (async () => {
         try {
             const result = await apiFetchJson("api/admin/newSkill.php", {
@@ -1296,12 +1285,12 @@ async function ensureAdminSkillCreated(force = false) {
             }
 
             isCreatingAdminSkill = false;
-            populateAdminSkillForm(result?.skill || null);
-            showAdminFeedback("Vaardigheid aangemaakt.", "success");
+            populateAdminSkillForm({...result.skill,...draft,idSkill:result.skill.idSkill,isDraft:false});
+            showAdminFeedback(aetherT("Vaardigheid aangemaakt."), "success");
             return true;
         } catch (err) {
             console.error("Fout bij aanmaken vaardigheid:", err);
-            showAdminFeedback("Kon de vaardigheid niet aanmaken.", "danger");
+            showAdminFeedback(aetherT("Kon de vaardigheid niet aanmaken."), "danger");
             return false;
         } finally {
             createAdminSkillPromise = null;
@@ -1313,6 +1302,7 @@ async function ensureAdminSkillCreated(force = false) {
 
 async function flushAdminSkillAutoSave(options = {}) {
     const { force = false } = options;
+    if(!force)return !adminSkillEditing||!adminSkillAutoSavePending;
     clearAdminSkillAutoSaveTimer();
 
     if (!currentAdminSkill || isPopulatingAdminSkillForm) {
@@ -1341,7 +1331,7 @@ async function flushAdminSkillAutoSave(options = {}) {
 
     adminSkillAutoSavePending = false;
     return saveAdminSkill({
-        successMessage: "Wijzigingen automatisch bewaard.",
+        successMessage: aetherT("Wijzigingen automatisch bewaard."),
         silentWhenUnavailable: true,
     });
 }
@@ -1357,7 +1347,7 @@ async function saveAdminSkill(options = {}) {
 
         try {
             const {
-                successMessage = "Vaardigheid opgeslagen.",
+                successMessage = aetherT("Vaardigheid opgeslagen."),
                 silentWhenUnavailable = false,
             } = options;
 
@@ -1376,14 +1366,14 @@ async function saveAdminSkill(options = {}) {
 
             if (idSkill <= 0) {
                 if (!silentWhenUnavailable) {
-                    showAdminFeedback("Kies eerst een vaardigheid of maak er een nieuwe aan.", "danger");
+                    showAdminFeedback(aetherT("Kies eerst een vaardigheid of maak er een nieuwe aan."), "danger");
                 }
                 return true;
             }
 
             const name = String(currentAdminSkill.name || "").trim();
             if (name === "") {
-                showAdminFeedback("De naam van de vaardigheid is verplicht.", "danger");
+                showAdminFeedback(aetherT("De naam van de vaardigheid is verplicht."), "danger");
                 return false;
             }
 
@@ -1406,6 +1396,7 @@ async function saveAdminSkill(options = {}) {
                         .map((specialisation) => ({
                             idSkillSpecialisation: Number(specialisation.idSkillSpecialisation || 0),
                             name: String(specialisation.name || "").trim(),
+                            kind: specialisation.kind,
                         })),
                 }
             });
@@ -1419,7 +1410,7 @@ async function saveAdminSkill(options = {}) {
             return true;
         } catch (err) {
             console.error("Fout bij opslaan vaardigheid:", err);
-            showAdminFeedback("Kon de vaardigheid niet opslaan.", "danger");
+            showAdminFeedback(aetherT("Kon de vaardigheid niet opslaan."), "danger");
             return false;
         } finally {
             saveAdminSkillRequestInFlight = false;
@@ -1475,7 +1466,7 @@ function renderAdminCategories(skill) {
         if (!adminUserCanManageSkillTypes()) {
             const empty = document.createElement("p");
             empty.className = "text-muted mb-0";
-            empty.textContent = "Geen categorieën beschikbaar.";
+            empty.textContent = aetherT("Geen categorieën beschikbaar.");
             container.appendChild(empty);
         }
     }
@@ -1506,14 +1497,14 @@ function renderAdminCategories(skill) {
             const nameInput = document.createElement("input");
             nameInput.type = "text";
             nameInput.className = "form-control form-control-sm admin-category-name-input";
-            nameInput.value = category.name || `Categorie #${category.idSkillType || 0}`;
+            nameInput.value = category.name || aetherT("Categorie #{0}",[category.idSkillType || 0]);
             nameInput.dataset.adminCategoryName = "true";
             nameInput.dataset.idSkillType = String(category.idSkillType || 0);
             toggleWrap.appendChild(nameInput);
         } else {
             const text = document.createElement("span");
             text.className = "admin-category-name";
-            text.textContent = category.name || `Categorie #${category.idSkillType || 0}`;
+            text.textContent = category.name || aetherT("Categorie #{0}",[category.idSkillType || 0]);
             toggleWrap.appendChild(text);
         }
 
@@ -1525,7 +1516,7 @@ function renderAdminCategories(skill) {
             deleteButton.className = "btn btn-outline-danger btn-sm";
             deleteButton.dataset.adminCategoryDelete = String(category.idSkillType || 0);
             deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
-            deleteButton.setAttribute("aria-label", `Verwijder categorie ${category.name || ""}`);
+            deleteButton.setAttribute("aria-label", aetherT("Verwijder categorie {0}",[category.name || ""]));
             row.appendChild(deleteButton);
         }
 
@@ -1547,7 +1538,7 @@ function renderAdminCategories(skill) {
 
     const secretLabel = document.createElement("span");
     secretLabel.className = "admin-category-fixed-label";
-    secretLabel.textContent = "Geheime vaardigheid";
+    secretLabel.textContent = aetherT("Geheime vaardigheid");
 
     secretToggle.appendChild(secretInput);
     secretToggle.appendChild(secretLabel);
@@ -1557,7 +1548,7 @@ function renderAdminCategories(skill) {
 
 async function saveAdminSkillType(action, payload = {}) {
     if (!adminUserCanManageSkillTypes()) {
-        showAdminFeedback("Alleen administrators kunnen categorieën beheren.", "danger");
+        showAdminFeedback(aetherT("Alleen administrators kunnen categorieën beheren."), "danger");
         return false;
     }
 
@@ -1591,15 +1582,15 @@ async function saveAdminSkillType(action, payload = {}) {
         renderAdminCategories(currentAdminSkill);
         showAdminFeedback(
             action === "create"
-                ? "Categorie aangemaakt."
-                : (action === "delete" ? "Categorie verwijderd." : "Categorie bijgewerkt."),
+                ? aetherT("Categorie aangemaakt.")
+                : (action === "delete" ? aetherT("Categorie verwijderd.") : aetherT("Categorie bijgewerkt.")),
             "success"
         );
         return true;
     } catch (err) {
         console.error("Fout bij bewaren categorie:", err);
         adminSkillTypeOptions = previousSkillTypeOptions;
-        showAdminFeedback("Kon de categorie niet bewaren.", "danger");
+        showAdminFeedback(aetherT("Kon de categorie niet bewaren."), "danger");
         renderAdminCategories(currentAdminSkill);
         return false;
     } finally {

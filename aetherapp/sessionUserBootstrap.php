@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/api/shared/session.php';
+require_once __DIR__ . '/api/shared/interfaceLanguage.php';
 
 function aetherFindWordPressLoadPath(): ?string
 {
@@ -105,6 +106,7 @@ function aetherHydrateSessionUserFromWordPress(): bool
         'lastName' => $lastName,
         'avatar' => function_exists('get_avatar_url') ? (string) get_avatar_url($wpUserId) : null,
         'source' => 'wordpress',
+        'locale' => aetherProfileInterfaceLanguage($wpUserId),
     ];
 
     return true;

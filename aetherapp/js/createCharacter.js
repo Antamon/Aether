@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 ﻿// =====================================================
 // NIEUW: logic voor het aanmaken van een nieuw personage
 // =====================================================
@@ -101,7 +102,7 @@ async function aetherRenderHeaderForNewCharacter(user) {
         // XP voorlopig op "0 (...)" zetten â€“ echte berekening gebeurt na aanmaken
         const xpLabel = document.getElementById('lblExperiance');
         if (xpLabel) {
-            xpLabel.textContent = '0 (nog te berekenen na creatie)';
+            xpLabel.textContent = aetherT("0 (nog te berekenen na creatie)");
         }
 
     } else {
@@ -116,7 +117,7 @@ async function aetherRenderHeaderForNewCharacter(user) {
         }
         const typeLabel = document.getElementById('type');
         if (typeLabel) {
-            typeLabel.textContent = 'Spelerspersonage';
+            typeLabel.textContent = aetherT("Spelerspersonage");
         }
         const stateLabel = document.getElementById('state');
         if (stateLabel) {
@@ -124,7 +125,7 @@ async function aetherRenderHeaderForNewCharacter(user) {
         }
         const xpLabel = document.getElementById('lblExperiance');
         if (xpLabel) {
-            xpLabel.textContent = '0 / (verzamelde EP na koppeling)';
+            xpLabel.textContent = aetherT("0 / (verzamelde EP na koppeling)");
         }
     }
 }
@@ -194,7 +195,7 @@ function aetherPrepareCharacterFormForCreation() {
     const skillsDiv = document.getElementById('skills');
     if (skillsDiv) {
         skillsDiv.classList.remove('d-none');
-        skillsDiv.innerHTML = `
+        skillsDiv.innerHTML = `
             <div class="alert alert-info mt-2">
                 Character creation â€” vaardigheden kunnen pas worden toegevoegd nadat het personage is aangemaakt.
             </div>
@@ -205,21 +206,21 @@ function aetherPrepareCharacterFormForCreation() {
     if (healthSection) {
         healthSection.innerHTML = `
             <div class="mb-3">
-                <span>Fysieke gezondheid</span>
+                <span>${aetherT("Fysieke gezondheid")}</span>
                 <span class="ms-2 d-inline-flex align-items-center gap-1">
-                    <img src="img/heart-red.png" alt="Fysieke gezondheid" width="20" height="20">
-                    <img src="img/heart-red.png" alt="Fysieke gezondheid" width="20" height="20">
-                    <img src="img/heart-green.png" alt="Fysieke gezondheid" width="20" height="20">
-                    <img src="img/heart-green.png" alt="Fysieke gezondheid" width="20" height="20">
+                    <img src="img/heart-red.png" alt="${aetherT("Fysieke gezondheid")}" width="20" height="20">
+                    <img src="img/heart-red.png" alt="${aetherT("Fysieke gezondheid")}" width="20" height="20">
+                    <img src="img/heart-green.png" alt="${aetherT("Fysieke gezondheid")}" width="20" height="20">
+                    <img src="img/heart-green.png" alt="${aetherT("Fysieke gezondheid")}" width="20" height="20">
                 </span>
             </div>
             <div class="mb-3">
-                <span>Mentale gezondheid</span>
+                <span>${aetherT("Mentale gezondheid")}</span>
                 <span class="ms-2 d-inline-flex align-items-center gap-1">
-                    <img src="img/eye-yellow.png" alt="Mentale gezondheid" width="20" height="20">
-                    <img src="img/eye-yellow.png" alt="Mentale gezondheid" width="20" height="20">
-                    <img src="img/eye-white.png" alt="Mentale gezondheid" width="20" height="20">
-                    <img src="img/eye-white.png" alt="Mentale gezondheid" width="20" height="20">
+                    <img src="img/eye-yellow.png" alt="${aetherT("Mentale gezondheid")}" width="20" height="20">
+                    <img src="img/eye-yellow.png" alt="${aetherT("Mentale gezondheid")}" width="20" height="20">
+                    <img src="img/eye-white.png" alt="${aetherT("Mentale gezondheid")}" width="20" height="20">
+                    <img src="img/eye-white.png" alt="${aetherT("Mentale gezondheid")}" width="20" height="20">
                 </span>
             </div>
         `;
@@ -335,7 +336,7 @@ async function aetherStartNewCharacterFlow() {
         aetherUpdateCreateButtonState();
     } catch (err) {
         console.error(err);
-        alert('Er ging iets mis bij het starten van character creation.');
+        alert(aetherT("Er ging iets mis bij het starten van character creation."));
     }
 }
 
@@ -388,7 +389,7 @@ async function aetherCreateNewCharacter() {
     const lastName = document.getElementById('lastName');
 
     if (!classSelect || !firstName || !lastName) {
-        alert('Formulier niet volledig geladen.');
+        alert(aetherT("Formulier niet volledig geladen."));
         return;
     }
 
@@ -397,14 +398,14 @@ async function aetherCreateNewCharacter() {
     const lastVal = lastName.value.trim();
 
     if (firstVal.length < 2 || lastVal.length < 2 || !classVal) {
-        alert('Kies een klasse en geef minstens 2 letters voor voornaam en familienaam.');
+        alert(aetherT("Kies een klasse en geef minstens 2 letters voor voornaam en familienaam."));
         return;
     }
 
     const isAdmin = (user.role === 'administrator' || user.role === 'director');
 
     let idUser = 0;
-    let type = 'player';
+    let type = "player";
 
     if (isAdmin) {
         const select = document.getElementById('listParticipant-input');
@@ -413,11 +414,11 @@ async function aetherCreateNewCharacter() {
         }
         const typeEl = document.getElementById('type');
         if (typeEl && typeEl.tagName === 'SELECT') {
-            type = typeEl.value || 'player';
+            type = typeEl.value || "player";
         }
     } else {
         idUser = user.id;
-        type = 'player';
+        type = "player";
     }
 
     // Payload voor newCharacter.php
@@ -462,7 +463,7 @@ async function aetherCreateNewCharacter() {
         }
 
         if (!newId) {
-            throw new Error("Geen geldig ID teruggekregen.");
+            throw new Error(aetherT("Geen geldig ID teruggekregen."));
         }
 
         // We verlaten de create-modus en laden direct het nieuwe personage
@@ -480,7 +481,7 @@ async function aetherCreateNewCharacter() {
 
     } catch (err) {
         console.error(err);
-        alert('Het aanmaken van het personage is mislukt.');
+        alert(aetherT("Het aanmaken van het personage is mislukt."));
     }
 }
 

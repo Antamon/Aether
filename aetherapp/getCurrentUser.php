@@ -33,6 +33,7 @@ try {
         'firstName' => $user['firstName'],
         'lastName' => $user['lastName'],
         'role' => $user['role'],
+        'interfaceLanguage' => aetherProfileInterfaceLanguage((int) $user['id']),
         'csrfToken' => aetherGetCsrfToken(),
     ]);
 

@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Form-related helpers: listeners, autosave, read-only render, editability toggles
 
 function setupCharacterFormListeners() {
@@ -59,7 +60,7 @@ function syncClassFieldPresentation(character) {
 function formatCharacterCurrencyValue(amount, options = {}) {
     const numericAmount = Number(amount ?? 0);
     const resolvedAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
-    return new Intl.NumberFormat("fr-BE", options)
+    return new Intl.NumberFormat(globalThis.AetherI18n?.locale || "fr-BE", options)
         .formatToParts(resolvedAmount)
         .map((part) => (part.type === "group" ? " " : part.value))
         .join("");
@@ -162,8 +163,8 @@ function renderCharacterWealthSection(character) {
         : Number(character?.bankaccount ?? 0);
     container.innerHTML = `
         <div class="d-flex flex-wrap align-items-center gap-4">
-            <span>Inkomsten: ${formatCharacterCurrency(totalIncome)}</span>
-            <span>Bankrekening: ${formatCharacterCurrency(bankBalance)}</span>
+            <span>${aetherT("Inkomsten:")} ${formatCharacterCurrency(totalIncome)}</span>
+            <span>${aetherT("Bankrekening:")} ${formatCharacterCurrency(bankBalance)}</span>
         </div>
     `;
 }
@@ -213,7 +214,7 @@ function getMiddleClassLivingStandardText(character) {
     const income = Number(getCharacterTraitIncomeTotal(character) || 0);
 
     if (income <= 50) {
-        return "Je vervalt in armoede en wordt lagere klasse.";
+        return aetherT("Je vervalt in armoede en wordt lagere klasse.");
     }
 
     if (income <= 100) {
@@ -279,23 +280,23 @@ function getLowerClassLivingStandardText() {
 
 function getUpperClassHouseholdStaffLivingStandardText(tier) {
     if (tier === 1) {
-        return "Je woont inwonend bij een adellijke familie die wel status heeft, maar weinig echte rijkdom. Je beschikt meestal over een kleine kamer onder het dak of in een achtervleugel van het huis, met enkel het strikt noodzakelijke meubilair. Je eet degelijk maar eenvoudig, vaak na de familie en het hogere personeel. Privacy is beperkt: je kamer is van jou, maar klein, sober en duidelijk ondergeschikt aan de rest van het huis.";
+        return aetherT("Je woont inwonend bij een adellijke familie die wel status heeft, maar weinig echte rijkdom. Je beschikt meestal over een kleine kamer onder het dak of in een achtervleugel van het huis, met enkel het strikt noodzakelijke meubilair. Je eet degelijk maar eenvoudig, vaak na de familie en het hogere personeel. Privacy is beperkt: je kamer is van jou, maar klein, sober en duidelijk ondergeschikt aan de rest van het huis.");
     }
 
     if (tier === 2) {
-        return "Je woont op een landgoed, in een herenhuis of klein kasteel waar personeel een vaste plaats heeft binnen het huishouden. Je hebt een eenvoudige maar nette eigen kamer in de dienstvertrekken, meestal met bed, waskom, kast en een stoel. Je maaltijden zijn degelijk en regelmatig, en je leeft comfortabeler dan de meeste arbeiders. Je privévertrek is bescheiden, maar veilig, verwarmd en duidelijk beter dan wat de lagere klasse zich gewoonlijk kan veroorloven.";
+        return aetherT("Je woont op een landgoed, in een herenhuis of klein kasteel waar personeel een vaste plaats heeft binnen het huishouden. Je hebt een eenvoudige maar nette eigen kamer in de dienstvertrekken, meestal met bed, waskom, kast en een stoel. Je maaltijden zijn degelijk en regelmatig, en je leeft comfortabeler dan de meeste arbeiders. Je privévertrek is bescheiden, maar veilig, verwarmd en duidelijk beter dan wat de lagere klasse zich gewoonlijk kan veroorloven.");
     }
 
     if (tier === 3) {
-        return "Je dient in een groot adellijk huishouden waar orde, hiërarchie en comfort belangrijk zijn. Je beschikt over een nette personeelskamer in de bediendenvleugel, met voldoende ruimte voor je persoonlijke spullen en een degelijk bed. Bad- en wasvoorzieningen zijn meestal gedeeld met ander personeel, maar goed onderhouden. Je leeft in zekerheid en comfort, al blijft duidelijk dat zelfs je privéruimte deel uitmaakt van het grotere huishouden van je meester.";
+        return aetherT("Je dient in een groot adellijk huishouden waar orde, hiërarchie en comfort belangrijk zijn. Je beschikt over een nette personeelskamer in de bediendenvleugel, met voldoende ruimte voor je persoonlijke spullen en een degelijk bed. Bad- en wasvoorzieningen zijn meestal gedeeld met ander personeel, maar goed onderhouden. Je leeft in zekerheid en comfort, al blijft duidelijk dat zelfs je privéruimte deel uitmaakt van het grotere huishouden van je meester.");
     }
 
     if (tier === 4) {
-        return "Je woont in een voornaam huis of stadspaleis waar het personeel talrijk is en de organisatie strak verloopt. Je hebt een verzorgde kamer in de personeelsvertrekken, mogelijk met een klein zitgedeelte of gedeelde salon voor het hogere dienstpersoneel. Je eet goed, bent degelijk gekleed en leeft in een omgeving van luxe, al geniet je er slechts indirect van. Je privévertrekken zijn comfortabel, stil en respectabel, maar altijd ondergeschikt aan de pracht van de familie zelf.";
+        return aetherT("Je woont in een voornaam huis of stadspaleis waar het personeel talrijk is en de organisatie strak verloopt. Je hebt een verzorgde kamer in de personeelsvertrekken, mogelijk met een klein zitgedeelte of gedeelde salon voor het hogere dienstpersoneel. Je eet goed, bent degelijk gekleed en leeft in een omgeving van luxe, al geniet je er slechts indirect van. Je privévertrekken zijn comfortabel, stil en respectabel, maar altijd ondergeschikt aan de pracht van de familie zelf.");
     }
 
     if (tier === 5) {
-        return "Je maakt deel uit van een enorm huishouden dat bijna als een kleine instelling functioneert. Je woont in ruime en goed onderhouden dienstvertrekken, vaak in een aparte personeelsvleugel of bijgebouw, met veel meer comfort dan de meeste gewone burgers ooit kennen. Hogere personeelsleden kunnen zelfs over meerdere kleine kamers beschikken, zoals een slaapvertrek en een privézitkamer of kantoorhoek. Je leeft materieel comfortabel en in grote veiligheid, maar je bestaan blijft volledig ingebed in de discipline en verwachtingen van een machtige dynastie.";
+        return aetherT("Je maakt deel uit van een enorm huishouden dat bijna als een kleine instelling functioneert. Je woont in ruime en goed onderhouden dienstvertrekken, vaak in een aparte personeelsvleugel of bijgebouw, met veel meer comfort dan de meeste gewone burgers ooit kennen. Hogere personeelsleden kunnen zelfs over meerdere kleine kamers beschikken, zoals een slaapvertrek en een privézitkamer of kantoorhoek. Je leeft materieel comfortabel en in grote veiligheid, maar je bestaan blijft volledig ingebed in de discipline en verwachtingen van een machtige dynastie.");
     }
 
     return "";
@@ -307,14 +308,14 @@ function getMiddleClassHouseholdStaffLivingStandardText(income) {
     }
 
     if (income <= 1000) {
-        return "Je woont in een groot herenhuis waar personeel deel uitmaakt van het normale huishouden. Je kamer ligt in de personeelsvertrekken en is degelijk, verzorgd en ruim genoeg om echt als privéruimte te voelen. Voor hoger dienstpersoneel is een iets grotere kamer of een klein eigen salonnetje niet ondenkbaar. Je leeft onder goede materiële omstandigheden, met voldoende comfort, regelmaat en een zekere trots die hoort bij dienst in een voornaam burgerlijk huis.";
+        return aetherT("Je woont in een groot herenhuis waar personeel deel uitmaakt van het normale huishouden. Je kamer ligt in de personeelsvertrekken en is degelijk, verzorgd en ruim genoeg om echt als privéruimte te voelen. Voor hoger dienstpersoneel is een iets grotere kamer of een klein eigen salonnetje niet ondenkbaar. Je leeft onder goede materiële omstandigheden, met voldoende comfort, regelmaat en een zekere trots die hoort bij dienst in een voornaam burgerlijk huis.");
     }
 
     if (income <= 4000) {
-        return "Je woont inwonend in een groot landhuis of statige stadswoning waar personeel overvloediger aanwezig is. Je beschikt over comfortabele dienstvertrekken, en afhankelijk van je functie kan dat meer zijn dan één eenvoudige kamer. Het hogere personeel heeft soms toegang tot een kleine privézitruimte, beter meubilair en meer rust dan lager personeel. Je leeft zeer behoorlijk, met veel meer comfort, veiligheid en status dan de meeste mensen uit de middenklasse.";
+        return aetherT("Je woont inwonend in een groot landhuis of statige stadswoning waar personeel overvloediger aanwezig is. Je beschikt over comfortabele dienstvertrekken, en afhankelijk van je functie kan dat meer zijn dan één eenvoudige kamer. Het hogere personeel heeft soms toegang tot een kleine privézitruimte, beter meubilair en meer rust dan lager personeel. Je leeft zeer behoorlijk, met veel meer comfort, veiligheid en status dan de meeste mensen uit de middenklasse.");
     }
 
-    return "Je woont in een uitzonderlijk luxueus huishouden waar zelfs de personeelsvertrekken ruim en verzorgd zijn. Afhankelijk van je rang binnen het personeel kan je kamer bijna de allure hebben van een kleine burgerwoning: een ruim slaapvertrek, goed meubilair en soms een aparte privéruimte om te zitten of administratie te doen. Je leeft in overvloed en orde, maar ook in een omgeving waar uiterlijk vertoon, discipline en representatie zeer belangrijk zijn. Je geniet van comfort dat voor de meeste mensen onbereikbaar is, al blijft het comfort volledig verbonden aan je dienstbaarheid.";
+    return aetherT("Je woont in een uitzonderlijk luxueus huishouden waar zelfs de personeelsvertrekken ruim en verzorgd zijn. Afhankelijk van je rang binnen het personeel kan je kamer bijna de allure hebben van een kleine burgerwoning: een ruim slaapvertrek, goed meubilair en soms een aparte privéruimte om te zitten of administratie te doen. Je leeft in overvloed en orde, maar ook in een omgeving waar uiterlijk vertoon, discipline en representatie zeer belangrijk zijn. Je geniet van comfort dat voor de meeste mensen onbereikbaar is, al blijft het comfort volledig verbonden aan je dienstbaarheid.");
 }
 
 async function getCharacterHouseholdStaffLivingStandardText(character) {
@@ -360,7 +361,7 @@ async function getCharacterHouseholdStaffLivingStandardText(character) {
     ));
 
     if (pendingLandlordTie) {
-        return "Op dit moment ben je dakloos.";
+        return aetherT("Op dit moment ben je dakloos.");
     }
 
     return "";
@@ -373,7 +374,7 @@ function getResolvedMiddleClassLivingStandardText(character) {
         : Number(getCharacterTraitIncomeTotal(character) || 0);
 
     if (income <= 50) {
-        return "Je vervalt in armoede en wordt lagere klasse.";
+        return aetherT("Je vervalt in armoede en wordt lagere klasse.");
     }
 
     if (income <= 100) {
@@ -564,19 +565,19 @@ async function renderCharacterStaffSection(character) {
             <span data-role="staff-required"></span>
             <span data-role="staff-confirmed"></span>
         </div>
-        <h5>Eigenschappen met personeelsvoorwaarden</h5>
+        <h5>${aetherT("Eigenschappen met personeelsvoorwaarden")}</h5>
         <div data-role="staff-traits"></div>
-        <h5>Gevolg</h5>
+        <h5>${aetherT("Gevolg")}</h5>
         <div data-role="staff-ties"></div>
     `;
-    container.querySelector("[data-role='staff-required']").textContent = `Personeelsvoorwaarde: ${requiredStaff}`;
-    container.querySelector("[data-role='staff-confirmed']").textContent = `Voldaan: ${confirmedStaffTies.length}`;
+    container.querySelector("[data-role='staff-required']").textContent = aetherT("Personeelsvoorwaarde: {0}",[requiredStaff]);
+    container.querySelector("[data-role='staff-confirmed']").textContent = aetherT("Voldaan: {0}",[confirmedStaffTies.length]);
 
     const traitHost = container.querySelector("[data-role='staff-traits']");
     if (staffRequirementTraits.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-3";
-        empty.textContent = "Geen traits met personeelsvoorwaarde.";
+        empty.textContent = aetherT("Geen traits met personeelsvoorwaarde.");
         traitHost.appendChild(empty);
     } else {
         const list = document.createElement("ul");
@@ -599,7 +600,7 @@ async function renderCharacterStaffSection(character) {
     if (staffTies.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-0";
-        empty.textContent = "Geen dependent, household staff of spouse ties.";
+        empty.textContent = aetherT("Geen dependent, household staff of spouse ties.");
         tieHost.appendChild(empty);
     } else {
         const list = document.createElement("ul");
@@ -612,7 +613,7 @@ async function renderCharacterStaffSection(character) {
             const badge = document.createElement("span");
             const confirmed = isStaffTieConfirmed(tie);
             badge.className = `badge ${confirmed ? "text-bg-success" : "text-bg-danger"}`;
-            badge.textContent = confirmed ? "Bevestigd" : "Onbevestigd";
+            badge.textContent = confirmed ? aetherT("Bevestigd") : aetherT("Onbevestigd");
             item.append(name, badge);
             list.appendChild(item);
         });
@@ -660,7 +661,7 @@ function renderCharacterHealthSection(character) {
 
     const rows = [
         {
-            label: "Fysieke gezondheid",
+            label: aetherT("Fysieke gezondheid"),
             value: getPhysicalHealthValue(character),
             paidField: "physicalHealth",
             freeField: "physicalHealthFree",
@@ -668,7 +669,7 @@ function renderCharacterHealthSection(character) {
             secondaryIconPath: "img/heart-green.png"
         },
         {
-            label: "Mentale gezondheid",
+            label: aetherT("Mentale gezondheid"),
             value: getMentalHealthValue(character),
             paidField: "mentalHealth",
             freeField: "mentalHealthFree",
@@ -713,7 +714,7 @@ function renderCharacterHealthSection(character) {
             const minusBtn = document.createElement("button");
             minusBtn.type = "button";
             minusBtn.className = "action-button";
-            minusBtn.setAttribute("aria-label", `${rowConfig.label} verlagen`);
+            minusBtn.setAttribute("aria-label", aetherT("{0} verlagen",[rowConfig.label]));
             minusBtn.dataset.action = "character-health-adjust";
             minusBtn.dataset.field = rowConfig.paidField;
             minusBtn.dataset.delta = "-1";
@@ -724,7 +725,7 @@ function renderCharacterHealthSection(character) {
             const plusBtn = document.createElement("button");
             plusBtn.type = "button";
             plusBtn.className = "action-button";
-            plusBtn.setAttribute("aria-label", `${rowConfig.label} verhogen`);
+            plusBtn.setAttribute("aria-label", aetherT("{0} verhogen",[rowConfig.label]));
             plusBtn.dataset.action = "character-health-adjust";
             plusBtn.dataset.field = rowConfig.paidField;
             plusBtn.dataset.delta = "1";
@@ -740,7 +741,7 @@ function renderCharacterHealthSection(character) {
 
                 const freeLabel = document.createElement("span");
                 freeLabel.className = "small text-nowrap";
-                freeLabel.textContent = "gratis speciale aanpassing";
+                freeLabel.textContent = aetherT("gratis speciale aanpassing");
                 freeControls.appendChild(freeLabel);
 
                 const freeButtons = document.createElement("div");
@@ -749,7 +750,7 @@ function renderCharacterHealthSection(character) {
                 const freeMinusBtn = document.createElement("button");
                 freeMinusBtn.type = "button";
                 freeMinusBtn.className = "action-button";
-                freeMinusBtn.setAttribute("aria-label", `${rowConfig.label} gratis verlagen`);
+                freeMinusBtn.setAttribute("aria-label", aetherT("{0} gratis verlagen",[rowConfig.label]));
                 freeMinusBtn.dataset.action = "character-health-adjust";
                 freeMinusBtn.dataset.field = rowConfig.freeField;
                 freeMinusBtn.dataset.delta = "-1";
@@ -760,7 +761,7 @@ function renderCharacterHealthSection(character) {
                 const freePlusBtn = document.createElement("button");
                 freePlusBtn.type = "button";
                 freePlusBtn.className = "action-button";
-                freePlusBtn.setAttribute("aria-label", `${rowConfig.label} gratis verhogen`);
+                freePlusBtn.setAttribute("aria-label", aetherT("{0} gratis verhogen",[rowConfig.label]));
                 freePlusBtn.dataset.action = "character-health-adjust";
                 freePlusBtn.dataset.field = rowConfig.freeField;
                 freePlusBtn.dataset.delta = "1";
@@ -821,17 +822,17 @@ function formatCharacterDetailsDate(value) {
 
 function formatCharacterDetailsClass(value) {
     return ({
-        "upper class": "Hogere klasse",
-        "middle class": "Middenklasse",
-        "lower class": "Lagere klasse"
+        "upper class": aetherT("Hogere klasse"),
+        "middle class": aetherT("Middenklasse"),
+        "lower class": aetherT("Lagere klasse")
     })[value] || value || "-";
 }
 
 function formatCharacterDetailsMaritalStatus(value) {
     return ({
-        Single: "Ongehuwd",
-        Married: "Gehuwd",
-        Widowed: "Weduwe/weduwnaar"
+        Single: aetherT("Ongehuwd"),
+        Married: aetherT("Gehuwd"),
+        Widowed: aetherT("Weduwe/weduwnaar")
     })[value] || value || "-";
 }
 
@@ -881,7 +882,7 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
         <div class="card aether-panel character-sheet-card character-details-card mb-4" id="characterDetailsCard">
             <div class="card-body">
                 <div class="character-details-card-header">
-                    <h4 class="character-sheet-card-title mb-0">Personagegegevens</h4>
+                    <h4 class="character-sheet-card-title mb-0">${aetherT("Personagegegevens")}</h4>
                     <div class="button-group" id="characterDetailsActionGroup"></div>
                 </div>
                 <div class="character-details-display character-details-full-name" data-character-field="fullName"></div>
@@ -892,9 +893,9 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
                                 id="characterPortraitImage"
                                 class="character-portrait-image d-none"
                                 src=""
-                                alt="Portret personage"
+                                alt="${aetherT("Portret personage")}"
                             >
-                            <div id="characterPortraitPlaceholder" class="character-portrait-placeholder">Geen portret</div>
+                            <div id="characterPortraitPlaceholder" class="character-portrait-placeholder">${aetherT("Geen portret")}</div>
                         </div>
                         <div class="character-portrait-actions d-none" id="characterPortraitActions">
                             <input type="file" id="characterPortraitFileInput" class="d-none" accept="image/*">
@@ -902,32 +903,32 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
                         </div>
                     </div>
                     <div class="character-sheet-header-fields character-details-display character-details-summary">
-                        <div class="character-details-summary-row"><span>Klasse</span><span data-character-field="class"></span></div>
-                        <div class="character-details-summary-row"><span>Burgerlijke staat</span><span data-character-field="maritalStatus"></span></div>
+                        <div class="character-details-summary-row"><span>${aetherT("Klasse")}</span><span data-character-field="class"></span></div>
+                        <div class="character-details-summary-row"><span>${aetherT("Burgerlijke staat")}</span><span data-character-field="maritalStatus"></span></div>
                         <div id="characterDetailsSummaryTraits"></div>
-                        <div class="character-details-summary-row"><span>Nationaliteit</span><span data-character-field="nationality"></span></div>
-                        <div class="character-details-summary-row"><span>Geboren te / op</span><span data-character-field="birthLine"></span></div>
-                        <div class="character-details-summary-row"><span>Adres</span><div><div data-character-field="streetLine"></div><div data-character-field="cityLine"></div></div></div>
-                        <div class="character-details-summary-row"><span>Rijksregisternummer</span><span data-character-field="stateRegisterNumber"></span></div>
+                        <div class="character-details-summary-row"><span>${aetherT("Nationaliteit")}</span><span data-character-field="nationality"></span></div>
+                        <div class="character-details-summary-row"><span>${aetherT("Geboren te / op")}</span><span data-character-field="birthLine"></span></div>
+                        <div class="character-details-summary-row"><span>${aetherT("Adres")}</span><div><div data-character-field="streetLine"></div><div data-character-field="cityLine"></div></div></div>
+                        <div class="character-details-summary-row"><span>${aetherT("Rijksregisternummer")}</span><span data-character-field="stateRegisterNumber"></span></div>
                     </div>
                     <div class="character-sheet-header-fields character-details-editor d-none">
                         <div class="mb-3 row" id="classRow">
-                            <label class="col-sm-4 col-form-label">Klasse</label>
+                            <label class="col-sm-4 col-form-label">${aetherT("Klasse")}</label>
                             <div class="col-sm-8 character-details-display" data-character-field="class"></div>
-                            <div class="col-sm-8 character-details-editor d-none"><select class="form-select" id="class"><option value="">Kies een klasse</option><option value="upper class">Hogere klasse</option><option value="middle class">Middenklasse</option><option value="lower class">Lagere klasse</option></select></div>
+                            <div class="col-sm-8 character-details-editor d-none"><select class="form-select" id="class"><option value="">${aetherT("Kies een klasse")}</option><option value="upper class">${aetherT("Hogere klasse")}</option><option value="middle class">${aetherT("Middenklasse")}</option><option value="lower class">${aetherT("Lagere klasse")}</option></select></div>
                         </div>
                         <div class="mb-3 row">
-                            <label class="col-sm-4 col-form-label">Aanspreking</label>
+                            <label class="col-sm-4 col-form-label">${aetherT("Aanspreking")}</label>
                             <div class="col-sm-8 character-details-display" data-character-field="title"></div>
                             <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="title"></div>
                         </div>
                         <div class="mb-3 row">
-                            <label class="col-sm-4 col-form-label">Familienaam</label>
+                            <label class="col-sm-4 col-form-label">${aetherT("Familienaam")}</label>
                             <div class="col-sm-8 character-details-display" data-character-field="lastName"></div>
                             <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="lastName"></div>
                         </div>
                         <div class="mb-3 row">
-                            <label class="col-sm-4 col-form-label">Voornaam</label>
+                            <label class="col-sm-4 col-form-label">${aetherT("Voornaam")}</label>
                             <div class="col-sm-8 character-details-display" data-character-field="firstName"></div>
                             <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="firstName"></div>
                         </div>
@@ -936,34 +937,34 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
                 <div class="character-details-editor d-none">
                 <div id="characterDetailsTraitPosition"></div>
                 ${hasLeftTraitModule ? `<div id="leftTraitModuleHost"></div>` : ""}
-                ${hasLeftTraitModule && canEditTraits ? `<p class="small text-muted mb-3">Wijzigingen aan beroep, adellijke titel en familie worden meteen bewaard, ook als je daarna Cancel kiest.</p>` : ""}
+                ${hasLeftTraitModule && canEditTraits ? `<p class="small text-muted mb-3">${aetherT("Wijzigingen aan beroep, adellijke titel en familie worden meteen bewaard, ook als je daarna Cancel kiest.")}</p>` : ""}
                 <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Straat en nummer</label>
+                    <label class="col-sm-4 col-form-label">${aetherT("Straat en nummer")}</label>
                     <div class="col-sm-8 character-details-display" data-character-field="streetLine"></div>
                     <div class="col-sm-8 character-details-editor d-none"><div class="row g-2"><div class="col"><input type="text" class="form-control" id="street"></div><div class="col-3"><input type="text" class="form-control" id="houseNumber"></div></div></div>
                 </div>
                 <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Postcode en gemeente</label>
+                    <label class="col-sm-4 col-form-label">${aetherT("Postcode en gemeente")}</label>
                     <div class="col-sm-8 character-details-display" data-character-field="cityLine"></div>
                     <div class="col-sm-8 character-details-editor d-none"><div class="row g-2"><div class="col-3"><input type="text" class="form-control" id="postalCode"></div><div class="col"><input type="text" class="form-control" id="municipality"></div></div></div>
                 </div>
                 <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Burgerlijke staat</label>
+                    <label class="col-sm-4 col-form-label">${aetherT("Burgerlijke staat")}</label>
                     <div class="col-sm-8 character-details-display" data-character-field="maritalStatus"></div>
-                    <div class="col-sm-8 character-details-editor d-none"><select class="form-select" id="maritalStatus"><option value="">Kies een burgerlijke staat</option><option value="Single">Ongehuwd</option><option value="Married">Gehuwd</option><option value="Widowed">Weduwe/weduwnaar</option></select></div>
+                    <div class="col-sm-8 character-details-editor d-none"><select class="form-select" id="maritalStatus"><option value="">${aetherT("Kies een burgerlijke staat")}</option><option value="Single">${aetherT("Ongehuwd")}</option><option value="Married">${aetherT("Gehuwd")}</option><option value="Widowed">${aetherT("Weduwe/weduwnaar")}</option></select></div>
                 </div>
                 <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Nationaliteit</label>
+                    <label class="col-sm-4 col-form-label">${aetherT("Nationaliteit")}</label>
                     <div class="col-sm-8 character-details-display" data-character-field="nationality"></div>
                     <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="nationality"></div>
                 </div>
                 <div class="mb-3 row" id="birthRow">
-                    <label class="col-sm-4 col-form-label">Geboren te / op</label>
+                    <label class="col-sm-4 col-form-label">${aetherT("Geboren te / op")}</label>
                     <div class="col-sm-8 character-details-display" data-character-field="birthLine"></div>
                     <div class="col-sm-8 character-details-editor d-none"><div class="row g-2"><div class="col"><input type="text" class="form-control" id="birthPlace"></div><div class="col"><input class="form-control" id="birthDate" type="date"></div></div></div>
                 </div>
                 <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Rijksregisternummer</label>
+                    <label class="col-sm-4 col-form-label">${aetherT("Rijksregisternummer")}</label>
                     <div class="col-sm-8 character-details-display" data-character-field="stateRegisterNumber"></div>
                     <div class="col-sm-8 character-details-editor d-none"><input type="text" class="form-control" id="stateRegisterNumber"></div>
                 </div>
@@ -972,13 +973,13 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
         </div>
         <div class="card aether-panel character-sheet-card mb-4" id="leftInfoSections">
             <div class="card-body">
-                <h4 class="character-sheet-card-title">Gezondheid</h4>
+                <h4 class="character-sheet-card-title">${aetherT("Gezondheid")}</h4>
                 <div class="mb-4" id="healthSectionContent"></div>
-                <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
+                <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">${aetherT("Levensstandaard")}</h4>
                 <div class="mb-4" id="livingStandardSectionContent"></div>
-                <h4 class="character-sheet-card-title" id="staffSectionTitle">Personeel</h4>
+                <h4 class="character-sheet-card-title" id="staffSectionTitle">${aetherT("Personeel")}</h4>
                 <div class="mb-4" id="staffSectionContent"></div>
-                <h4 class="character-sheet-card-title" id="languagesSectionTitle">Talen</h4>
+                <h4 class="character-sheet-card-title" id="languagesSectionTitle">${aetherT("Talen")}</h4>
                 <div id="languagesSectionContent"></div>
             </div>
         </div>
@@ -1001,7 +1002,7 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
     const summaryTraits = container.querySelector("#characterDetailsSummaryTraits");
     const summaryGroups = character.class === "upper class"
         ? getUpperClassLeftTraitGroups(character, character.traitGroups || [])
-        : [{ leftModuleLabel: "Beroep", linkedTraits: getLinkedProfessionGroup(character)?.linkedTraits || [] }];
+        : [{ leftModuleLabel: aetherT("Beroep"), linkedTraits: getLinkedProfessionGroup(character)?.linkedTraits || [] }];
     summaryGroups.forEach((group) => {
         const row = document.createElement("div");
         row.className = "character-details-summary-row";
@@ -1027,9 +1028,9 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
 
     const portraitActionGroup = container.querySelector("#characterPortraitActionGroup");
     if (canEdit && portraitActionGroup && typeof AetherActionButtons !== "undefined") {
-        const upload = AetherActionButtons.button({ icon: "fa-upload", label: "", title: "Portret opladen" });
+        const upload = AetherActionButtons.button({ icon: "fa-upload", label: "", title: aetherT("Portret opladen") });
         upload.id = "characterPortraitUploadButton";
-        const remove = AetherActionButtons.button({ icon: "fa-trash", label: "", title: "Portret verwijderen" });
+        const remove = AetherActionButtons.button({ icon: "fa-trash", label: "", title: aetherT("Portret verwijderen") });
         remove.id = "characterPortraitDeleteButton";
         portraitActionGroup.append(upload, remove);
     }
@@ -1048,12 +1049,12 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
         if (actionGroup && canEdit && typeof AetherActionButtons !== "undefined") {
             actionGroup.replaceChildren();
             if (!editing) {
-                const edit = AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit", title: "Personagegegevens bewerken" });
+                const edit = AetherActionButtons.button({ icon: "fa-pen-nib", label: aetherT("Edit"), title: aetherT("Personagegegevens bewerken") });
                 edit.addEventListener("click", () => setEditing(true));
                 actionGroup.append(edit);
             } else {
-                const save = AetherActionButtons.button({ icon: "fa-check", label: "Save", title: "Personagegegevens bewaren" });
-                const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: "Cancel", title: "Wijzigingen annuleren" });
+                const save = AetherActionButtons.button({ icon: "fa-check", label: aetherT("Save"), title: aetherT("Personagegegevens bewaren") });
+                const cancel = AetherActionButtons.button({ icon: "fa-xmark", label: aetherT("Cancel"), title: aetherT("Wijzigingen annuleren") });
                 save.addEventListener("click", async () => {
                     const fields = ["firstName", "lastName", "birthDate", "birthPlace", "nationality", "stateRegisterNumber", "street", "houseNumber", "municipality", "postalCode", "title", "maritalStatus"];
                     const payload = { id: character.id };
@@ -1066,7 +1067,7 @@ function renderCharacterDetailsCard(character, canEdit, canEditTraits) {
                         await getCharacter(character.id);
                     } catch (error) {
                         console.error("Kon de personagegegevens niet bewaren:", error);
-                        alert(error?.message || "Kon de personagegegevens niet bewaren.");
+                        alert(error?.message || aetherT("Kon de personagegegevens niet bewaren."));
                         save.disabled = false;
                     }
                 });

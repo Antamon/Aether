@@ -1,0 +1,8 @@
+#navbarName {display:flex;align-items:center;justify-content:flex-end;gap:.3em;flex-wrap:wrap}
+.aether-language-picker {position:relative;font:inherit;color:inherit}
+.aether-language-picker summary {list-style:none;cursor:pointer;border-radius:.25rem}
+.aether-language-picker summary::-webkit-details-marker {display:none}
+.aether-language-picker summary:focus-visible {outline:2px solid var(--primary-taupe);outline-offset:3px}
+.aether-language-menu {position:absolute;right:0;top:100%;min-width:9rem;padding:.35rem;background:#640000;border:1px solid #b98d47;border-radius:.5rem;box-shadow:0 3px 8px #0005;z-index:1060}
+.aether-language-menu button {display:block;width:100%;padding:.4rem .7rem;border:0;border-radius:.3rem;background:transparent;color:#f1dfbc;text-align:left;font:inherit}
+.aether-language-menu button:hover,.aether-language-menu button:focus-visible,.aether-language-menu button[aria-pressed="true"] {background:#fff2c528}

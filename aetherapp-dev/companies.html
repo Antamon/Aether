@@ -8,18 +8,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=4f5f6112f7ad7f03">
-    <link rel="stylesheet" href="css/page-nav.css?v=15dd62f126204bd9">
+    <link rel="stylesheet" href="css/style.css?v=5d83fe46e140c765">
+    <link rel="stylesheet" href="css/page-nav.css?v=8866eea59a088967">
     <link rel="stylesheet" href="css/modal.css?v=e7d148b7fe904a7b">
-    <title>Bedrijven - Aether applicatie</title>
+    <title data-i18n="Bedrijven - Aether applicatie">Bedrijven - Aether applicatie</title>
+<link rel="stylesheet" href="css/i18n.css?v=dde2fe626a199436">
+<script src="js/interface-copy.js?v=025214948d5cffd1"></script>
+<script src="js/i18n.js?v=13ca69d9a742769d"></script>
 </head>
 <body data-sidebar-page="companies">
     <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina">
+            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina" data-i18n-aria-label="Aether startpagina">
                 <img src="img/aether-logo.png" alt="Bootstrap">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" data-i18n-aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -33,7 +36,7 @@
     <template id="companySidebarContent">
         <div class="company-list" id="companyList"></div>
         <div class="company-list-actions mt-3">
-            <div class="button-group w-100"><button type="button" class="action-button w-100" id="newCompanyButton"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuw bedrijf</button></div>
+            <div class="button-group w-100"><button type="button" class="action-button w-100" id="newCompanyButton"><i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="Nieuw bedrijf">Nieuw bedrijf</span></button></div>
         </div>
     </template>
 
@@ -44,8 +47,8 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                             <div>
-                                <h2 class="h4 mb-1" id="companyFormTitle">Bedrijfsgegevens</h2>
-                                <p class="text-muted mb-0" id="companyFormSubtitle">Kies links een bedrijf om de gegevens te bekijken of aan te passen.</p>
+                                <h2 class="h4 mb-1" id="companyFormTitle"><span data-i18n="Bedrijfsgegevens">Bedrijfsgegevens</span></h2>
+                                <p class="text-muted mb-0" id="companyFormSubtitle"><span data-i18n="Kies links een bedrijf om de gegevens te bekijken of aan te passen.">Kies links een bedrijf om de gegevens te bekijken of aan te passen.</span></p>
                             </div>
                             <div class="alert py-2 px-3 mb-0 d-none" id="companyFeedback" role="status"></div>
                             <div id="companyDetailsActions"></div>
@@ -58,58 +61,58 @@
                             <div class="company-header-layout">
                                 <div class="company-logo-panel">
                                     <div class="company-logo-frame">
-                                        <img src="" alt="Bedrijfslogo" id="companyLogoImage" class="company-logo-image d-none">
-                                        <div class="company-logo-placeholder" id="companyLogoPlaceholder">Geen logo</div>
+                                        <img src="" alt="Bedrijfslogo" data-i18n-alt="Bedrijfslogo" id="companyLogoImage" class="company-logo-image d-none">
+                                        <div class="company-logo-placeholder" id="companyLogoPlaceholder"><span data-i18n="Geen logo">Geen logo</span></div>
                                     </div>
 
                                     <div class="company-logo-actions button-group">
-                                        <button type="button" class="action-button" id="companyLogoUploadButton"><i class="fa-solid fa-upload" aria-hidden="true"></i> Logo opladen</button>
-                                        <button type="button" class="action-button" id="companyLogoDeleteButton"><i class="fa-solid fa-trash" aria-hidden="true"></i> Logo verwijderen</button>
+                                        <button type="button" class="action-button" id="companyLogoUploadButton"><i class="fa-solid fa-upload" aria-hidden="true"></i> <span data-i18n="Logo opladen">Logo opladen</span></button>
+                                        <button type="button" class="action-button" id="companyLogoDeleteButton"><i class="fa-solid fa-trash" aria-hidden="true"></i> <span data-i18n="Logo verwijderen">Logo verwijderen</span></button>
                                     </div>
                                 </div>
 
                                 <div class="company-primary-fields">
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyName">Bedrijfsnaam</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyName"><span data-i18n="Bedrijfsnaam">Bedrijfsnaam</span></label>
                                         <div class="col-sm-8">
                                             <input type="text" class="form-control" id="companyName" maxlength="255" required>
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyFoundationDate">Datum van oprichting</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyFoundationDate"><span data-i18n="Datum van oprichting">Datum van oprichting</span></label>
                                         <div class="col-sm-8">
                                             <input type="date" class="form-control" id="companyFoundationDate">
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <span class="col-sm-4 aether-field-label">Type bedrijf</span>
+                                        <span class="col-sm-4 aether-field-label"><span data-i18n="Type bedrijf">Type bedrijf</span></span>
                                         <div class="col-sm-8 d-flex align-items-center gap-2" id="companyTypeCard">
                                             <span id="companyTypeLabel">—</span>
-                                            <i id="companyTypeInfoButton" class="fa-solid fa-circle-info company-type-info-icon" data-bs-toggle="modal" data-bs-target="#companyTypeInfoModal" role="button" tabindex="0" aria-label="Meer informatie over dit bedrijfstype" title="Meer informatie over dit bedrijfstype"></i>
+                                            <i id="companyTypeInfoButton" class="fa-solid fa-circle-info company-type-info-icon" data-bs-toggle="modal" data-bs-target="#companyTypeInfoModal" role="button" tabindex="0" aria-label="Meer informatie over dit bedrijfstype" data-i18n-aria-label="Meer informatie over dit bedrijfstype" title="Meer informatie over dit bedrijfstype" data-i18n-title="Meer informatie over dit bedrijfstype"></i>
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyValue">Bedrijfswaarde</label>
+                                        <label class="col-sm-4 col-form-label aether-field-label" for="companyValue"><span data-i18n="Bedrijfswaarde">Bedrijfswaarde</span></label>
                                         <div class="col-sm-8">
                                             <span id="companyValue" class="d-inline-block py-2">—</span>
                                         </div>
                                     </div>
 
                                     <div class="company-inline-field row g-2 align-items-center">
-                                        <span class="col-sm-4 aether-field-label">Beursgenoteerd</span>
+                                        <span class="col-sm-4 aether-field-label"><span data-i18n="Beursgenoteerd">Beursgenoteerd</span></span>
                                         <div class="col-sm-8" id="companyShareListing"></div>
                                     </div>
                                 </div>
                             </div>
 
                             <section class="company-description-section mt-3" aria-labelledby="companyDescriptionTitle">
-                                <h3 class="h5" id="companyDescriptionTitle">Beschrijving</h3>
+                                <h3 class="h5" id="companyDescriptionTitle"><span data-i18n="Beschrijving">Beschrijving</span></h3>
                                 <div class="company-description-display" id="companyDescriptionDisplay"></div>
                                 <div id="companyDescriptionEditorHost"></div>
-                                <textarea class="form-control d-none" id="companyDescription" rows="4" aria-label="Beschrijving"></textarea>
+                                <textarea class="form-control d-none" id="companyDescription" rows="4" aria-label="Beschrijving" data-i18n-aria-label="Beschrijving"></textarea>
                             </section>
 
                         </form>
@@ -122,7 +125,7 @@
                                 <div class="col-12 col-lg-6">
                                     <div class="company-slider-card aether-inset mb-3">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
-                                            <label class="form-label mb-0" for="companyStability">Stabiliteit</label>
+                                            <label class="form-label mb-0" for="companyStability"><span data-i18n="Stabiliteit">Stabiliteit</span></label>
                                             <span class="badge text-bg-light company-slider-value" id="companyStabilityValue">0</span>
                                         </div>
                                         <input type="range" class="form-range" id="companyStability" min="-7" max="7" step="1" value="0">
@@ -134,23 +137,23 @@
                                         <div class="company-snapshots-create row g-2 mb-3">
                                             <div class="col-12 col-md-8">
                                                 <select class="form-select" id="companySnapshotEventSelect">
-                                                    <option value="0">Kies een event</option>
+                                                    <option value="0" data-i18n="Kies een event">Kies een event</option>
                                                 </select>
                                                 <p class="small text-muted mt-1 mb-0 d-none" id="companySnapshotEventStatus"></p>
                                             </div>
                                             <div class="col-12 col-md-4 d-grid">
-                                                <div class="button-group"><button type="button" class="action-button" id="createCompanySnapshotButton"><i class="fa-solid fa-camera" aria-hidden="true"></i> Snapshot maken</button></div>
+                                                <div class="button-group"><button type="button" class="action-button" id="createCompanySnapshotButton"><i class="fa-solid fa-camera" aria-hidden="true"></i> <span data-i18n="Snapshot maken">Snapshot maken</span></button></div>
                                             </div>
                                         </div>
                                         <div class="company-snapshots-list" id="companySnapshotsList"></div>
-                                        <p class="company-snapshots-empty text-muted mb-0 d-none" id="companySnapshotsEmpty">Nog geen snapshots beschikbaar.</p>
+                                        <p class="company-snapshots-empty text-muted mb-0 d-none" id="companySnapshotsEmpty"><span data-i18n="Nog geen snapshots beschikbaar.">Nog geen snapshots beschikbaar.</span></p>
                                     </div>
                                 </div>
 
                                 <div class="col-12 col-lg-6">
                                     <div class="company-slider-card aether-inset mb-3">
                                         <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
-                                            <label class="form-label mb-0" for="companyProfitability">Rendabiliteit</label>
+                                            <label class="form-label mb-0" for="companyProfitability"><span data-i18n="Rendabiliteit">Rendabiliteit</span></label>
                                             <span class="badge text-bg-light company-slider-value" id="companyProfitabilityValue">0</span>
                                         </div>
                                         <input type="range" class="form-range" id="companyProfitability" min="-7" max="7" step="1" value="0">
@@ -159,56 +162,56 @@
                                     <div class="company-personnel-card aether-inset d-none" id="companyPersonnelCard">
                                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                                             <div>
-                                                <div class="company-personnel-card-label">Personeel</div>
-                                                <p class="company-personnel-card-help mb-0">Voeg personeelsleden toe aan het bedrijf. Stel minimumvaardigheden in voor de functie. Het wel of niet halen van die vereisten, zal een positieve of negatieve invloed hebben op de bedrijfswinsten. Belangrijke personeelsleden hebben meer inpact dat onbelangrijke personeelsleden</p>
+                                                <div class="company-personnel-card-label"><span data-i18n="Personeel">Personeel</span></div>
+                                                <p class="company-personnel-card-help mb-0"><span data-i18n="Voeg personeelsleden toe aan het bedrijf. Stel minimumvaardigheden in voor de functie. Het wel of niet halen van die vereisten, zal een positieve of negatieve invloed hebben op de bedrijfswinsten. Belangrijke personeelsleden hebben meer inpact dat onbelangrijke personeelsleden">Voeg personeelsleden toe aan het bedrijf. Stel minimumvaardigheden in voor de functie. Het wel of niet halen van die vereisten, zal een positieve of negatieve invloed hebben op de bedrijfswinsten. Belangrijke personeelsleden hebben meer inpact dat onbelangrijke personeelsleden</span></p>
                                             </div>
-                                            <div class="button-group"><button type="button" class="action-button" id="addCompanyPersonnelButton" data-action="add-company-personnel"><i class="fa-solid fa-plus" aria-hidden="true"></i> Personeelslid toevoegen</button></div>
+                                            <div class="button-group"><button type="button" class="action-button" id="addCompanyPersonnelButton" data-action="add-company-personnel"><i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="Personeelslid toevoegen">Personeelslid toevoegen</span></button></div>
                                         </div>
 
                                         <div class="company-personnel-list" id="companyPersonnelList"></div>
-                                        <p class="company-personnel-empty text-muted mb-0 d-none" id="companyPersonnelEmpty">Nog geen personeelsleden gekoppeld.</p>
+                                        <p class="company-personnel-empty text-muted mb-0 d-none" id="companyPersonnelEmpty"><span data-i18n="Nog geen personeelsleden gekoppeld.">Nog geen personeelsleden gekoppeld.</span></p>
                                     </div>
                                 </div>
                             </div>
 
                             <section class="company-quarter-history mt-4" id="companyQuarterHistory" aria-labelledby="companyQuarterTitle">
                                 <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
-                                    <div><h3 class="h4 mb-1" id="companyQuarterTitle">Bedrijfsevolutie per kwartaal</h3>
-                                    <p class="small text-muted mb-0">Speljaren lopen exact 100 jaar achter op de kalenderjaren.</p></div>
-                                    <label class="d-flex align-items-center gap-2" for="companyQuarterMetric">Grafiek
+                                    <div><h3 class="h4 mb-1" id="companyQuarterTitle"><span data-i18n="Bedrijfsevolutie per kwartaal">Bedrijfsevolutie per kwartaal</span></h3>
+                                    <p class="small text-muted mb-0"><span data-i18n="Speljaren lopen exact 100 jaar achter op de kalenderjaren.">Speljaren lopen exact 100 jaar achter op de kalenderjaren.</span></p></div>
+                                    <label class="d-flex align-items-center gap-2" for="companyQuarterMetric"><span data-i18n="Grafiek">Grafiek</span>
                                         <select id="companyQuarterMetric" class="form-select"></select>
                                     </label>
                                 </div>
                                 <div class="company-quarter-toolbar mb-3">
                                     <div id="companyQuarterEditControls" class="company-quarter-edit-controls d-none">
-                                        <div class="button-group company-quarter-edit-radio" role="radiogroup" aria-label="Bewerken via">
+                                        <div class="button-group company-quarter-edit-radio" role="radiogroup" aria-label="Bewerken via" data-i18n-aria-label="Bewerken via">
                                             <input type="radio" name="companyQuarterEditMode" id="companyQuarterModeDrag" value="drag" checked>
-                                            <label for="companyQuarterModeDrag"><i class="fa-solid fa-arrows-up-down" aria-hidden="true"></i> Slepen</label>
+                                            <label for="companyQuarterModeDrag"><i class="fa-solid fa-arrows-up-down" aria-hidden="true"></i> <span data-i18n="Slepen">Slepen</span></label>
                                             <input type="radio" name="companyQuarterEditMode" id="companyQuarterModeModal" value="modal">
-                                            <label for="companyQuarterModeModal"><i class="fa-solid fa-file-contract" aria-hidden="true"></i> Kwartaalmodal</label>
+                                            <label for="companyQuarterModeModal"><i class="fa-solid fa-file-contract" aria-hidden="true"></i> <span data-i18n="Kwartaalmodal">Kwartaalmodal</span></label>
                                         </div>
                                         <div id="companyQuarterInfluenceControls" class="company-quarter-influence-controls">
-                                            <label for="companyQuarterInfluence" class="form-label mb-0">Naburige kwartalen per kant: <output id="companyQuarterInfluenceValue" for="companyQuarterInfluence">0</output></label>
+                                            <label for="companyQuarterInfluence" class="form-label mb-0"><span data-i18n="Naburige kwartalen per kant:">Naburige kwartalen per kant:</span> <output id="companyQuarterInfluenceValue" for="companyQuarterInfluence">0</output></label>
                                             <input type="range" id="companyQuarterInfluence" class="form-range" min="0" max="8" value="0">
                                         </div>
                                     </div>
                                     <div class="button-group company-quarter-mode-actions">
-                                        <button type="button" class="action-button" id="companyQuarterEditToggle" aria-pressed="false"><i class="fa-solid fa-pen" aria-hidden="true"></i> Grafiek bewerken</button>
-                                        <button type="button" class="action-button d-none" id="companyQuarterDragSave" disabled><i class="fa-solid fa-check" aria-hidden="true"></i> Wijzigingen opslaan</button>
+                                        <button type="button" class="action-button" id="companyQuarterEditToggle" aria-pressed="false"><i class="fa-solid fa-pen" aria-hidden="true"></i> <span data-i18n="Grafiek bewerken">Grafiek bewerken</span></button>
+                                        <button type="button" class="action-button d-none" id="companyQuarterDragSave" disabled><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Wijzigingen opslaan">Wijzigingen opslaan</span></button>
                                     </div>
                                 </div>
                                 <p id="companyQuarterEditStatus" class="small mb-2 d-none" role="status"></p>
                                 <div class="company-quarter-graph-layout">
                                     <div id="companyQuarterContent"></div>
-                                    <div class="company-quarter-zoom-controls" aria-label="Grafiekzoom">
-                                        <label for="companyQuarterHorizontalZoom" title="Horizontale zoom: afstand tussen kwartalen">
+                                    <div class="company-quarter-zoom-controls" aria-label="Grafiekzoom" data-i18n-aria-label="Grafiekzoom">
+                                        <label for="companyQuarterHorizontalZoom" title="Horizontale zoom: afstand tussen kwartalen" data-i18n-title="Horizontale zoom: afstand tussen kwartalen">
                                             <i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i>
-                                            <input type="range" id="companyQuarterHorizontalZoom" min="25" max="300" step="5" value="100" aria-label="Horizontale zoom">
+                                            <input type="range" id="companyQuarterHorizontalZoom" min="25" max="300" step="5" value="100" aria-label="Horizontale zoom" data-i18n-aria-label="Horizontale zoom">
                                             <output id="companyQuarterHorizontalZoomValue" for="companyQuarterHorizontalZoom">100%</output>
                                         </label>
-                                        <label for="companyQuarterVerticalZoom" title="Verticale zoom: afstand tussen bedragen">
+                                        <label for="companyQuarterVerticalZoom" title="Verticale zoom: afstand tussen bedragen" data-i18n-title="Verticale zoom: afstand tussen bedragen">
                                             <i class="fa-solid fa-arrows-up-down" aria-hidden="true"></i>
-                                            <input type="range" id="companyQuarterVerticalZoom" min="100" max="400" step="10" value="100" aria-label="Verticale zoom">
+                                            <input type="range" id="companyQuarterVerticalZoom" min="100" max="400" step="10" value="100" aria-label="Verticale zoom" data-i18n-aria-label="Verticale zoom">
                                             <output id="companyQuarterVerticalZoomValue" for="companyQuarterVerticalZoom">100%</output>
                                         </label>
                                     </div>
@@ -223,41 +226,41 @@
 
     <div class="modal fade" id="companyQuarterModal" tabindex="-1" aria-labelledby="companyQuarterModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg"><div class="modal-content">
-            <div class="modal-header"><h3 class="modal-title" id="companyQuarterModalTitle">Kwartaal</h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
+            <div class="modal-header"><h3 class="modal-title" id="companyQuarterModalTitle"><span data-i18n="Kwartaal">Kwartaal</span></h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten" data-i18n-aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
             <div class="modal-body" id="companyQuarterModalBody"></div>
             <div class="modal-footer">
-                <div class="button-group"><button type="button" class="action-button" id="companyQuarterSavePrevious"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Overnemen en vorig kwartaal</button></div>
-                <div class="button-group"><button type="button" class="action-button" id="companyQuarterSave"><i class="fa-solid fa-check" aria-hidden="true"></i> Overnemen</button></div>
-                <div class="button-group"><button type="button" class="action-button" id="companyQuarterSaveNext">Overnemen en volgend kwartaal <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button></div>
-                <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Annuleren</button></div>
+                <div class="button-group"><button type="button" class="action-button" id="companyQuarterSavePrevious"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span data-i18n="Overnemen en vorig kwartaal">Overnemen en vorig kwartaal</span></button></div>
+                <div class="button-group"><button type="button" class="action-button" id="companyQuarterSave"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Overnemen">Overnemen</span></button></div>
+                <div class="button-group"><button type="button" class="action-button" id="companyQuarterSaveNext"><span data-i18n="Overnemen en volgend kwartaal">Overnemen en volgend kwartaal</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button></div>
+                <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Annuleren">Annuleren</span></button></div>
             </div>
         </div></div>
     </div>
 
     <div class="modal fade" id="companySnapshotCreateModal" tabindex="-1" aria-labelledby="companySnapshotCreateModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg"><div class="modal-content">
-            <div class="modal-header"><h3 class="modal-title" id="companySnapshotCreateModalTitle">Snapshot maken</h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
+            <div class="modal-header"><h3 class="modal-title" id="companySnapshotCreateModalTitle"><span data-i18n="Snapshot maken">Snapshot maken</span></h3><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten" data-i18n-aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
             <div class="modal-body">
                 <p id="companySnapshotCreateContext" class="small mb-3"></p>
                 <div class="row g-3">
-                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateValue">Bedrijfswaarde</label><input type="text" inputmode="decimal" class="form-control" id="companySnapshotCreateValue"></div>
-                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateShares">Uitgegeven aandelen</label><input type="number" class="form-control" id="companySnapshotCreateShares" min="1" max="1000000" step="1"></div>
-                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreatePrice">Marktprijs per aandeel</label><input type="text" inputmode="decimal" class="form-control" id="companySnapshotCreatePrice"></div>
-                    <div class="col-12 col-sm-3"><label class="form-label" for="companySnapshotCreateStability">Stabiliteit</label><input type="number" class="form-control" id="companySnapshotCreateStability" min="-7" max="7" step="1"></div>
-                    <div class="col-12 col-sm-3"><label class="form-label" for="companySnapshotCreateProfitability">Rendabiliteit</label><input type="number" class="form-control" id="companySnapshotCreateProfitability" min="-7" max="7" step="1"></div>
+                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateValue"><span data-i18n="Bedrijfswaarde">Bedrijfswaarde</span></label><input type="text" inputmode="decimal" class="form-control" id="companySnapshotCreateValue"></div>
+                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreateShares"><span data-i18n="Uitgegeven aandelen">Uitgegeven aandelen</span></label><input type="number" class="form-control" id="companySnapshotCreateShares" min="1" max="1000000" step="1"></div>
+                    <div class="col-12 col-sm-6"><label class="form-label" for="companySnapshotCreatePrice"><span data-i18n="Marktprijs per aandeel">Marktprijs per aandeel</span></label><input type="text" inputmode="decimal" class="form-control" id="companySnapshotCreatePrice"></div>
+                    <div class="col-12 col-sm-3"><label class="form-label" for="companySnapshotCreateStability"><span data-i18n="Stabiliteit">Stabiliteit</span></label><input type="number" class="form-control" id="companySnapshotCreateStability" min="-7" max="7" step="1"></div>
+                    <div class="col-12 col-sm-3"><label class="form-label" for="companySnapshotCreateProfitability"><span data-i18n="Rendabiliteit">Rendabiliteit</span></label><input type="number" class="form-control" id="companySnapshotCreateProfitability" min="-7" max="7" step="1"></div>
                 </div>
                 <div id="companySnapshotCreateError" class="alert alert-danger d-none mt-3 mb-0" role="alert"></div>
             </div>
             <div class="modal-footer"><div class="button-group">
-                <button type="button" class="action-button" id="companySnapshotCreateConfirm"><i class="fa-solid fa-check" aria-hidden="true"></i> Snapshot maken</button>
-                <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Annuleren</button>
+                <button type="button" class="action-button" id="companySnapshotCreateConfirm"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Snapshot maken">Snapshot maken</span></button>
+                <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Annuleren">Annuleren</span></button>
             </div></div>
         </div></div>
     </div>
 
     <div class="modal fade" id="companyTypeInfoModal" tabindex="-1" aria-labelledby="companyTypeInfoTitle" aria-hidden="true">
         <div class="modal-dialog"><div class="modal-content">
-            <div class="modal-header"><h2 class="modal-title fs-5" id="companyTypeInfoTitle">Type bedrijf</h2><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
+            <div class="modal-header"><h2 class="modal-title fs-5" id="companyTypeInfoTitle"><span data-i18n="Type bedrijf">Type bedrijf</span></h2><div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten" data-i18n-aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div></div>
             <div class="modal-body"><p id="companyTypeRange"></p><p id="companyTypeDescription" class="mb-0"></p></div>
         </div></div>
     </div>
@@ -266,34 +269,34 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title fs-3">Add specialisation</h2>
-                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                    <h2 class="modal-title fs-3"><span data-i18n="Add specialisation">Add specialisation</span></h2>
+                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                 </div>
                 <div class="modal-body">
                     <ul class="nav nav-tabs mb-3" id="companyPersonnelSpecTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="company-personnel-spec-existing-tab" data-bs-toggle="tab" data-bs-target="#company-personnel-spec-existing-pane" type="button" role="tab" aria-selected="true" data-tab="existing">Existing</button>
+                            <button class="nav-link active" id="company-personnel-spec-existing-tab" data-bs-toggle="tab" data-bs-target="#company-personnel-spec-existing-pane" type="button" role="tab" aria-selected="true" data-tab="existing"><span data-i18n="Existing">Existing</span></button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="company-personnel-spec-new-tab" data-bs-toggle="tab" data-bs-target="#company-personnel-spec-new-pane" type="button" role="tab" aria-selected="false" data-tab="new">New</button>
+                            <button class="nav-link" id="company-personnel-spec-new-tab" data-bs-toggle="tab" data-bs-target="#company-personnel-spec-new-pane" type="button" role="tab" aria-selected="false" data-tab="new"><span data-i18n="New">New</span></button>
                         </li>
                     </ul>
 
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="company-personnel-spec-existing-pane" role="tabpanel" aria-labelledby="company-personnel-spec-existing-tab">
-                            <label class="form-label" for="companyPersonnelSpecSelect">Existing specialisation</label>
+                            <label class="form-label" for="companyPersonnelSpecSelect"><span data-i18n="Existing specialisation">Existing specialisation</span></label>
                             <select class="form-select" id="companyPersonnelSpecSelect"></select>
                         </div>
                         <div class="tab-pane fade" id="company-personnel-spec-new-pane" role="tabpanel" aria-labelledby="company-personnel-spec-new-tab">
-                            <label class="form-label" for="companyPersonnelSpecCustom">New specialisation</label>
+                            <label class="form-label" for="companyPersonnelSpecCustom"><span data-i18n="New specialisation">New specialisation</span></label>
                             <input type="text" class="form-control" id="companyPersonnelSpecCustom">
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <div class="button-group">
-                        <button type="button" class="action-button" id="companyPersonnelSpecSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
-                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                        <button type="button" class="action-button" id="companyPersonnelSpecSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Save">Save</span></button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Cancel">Cancel</span></button>
                     </div>
                 </div>
             </div>
@@ -303,15 +306,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
     <script src="js/performance.js?v=39da1fe1368d5dac"></script>
-    <script src="js/modal.js?v=a235e11728124506"></script>
-    <script src="js/mainFunctions.js?v=595ea32597e24ddd"></script>
-    <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
-    <script src="js/aetherSidebars.js?v=7132d1029f81f413"></script>
+    <script src="js/modal.js?v=047864ead8e5ab89"></script>
+    <script src="js/mainFunctions.js?v=a868b11a7c26c11d"></script>
+    <script src="js/updateManager.js?v=8535c34341d58d54"></script>
+    <script src="js/aetherSidebars.js?v=28804c969644e997"></script>
     <script src="js/actionButtons.js?v=b4df11b598cd6c2e"></script>
-    <script src="js/shareInterface.js?v=9da42807545472ac"></script>
-    <script src="js/dataCard.js?v=f7e48488b0af3f4f"></script>
-    <script src="js/richTextCharacter.js?v=3ba30d8961e86621"></script>
-    <script src="js/companyFunctions.js?v=f140d6b01ab62f42"></script>
-    <script src="js/companyQuarters.js?v=733d68a0110012fa"></script>
+    <script src="js/shareInterface.js?v=e4d348f24cfeccb9"></script>
+    <script src="js/dataCard.js?v=6c089a7873f619ef"></script>
+    <script src="js/richTextCharacter.js?v=9109ab584a4da89d"></script>
+    <script src="js/companyFunctions.js?v=17c524257ba78bb3"></script>
+    <script src="js/companyQuarters.js?v=ef583fa9619cbdbd"></script>
 </body>
 </html>

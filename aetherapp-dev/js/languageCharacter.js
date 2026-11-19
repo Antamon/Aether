@@ -1,8 +1,9 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 let languageModalInstance = null;
 
 function sortLanguagesByName(items) {
     return [...(Array.isArray(items) ? items : [])].sort((left, right) =>
-        String(left?.name || "").localeCompare(String(right?.name || ""), "nl-BE", { sensitivity: "base" })
+        String(left?.name || "").localeCompare(String(right?.name || ""), (globalThis.AetherI18n?.locale || "nl-BE"), { sensitivity: "base" })
     );
 }
 
@@ -137,19 +138,19 @@ async function saveCharacterLanguageFromModal() {
     if (activeTab === "existing") {
         const selectedValue = Number(select?.value || 0);
         if (selectedValue <= 0) {
-            alert("Kies een bestaande taal of ga naar 'New'.");
+            alert(aetherT("Kies een bestaande taal of ga naar 'New'."));
             return;
         }
         payload.idLanguage = selectedValue;
     } else if (activeTab === "new") {
         const name = String(customInput?.value || "").trim();
         if (!name) {
-            alert("Vul een naam in voor de nieuwe taal.");
+            alert(aetherT("Vul een naam in voor de nieuwe taal."));
             return;
         }
         payload.name = name;
     } else {
-        alert("Onbekende tab-selectie.");
+        alert(aetherT("Onbekende tab-selectie."));
         return;
     }
 
@@ -167,7 +168,7 @@ async function saveCharacterLanguageFromModal() {
         languageModalInstance.hide();
     } catch (err) {
         console.error("Fout bij toevoegen taal:", err);
-        alert("Toevoegen van taal mislukt.");
+        alert(aetherT("Toevoegen van taal mislukt."));
     }
 }
 
@@ -190,7 +191,7 @@ async function deleteCharacterLanguage(idCharacterLanguage) {
         await getCharacter(currentCharacter.id, typeof getOpenSkillCollapseId === "function" ? getOpenSkillCollapseId() : null, typeof getActiveNavTabName === "function" ? getActiveNavTabName() : "sheet");
     } catch (err) {
         console.error("Fout bij verwijderen taal:", err);
-        alert("Verwijderen van taal mislukt.");
+        alert(aetherT("Verwijderen van taal mislukt."));
     }
 }
 
@@ -230,23 +231,23 @@ function renderCharacterLanguagesSection(character) {
     }
 
     const remainingFreeSlots = Math.max(0, summary.freeSlots - summary.selectedCount);
-    let introText = "Iedereen mag binnen spel elke taal gebruiken die je logisch acht voor je personage en die je buitenspel effectief kan spreken. De talen die hieronder opgelijst staan, zijn uitsluitend om teksten uit boeken en documenten te lezen en schrijven.";
+    let introText = aetherT("Iedereen mag binnen spel elke taal gebruiken die je logisch acht voor je personage en die je buitenspel effectief kan spreken. De talen die hieronder opgelijst staan, zijn uitsluitend om teksten uit boeken en documenten te lezen en schrijven.");
 
     if (!isParticipantViewingExtra) {
         if (remainingFreeSlots > 0) {
-            introText += ` Je kan er nog ${remainingFreeSlots} kiezen.`;
+            introText += aetherT("Je kan er nog {0} kiezen.",[remainingFreeSlots]);
         } else if (character?.type === "player") {
             if (summary.canBuyWithExperience) {
-                introText += " Je kan nog extra talen aankopen voor 2 EP.";
+                introText += aetherT(" Je kan nog extra talen aankopen voor 2 EP.");
             }
         } else {
-            introText += " Je kan nog extra talen aankopen voor 2 EP.";
+            introText += aetherT(" Je kan nog extra talen aankopen voor 2 EP.");
         }
     }
 
     const addButtonDisabled = !canManage || !summary.canAddLanguage;
     const addHelp = !summary.canAddLanguage && character?.type === "player"
-        ? `<div class="form-text">Geen vrije taalslots meer en onvoldoende ervaringspunten voor een extra taal.</div>`
+        ? `<div class="form-text">${aetherT("Geen vrije taalslots meer en onvoldoende ervaringspunten voor een extra taal.")}</div>`
         : "";
 
     container.innerHTML = `
@@ -259,7 +260,7 @@ function renderCharacterLanguagesSection(character) {
                         class="action-button"
                         id="addCharacterLanguageButton"
                         ${addButtonDisabled ? "disabled" : ""}>
-                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuwe taal
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> ${aetherT("Nieuwe taal")}
                 </button>
                 </div>
                 ${addHelp}
@@ -271,7 +272,7 @@ function renderCharacterLanguagesSection(character) {
     if (languages.length === 0) {
         const empty = document.createElement("p");
         empty.className = "text-muted mb-3";
-        empty.textContent = "Nog geen extra schrijftalen gekozen.";
+        empty.textContent = aetherT("Nog geen extra schrijftalen gekozen.");
         languageListHost?.appendChild(empty);
     } else {
         const list = document.createElement("ul");
@@ -283,7 +284,7 @@ function renderCharacterLanguagesSection(character) {
             name.textContent = language.name || "";
             item.appendChild(name);
             if (canManage) {
-                const removeButton = AetherActionButtons.button({ icon: "fa-trash", title: "Taal verwijderen", ariaLabel: "Taal verwijderen" });
+                const removeButton = AetherActionButtons.button({ icon: "fa-trash", title: aetherT("Taal verwijderen"), ariaLabel: aetherT("Taal verwijderen") });
                 removeButton.dataset.action = "delete-character-language";
                 removeButton.dataset.idCharacterLanguage = String(Number(language.id || 0));
                 item.appendChild(AetherActionButtons.group([removeButton]));

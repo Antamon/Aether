@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 ﻿// Init na load
 window.addEventListener("load", () => {
     initCharacterPage();
@@ -64,7 +65,7 @@ function updateCharacterPortrait(portraitUrl, hasPortrait) {
     portraitImage.src = "";
     portraitImage.classList.add("d-none");
     portraitPlaceholder.classList.remove("d-none");
-    portraitPlaceholder.textContent = hasPortrait ? "Portret laden..." : "Geen portret";
+    portraitPlaceholder.textContent = hasPortrait ? aetherT("Portret laden...") : aetherT("Geen portret");
 }
 
 function hasCharacterPortrait() {
@@ -99,7 +100,7 @@ function applyCharacterPortraitState(character) {
 async function uploadCharacterPortrait(file) {
     const id = Number(document.getElementById("idCharacter")?.value || currentCharacter?.id || 0);
     if (id <= 0) {
-        alert("Maak eerst het personage aan voor je een portret oplaadt.");
+        alert(aetherT("Maak eerst het personage aan voor je een portret oplaadt."));
         return;
     }
 
@@ -133,7 +134,7 @@ async function uploadCharacterPortrait(file) {
             } catch (error) {
                 text = "(geen body)";
             }
-            throw new Error(`API-fout ${response.status}: ${text}`);
+            throw new Error(aetherT("API-fout {0}: {1}",[response.status,text]));
         }
 
         const result = await response.json();
@@ -146,14 +147,14 @@ async function uploadCharacterPortrait(file) {
         console.error("Fout bij opladen portret:", err);
         updateCharacterPortrait(previousPortraitUrl, previousHasPortrait);
         updateCharacterPortraitActions(Boolean(currentCharacter?.canManagePortrait), previousHasPortrait);
-        alert("Kon het portret niet opladen.");
+        alert(aetherT("Kon het portret niet opladen."));
     }
 }
 
 async function deleteCharacterPortrait() {
     const id = Number(document.getElementById("idCharacter")?.value || currentCharacter?.id || 0);
     if (id <= 0) {
-        alert("Kies eerst een personage.");
+        alert(aetherT("Kies eerst een personage."));
         return;
     }
 
@@ -173,7 +174,7 @@ async function deleteCharacterPortrait() {
     } catch (err) {
         console.error("Fout bij verwijderen portret:", err);
         updateCharacterPortraitActions(Boolean(currentCharacter?.canManagePortrait), hasCharacterPortrait());
-        alert("Kon het portret niet verwijderen.");
+        alert(aetherT("Kon het portret niet verwijderen."));
     }
 }
 
@@ -589,8 +590,8 @@ function closeCharacterSidebarIfOpen() {
 async function handleSidebarCharacterDelete(idCharacter) {
     const character = Number(currentCharacter?.id) === Number(idCharacter) ? currentCharacter
         : characterSidebarItems.find((item) => Number(item.id) === Number(idCharacter));
-    const displayName = getCharacterSidebarDisplayName(character) || "dit personage";
-    const confirmed = window.confirm(`Weet u zeker dat u ${displayName} definitief wilt verwijderen?`);
+    const displayName = getCharacterSidebarDisplayName(character) || aetherT("dit personage");
+    const confirmed = window.confirm(aetherT("Weet u zeker dat u {0} definitief wilt verwijderen?",[displayName]));
 
     if (!confirmed) {
         return;
@@ -606,7 +607,7 @@ async function handleSidebarCharacterDelete(idCharacter) {
         await characterList();
     } catch (err) {
         console.error("Fout bij verwijderen personage:", err);
-        alert(err?.message || "Het verwijderen van het personage is mislukt.");
+        alert(err?.message || aetherT("Het verwijderen van het personage is mislukt."));
     }
 }
 
@@ -623,7 +624,7 @@ function renderCharacterSidebarList() {
     if (filteredCharacters.length < 1) {
         const emptyState = document.createElement("div");
         emptyState.className = "text-muted small py-2";
-        emptyState.textContent = "Geen personages gevonden voor deze filters.";
+        emptyState.textContent = aetherT("Geen personages gevonden voor deze filters.");
         nameList.appendChild(emptyState);
         return;
     }

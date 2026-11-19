@@ -8,18 +8,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=4f5f6112f7ad7f03">
-    <link rel="stylesheet" href="css/page-nav.css?v=15dd62f126204bd9">
+    <link rel="stylesheet" href="css/style.css?v=5d83fe46e140c765">
+    <link rel="stylesheet" href="css/page-nav.css?v=8866eea59a088967">
     <link rel="stylesheet" href="css/modal.css?v=e7d148b7fe904a7b">
-    <title>Admin - Aether applicatie</title>
+    <title data-i18n="Admin - Aether applicatie">Admin - Aether applicatie</title>
+<link rel="stylesheet" href="css/i18n.css?v=dde2fe626a199436">
+<script src="js/interface-copy.js?v=025214948d5cffd1"></script>
+<script src="js/i18n.js?v=13ca69d9a742769d"></script>
 </head>
 <body data-sidebar-page="admin">
     <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina">
+            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina" data-i18n-aria-label="Aether startpagina">
                 <img src="img/aether-logo.png" alt="Aether">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" data-i18n-aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -30,78 +33,95 @@
         </div>
     </nav>
 
+    <nav class="container aether-page-nav" id="pageNav" aria-label="Vaardigheden beheren" data-i18n-aria-label="Vaardigheden beheren">
+        <ul class="nav nav-tabs d-none" id="adminTraitClassTabs" aria-label="Klasse" data-i18n-aria-label="Klasse">
+            <li class="nav-item"><button type="button" class="navTab active" data-admin-trait-class="upper class" aria-pressed="true"><span data-i18n="Hogere klasse">Hogere klasse</span></button></li>
+            <li class="nav-item"><button type="button" class="navTab" data-admin-trait-class="middle class" aria-pressed="false"><span data-i18n="Middenklasse">Middenklasse</span></button></li>
+            <li class="nav-item"><button type="button" class="navTab" data-admin-trait-class="lower class" aria-pressed="false"><span data-i18n="Lagere klasse">Lagere klasse</span></button></li>
+        </ul>
+        <div class="aether-page-nav-body"><div class="row admin-toolbar navRow g-3" id="adminSkillsToolbar">
+                <div class="col-lg-8 col-12 mb-3 mb-lg-0">
+                    <div class="d-flex align-items-center gap-2">
+                    <label class="form-label admin-toolbar-label mb-0" for="adminSkillSelect"><span data-i18n="Vaardigheid">Vaardigheid</span></label>
+                    <select class="form-select" id="adminSkillSelect">
+                        <option value="0" data-i18n="Kies een vaardigheid">Kies een vaardigheid</option>
+                    </select>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-12 align-self-end">
+                    <div class="button-group"><button type="button" class="action-button" id="adminNewSkillButton"><i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="Nieuwe vaardigheid">Nieuwe vaardigheid</span></button></div>
+                </div>
+            </div>
+        <div class="row admin-toolbar navRow g-3 d-none" id="adminTraitsToolbar">
+            <div class="col-lg-4 col-12"><div class="d-flex align-items-center gap-2"><label class="form-label admin-toolbar-label mb-0" for="adminTraitGroupFilter"><span data-i18n="Groep">Groep</span></label><select class="form-select" id="adminTraitGroupFilter"><option value="" data-i18n="Alle groepen">Alle groepen</option></select></div></div>
+            <div class="col-lg-5 col-12"><div class="d-flex align-items-center gap-2"><label class="form-label admin-toolbar-label mb-0" for="adminTraitSelect"><span data-i18n="Eigenschap">Eigenschap</span></label><select class="form-select" id="adminTraitSelect"><option value="0" data-i18n="Kies een eigenschap">Kies een eigenschap</option></select></div></div><div class="col-lg-3 col-12 align-self-center"><div class="button-group"><button type="button" class="action-button" id="adminNewTraitButton"><i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="Nieuwe eigenschap">Nieuwe eigenschap</span></button></div></div>
+        </div>
+    </div></nav>
     <main class="container aether-page admin-page">
         <div class="alert py-2 px-3 d-none mb-4" id="adminFeedback" role="status"></div>
 
-        <section id="adminSkillsSection">
-            <div class="row g-4">
-                <div class="col-lg-9 col-12">
+        <section id="adminSkillsSection" class="row g-4 admin-editor-columns">
+                <div class="col-lg-8 col-12">
                     <div class="card aether-panel shadow-sm admin-card">
                         <div class="card-body">
-                            <div class="row admin-toolbar mb-4" id="adminSkillsToolbar">
-                <div class="col-lg-8 col-12 mb-3 mb-lg-0">
-                    <label class="form-label admin-toolbar-label" for="adminSkillSelect">Vaardigheid</label>
-                    <select class="form-select" id="adminSkillSelect">
-                        <option value="0">Kies een vaardigheid</option>
-                    </select>
-                </div>
-                <div class="col-lg-4 col-12 align-self-end">
-                    <div class="button-group"><button type="button" class="action-button" id="adminNewSkillButton">Nieuwe vaardigheid</button></div>
-                </div>
-            </div>
-
                             <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                                 <div>
-                                    <h1 class="h4 mb-1" id="adminSkillTitle">Vaardigheid</h1>
-                                    <p class="text-muted mb-0" id="adminSkillSubtitle">Kies bovenaan een vaardigheid of maak een nieuwe aan.</p>
+                                    <h1 class="h4 mb-1" id="adminSkillTitle"><span data-i18n="Vaardigheid">Vaardigheid</span></h1>
+                                    <p class="text-muted mb-0" id="adminSkillSubtitle"><span data-i18n="Kies bovenaan een vaardigheid of maak een nieuwe aan.">Kies bovenaan een vaardigheid of maak een nieuwe aan.</span></p>
                                 </div>
+                                <div class="button-group"><button type="button" class="action-button" id="adminSkillModeButton"><span data-i18n="Edit">Edit</span></button><button type="button" class="action-button" id="adminSkillCancelButton" hidden><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Annuleren">Annuleren</span></button></div>
                             </div>
 
+                            <div id="adminSkillView"></div>
                             <form id="adminSkillForm" novalidate>
                                 <input type="hidden" id="adminSkillId">
 
                                 <div class="row g-3">
                                     <div class="col-12">
-                                        <label class="form-label" for="adminSkillName">Naam</label>
+                                        <label class="form-label" for="adminSkillName"><span data-i18n="Naam">Naam</span></label>
                                         <input type="text" class="form-control" id="adminSkillName" maxlength="255">
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label" for="adminSkillDescription">Beschrijving</label>
+                                        <label class="form-label" for="adminSkillDescription"><span data-i18n="Beschrijving">Beschrijving</span></label>
                                         <textarea class="form-control" id="adminSkillDescription" rows="4"></textarea>
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label" for="adminSkillBeginner">Niveau 1</label>
+                                        <label class="form-label" for="adminSkillBeginner"><span data-i18n="Niveau 1">Niveau 1</span></label>
                                         <textarea class="form-control" id="adminSkillBeginner" rows="4"></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label" for="adminSkillProfessional">Niveau 2</label>
+                                        <label class="form-label" for="adminSkillProfessional"><span data-i18n="Niveau 2">Niveau 2</span></label>
                                         <textarea class="form-control" id="adminSkillProfessional" rows="4"></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label" for="adminSkillMaster">Niveau 3</label>
+                                        <label class="form-label" for="adminSkillMaster"><span data-i18n="Niveau 3">Niveau 3</span></label>
                                         <textarea class="form-control" id="adminSkillMaster" rows="4"></textarea>
                                     </div>
 
                                     <div class="col-12">
                                         <div class="admin-specialisations-header">
                                             <div>
-                                                <label class="form-label mb-1 d-block">Categorieën</label>
-                                                <p class="text-muted small mb-0" id="adminCategoryHelp">Selecteer de categorieën van deze vaardigheid. Alleen administrators kunnen categorieën beheren.</p>
+                                                <label class="form-label mb-1 d-block"><span data-i18n="Categorieën">Categorieën</span></label>
+                                                <p class="text-muted small mb-0" id="adminCategoryHelp"><span data-i18n="Selecteer de categorieën van deze vaardigheid. Alleen administrators kunnen categorieën beheren.">Selecteer de categorieën van deze vaardigheid. Alleen administrators kunnen categorieën beheren.</span></p>
                                             </div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm d-none" id="adminAddCategoryButton">Categorie toevoegen</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm d-none" id="adminAddCategoryButton"><span data-i18n="Categorie toevoegen">Categorie toevoegen</span></button>
                                         </div>
                                         <div class="admin-category-list" id="adminSkillCategories"></div>
                                     </div>
 
+                                    <div class="col-12" id="adminDisciplineBlock" hidden>
+                                        <div class="admin-specialisations-header"><label class="form-label"><span data-i18n="Disciplines">Disciplines</span></label><button type="button" class="action-button" id="adminAddDisciplineButton"><span data-i18n="Discipline toevoegen">Discipline toevoegen</span></button></div>
+                                        <div class="admin-specialisations-list" id="adminSkillDisciplines"></div>
+                                    </div>
                                     <div class="col-12">
                                         <div class="admin-specialisations-header">
                                             <div>
-                                                <label class="form-label mb-1">Specialisaties</label>
-                                                <p class="text-muted small mb-0">Nieuwe, gewijzigde en verwijderde specialisaties worden automatisch bewaard.</p>
+                                                <label class="form-label mb-1"><span data-i18n="Specialisaties">Specialisaties</span></label>
+                                                <p class="text-muted small mb-0"><span data-i18n="Wijzigingen worden bewaard wanneer u naar de kijkmodus terugkeert.">Wijzigingen worden bewaard wanneer u naar de kijkmodus terugkeert.</span></p>
                                             </div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" id="adminAddSpecialisationButton">Specialisatie toevoegen</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="adminAddSpecialisationButton"><span data-i18n="Specialisatie toevoegen">Specialisatie toevoegen</span></button>
                                         </div>
                                         <div class="admin-specialisations-list" id="adminSkillSpecialisations"></div>
                                     </div>
@@ -111,26 +131,20 @@
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-12">
+                <div class="col-lg-4 col-12">
                     <div class="card aether-panel shadow-sm admin-card h-100">
                         <div class="card-body">
-                            <h2 class="h5 mb-3">Personages met deze vaardigheid</h2>
+                            <h2 class="h5 mb-3"><span data-i18n="Personages met deze vaardigheid">Personages met deze vaardigheid</span></h2>
                             <div class="admin-holders-list" id="adminSkillHolders">
-                                <p class="text-muted mb-0">Kies een vaardigheid om de gekoppelde personages te zien.</p>
+                                <p class="text-muted mb-0"><span data-i18n="Kies een vaardigheid om de gekoppelde personages te zien.">Kies een vaardigheid om de gekoppelde personages te zien.</span></p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
         </section>
 
-        <section class="d-none" id="adminTraitsSection">
-            <div class="card aether-panel shadow-sm admin-card">
-                <div class="card-body">
-                    <h1 class="h4 mb-2">Eigenschappen</h1>
-                    <p class="text-muted mb-0">Deze tab wordt later opgebouwd.</p>
-                </div>
-            </div>
+        <section id="adminTraitsSection" class="row g-4 admin-editor-columns d-none"><div class="col-lg-8 col-12"><div class="card aether-panel shadow-sm admin-card"><div class="card-body" id="adminTraitEditor"><p><span data-i18n="Kies een eigenschap.">Kies een eigenschap.</span></p></div></div></div>
+            <div class="col-lg-4 col-12"><div class="card aether-panel shadow-sm admin-card"><div class="card-body"><h2 class="h5 mb-3"><span data-i18n="Personages met deze eigenschap">Personages met deze eigenschap</span></h2><div class="admin-holders-list" id="adminTraitHolders"></div></div></div></div>
         </section>
 
         <section class="d-none" id="adminKnowledgeSection">
@@ -140,15 +154,15 @@
                 <div class="col-lg-8 col-12">
                     <label class="form-label admin-toolbar-label" for="adminKnowledgeEventSelect">Event</label>
                     <select class="form-select" id="adminKnowledgeEventSelect">
-                        <option value="0">Kies een event</option>
+                        <option value="0" data-i18n="Kies een event">Kies een event</option>
                     </select>
                 </div>
             </div>
 
-                    <h1 class="h4 mb-2">Wereldwijs</h1>
-                    <p class="text-muted mb-4" id="adminKnowledgeSubtitle">Kies bovenaan een event om alle ingevulde gossip van dat event te bekijken.</p>
+                    <h1 class="h4 mb-2"><span data-i18n="Wereldwijs">Wereldwijs</span></h1>
+                    <p class="text-muted mb-4" id="adminKnowledgeSubtitle"><span data-i18n="Kies bovenaan een event om alle ingevulde gossip van dat event te bekijken.">Kies bovenaan een event om alle ingevulde gossip van dat event te bekijken.</span></p>
                     <div id="adminKnowledgeContent">
-                        <p class="text-muted mb-0">Kies bovenaan een event om de ingevulde gossip te zien.</p>
+                        <p class="text-muted mb-0"><span data-i18n="Kies bovenaan een event om de ingevulde gossip te zien.">Kies bovenaan een event om de ingevulde gossip te zien.</span></p>
                     </div>
                 </div>
             </div>
@@ -161,15 +175,15 @@
                 <div class="col-lg-8 col-12">
                     <label class="form-label admin-toolbar-label" for="adminActionsEventSelect">Event</label>
                     <select class="form-select" id="adminActionsEventSelect">
-                        <option value="0">Kies een event</option>
+                        <option value="0" data-i18n="Kies een event">Kies een event</option>
                     </select>
                 </div>
             </div>
 
-                    <h1 class="h4 mb-2">Acties</h1>
-                    <p class="text-muted mb-4" id="adminActionsSubtitle">Kies bovenaan een event om alle geregistreerde speleracties te bekijken.</p>
+                    <h1 class="h4 mb-2"><span data-i18n="Acties">Acties</span></h1>
+                    <p class="text-muted mb-4" id="adminActionsSubtitle"><span data-i18n="Kies bovenaan een event om alle geregistreerde speleracties te bekijken.">Kies bovenaan een event om alle geregistreerde speleracties te bekijken.</span></p>
                     <div id="adminActionsContent">
-                        <p class="text-muted mb-0">Kies bovenaan een event om de geregistreerde acties te zien.</p>
+                        <p class="text-muted mb-0"><span data-i18n="Kies bovenaan een event om de geregistreerde acties te zien.">Kies bovenaan een event om de geregistreerde acties te zien.</span></p>
                     </div>
                 </div>
             </div>
@@ -178,11 +192,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
-    <script src="js/modal.js?v=a235e11728124506"></script>
-    <script src="js/mainFunctions.js?v=595ea32597e24ddd"></script>
-    <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
-    <script src="js/aetherSidebars.js?v=7132d1029f81f413"></script>
-    <script src="js/adminFunctions.js?v=064887755779bc30"></script>
-    <script src="js/adminActions.js?v=9cbd65db07595253"></script>
+    <script src="js/modal.js?v=047864ead8e5ab89"></script>
+    <script src="js/mainFunctions.js?v=a868b11a7c26c11d"></script>
+    <script src="js/updateManager.js?v=8535c34341d58d54"></script>
+    <script src="js/aetherSidebars.js?v=28804c969644e997"></script>
+    <script src="js/adminFunctions.js?v=d0d2d458dc252d63"></script>
+    <script src="js/adminTraits.js?v=93e8571526217ab0"></script>
+    <script src="js/adminActions.js?v=bb213e0562a65a19"></script>
 </body>
 </html>

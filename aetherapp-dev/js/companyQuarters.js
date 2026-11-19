@@ -1,11 +1,12 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 (() => {
     "use strict";
     const fields = [
-        ["companyValue", "Bedrijfswaarde", "money"],
-        ["issuedShareCount", "Uitgegeven aandelen", "integer"],
-        ["shareMarketPrice", "Marktprijs per aandeel", "money"],
-        ["stability", "Stabiliteit", "score"],
-        ["profitability", "Rendabiliteit", "score"]
+        ["companyValue", aetherT("Bedrijfswaarde"), "money"],
+        ["issuedShareCount", aetherT("Uitgegeven aandelen"), "integer"],
+        ["shareMarketPrice", aetherT("Marktprijs per aandeel"), "money"],
+        ["stability", aetherT("Stabiliteit"), "score"],
+        ["profitability", aetherT("Rendabiliteit"), "score"]
     ];
     const svgNS = "http://www.w3.org/2000/svg";
     let companyId = 0, quarters = [], requestId = 0, active = null, saving = false;
@@ -55,14 +56,14 @@
         return result;
     }
     function amount(value, kind) {
-        if (value === null || value === undefined) return "Onbekend";
+        if (value === null || value === undefined) return aetherT("Onbekend");
         const number = Number(value || 0);
-        return new Intl.NumberFormat("nl-BE", {
+        return new Intl.NumberFormat((globalThis.AetherI18n?.locale || "nl-BE"), {
             minimumFractionDigits: kind === "money" ? 2 : 0,
             maximumFractionDigits: kind === "money" ? 2 : 0
         }).format(number) + (kind === "money" ? " Fr" : "");
     }
-    function label(row) { return `${row.year} · K${row.quarter}`; }
+    function label(row) { return aetherT("{0} · K{1}",[row.year,row.quarter]); }
 
     function editStatus(message = "", error = false) {
         const status = document.getElementById("companyQuarterEditStatus");
@@ -93,8 +94,8 @@
         toggle.disabled = chartSaving || !quarters.length;
         document.querySelector(".company-quarter-mode-actions").classList.toggle("d-none", !canEdit);
         toggle.innerHTML = editMode
-            ? '<i class="fa-solid fa-eye" aria-hidden="true"></i> Bekijk grafiek'
-            : '<i class="fa-solid fa-pen" aria-hidden="true"></i> Grafiek bewerken';
+            ? `<i class="fa-solid fa-eye" aria-hidden="true"></i> ${aetherT("Bekijk grafiek")}`
+            : `<i class="fa-solid fa-pen" aria-hidden="true"></i> ${aetherT("Grafiek bewerken")}`;
         controls.classList.toggle("d-none", !editMode);
         metric.disabled = chartSaving;
         document.querySelectorAll('input[name="companyQuarterEditMode"]').forEach(input => {
@@ -129,7 +130,7 @@
         paintPreview = null;
         updateEditControls();
         if (!quarters.length) {
-            content.appendChild(node("p", "text-muted", "Nog geen kwartalen beschikbaar vanaf de oprichtingsdatum."));
+            content.appendChild(node("p", "text-muted", aetherT("Nog geen kwartalen beschikbaar vanaf de oprichtingsdatum.")));
             return;
         }
         firstVisible = Math.max(0, Math.min(startPeriod ?? 0, quarters.length - 1));
@@ -154,7 +155,7 @@
         scroll.classList.toggle("is-editing", editMode);
         scroll.classList.toggle("is-modal-editing", editMode && editType === "modal");
         const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, width, height,
-            role: "img", "aria-label": `${selected[1]} per kwartaal van ${label(visible[0])} tot ${label(visible.at(-1))}` });
+            role: "img", "aria-label": aetherT("{0} per kwartaal van {1} tot {2}",[selected[1],label(visible[0]),label(visible.at(-1))]) });
         if (known.length) {
             const rough = spread / 5, power = 10 ** Math.floor(Math.log10(rough));
             const factor = rough / power;
@@ -264,14 +265,14 @@
                     `${x(index)},${y(value) - size} ${x(index) - size},${y(value) + size} ${x(index) + size},${y(value) + size}`);
                 else point.setAttribute("cy", y(value));
                 point.setAttribute("aria-label", `${label(visible[index])}: ${amount(value, selected[2])}. ${editMode
-                    ? visible[index].source === "snapshot" ? "Snapshot, niet versleepbaar" : "Sleep om aan te passen"
-                    : "Kwartaal bewerken"}`);
-                title.textContent = `${label(visible[index])} · ${selected[1]}: ${amount(value, selected[2])} · ${visible[index].source}${eventCount ? ` · ${eventCount} gebeurtenissen` : ""}${visible[index].pendingSnapshotEvents?.length ? ` · Snapshot ontbreekt: ${visible[index].pendingSnapshotEvents.map(event => event.title).join(", ")}` : ""}`;
+                    ? visible[index].source === "snapshot" ? aetherT("Snapshot, niet versleepbaar") : aetherT("Sleep om aan te passen")
+                    : aetherT("Kwartaal bewerken")}`);
+                title.textContent = `${label(visible[index])} · ${selected[1]}: ${amount(value, selected[2])} · ${visible[index].source}${eventCount ? aetherT("· {0} gebeurtenissen",[eventCount]) : ""}${visible[index].pendingSnapshotEvents?.length ? aetherT("· Snapshot ontbreekt: {0}",[visible[index].pendingSnapshotEvents.map(event => event.title).join(", ")]) : ""}`;
             });
             updateEditControls();
             if (dragDraft) editStatus(dragDraft.changed
-                ? `${label(visible[dragDraft.center])}: ${amount(preview[dragDraft.center], selected[2])}. ${dragDraft.changed} kwartaal${dragDraft.changed === 1 ? "" : "en"} aangepast.`
-                : "Sleep een punt omhoog of omlaag. Snapshotpunten blijven vast.");
+                ? aetherT("{0}: {1}. {2} kwartaal{3} aangepast.",[label(visible[dragDraft.center]),amount(preview[dragDraft.center], selected[2]),dragDraft.changed,dragDraft.changed === 1 ? "" : aetherT("en")])
+                : aetherT("Sleep een punt omhoog of omlaag. Snapshotpunten blijven vast."));
         };
         let moving = null, panning = null;
         svg.addEventListener("pointermove", event => {
@@ -299,7 +300,7 @@
                 }
             }
             moving = null; dragDraft = null;
-            editStatus(`${pending.size} kwartaal${pending.size === 1 ? "" : "en"} klaar om te bewaren.`);
+            editStatus(aetherT("{0} kwartaal{1} klaar om te bewaren.",[pending.size,pending.size === 1 ? "" : aetherT("en")]));
             draw();
         });
         svg.addEventListener("pointercancel", event => {
@@ -333,22 +334,22 @@
         scroll.appendChild(svg); content.appendChild(scroll);
         scroll.scrollLeft = scrollFractionX * Math.max(0, scroll.scrollWidth - scroll.clientWidth);
         scroll.scrollTop = scrollFractionY * Math.max(0, scroll.scrollHeight - scroll.clientHeight);
-        if (!known.length) content.appendChild(node("p", "small text-muted mt-2", "Voor deze grafiek zijn nog geen historische waarden bekend."));
+        if (!known.length) content.appendChild(node("p", "small text-muted mt-2", aetherT("Voor deze grafiek zijn nog geen historische waarden bekend.")));
         const footer = node("div", "company-quarter-picker mt-3");
         function periodControl(isStart) {
             const wrapper = node("div", "company-quarter-period");
             const group = node("div", "button-group");
-            group.appendChild(node("span", "company-quarter-period-label", isStart ? "Van kwartaal" : "Tot kwartaal"));
+            group.appendChild(node("span", "company-quarter-period-label", isStart ? aetherT("Van kwartaal") : aetherT("Tot kwartaal")));
             const year = node("select", "form-select");
-            year.setAttribute("aria-label", isStart ? "Startjaar" : "Eindjaar");
-            year.add(new Option("Jaar", ""));
+            year.setAttribute("aria-label", isStart ? aetherT("Startjaar") : aetherT("Eindjaar"));
+            year.add(new Option(aetherT("Jaar"), ""));
             [...new Set(quarters.map(row => row.year))].forEach(value => year.add(new Option(String(value), String(value))));
             year.value = isStart ? startYear : endYear;
             const quarter = node("select", "form-select");
-            quarter.setAttribute("aria-label", isStart ? "Startkwartaal" : "Eindkwartaal");
-            quarter.add(new Option("Kwartaal", ""));
+            quarter.setAttribute("aria-label", isStart ? aetherT("Startkwartaal") : aetherT("Eindkwartaal"));
+            quarter.add(new Option(aetherT("Kwartaal"), ""));
             if (year.value) quarters.forEach((row, index) => {
-                if (String(row.year) === year.value) quarter.add(new Option(`K${row.quarter}`, String(index)));
+                if (String(row.year) === year.value) quarter.add(new Option(aetherT("K{0}",[row.quarter]), String(index)));
             });
             quarter.disabled = !year.value;
             const chosen = isStart ? startPeriod : endPeriod;
@@ -376,8 +377,8 @@
             const clear = node("button", "action-button");
             clear.type = "button";
             clear.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
-            clear.setAttribute("aria-label", isStart ? "Beginperiode wissen" : "Eindperiode wissen");
-            clear.title = isStart ? "Beginperiode wissen" : "Eindperiode wissen";
+            clear.setAttribute("aria-label", isStart ? aetherT("Beginperiode wissen") : aetherT("Eindperiode wissen"));
+            clear.title = isStart ? aetherT("Beginperiode wissen") : aetherT("Eindperiode wissen");
             clear.disabled = !year.value && chosen === null;
             clear.addEventListener("click", () => {
                 if (isStart) { startYear = ""; startPeriod = null; }
@@ -391,17 +392,17 @@
         content.appendChild(footer);
         const eventRows = canEdit ? quarters.map((row, index) => rowAt(index)).filter(row => row.events?.length) : [];
         if (eventRows.length) {
-            content.appendChild(node("h4", "h5 mt-3 mb-1", "Grote gebeurtenissen"));
+            content.appendChild(node("h4", "h5 mt-3 mb-1", aetherT("Grote gebeurtenissen")));
             const list = node("div", "company-quarter-events-list");
             const columns = [node("div", "company-quarter-events-column"), node("div", "company-quarter-events-column")];
             eventRows.forEach((row, index) => {
                 const card = node("div", "data-card company-quarter-events-card");
                 const header = node("div", "d-flex justify-content-between align-items-start gap-2 mb-2");
-                header.appendChild(node("h5", "h6 mb-0", `${row.year} K${row.quarter}`));
+                header.appendChild(node("h5", "h6 mb-0", aetherT("{0} K{1}",[row.year,row.quarter])));
                 const actions = node("div", "button-group");
-                const edit = AetherActionButtons.button({ icon: "fa-pen-nib", label: "Edit" });
-                edit.setAttribute("aria-label", `${row.year} K${row.quarter} bewerken`);
-                edit.title = "Kwartaal bewerken";
+                const edit = AetherActionButtons.button({ icon: "fa-pen-nib", label: aetherT("Edit") });
+                edit.setAttribute("aria-label", aetherT("{0} K{1} bewerken",[row.year,row.quarter]));
+                edit.title = aetherT("Kwartaal bewerken");
                 edit.disabled = saving || chartSaving;
                 edit.addEventListener("click", () => {
                     editMode = true; editType = "modal";
@@ -411,7 +412,7 @@
                 actions.appendChild(edit); header.appendChild(actions); card.appendChild(header);
                 row.events.forEach(event => {
                     const description = node("p", "mb-2");
-                    description.appendChild(node("strong", "", ["Verhuld", "Beperkt", "Gemengd", "Publiek", "Zeer publiek"][Number(event.publicity) - 1] || "Onbekend"));
+                    description.appendChild(node("strong", "", [aetherT("Verhuld"), aetherT("Beperkt"), aetherT("Gemengd"), aetherT("Publiek"), aetherT("Zeer publiek")][Number(event.publicity) - 1] || aetherT("Onbekend")));
                     description.appendChild(document.createTextNode(` – ${event.description}`));
                     card.appendChild(description);
                 });
@@ -421,25 +422,25 @@
             content.appendChild(list);
         }
         if (editMode) content.appendChild(node("p", "small text-muted mt-2 mb-0", editType === "drag"
-            ? "Sleep meerdere punten en bewaar ze daarna samen. Gouden snapshotpunten blijven vast."
-            : "Klik op een punt om de kwartaalmodal te openen. Bewaar alle wijzigingen daarna samen."));
+            ? aetherT("Sleep meerdere punten en bewaar ze daarna samen. Gouden snapshotpunten blijven vast.")
+            : aetherT("Klik op een punt om de kwartaalmodal te openen. Bewaar alle wijzigingen daarna samen.")));
     }
 
     function eventEditor(item = {}) {
         const row = node("div", "company-quarter-event row g-2 align-items-end mb-2");
         row.dataset.eventId = String(item.id || 0);
         const textCol = node("div", "col-12 col-md-7");
-        const textLabel = node("label", "form-label", "Beschrijving");
+        const textLabel = node("label", "form-label", aetherT("Beschrijving"));
         const textInput = node("textarea", "form-control");
         textInput.rows = 2; textInput.maxLength = 2000; textInput.value = item.description || "";
         textLabel.appendChild(textInput); textCol.appendChild(textLabel);
         const scaleCol = node("div", "col-8 col-md-3");
-        const scaleLabel = node("label", "form-label", "Zichtbaarheid (1–5)");
+        const scaleLabel = node("label", "form-label", aetherT("Zichtbaarheid (1–5)"));
         const scale = node("select", "form-select");
-        [1, 2, 3, 4, 5].forEach(value => scale.add(new Option(`${value} · ${["verhuld", "beperkt", "gemengd", "publiek", "zeer publiek"][value - 1]}`, value)));
+        [1, 2, 3, 4, 5].forEach(value => scale.add(new Option(`${value} · ${["verhuld", "beperkt", "gemengd", "publiek", aetherT("zeer publiek")][value - 1]}`, value)));
         scale.value = String(item.publicity || 3); scaleLabel.appendChild(scale); scaleCol.appendChild(scaleLabel);
         const removeCol = node("div", "col-4 col-md-2");
-        const remove = node("button", "action-button", "Verwijderen"); remove.type = "button";
+        const remove = node("button", "action-button", aetherT("Verwijderen")); remove.type = "button";
         remove.addEventListener("click", () => row.remove());
         const group = node("div", "button-group"); group.appendChild(remove); removeCol.appendChild(group);
         row.append(textCol, scaleCol, removeCol);
@@ -464,12 +465,12 @@
         updateSaveButtons();
         const title = document.getElementById("companyQuarterModalTitle");
         const body = document.getElementById("companyQuarterModalBody");
-        title.textContent = `${label(row)} · bedrijfsevolutie`;
+        title.textContent = aetherT("{0} · bedrijfsevolutie",[label(row)]);
         body.replaceChildren();
         if (row.source === "snapshot") body.appendChild(node("p", "small",
-            `De cijfers van de snapshot voor ${row.snapshotEvent} gelden voor dit kwartaal. Bedrijfsgebeurtenissen kun je aanpassen.`));
+            aetherT("De cijfers van de snapshot voor {0} gelden voor dit kwartaal. Bedrijfsgebeurtenissen kun je aanpassen.",[row.snapshotEvent])));
         else body.appendChild(node("p", "small text-muted",
-            "Pas de kwartaalcijfers aan. De wijzigingen worden samen met de andere grafiekbewerkingen bewaard."));
+            aetherT("Pas de kwartaalcijfers aan. De wijzigingen worden samen met de andere grafiekbewerkingen bewaard.")));
         const grid = node("div", "row g-3");
         fields.forEach(([key, fieldLabel, kind]) => {
             const col = node("div", "col-12 col-sm-6");
@@ -484,11 +485,11 @@
             labelEl.appendChild(input); col.appendChild(labelEl); grid.appendChild(col);
         });
         body.appendChild(grid);
-        body.appendChild(node("h4", "h5 mt-3", "Grote gebeurtenissen"));
+        body.appendChild(node("h4", "h5 mt-3", aetherT("Grote gebeurtenissen")));
         const eventHost = node("div", "company-quarter-events");
         row.events.forEach(item => eventHost.appendChild(eventEditor(item)));
         body.appendChild(eventHost);
-        const add = node("button", "action-button", "+ Gebeurtenis toevoegen"); add.type = "button";
+        const add = node("button", "action-button", aetherT("+ Gebeurtenis toevoegen")); add.type = "button";
         add.addEventListener("click", () => eventHost.appendChild(eventEditor()));
         const group = node("div", "button-group mt-2"); group.appendChild(add); body.appendChild(group);
         body.appendChild(node("div", "alert alert-danger d-none mt-3 mb-0 company-quarter-error"));
@@ -513,18 +514,18 @@
             if (!input.value || !Number.isFinite(value) || (kind !== "money" && !Number.isInteger(value))
                 || value < (kind === "score" ? -7 : 0) || (kind === "score" && value > 7)
                 || (key === "issuedShareCount" && value > 1000000)) {
-                error.textContent = `Controleer ${input.parentElement.firstChild.textContent.toLowerCase()}.`;
+                error.textContent = aetherT("Controleer {0}.",[input.parentElement.firstChild.textContent.toLowerCase()]);
                 error.classList.remove("d-none"); return;
             }
             payload[key] = value;
         }
         for (const eventRow of body.querySelectorAll(".company-quarter-event")) {
             const description = eventRow.querySelector("textarea").value.trim();
-            if (!description) { error.textContent = "Vul bij elke gebeurtenis een beschrijving in."; error.classList.remove("d-none"); return; }
+            if (!description) { error.textContent = aetherT("Vul bij elke gebeurtenis een beschrijving in."); error.classList.remove("d-none"); return; }
             payload.events.push({ id: Number(eventRow.dataset.eventId || 0), description, publicity: Number(eventRow.querySelector("select").value) });
         }
         stage(currentIndex, payload, payload.events);
-        editStatus(`${pending.size} kwartaal${pending.size === 1 ? "" : "en"} klaar om te bewaren.`);
+        editStatus(aetherT("{0} kwartaal{1} klaar om te bewaren.",[pending.size,pending.size === 1 ? "" : aetherT("en")]));
         if (!direction) {
             bootstrap.Modal.getOrCreateInstance(document.getElementById("companyQuarterModal")).hide();
             draw();
@@ -536,7 +537,7 @@
         const id = companyId;
         chartSaving = true;
         updateEditControls();
-        editStatus("Grafiekbewerking bewaren…");
+        editStatus(aetherT("Grafiekbewerking bewaren…"));
         try {
             const edits = [...pending.entries()].map(([index, row]) => {
                 const edit = { year: row.year, quarter: row.quarter };
@@ -554,10 +555,10 @@
             pending.clear();
             dragDraft = null;
             editMode = false;
-            editStatus(`${Number(result?.changedQuarters || 0)} kwartaal${Number(result?.changedQuarters) === 1 ? "" : "en"} bewaard.`);
+            editStatus(aetherT("{0} kwartaal{1} bewaard.",[Number(result?.changedQuarters || 0),Number(result?.changedQuarters) === 1 ? "" : aetherT("en")]));
             draw();
         } catch (error) {
-            editStatus(error?.message || "Kon de grafiekbewerking niet bewaren.", true);
+            editStatus(error?.message || aetherT("Kon de grafiekbewerking niet bewaren."), true);
         } finally {
             chartSaving = false;
             updateEditControls();
@@ -595,7 +596,7 @@
         metric.replaceChildren();
         fields.filter(([, , kind]) => canEdit || kind !== "score").forEach(([key, label]) => metric.add(new Option(label, key)));
         if ([...metric.options].some(option => option.value === previousMetric)) metric.value = previousMetric;
-        content.textContent = "Kwartaalhistoriek laden…";
+        content.textContent = aetherT("Kwartaalhistoriek laden…");
         updateEditControls();
         try {
             const response = await apiFetchJson("api/companies/getCompanyQuarters.php", {
@@ -610,7 +611,7 @@
             draw();
             return true;
         } catch (error) {
-            if (ticket === requestId) content.textContent = error?.message || "Kon de kwartaalhistoriek niet laden.";
+            if (ticket === requestId) content.textContent = error?.message || aetherT("Kon de kwartaalhistoriek niet laden.");
             return false;
         }
     }
@@ -621,7 +622,7 @@
         if (editMode) pending.clear();
         editMode = !editMode;
         dragDraft = null;
-        editStatus(discarded ? "Niet bewaarde wijzigingen zijn verwijderd." : "");
+        editStatus(discarded ? aetherT("Niet bewaarde wijzigingen zijn verwijderd.") : "");
         draw();
     });
     document.querySelectorAll('input[name="companyQuarterEditMode"]').forEach(input => {
@@ -637,7 +638,7 @@
         if (dragDraft) { dragDraft.radius = radius; paintPreview?.(); }
     });
     document.getElementById("companyQuarterDragSave")?.addEventListener("click", () => { void saveDrag(); });
-    for (const [axis, name] of [["Horizontal", "horizontal"], ["Vertical", "vertical"]]) {
+    for (const [axis, name] of [[aetherT("Horizontal"), "horizontal"], [aetherT("Vertical"), "vertical"]]) {
         document.getElementById(`companyQuarter${axis}Zoom`)?.addEventListener("input", event => {
             const value = Number(event.target.value);
             if (name === "horizontal") horizontalZoom = value / 100;

@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Skills-related logic (fetch new skills, render accordion, modals, skill level updates)
 
 function setupSkillListeners() {
@@ -191,9 +192,9 @@ function addSkillAccordionItem(skill, usedExperience, character) {
 
     // Proficiency label
     let proficiency = "ongetraind";
-    if (level === 1) proficiency = "Beginneling";
-    if (level === 2) proficiency = "Deskundige";
-    if (level === 3) proficiency = "Meester";
+    if (level === 1) proficiency = aetherT("Beginneling");
+    if (level === 2) proficiency = aetherT("Deskundige");
+    if (level === 3) proficiency = aetherT("Meester");
 
     // --- Accordion container ---
     const accordionItem = document.createElement("div");
@@ -279,7 +280,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
 
     const specLabel = document.createElement("div");
     specLabel.classList.add("me-2", "fw-bold");
-    specLabel.textContent = "Specialisations:";
+    specLabel.textContent = aetherT("Specialisations:");
     specWrapper.appendChild(specLabel);
 
     // Bestaande specialisaties
@@ -293,7 +294,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
         badge.classList.add("input-group-text");
         badge.textContent = spec.name;
 
-        const delBtn = AetherActionButtons.button({ icon: "fa-trash", title: "Specialisatie verwijderen", ariaLabel: "Specialisatie verwijderen" });
+        const delBtn = AetherActionButtons.button({ icon: "fa-trash", title: aetherT("Specialisatie verwijderen"), ariaLabel: aetherT("Specialisatie verwijderen") });
         delBtn.dataset.action = "spec-delete";
         delBtn.dataset.specId = spec.id;
         delBtn.dataset.skillId = skill.id;
@@ -316,7 +317,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     }
 
     // “+” knop om specialisatie toe te voegen
-    const addSpecBtn = AetherActionButtons.button({ icon: "fa-plus", title: "Specialisatie toevoegen", ariaLabel: "Specialisatie toevoegen" });
+    const addSpecBtn = AetherActionButtons.button({ icon: "fa-plus", title: aetherT("Specialisatie toevoegen"), ariaLabel: aetherT("Specialisatie toevoegen") });
     addSpecBtn.dataset.action = "spec-add";
     addSpecBtn.dataset.skillId = skill.id;
 
@@ -326,7 +327,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
         addSpecBtn.classList.add("disabled");
         addSpecBtn.setAttribute(
             "title",
-            "Onvoldoende ervaringspunten voor een extra specialisatie."
+            aetherT("Onvoldoende ervaringspunten voor een extra specialisatie.")
         );
     }
 
@@ -369,7 +370,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     btnGroup.setAttribute("role", "group");
 
     // --- Learn button ---
-    const btnUp = AetherActionButtons.button({ icon: "fa-caret-up", label: "Learn" });
+    const btnUp = AetherActionButtons.button({ icon: "fa-caret-up", label: aetherT("Learn") });
     btnUp.dataset.action = "up";
     btnUp.dataset.skill = skill.id;
 
@@ -380,7 +381,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     }
 
     // --- Unlearn button ---
-    const btnDown = AetherActionButtons.button({ icon: "fa-caret-down", label: "Unlearn" });
+    const btnDown = AetherActionButtons.button({ icon: "fa-caret-down", label: aetherT("Unlearn") });
     btnDown.dataset.action = "down";
     btnDown.dataset.skill = skill.id;
 
@@ -391,7 +392,7 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     }
 
     // --- Delete button ---
-    const btnDelete = AetherActionButtons.button({ icon: "fa-trash", label: "Delete" });
+    const btnDelete = AetherActionButtons.button({ icon: "fa-trash", label: aetherT("Delete") });
     btnDelete.dataset.action = "delete";
     btnDelete.dataset.skill = skill.id;
 
@@ -411,7 +412,7 @@ function renderSkillsReadOnly(container, skills) {
     container.innerHTML = "";
 
     if (!Array.isArray(skills) || skills.length === 0) {
-        container.innerHTML = "<p>Geen vaardigheden.</p>";
+        container.innerHTML = `<p>${aetherT("Geen vaardigheden.")}</p>`;
         return;
     }
 
@@ -424,9 +425,9 @@ function renderSkillsReadOnly(container, skills) {
 
         // Niveau-label
         let proficiency = "ongetraind";
-        if (level === 1) proficiency = "Beginneling";
-        if (level === 2) proficiency = "Deskundige";
-        if (level === 3) proficiency = "Meester";
+        if (level === 1) proficiency = aetherT("Beginneling");
+        if (level === 2) proficiency = aetherT("Deskundige");
+        if (level === 3) proficiency = aetherT("Meester");
 
         // Specialisaties splitsen in discipline vs gewone
         const specialisations = Array.isArray(skill.specialisations)
@@ -439,7 +440,7 @@ function renderSkillsReadOnly(container, skills) {
         // Titel: naam (+ discipline) - niveau
         let title = skill.name
             ? skill.name.charAt(0).toUpperCase() + skill.name.slice(1)
-            : "Onbekende vaardigheid";
+            : aetherT("Onbekende vaardigheid");
 
         if (disciplineSpecs.length > 0) {
             const labels = disciplineSpecs.map(d => d.name).join(", ");
@@ -478,7 +479,7 @@ function renderSkillsReadOnly(container, skills) {
             const pSpecs = document.createElement("p");
             const names = normalSpecs.map(s => s.name).join(", ");
             const label = document.createElement("strong");
-            label.textContent = "Specialisations:";
+            label.textContent = aetherT("Specialisations:");
             pSpecs.appendChild(label);
             pSpecs.appendChild(document.createTextNode(` ${names}`));
             container.appendChild(pSpecs);
@@ -626,7 +627,7 @@ document.getElementById("specSaveBtn").addEventListener("click", () => {
         // Gebruiker kiest uit de dropdown
         const selectedVal = select.value;
         if (!selectedVal) {
-            alert("Kies een bestaande specialisatie of ga naar 'New'.");
+            alert(aetherT("Kies een bestaande specialisatie of ga naar 'New'."));
             return;
         }
         payload = {
@@ -637,7 +638,7 @@ document.getElementById("specSaveBtn").addEventListener("click", () => {
         };
     } else if (activeTab === "new") {
         if (!custom) {
-            alert("Vul een naam in voor de nieuwe specialisatie.");
+            alert(aetherT("Vul een naam in voor de nieuwe specialisatie."));
             return;
         }
         payload = {
@@ -647,7 +648,7 @@ document.getElementById("specSaveBtn").addEventListener("click", () => {
             name: custom
         };
     } else {
-        alert("Onbekende tab-selectie.");
+        alert(aetherT("Onbekende tab-selectie."));
         return;
     }
 
@@ -715,13 +716,13 @@ document.getElementById("disciplineSaveBtn")?.addEventListener("click", async ()
     if (activeTab === "existing") {
         idSpec = select && select.value ? parseInt(select.value, 10) : 0;
         if (!idSpec) {
-            alert("Kies een bestaande discipline of ga naar 'New'.");
+            alert(aetherT("Kies een bestaande discipline of ga naar 'New'."));
             return;
         }
     } else if (activeTab === "new") {
         name = customInput ? customInput.value.trim() : "";
         if (!name) {
-            alert("Geef een naam in voor de nieuwe discipline.");
+            alert(aetherT("Geef een naam in voor de nieuwe discipline."));
             return;
         }
     }

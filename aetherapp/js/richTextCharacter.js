@@ -1,14 +1,15 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const AETHER_CHARACTER_RICH_TEXT_TOOLBAR = `
-    <button type="button" class="action-button" data-cmd="bold" aria-label="Vet"><i class="fa-solid fa-bold"></i></button>
-    <button type="button" class="action-button" data-cmd="italic" aria-label="Cursief"><i class="fa-solid fa-italic"></i></button>
-    <button type="button" class="action-button" data-cmd="insertUnorderedList" aria-label="Ongenummerde lijst"><i class="fa-solid fa-list-ul"></i></button>
-    <button type="button" class="action-button" data-cmd="insertOrderedList" aria-label="Genummerde lijst"><i class="fa-solid fa-list-ol"></i></button>
-    <button type="button" class="action-button" data-cmd="formatBlock" data-value="p" aria-label="Alinea">P</button>
-    <button type="button" class="action-button" data-cmd="formatBlock" data-value="h4" aria-label="Kopniveau 4">H4</button>
-    <button type="button" class="action-button" data-cmd="removeFormat" aria-label="Opmaak verwijderen"><i class="fa-solid fa-eraser"></i></button>
+    <button type="button" class="action-button" data-cmd="bold" aria-label="${aetherT("Vet")}"><i class="fa-solid fa-bold"></i></button>
+    <button type="button" class="action-button" data-cmd="italic" aria-label="${aetherT("Cursief")}"><i class="fa-solid fa-italic"></i></button>
+    <button type="button" class="action-button" data-cmd="insertUnorderedList" aria-label="${aetherT("Ongenummerde lijst")}"><i class="fa-solid fa-list-ul"></i></button>
+    <button type="button" class="action-button" data-cmd="insertOrderedList" aria-label="${aetherT("Genummerde lijst")}"><i class="fa-solid fa-list-ol"></i></button>
+    <button type="button" class="action-button" data-cmd="formatBlock" data-value="p" aria-label="${aetherT("Alinea")}">P</button>
+    <button type="button" class="action-button" data-cmd="formatBlock" data-value="h4" aria-label="${aetherT("Kopniveau 4")}">H4</button>
+    <button type="button" class="action-button" data-cmd="removeFormat" aria-label="${aetherT("Opmaak verwijderen")}"><i class="fa-solid fa-eraser"></i></button>
 `;
 
-function renderCharacterRichText(element, sanitizedHtml, emptyText = "Geen inhoud.") {
+function renderCharacterRichText(element, sanitizedHtml, emptyText = aetherT("Geen inhoud.")) {
     const html = String(sanitizedHtml || "").trim();
     if (html === "") {
         element.textContent = emptyText;

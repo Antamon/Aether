@@ -1,12 +1,13 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // The four navigation tabs share one sidebar layout and one open panel at a time.
 (() => {
     const navbar = document.querySelector(".aether-top-nav");
     if (!navbar) return;
 
     const sidebars = [
-        { key: "characters", title: "Characters", icon: "tabPersonages.svg", page: "index.html", panelId: "offcanvasScrolling", tabId: "offcanvasTabToggle", templateId: "characterSidebarContent" },
-        { key: "events", title: "Evenementen", icon: "tabEvenementen.svg", page: "eventParticipation.html", templateId: "eventSidebarContent" },
-        { key: "companies", title: "Bedrijven", icon: "tabBedrijven.svg", page: "companies.html", templateId: "companySidebarContent" },
+        { key: "characters", title: aetherT("Characters"), icon: "tabPersonages.svg", page: "index.html", panelId: "offcanvasScrolling", tabId: "offcanvasTabToggle", templateId: "characterSidebarContent" },
+        { key: "events", title: aetherT("Evenementen"), icon: "tabEvenementen.svg", page: "eventParticipation.html", templateId: "eventSidebarContent" },
+        { key: "companies", title: aetherT("Bedrijven"), icon: "tabBedrijven.svg", page: "companies.html", templateId: "companySidebarContent" },
         { key: "admin", title: "Admin", icon: "tabAdmin.svg", page: "admin.html" }
     ];
     const currentPage = document.body.dataset.sidebarPage || "";
@@ -50,22 +51,22 @@
             : null;
         if (template) scroll.append(template.content);
         if (!template && config.key === "characters") {
-            scroll.innerHTML = `<p>Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.</p>
-                <select class="form-select mb-2 d-none" id="sidebarCharacterUserFilter" aria-label="Deelnemer"><option value="all">Alle deelnemers</option><option value="unassigned">Zonder deelnemer</option></select>
-                <select class="form-select mb-2" id="sidebarCharacterTypeFilter"><option value="">Alle soorten</option><option value="player">Spelerspersonage</option><option value="extra">Figurantenrol</option></select>
-                <select class="form-select mb-2" id="sidebarCharacterStatusFilter"><option value="">Alle statussen</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="deceased">Deceased</option><option value="other">Other</option><option value="draft">Draft</option><option value="approve">Approve</option></select>
-                <select class="form-select mb-2" id="sidebarCharacterClassFilter"><option value="">Alle klassen</option><option value="upper class">Bovenklasse</option><option value="middle class">Middenklasse</option><option value="lower class">Onderklasse</option></select>
-                <div id="characterNames" class="my-2"></div><a class="nav-link" id="startNewCharacter" href="index.html?new=1"><i class="fa-solid fa-user-plus"></i> Nieuw personage</a>`;
+            scroll.innerHTML = `<p>${aetherT("Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.")}</p>
+                <select class="form-select mb-2 d-none" id="sidebarCharacterUserFilter" aria-label="${aetherT("Deelnemer")}"><option value="all">${aetherT("Alle deelnemers")}</option><option value="unassigned">${aetherT("Zonder deelnemer")}</option></select>
+                <select class="form-select mb-2" id="sidebarCharacterTypeFilter"><option value="">${aetherT("Alle soorten")}</option><option value="player">${aetherT("Spelerspersonage")}</option><option value="extra">${aetherT("Figurantenrol")}</option></select>
+                <select class="form-select mb-2" id="sidebarCharacterStatusFilter"><option value="">${aetherT("Alle statussen")}</option><option value="active">${aetherT("Active")}</option><option value="inactive">${aetherT("Inactive")}</option><option value="deceased">${aetherT("Deceased")}</option><option value="other">${aetherT("Other")}</option><option value="draft">Draft</option><option value="approve">${aetherT("Approve")}</option></select>
+                <select class="form-select mb-2" id="sidebarCharacterClassFilter"><option value="">${aetherT("Alle klassen")}</option><option value="upper class">${aetherT("Bovenklasse")}</option><option value="middle class">${aetherT("Middenklasse")}</option><option value="lower class">${aetherT("Onderklasse")}</option></select>
+                <div id="characterNames" class="my-2"></div><a class="nav-link" id="startNewCharacter" href="index.html?new=1"><i class="fa-solid fa-user-plus"></i> ${aetherT("Nieuw personage")}</a>`;
         }
         if (!template && config.key === "companies") {
             scroll.innerHTML = `<div class="company-list" id="companyList"></div>
-                <div class="company-list-actions button-group mt-3 w-100"><a class="action-button w-100 text-decoration-none" href="companies.html?new=1"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nieuw bedrijf</a></div>`;
+                <div class="company-list-actions button-group mt-3 w-100"><a class="action-button w-100 text-decoration-none" href="companies.html?new=1"><i class="fa-solid fa-plus" aria-hidden="true"></i> ${aetherT("Nieuw bedrijf")}</a></div>`;
         }
         if (!template && config.key === "events") {
             const filter = document.createElement("div");
             filter.className = "mb-3 d-none"; filter.id = "participantFilterWrapper";
             const label = document.createElement("label"); label.className = "form-label";
-            label.htmlFor = "eventParticipantSelect"; label.textContent = "Deelnames van deelnemer";
+            label.htmlFor = "eventParticipantSelect"; label.textContent = aetherT("Deelnames van deelnemer");
             const choices = document.createElement("div"); choices.id = "eventParticipantFilterChoices";
             filter.append(label, choices); scroll.append(filter);
             const list = document.createElement("div");
@@ -78,11 +79,11 @@
             list.className = "company-list";
             list.id = "adminMainTabs";
             for (const [key, label, image] of [
-                ["skills", "Vaardigheden", "actionsVaardigheden.png"],
-                ["traits", "Eigenschappen", "actionStatuseigenschappen.png"],
-                ["knowledge", "Wereldwijs", "actionWereldwijs.png"],
-                ["actions", "Acties", "actionBoeken.png"],
-                ["research", "Onderzoek", "actionSpeuren.png"]
+                ["skills", aetherT("Vaardigheden"), "actionsVaardigheden.png"],
+                ["traits", aetherT("Eigenschappen"), "actionStatuseigenschappen.png"],
+                ["knowledge", aetherT("Wereldwijs"), "actionWereldwijs.png"],
+                ["actions", aetherT("Acties"), "actionBoeken.png"],
+                ["research", aetherT("Onderzoek"), "actionSpeuren.png"]
             ]) {
                 const link = document.createElement("a");
                 link.className = "company-sidebar-card";
@@ -113,7 +114,7 @@
         tab.className = "tab-button";
         tab.type = "button";
         tab.setAttribute("aria-controls", panel.id);
-        tab.setAttribute("aria-label", `${config.title} openen of sluiten`);
+        tab.setAttribute("aria-label", aetherT("{0} openen of sluiten",[config.title]));
         tab.setAttribute("aria-expanded", "false");
         const icon = document.createElement("img");
         icon.className = "aether-sidebar-tab-icon";
@@ -142,7 +143,7 @@
         if (!["characters", "companies", "events"].includes(key)) return;
         const list = document.getElementById(key === "characters" ? "characterNames" : key === "events" ? "eventSidebarList" : "companyList");
         if (!list) return;
-        list.textContent = "Laden…";
+        list.textContent = aetherT("Laden…");
         try {
             const user = await aetherGetCurrentUser();
             if (key === "events") {
@@ -166,7 +167,7 @@
             const items = await apiFetchJson(key === "characters"
                 ? "api/characters/getCharacterList.php"
                 : "api/companies/getCompanyList.php", key === "characters" ? { method: "POST", body: {} } : undefined);
-            if (!Array.isArray(items)) throw new Error("Geen lijst ontvangen.");
+            if (!Array.isArray(items)) throw new Error(aetherT("Geen lijst ontvangen."));
             if (key === "characters") {
                 if (userHasPrivilegedRole(user)) {
                     const userFilter = document.getElementById("sidebarCharacterUserFilter");
@@ -175,7 +176,7 @@
                         for (const candidate of Object.values(users || {})) {
                             const option = document.createElement("option");
                             option.value = String(candidate.id);
-                            option.textContent = candidate.displayName || [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.username || `Deelnemer #${candidate.id}`;
+                            option.textContent = candidate.displayName || [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || candidate.username || aetherT("Deelnemer #{0}",[candidate.id]);
                             userFilter.append(option);
                         }
                         userFilter.classList.remove("d-none");
@@ -189,7 +190,7 @@
             loadedLists.add(key);
         } catch (error) {
             console.error("Sidebarlijst laden mislukt:", error);
-            list.textContent = "De lijst kon niet geladen worden. Sluit en open de tab om opnieuw te proberen.";
+            list.textContent = aetherT("De lijst kon niet geladen worden. Sluit en open de tab om opnieuw te proberen.");
         }
     }
 
@@ -206,7 +207,7 @@
                 && (!userFilter || userFilter.value === "all"
                     || (userFilter.value === "unassigned" && !Number(item.idUser))
                     || Number(item.idUser) === Number(userFilter.value)));
-            if (!filtered.length) { list.textContent = "Geen personages gevonden voor deze filters."; return; }
+            if (!filtered.length) { list.textContent = aetherT("Geen personages gevonden voor deze filters."); return; }
             for (const item of filtered) {
                 list.append(createCharacterSidebarCard(item, () => {
                     window.location.href = `index.html?character=${encodeURIComponent(item.id)}`;
@@ -221,7 +222,7 @@
         const button = document.createElement("button");
         button.type = "button";
         button.className = "company-sidebar-card character-sidebar-card";
-        const name = [item.firstName, item.lastName].filter(Boolean).join(" ") || `Personage #${item.id}`;
+        const name = [item.firstName, item.lastName].filter(Boolean).join(" ") || aetherT("Personage #{0}",[item.id]);
         button.setAttribute("aria-label", `Open ${name}`);
         button.dataset.idCharacter = String(item.id || 0);
         if (Number(item.id) === Number(activeId)) {
@@ -233,7 +234,7 @@
         const showPlaceholder = () => {
             imageFrame.replaceChildren();
             imageFrame.classList.add("character-sidebar-portrait-placeholder");
-            imageFrame.textContent = "Geen pasfoto";
+            imageFrame.textContent = aetherT("Geen pasfoto");
         };
         if (item.portraitUrl) {
             const image = document.createElement("img");
@@ -255,12 +256,12 @@
 
     function renderCompanySidebarCards(items, list, onOpen, activeId = 0) {
         list.replaceChildren();
-        if (!items.length) { list.textContent = "Nog geen bedrijven beschikbaar."; return; }
+        if (!items.length) { list.textContent = aetherT("Nog geen bedrijven beschikbaar."); return; }
         for (const item of items) {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "company-sidebar-card";
-            const name = String(item.companyName || `Bedrijf #${item.id}`);
+            const name = String(item.companyName || aetherT("Bedrijf #{0}",[item.id]));
             button.setAttribute("aria-label", `Open ${name}`);
             button.dataset.idCompany = String(item.id || 0);
             if (Number(item.id) === Number(activeId)) {
@@ -278,12 +279,12 @@
                 image.addEventListener("error", () => {
                     imageFrame.replaceChildren();
                     imageFrame.classList.add("company-sidebar-image-placeholder");
-                    imageFrame.textContent = "Geen logo";
+                    imageFrame.textContent = aetherT("Geen logo");
                 }, { once: true });
                 imageFrame.append(image);
             } else {
                 imageFrame.classList.add("company-sidebar-image-placeholder");
-                imageFrame.textContent = "Geen logo";
+                imageFrame.textContent = aetherT("Geen logo");
             }
             const label = document.createElement("span");
             label.className = "company-sidebar-name";
@@ -298,11 +299,11 @@
     function renderEventSidebarCards(items, list, onOpen, activeId = 0) {
         if (!list) return;
         renderCompanySidebarCards(items.map(event => ({ ...event, companyName: event.title, logoUrl: event.imageUrl })), list, onOpen, activeId);
-        if (!items.length) { list.textContent = "Nog geen events beschikbaar."; return; }
+        if (!items.length) { list.textContent = aetherT("Nog geen events beschikbaar."); return; }
         for (const card of list.children) {
             card.classList.add("event-sidebar-card");
             const placeholder = card.querySelector(".company-sidebar-image-placeholder");
-            if (placeholder) placeholder.textContent = "Geen afbeelding";
+            if (placeholder) placeholder.textContent = aetherT("Geen afbeelding");
         }
     }
     window.renderEventSidebarCards = renderEventSidebarCards;
@@ -315,11 +316,11 @@
             if (!userHasPrivilegedRole(user || await aetherGetCurrentUser())) return;
             const users = await apiFetchJson("api/users/getUserList.php");
             const options = Object.values(users || {}).map(user => ({ id: user.id,
-                text: user.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || `Deelnemer #${user.id}`
+                text: user.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || aetherT("Deelnemer #{0}",[user.id])
             })).sort((a, b) => a.text.localeCompare(b.text));
             const select = document.createElement("select"); select.id = "eventParticipantSelect";
-            select.className = "form-select"; select.setAttribute("aria-label", "Deelnames van deelnemer");
-            const prompt = document.createElement("option"); prompt.value = ""; prompt.textContent = "Kies een deelnemer"; select.append(prompt);
+            select.className = "form-select"; select.setAttribute("aria-label", aetherT("Deelnames van deelnemer"));
+            const prompt = document.createElement("option"); prompt.value = ""; prompt.textContent = aetherT("Kies een deelnemer"); select.append(prompt);
             for (const user of options) { const option = document.createElement("option"); option.value = String(user.id); option.textContent = user.text; select.append(option); }
             select.value = selectedId ? String(selectedId) : "";
             select.addEventListener("change", () => { if (select.value) onChoose(select.value); });
@@ -351,13 +352,17 @@
         if (navTrigger) navTrigger.setAttribute("aria-expanded", String(key === "characters"));
     }
 
+    function pageContentContainer() {
+        return document.getElementById("sheetBody") || document.querySelector("main.container.aether-page");
+    }
+
     function positionBelowNavbar() {
         const bottom = Math.max(0, navbar.getBoundingClientRect().bottom);
         deck.style.setProperty("--aether-navbar-bottom", `${bottom}px`);
         // All page headers use the character sheet's width and stop before the
         // descending topbar ornament. Anchor to the content container while loading.
         const pageNav = document.getElementById("pageNav") || document.querySelector(".aether-page-nav");
-        const sheet = document.getElementById("sheetBody") || document.querySelector(".admin-page");
+        const sheet = pageContentContainer();
         if (pageNav && sheet) {
             const bounds = sheet.getBoundingClientRect();
             const artwork = navbar.getBoundingClientRect();
@@ -410,7 +415,12 @@
     });
     window.addEventListener("resize", positionBelowNavbar);
     window.addEventListener("scroll", positionBelowNavbar, { passive: true });
-    if (typeof ResizeObserver !== "undefined") new ResizeObserver(positionBelowNavbar).observe(navbar);
+    if (typeof ResizeObserver !== "undefined") {
+        const layoutObserver = new ResizeObserver(positionBelowNavbar);
+        layoutObserver.observe(navbar);
+        const content = pageContentContainer();
+        if (content) layoutObserver.observe(content);
+    }
 
     window.closeCharacterSidebar = () => { if (activeKey === "characters") setOpen(null); };
     window.closeCompanySidebar = () => { if (activeKey === "companies") setOpen(null); };

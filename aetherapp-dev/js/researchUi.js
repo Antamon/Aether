@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 /* Shared Aether components for research. No server-side JavaScript runtime. */
 window.AetherResearch = (() => {
     const el = (tag, text = '', cls = '') => { const n = document.createElement(tag); n.className = cls; n.textContent = text; return n; };
@@ -26,7 +27,7 @@ window.AetherResearch = (() => {
     const ids = n => [...n.selectedOptions].map(o => Number(o.value));
     const read = (op, data = {}) => apiFetchJson(`api/research/http.php?${new URLSearchParams({op, ...data})}`);
     const write = (op, data) => apiFetchIdempotentJson('api/research/http.php', {method:'POST', body:{op, ...data}});
-    const message = (host, error) => { let text = error?.message || String(error); if (text.includes('"error"')) { try { const j = JSON.parse(text.slice(text.indexOf('{'))); text = (j.validationErrors || [j.error]).join(' '); } catch {} } const n = el('p', text, 'alert alert-danger'); n.setAttribute('role','alert'); host.prepend(n); return n; };
+    const message = (host, error) => { let text = error?.message || String(error); if (text.includes('"error"')) { try { const j = JSON.parse(text.slice(text.indexOf('{'))); text = (j.validationErrors || [j.error]).map(value=>window.AetherI18n?.errorText(value)||value).join(' '); } catch {} } text=window.AetherI18n?.errorText(text)||text; const n = el('p', text, 'alert alert-danger'); n.setAttribute('role','alert'); host.prepend(n); return n; };
     const run = async (host, action) => { try { return await action(); } catch (error) { message(host, error); return null; } };
     const dialog = (title, build) => {
         const d = el('dialog', '', 'share-ui-dialog research-dialog'); const body = el('div', '', 'research-dialog-body');
@@ -40,6 +41,6 @@ window.AetherResearch = (() => {
         if (type === 'image') n.alt = m.filename; else { n.controls = true; n.preload = 'metadata'; }
         host.append(n);
     });
-    const statuses = {completed:'Afgerond', awaiting_confirmation:'Opdracht bezig', waiting_time:'Wacht op tijd', waiting:'Wacht op vrijgave', new_feedback:'Nieuwe feedback beschikbaar', unavailable:'Niet beschikbaar'};
+    const statuses = {completed:aetherT("Afgerond"), awaiting_confirmation:aetherT("Opdracht bezig"), waiting_time:aetherT("Wacht op tijd"), waiting:aetherT("Wacht op vrijgave"), new_feedback:aetherT("Nieuwe feedback beschikbaar"), unavailable:aetherT("Niet beschikbaar")};
     return {el,button,group,rich,input,select,field,check,multi,ids,read,write,message,run,dialog,editor,media,statuses};
 })();

@@ -8,21 +8,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amarante&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=4f5f6112f7ad7f03">
-    <link rel="stylesheet" href="css/page-nav.css?v=15dd62f126204bd9">
+    <link rel="stylesheet" href="css/style.css?v=5d83fe46e140c765">
+    <link rel="stylesheet" href="css/page-nav.css?v=8866eea59a088967">
     <link rel="stylesheet" href="css/modal.css?v=e7d148b7fe904a7b">
-    <title>Aether applicatie</title>
-    <link rel="stylesheet" href="css/research.css?v=3aa528903ba64ced">
+    <title data-i18n="Aether applicatie">Aether applicatie</title>
+    <link rel="stylesheet" href="css/research.css?v=b8439de85f81c0a9">
+<link rel="stylesheet" href="css/i18n.css?v=dde2fe626a199436">
+<script src="js/interface-copy.js?v=025214948d5cffd1"></script>
+<script src="js/i18n.js?v=13ca69d9a742769d"></script>
 </head>
 <body data-sidebar-page="characters">
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-dark bgRed mb-4 aether-top-nav" data-bs-theme="dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina">
+            <a class="navbar-brand" href="index.html" aria-label="Aether startpagina" data-i18n-aria-label="Aether startpagina">
                     <img src="img/aether-logo.png" alt="Bootstrap">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" data-i18n-aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -34,33 +37,33 @@
     </nav>
 
     <template id="characterSidebarContent">
-            <p>Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.</p>
+            <p><span data-i18n="Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.">Om een personage snel te vinden, kan u gebruik maken van onderstaande filters.</span></p>
             <div class="mb-2 d-none" id="sidebarCharacterUserFilterWrapper">
                 <div id="sidebarCharacterUserFilter"></div>
             </div>
             <select class="form-select mb-2" id="sidebarCharacterTypeFilter">
-                <option value="">Alle soorten</option>
-                <option value="player">Spelerspersonage</option>
-                <option value="extra">Figurantenrol</option>
+                <option value="" data-i18n="Alle soorten">Alle soorten</option>
+                <option value="player" data-i18n="Spelerspersonage">Spelerspersonage</option>
+                <option value="extra" data-i18n="Figurantenrol">Figurantenrol</option>
             </select>
             <select class="form-select mb-2" id="sidebarCharacterStatusFilter">
-                <option value="">Alle statussen</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="deceased">Deceased</option>
-                <option value="other">Other</option>
+                <option value="" data-i18n="Alle statussen">Alle statussen</option>
+                <option value="active" data-i18n="Active">Active</option>
+                <option value="inactive" data-i18n="Inactive">Inactive</option>
+                <option value="deceased" data-i18n="Deceased">Deceased</option>
+                <option value="other" data-i18n="Other">Other</option>
                 <option value="draft">Draft</option>
-                <option value="approve">Approve</option>
+                <option value="approve" data-i18n="Approve">Approve</option>
             </select>
             <select class="form-select mb-2" id="sidebarCharacterClassFilter">
-                <option value="">Alle klassen</option>
-                <option value="upper class">Bovenklasse</option>
-                <option value="middle class">Middenklasse</option>
-                <option value="lower class">Onderklasse</option>
+                <option value="" data-i18n="Alle klassen">Alle klassen</option>
+                <option value="upper class" data-i18n="Bovenklasse">Bovenklasse</option>
+                <option value="middle class" data-i18n="Middenklasse">Middenklasse</option>
+                <option value="lower class" data-i18n="Onderklasse">Onderklasse</option>
             </select>
             <!-- List with character names -->
             <div id="characterNames" class="my-2"></div>
-            <a class="nav-link" id="startNewCharacter" aria-current="page" href="#"><i class="fa-solid fa-user-plus"></i> Nieuw personage</a>
+            <a class="nav-link" id="startNewCharacter" aria-current="page" href="#"><i class="fa-solid fa-user-plus"></i> <span data-i18n="Nieuw personage">Nieuw personage</span></a>
     </template>
 
     <!-- Character form -->
@@ -69,54 +72,54 @@
     <!-- Character nav templates -->
     <template id="tplNavSheetAdmin">
         <ul class="nav nav-tabs" id="navSheet">
-            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#" data-tab="character_sheet">Character sheet</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Background</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy">Economie</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="actions">Acties</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="passport">Paspoort</a></li>
+            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#" data-tab="character_sheet"><span data-i18n="Character sheet">Character sheet</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background"><span data-i18n="Background">Background</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary"><span data-i18n="Diary">Diary</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality"><span data-i18n="Personality">Personality</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy"><span data-i18n="Economie">Economie</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="actions"><span data-i18n="Acties">Acties</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="passport"><span data-i18n="Paspoort">Paspoort</span></a></li>
         </ul>
         <div class="aether-page-nav-body">
         <div class="row py-2 navRow">
             <div class="col-lg-6 col-12 row">
-                <div class="col-sm-3 col-form-label">Deelnemer</div>
+                <div class="col-sm-3 col-form-label"><span data-i18n="Deelnemer">Deelnemer</span></div>
                 <div class="col-sm-9" id="listParticipant"></div>
             </div>
             <div class="col-lg-6 col-12 row">
-                <label class="col-sm-3 col-form-label">Type personage</label>
+                <label class="col-sm-3 col-form-label"><span data-i18n="Type personage">Type personage</span></label>
                 <div class="col-sm-9">
                     <select class="form-select" id="type" name="type">
-                        <option value="player">Spelerspersonage</option>
-                        <option value="extra">Figurantenrol</option>
+                        <option value="player" data-i18n="Spelerspersonage">Spelerspersonage</option>
+                        <option value="extra" data-i18n="Figurantenrol">Figurantenrol</option>
                     </select>
                 </div>
             </div>
         </div>
         <div class="row pb-2 border-bottom mb-4 navRow">
             <div class="col-lg-3 col-12 navInfoCell">
-                <span class="col-form-label mb-0">Ervaringspunten</span>
+                <span class="col-form-label mb-0"><span data-i18n="Ervaringspunten">Ervaringspunten</span></span>
                 <span class="col-form-label mb-0" id="lblExperiance"></span>
             </div>
             <div class="col-lg-3 col-12 navInfoCell">
-                <span class="col-form-label mb-0">Statuspunten</span>
+                <span class="col-form-label mb-0"><span data-i18n="Statuspunten">Statuspunten</span></span>
                 <span class="col-form-label mb-0" id="lblStatusPoints"></span>
-                <div class="btn-group btn-group-sm d-none" id="statusPointControls" role="group" aria-label="Statuspunten aanpassen">
+                <div class="btn-group btn-group-sm d-none" id="statusPointControls" role="group" aria-label="Statuspunten aanpassen" data-i18n-aria-label="Statuspunten aanpassen">
                     <button type="button" class="btn btn-outline-light" id="btnStatusPointMinus">-</button>
                     <button type="button" class="btn btn-outline-light" id="btnStatusPointPlus">+</button>
                 </div>
-                <button type="button" class="btn btn-link p-0 navInfoHelp d-none" id="statusPointInfo" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Info statuspunten">?</button>
+                <button type="button" class="btn btn-link p-0 navInfoHelp d-none" id="statusPointInfo" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Info statuspunten" data-i18n-aria-label="Info statuspunten">?</button>
             </div>
             <div class="col-lg-6 col-12 row align-items-center">
                 <label class="col-sm-3 col-form-label">Status</label>
                 <div class="col-sm-9">
                     <select class="form-select" id="state" name="state">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="deceased">Deceased</option>
-                        <option value="other">Other</option>
+                        <option value="active" data-i18n="Active">Active</option>
+                        <option value="inactive" data-i18n="Inactive">Inactive</option>
+                        <option value="deceased" data-i18n="Deceased">Deceased</option>
+                        <option value="other" data-i18n="Other">Other</option>
                         <option value="draft">Draft</option>
-                        <option value="approve">Approve</option>
+                        <option value="approve" data-i18n="Approve">Approve</option>
                     </select>
                 </div>
             </div>
@@ -126,38 +129,38 @@
 
     <template id="tplNavSheetParticipant">
         <ul class="nav nav-tabs" id="navSheet">
-            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#">Character sheet</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background">Background</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary">Diary</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality">Personality</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy">Economie</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="actions">Acties</a></li>
-            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="passport">Paspoort</a></li>
+            <li class="nav-item"><a class="nav-link active navTab" aria-current="page" href="#"><span data-i18n="Character sheet">Character sheet</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="background"><span data-i18n="Background">Background</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="diary"><span data-i18n="Diary">Diary</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="personality"><span data-i18n="Personality">Personality</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="economy"><span data-i18n="Economie">Economie</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="actions"><span data-i18n="Acties">Acties</span></a></li>
+            <li class="nav-item"><a class="nav-link navTab" href="#" data-tab="passport"><span data-i18n="Paspoort">Paspoort</span></a></li>
         </ul>
         <div class="aether-page-nav-body">
         <div class="row py-2 navRow" id="adminSheetHead">
             <div class="col-lg-6 col-12 row">
-                <div class="col-sm-3 col-form-label">Deelnemer</div>
+                <div class="col-sm-3 col-form-label"><span data-i18n="Deelnemer">Deelnemer</span></div>
                 <div class="col-sm-9 col-form-label" id="nameParticipant"></div>
             </div>
             <div class="col-lg-6 col-12 row">
-                <label class="col-sm-3 col-form-label">Type personage</label>
+                <label class="col-sm-3 col-form-label"><span data-i18n="Type personage">Type personage</span></label>
                 <div class="col-sm-9 col-form-label" id="type"></div>
             </div>
         </div>
         <div class="row pb-2 border-bottom mb-4 navRow" id="sheetHead">
             <div class="col-lg-3 col-12 navInfoCell">
-                <span class="col-form-label mb-0">Ervaringspunten</span>
+                <span class="col-form-label mb-0"><span data-i18n="Ervaringspunten">Ervaringspunten</span></span>
                 <span class="col-form-label mb-0" id="lblExperiance"></span>
             </div>
             <div class="col-lg-3 col-12 navInfoCell">
-                <span class="col-form-label mb-0">Statuspunten</span>
+                <span class="col-form-label mb-0"><span data-i18n="Statuspunten">Statuspunten</span></span>
                 <span class="col-form-label mb-0" id="lblStatusPoints"></span>
-                <div class="btn-group btn-group-sm d-none" id="statusPointControls" role="group" aria-label="Statuspunten aanpassen">
+                <div class="btn-group btn-group-sm d-none" id="statusPointControls" role="group" aria-label="Statuspunten aanpassen" data-i18n-aria-label="Statuspunten aanpassen">
                     <button type="button" class="btn btn-outline-light" id="btnStatusPointMinus">-</button>
                     <button type="button" class="btn btn-outline-light" id="btnStatusPointPlus">+</button>
                 </div>
-                <button type="button" class="btn btn-link p-0 navInfoHelp d-none" id="statusPointInfo" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Info statuspunten">?</button>
+                <button type="button" class="btn btn-link p-0 navInfoHelp d-none" id="statusPointInfo" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Info statuspunten" data-i18n-aria-label="Info statuspunten">?</button>
             </div>
             <div class="col-lg-6 col-12 row align-items-center">
                 <label class="col-sm-3 col-form-label">Status</label>
@@ -186,43 +189,43 @@
                                             id="characterPortraitImage"
                                             class="character-portrait-image d-none"
                                             src=""
-                                            alt="Portret personage"
+                                            alt="Portret personage" data-i18n-alt="Portret personage"
                                         >
-                                        <div id="characterPortraitPlaceholder" class="character-portrait-placeholder">Geen portret</div>
+                                        <div id="characterPortraitPlaceholder" class="character-portrait-placeholder"><span data-i18n="Geen portret">Geen portret</span></div>
                                     </div>
                                     <div class="character-portrait-actions">
                                         <input type="file" id="characterPortraitFileInput" class="d-none" accept="image/*">
                                         <div class="button-group">
-                                            <button type="button" class="action-button" id="characterPortraitUploadButton" title="Portret opladen" aria-label="Portret opladen"><i class="fa-solid fa-upload"></i></button>
-                                            <button type="button" class="action-button" id="characterPortraitDeleteButton" title="Portret verwijderen" aria-label="Portret verwijderen"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" class="action-button" id="characterPortraitUploadButton" title="Portret opladen" data-i18n-title="Portret opladen" aria-label="Portret opladen" data-i18n-aria-label="Portret opladen"><i class="fa-solid fa-upload"></i></button>
+                                            <button type="button" class="action-button" id="characterPortraitDeleteButton" title="Portret verwijderen" data-i18n-title="Portret verwijderen" aria-label="Portret verwijderen" data-i18n-aria-label="Portret verwijderen"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="character-sheet-header-fields">
                                     <div class="mb-3 row" id="classRow">
-                                        <label class="col-sm-4 col-form-label">Klasse</label>
+                                        <label class="col-sm-4 col-form-label"><span data-i18n="Klasse">Klasse</span></label>
                                         <div class="col-sm-8">
                                             <select class="form-select" id="class" name="class">
-                                                <option value="upper class">Bovenklasse</option>
-                                                <option value="middle class" selected>Middenklasse</option>
-                                                <option value="lower class">Onderklasse</option>
+                                                <option value="upper class" data-i18n="Bovenklasse">Bovenklasse</option>
+                                                <option value="middle class" selected data-i18n="Middenklasse">Middenklasse</option>
+                                                <option value="lower class" data-i18n="Onderklasse">Onderklasse</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="mb-3 row">
-                                        <label class="col-sm-4 col-form-label">Aanspreking</label>
+                                        <label class="col-sm-4 col-form-label"><span data-i18n="Aanspreking">Aanspreking</span></label>
                                         <div class="col-sm-8">
                                             <input type="text" class="form-control" id="title" name="title">
                                         </div>
                                     </div>
                                     <div class="mb-3 row">
-                                        <label class="col-sm-4 col-form-label">Familienaam</label>
+                                        <label class="col-sm-4 col-form-label"><span data-i18n="Familienaam">Familienaam</span></label>
                                         <div class="col-sm-8">
                                             <input type="text" class="form-control" id="lastName" name="lastName">
                                         </div>
                                     </div>
                                     <div class="mb-3 row">
-                                        <label class="col-sm-4 col-form-label">Voornaam</label>
+                                        <label class="col-sm-4 col-form-label"><span data-i18n="Voornaam">Voornaam</span></label>
                                         <div class="col-sm-8">
                                             <input type="text" class="form-control" id="firstName" name="firstName">
                                         </div>
@@ -230,7 +233,7 @@
                                 </div>
                             </div>
                             <div class="mb-3 row">
-                                <label class="col-sm-4 col-form-label">Straat en nummer</label>
+                                <label class="col-sm-4 col-form-label"><span data-i18n="Straat en nummer">Straat en nummer</span></label>
                                 <div class="col-sm-6">
                                     <input type="text" class="form-control" id="street" name="street">
                                 </div>
@@ -239,7 +242,7 @@
                                 </div>
                             </div>
                             <div class="mb-3 row">
-                                <label class="col-sm-4 col-form-label">Postcode en gemeente</label>
+                                <label class="col-sm-4 col-form-label"><span data-i18n="Postcode en gemeente">Postcode en gemeente</span></label>
                                 <div class="col-sm-2">
                                     <input type="text" class="form-control" id="postalCode" name="postalCode">
                                 </div>
@@ -248,23 +251,23 @@
                                 </div>
                             </div>
                             <div class="mb-3 row">
-                                <label class="col-sm-4 col-form-label">Burgelijke staat</label>
+                                <label class="col-sm-4 col-form-label"><span data-i18n="Burgelijke staat">Burgelijke staat</span></label>
                                 <div class="col-sm-8">
                                     <select class="form-select" id="maritalStatus" name="maritalStatus">
-                                        <option value="Single" selected>Ongehuwd</option>
-                                        <option value="Married">Gehuwd</option>
-                                        <option value="Widowed">Weduwnaar/weduwe</option>
+                                        <option value="Single" selected data-i18n="Ongehuwd">Ongehuwd</option>
+                                        <option value="Married" data-i18n="Gehuwd">Gehuwd</option>
+                                        <option value="Widowed" data-i18n="Weduwnaar/weduwe">Weduwnaar/weduwe</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-3 row">
-                                <label class="col-sm-4 col-form-label">Nationaliteit</label>
+                                <label class="col-sm-4 col-form-label"><span data-i18n="Nationaliteit">Nationaliteit</span></label>
                                 <div class="col-sm-8">
                                     <input type="text" class="form-control" id="nationality" name="nationality">
                                 </div>
                             </div>
                             <div class="mb-3 row" id="birthRow">
-                                <label class="col-sm-4 col-form-label">Geboren te / op</label>
+                                <label class="col-sm-4 col-form-label"><span data-i18n="Geboren te / op">Geboren te / op</span></label>
                                 <div class="col-sm-4">
                                     <input type="text" class="form-control" id="birthPlace" name="birthPlace">
                                 </div>
@@ -274,7 +277,7 @@
                             </div>
                             <div class="d-none" id="leftTraitModuleHost"></div>
                             <div class="mb-3 row">
-                                <label class="col-sm-4 col-form-label">Rijksregisternummer</label>
+                                <label class="col-sm-4 col-form-label"><span data-i18n="Rijksregisternummer">Rijksregisternummer</span></label>
                                 <div class="col-sm-8">
                                     <input type="text" class="form-control" id="stateRegisterNumber" name="stateRegisterNumber">
                                 </div>
@@ -283,28 +286,28 @@
                     </div>
                     <div class="card aether-panel character-sheet-card mb-4" id="leftInfoSections">
                         <div class="card-body">
-                            <h4 class="character-sheet-card-title">Gezondheid</h4>
+                            <h4 class="character-sheet-card-title"><span data-i18n="Gezondheid">Gezondheid</span></h4>
                             <div class="mb-4" id="healthSectionContent"></div>
-                            <h4 class="character-sheet-card-title" id="livingStandardSectionTitle">Levensstandaard</h4>
+                            <h4 class="character-sheet-card-title" id="livingStandardSectionTitle"><span data-i18n="Levensstandaard">Levensstandaard</span></h4>
                             <div class="mb-4" id="livingStandardSectionContent"></div>
-                            <h4 class="character-sheet-card-title" id="staffSectionTitle">Personeel</h4>
+                            <h4 class="character-sheet-card-title" id="staffSectionTitle"><span data-i18n="Personeel">Personeel</span></h4>
                             <div class="mb-4" id="staffSectionContent"></div>
-                            <h4 class="character-sheet-card-title" id="languagesSectionTitle">Talen</h4>
+                            <h4 class="character-sheet-card-title" id="languagesSectionTitle"><span data-i18n="Talen">Talen</span></h4>
                             <div id="languagesSectionContent"></div>
                         </div>
                     </div>
                     <!-- Buttons new character -->
                     <div class="d-flex justify-content-center d-none" id="groupNewCharacter">
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-primary" id="createNewCharacter"><i class="fa-solid fa-check"></i> Aanmaken</button>
-                            <button type="button" class="btn btn-danger" id="cancelNewCharacter"><i class="fa-solid fa-xmark"></i> Annuleren</button>
+                            <button type="button" class="btn btn-primary" id="createNewCharacter"><i class="fa-solid fa-check"></i> <span data-i18n="Aanmaken">Aanmaken</span></button>
+                            <button type="button" class="btn btn-danger" id="cancelNewCharacter"><i class="fa-solid fa-xmark"></i> <span data-i18n="Annuleren">Annuleren</span></button>
                         </div>
                      </div>
 
                     <!-- Buttons edit existing character -->
                     <div class="d-flex justify-content-center d-none" id="groupEditCharacter">
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-primary" id="updateCharacter"><i class="fa-solid fa-check"></i> Bewaar wijzigingen</button>
+                            <button type="button" class="btn btn-primary" id="updateCharacter"><i class="fa-solid fa-check"></i> <span data-i18n="Bewaar wijzigingen">Bewaar wijzigingen</span></button>
                         </div>
                     </div>
 
@@ -315,18 +318,18 @@
                 <div class="d-none" id="skills">
                     <div class="card aether-panel character-sheet-card mb-4">
                         <div class="card-body">
-                            <h4 class="character-sheet-card-title">Vaardigheden</h4>
+                            <h4 class="character-sheet-card-title"><span data-i18n="Vaardigheden">Vaardigheden</span></h4>
                             <div class="accordion mb-3" id="accordionSkills"></div>
                             <div class="input-group">
-                                <label class="input-group-text action-group-label" for="idNewSkill">Vaardigheid toevoegen</label>
+                                <label class="input-group-text action-group-label" for="idNewSkill"><span data-i18n="Vaardigheid toevoegen">Vaardigheid toevoegen</span></label>
                                 <select class="form-select" id="idNewSkill"></select>
-                                <div class="button-group"><button class="action-button" type="button" id="addNewSkill" aria-label="Vaardigheid toevoegen"><i class="fa-solid fa-plus" aria-hidden="true"></i></button></div>
+                                <div class="button-group"><button class="action-button" type="button" id="addNewSkill" aria-label="Vaardigheid toevoegen" data-i18n-aria-label="Vaardigheid toevoegen"><i class="fa-solid fa-plus" aria-hidden="true"></i></button></div>
                             </div>
                         </div>
                     </div>
                     <div class="card aether-panel character-sheet-card" id="traitsSection">
                         <div class="card-body">
-                            <h4 class="character-sheet-card-title">Statuseigenschappen</h4>
+                            <h4 class="character-sheet-card-title"><span data-i18n="Statuseigenschappen">Statuseigenschappen</span></h4>
                             <div id="traitsContent"></div>
                         </div>
                     </div>
@@ -368,8 +371,8 @@
         <div class="modal-dialog">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add specialisation</h5>
-                <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                <h5 class="modal-title"><span data-i18n="Add specialisation">Add specialisation</span></h5>
+                <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten" data-i18n-aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
             </div>
 
             <div class="modal-body">
@@ -386,7 +389,7 @@
                             aria-controls="spec-existing-pane"
                             aria-selected="true"
                             data-tab="existing">
-                    Existing
+                    <span data-i18n="Existing">Existing</span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -399,7 +402,7 @@
                             aria-controls="spec-new-pane"
                             aria-selected="false"
                             data-tab="new">
-                    New
+                    <span data-i18n="New">New</span>
                     </button>
                 </li>
                 </ul>
@@ -411,7 +414,7 @@
                     role="tabpanel"
                     aria-labelledby="spec-existing-tab">
                     <div class="mb-3">
-                    <label for="specSelect" class="form-label">Existing specialisation</label>
+                    <label for="specSelect" class="form-label"><span data-i18n="Existing specialisation">Existing specialisation</span></label>
                     <select id="specSelect" class="form-select">
                         <!-- wordt via JS gevuld -->
                     </select>
@@ -424,7 +427,7 @@
                     role="tabpanel"
                     aria-labelledby="spec-new-tab">
                     <div class="mb-3">
-                    <label for="specCustom" class="form-label">New specialisation</label>
+                    <label for="specCustom" class="form-label"><span data-i18n="New specialisation">New specialisation</span></label>
                     <input type="text"
                             id="specCustom"
                             class="form-control"
@@ -435,8 +438,8 @@
             </div>
             <div class="modal-footer">
                 <div class="button-group">
-                    <button type="button" class="action-button" id="specSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
-                    <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                    <button type="button" class="action-button" id="specSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Save">Save</span></button>
+                    <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Cancel">Cancel</span></button>
                 </div>
             </div>
             </div>
@@ -450,10 +453,10 @@
 
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        Choose discipline for
+                        <span data-i18n="Choose discipline for">Choose discipline for</span>
                         <span id="disciplineSkillTitle" class="fw-bold"></span>
                     </h5>
-                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten" data-i18n-aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                 </div>
 
                 <div class="modal-body">
@@ -469,7 +472,7 @@
                                     aria-controls="discipline-existing-pane"
                                     aria-selected="true"
                                     data-tab="existing">
-                                Existing
+                                <span data-i18n="Existing">Existing</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -482,7 +485,7 @@
                                     aria-controls="discipline-new-pane"
                                     aria-selected="false"
                                     data-tab="new">
-                                New
+                                <span data-i18n="New">New</span>
                             </button>
                         </li>
                     </ul>
@@ -495,7 +498,7 @@
                             aria-labelledby="discipline-existing-tab">
                             <div class="mb-3">
                                 <label for="disciplineSelect" class="form-label">
-                                    Existing discipline
+                                    <span data-i18n="Existing discipline">Existing discipline</span>
                                 </label>
                                 <select id="disciplineSelect" class="form-select">
                                     <!-- wordt via JS gevuld -->
@@ -510,7 +513,7 @@
                             aria-labelledby="discipline-new-tab">
                             <div class="mb-3">
                                 <label for="disciplineCustom" class="form-label">
-                                    New discipline
+                                    <span data-i18n="New discipline">New discipline</span>
                                 </label>
                                 <input type="text"
                                     id="disciplineCustom"
@@ -525,8 +528,8 @@
                     <!-- belangrijk: GEEN data-bs-dismiss op Cancel
                         → als user wegklikt zonder keuze, registreren we de skill niet -->
                     <div class="button-group">
-                        <button type="button" class="action-button" id="disciplineSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
-                        <button type="button" class="action-button" id="disciplineCancelBtn"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                        <button type="button" class="action-button" id="disciplineSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Save">Save</span></button>
+                        <button type="button" class="action-button" id="disciplineCancelBtn"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Cancel">Cancel</span></button>
                     </div>
                 </div>
 
@@ -538,8 +541,8 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Taal kiezen</h5>
-                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                    <h5 class="modal-title"><span data-i18n="Taal kiezen">Taal kiezen</span></h5>
+                    <div class="button-group"><button type="button" class="action-button" data-bs-dismiss="modal" aria-label="Sluiten" data-i18n-aria-label="Sluiten"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                 </div>
                 <div class="modal-body">
                     <ul class="nav nav-tabs mb-3" id="languageTab" role="tablist">
@@ -553,7 +556,7 @@
                                     aria-controls="language-existing-pane"
                                     aria-selected="true"
                                     data-tab="existing">
-                                Existing
+                                <span data-i18n="Existing">Existing</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -566,7 +569,7 @@
                                     aria-controls="language-new-pane"
                                     aria-selected="false"
                                     data-tab="new">
-                                New
+                                <span data-i18n="New">New</span>
                             </button>
                         </li>
                     </ul>
@@ -576,7 +579,7 @@
                              role="tabpanel"
                              aria-labelledby="language-existing-tab">
                             <div class="mb-3">
-                                <label for="languageSelect" class="form-label">Bestaande taal</label>
+                                <label for="languageSelect" class="form-label"><span data-i18n="Bestaande taal">Bestaande taal</span></label>
                                 <select id="languageSelect" class="form-select"></select>
                             </div>
                         </div>
@@ -585,7 +588,7 @@
                              role="tabpanel"
                              aria-labelledby="language-new-tab">
                             <div class="mb-3">
-                                <label for="languageCustom" class="form-label">Nieuwe taal</label>
+                                <label for="languageCustom" class="form-label"><span data-i18n="Nieuwe taal">Nieuwe taal</span></label>
                                 <input type="text"
                                        id="languageCustom"
                                        class="form-control"
@@ -596,8 +599,8 @@
                 </div>
                 <div class="modal-footer">
                     <div class="button-group">
-                        <button type="button" class="action-button" id="languageSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
-                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                        <button type="button" class="action-button" id="languageSaveBtn"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="Save">Save</span></button>
+                        <button type="button" class="action-button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span data-i18n="Cancel">Cancel</span></button>
                     </div>
                 </div>
             </div>
@@ -610,33 +613,33 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://kit.fontawesome.com/07b82e9825.js" crossorigin="anonymous"></script>
     <script src="js/performance.js?v=39da1fe1368d5dac"></script>
-    <script src="js/modal.js?v=a235e11728124506"></script>
-    <script src="js/mainFunctions.js?v=595ea32597e24ddd"></script>
-    <script src="js/updateManager.js?v=d4a24e7fe121595f"></script>
+    <script src="js/modal.js?v=047864ead8e5ab89"></script>
+    <script src="js/mainFunctions.js?v=a868b11a7c26c11d"></script>
+    <script src="js/updateManager.js?v=8535c34341d58d54"></script>
     <script src="js/characterState.js?v=981855638e3a12a5"></script>
-    <script src="js/characterUtils.js?v=12234574229ba7ac"></script>
+    <script src="js/characterUtils.js?v=8a539f3e58861438"></script>
     <script src="js/apiCharacter.js?v=4f21a466db3bf1cb"></script>
-    <script src="js/formCharacter.js?v=73a3b9e1b2d0de37"></script>
-    <script src="js/languageCharacter.js?v=8d3c1e36318cc052"></script>
-<script src="js/shareInterface.js?v=9da42807545472ac"></script>
-    <script src="js/dataCard.js?v=f7e48488b0af3f4f"></script>
+    <script src="js/formCharacter.js?v=4dcaab1dc802488a"></script>
+    <script src="js/languageCharacter.js?v=8310234c743af607"></script>
+<script src="js/shareInterface.js?v=e4d348f24cfeccb9"></script>
+    <script src="js/dataCard.js?v=6c089a7873f619ef"></script>
     <script src="js/actionButtons.js?v=b4df11b598cd6c2e"></script>
-    <script src="js/companyResearch.js?v=bc15d0c201605072"></script>
-    <script src="js/shareMarketClient.js?v=733a9d9265bb08da"></script>
-    <script src="js/dataTable.js?v=19912ea78f5f8424"></script>
-    <script src="js/economyCharacter.js?v=5dae4de48936a8b5"></script>
-    <script src="js/actionsCharacter.js?v=35a4521288eb310b"></script>
-    <script src="js/passportCharacter.js?v=5985be2c5d78caaf"></script>
-    <script src="js/richTextCharacter.js?v=3ba30d8961e86621"></script>
-    <script src="js/diaryCharacter.js?v=6faf305cd24daba3"></script>
-    <script src="js/backgroundCharacter.js?v=c02237a9f85d8b38"></script>
-    <script src="js/createCharacter.js?v=86349c4750dde34a"></script>
-    <script src="js/aetherSidebars.js?v=7132d1029f81f413"></script>
-    <script src="js/characterFunctions.js?v=bcc3a43062836eea"></script>
-    <script src="js/navCharacter.js?v=dfc3c50904020c42"></script>
-    <script src="js/skillsCharacter.js?v=1aab4b4cc2932b3e"></script>
-    <script src="js/traitsCharacter.js?v=c5f260f3684b6dad"></script>
+    <script src="js/companyResearch.js?v=9be95e3471cda5eb"></script>
+    <script src="js/shareMarketClient.js?v=af3f0d64348e573d"></script>
+    <script src="js/dataTable.js?v=cf9e09a3a35f11bd"></script>
+    <script src="js/economyCharacter.js?v=6b82de323b34b5b2"></script>
+    <script src="js/actionsCharacter.js?v=62337cb2cc26cd30"></script>
+    <script src="js/passportCharacter.js?v=be7d60b5d051844e"></script>
+    <script src="js/richTextCharacter.js?v=9109ab584a4da89d"></script>
+    <script src="js/diaryCharacter.js?v=6684914af4adbbed"></script>
+    <script src="js/backgroundCharacter.js?v=82402e9e38668d24"></script>
+    <script src="js/createCharacter.js?v=30790d202d92e670"></script>
+    <script src="js/aetherSidebars.js?v=28804c969644e997"></script>
+    <script src="js/characterFunctions.js?v=01f6dea9fdbf2cc1"></script>
+    <script src="js/navCharacter.js?v=cfce8aac5eb96813"></script>
+    <script src="js/skillsCharacter.js?v=6e4fa9a69998f0c7"></script>
+    <script src="js/traitsCharacter.js?v=6ab4aacd24215f6f"></script>
     <script src="js/vendor/jsQR.js?v=bc40c8a15196236b"></script>
-    <script src="js/researchUi.js?v=04b863704ed34df3"></script>
-    <script src="js/researchCharacter.js?v=b5696a5ab10871b4"></script>
+    <script src="js/researchUi.js?v=4529c3d19ebaee9f"></script>
+    <script src="js/researchCharacter.js?v=b3f13938246723f5"></script>
 </body>

@@ -24,7 +24,7 @@ const R={
     dialog:(title,build)=>{dialog=new Node('dialog',title);build(dialog,{close(){}});},
     run:async(host,action)=>action(),write:async(op,data)=>{writes.push({op,data});return {id:1};}
 };
-const host=new Node(),window={AetherResearch:R},document={getElementById:()=>host,querySelectorAll:()=>[]};
+const host=new Node(),window={AetherResearch:R},document={getElementById:()=>host,querySelectorAll:()=>[],createTextNode:text=>new Node('text',text)};
 let source=fs.readFileSync(path.join(__dirname,'../js/researchAdmin.js'),'utf8');
 source=source.slice(0,source.lastIndexOf('    void R.run(host,'))+'    window.test={state,loadChallenge,stepDialog,routeDialog};\n})();';
 vm.runInNewContext(source,{window,document});
@@ -55,7 +55,8 @@ R.read=async()=>challenge;
     spec.value=72;
     fields.find(n=>n.text==='Variant').children[0].value='character';
     fields.find(n=>n.text==='Personages').children[0].ids=[5];
-    all(dialog).find(n=>n.tag==='check'&&n.text==='Deze feedback krijgt een vervolgstap').children[0].checked=true;
+    all(dialog).find(n=>n.tag==='check'&&n.text==='Vervolgstap toevoegen').children[0].checked=true;
+    all(dialog).find(n=>n.tag==='check'&&n.text==='Bevestiging nodig').children[0].checked=true;
     assert(fields.some(n=>n.text==='Variant'));
     // Keep the draft open on simulated save failure to inspect the single mutation payload.
     R.write=async(op,data)=>{writes.push({op,data});throw new Error('stop after payload');};
@@ -82,7 +83,7 @@ R.read=async()=>challenge;
     assert.equal(all(host).filter(n=>n.tag==='button'&&n.text==='Feedbackvariant toevoegen').length,0);
     assert.equal(all(host).filter(n=>n.tag==='button'&&n.text==='Variant toevoegen').length,2);
     stepDialog(discovery,general,step);
-    const followUp=all(dialog).find(n=>n.tag==='check'&&n.text==='Deze feedback krijgt een vervolgstap').children[0];
+    const followUp=all(dialog).find(n=>n.tag==='check'&&n.text==='Vervolgstap toevoegen').children[0];
     assert.equal(followUp.checked,true);assert.equal(followUp.disabled,true,'Existing follow-up cannot be duplicated');
     assert(!/['"]fa-pen['"]/.test(fs.readFileSync(path.join(__dirname,'../js/researchAdmin.js'),'utf8')));
     console.log('PASS: fallback cells, combined variant editing without priority, filtered specialisations, follow-up checkbox/arrow, red media state and locked settings.');

@@ -53,17 +53,19 @@ function researchConditions(PDO $pdo,array $d,array $step,mixed $input): array {
         }
         if (!in_array($type,['duration','absolute'],true) || isset($timers[$type])) throw new AetherResearchException(422,'Gebruik maximaal één tijdsduur en één vast tijdstip per stap.');
         $timers[$type]=true;$show=researchBool($c['showCountdown']??false);
+        $target=$c['target']??'visibility';
+        if (!in_array($target,['visibility','completion','transition'],true)) throw new AetherResearchException(422,'Kies feedback vrijgeven of afrondknop vrijgeven.');
         if ($type==='absolute') {
-            researchFields($c,['type','times','showCountdown']);$times=$c['times']??[];$utc=[];
+            researchFields($c,['type','times','showCountdown','target']);$times=$c['times']??[];$utc=[];
             if (!is_array($times)) throw new AetherResearchException(422,'Ongeldige tijdstippen.');
             $events=researchAll($pdo,'SELECT ce.idEvent,COALESCE(e.timeZone,\'Europe/Brussels\') AS timeZone FROM tblResearchChallengeEvent ce LEFT JOIN tblResearchEvent e ON e.idEvent = ce.idEvent WHERE ce.idChallenge = ?',[$d['idChallenge']]);
             $clean=[];foreach ($events as $event) {
                 $local=researchText($times[$event['idEvent']]??'',16);$clean[(string)$event['idEvent']]=$local;
                 $utc[(string)$event['idEvent']]=researchLocalToUtc($local,$event['timeZone']);
             }
-            $result[]=['type'=>$type,'times'=>$clean,'utc'=>$utc,'showCountdown'=>$show];continue;
+            $result[]=['type'=>$type,'times'=>$clean,'utc'=>$utc,'showCountdown'=>$show,'target'=>$target];continue;
         }
-        researchFields($c,['type','seconds','scope','discoveryId','stepId','action','showCountdown']);
+        researchFields($c,['type','seconds','scope','discoveryId','stepId','action','showCountdown','target']);
         $seconds=researchInt($c['seconds']??0,1,31536000);$scope=$c['scope']??'';
         if (!in_array($scope,['shared','character'],true)) throw new AetherResearchException(422,'Kies gedeelde klok of per personage.');
         $source=researchDiscovery($pdo,researchInt($c['discoveryId']??0));$sourceStep=researchInt($c['stepId']??0,0);
@@ -75,14 +77,16 @@ function researchConditions(PDO $pdo,array $d,array $step,mixed $input): array {
         } else {
             $s=researchOne($pdo,'SELECT s.* FROM tblResearchStep s JOIN tblResearchRoute r ON r.id = s.idRoute WHERE s.id = ? AND r.idDiscovery = ?',[$sourceStep,$source['id']]);
             if (!$s || ($action==='confirmed' && !(int)$s['confirmationRequired'])) throw new AetherResearchException(422,'Kies een bestaande stap met de juiste starthandeling.');
-            if ((int)$source['id']===(int)$d['id'] && ((int)$s['idRoute']!==(int)$step['idRoute'] || (int)$s['position']>=(int)$step['position'])) throw new AetherResearchException(422,'Een eigen klok kan alleen starten bij scannen of bij een eerdere stap in dezelfde route.');
+            $sameShown=in_array($target,['completion','transition'],true) && $action==='shown' && (int)$s['id']===(int)($step['id']??0);
+            if ((int)$source['id']===(int)$d['id'] && ((int)$s['idRoute']!==(int)$step['idRoute'] || ((int)$s['position']>=(int)$step['position'] && !$sameShown))) throw new AetherResearchException(422,'Een eigen klok kan alleen starten bij scannen, een eerdere stap of het tonen van deze opdracht.');
         }
-        $result[]=['type'=>$type,'seconds'=>$seconds,'scope'=>$scope,'discoveryId'=>(int)$source['id'],'stepId'=>$sourceStep,'action'=>$action,'showCountdown'=>$show];
+        $result[]=['type'=>$type,'seconds'=>$seconds,'scope'=>$scope,'discoveryId'=>(int)$source['id'],'stepId'=>$sourceStep,'action'=>$action,'showCountdown'=>$show,'target'=>$target];
     }
     return $result;
 }
 function researchValidateGraph(PDO $pdo): void {
     $edges=[];
+    foreach (researchAll($pdo,'SELECT c.id AS conclusionId,d.id AS discoveryId FROM tblResearchDiscovery c JOIN tblResearchDiscovery d ON d.idChallenge=c.idChallenge AND d.isConclusion=0 WHERE c.isConclusion=1') as $dependency) $edges[(int)$dependency['conclusionId']][]=(int)$dependency['discoveryId'];
     foreach (researchAll($pdo,'SELECT r.idDiscovery,s.conditionsJson FROM tblResearchStep s JOIN tblResearchRoute r ON r.id = s.idRoute') as $s) {
         foreach (json_decode($s['conditionsJson'],true,512,JSON_THROW_ON_ERROR) as $c) {
             if ($c['type']==='discoveries') foreach ($c['ids'] as $id) $edges[(int)$s['idDiscovery']][]=$id;
@@ -114,12 +118,17 @@ function researchAdminSave(PDO $pdo,array $user,string $op,array $in): array {
         researchQuery($pdo,'DELETE FROM tblResearchChallengeEvent WHERE idChallenge=?',[$id]);
         foreach ($ids as $event) researchQuery($pdo,'INSERT INTO tblResearchChallengeEvent(idChallenge,idEvent) VALUES (?,?)',[$id,$event]);
     } elseif ($op==='discovery_save') {
-        researchFields($in,['id','revision','idChallenge','title','description','idSkill','bonusIds','active']);
+        researchFields($in,['id','revision','idChallenge','title','description','idSkill','bonusIds','active','progressionMode','isConclusion']);
         $title=researchText($in['title']??'');$html=researchHtml($in['description']??'');$skill=researchInt($in['idSkill']??0);$bonus=researchIds($in['bonusIds']??[]);
         if (!researchOne($pdo,'SELECT id FROM tblSkill WHERE id=?',[$skill])) throw new AetherResearchException(422,'Vaardigheid niet gevonden.');
         foreach ($bonus as $spec) researchSpec($pdo,$spec,$skill);
         if ($id) {
             $row=researchDiscovery($pdo,$id);researchRevision($row,$in);
+            if (isset($in['isConclusion']) && researchBool($in['isConclusion'])!==(bool)$row['isConclusion']) {
+                researchUnused($pdo,$id);
+                $conclusion=researchBool($in['isConclusion']);
+                researchQuery($pdo,'UPDATE tblResearchDiscovery SET isConclusion=?,qrToken=? WHERE id=?',[(int)$conclusion,$conclusion?null:bin2hex(random_bytes(32)),$id]);
+            }
             $old=array_map('intval',researchQuery($pdo,'SELECT idSpecialisation FROM tblResearchBonus WHERE idDiscovery=?',[$id])->fetchAll(PDO::FETCH_COLUMN));
             if ((int)$row['idSkill']!==$skill || array_diff($old,$bonus) || array_diff($bonus,$old)) researchUnused($pdo,$id);
             $active=researchBool($in['active']??false);
@@ -128,12 +137,22 @@ function researchAdminSave(PDO $pdo,array $user,string $op,array $in): array {
         } else {
             $challenge=researchInt($in['idChallenge']??0);
             if (!researchOne($pdo,'SELECT id FROM tblResearchChallenge WHERE id=?',[$challenge])) throw new AetherResearchException(422,'Challenge niet gevonden.');
-            researchQuery($pdo,'INSERT INTO tblResearchDiscovery(idChallenge,title,description,idSkill,qrToken) VALUES (?,?,?,?,?)',[$challenge,$title,$html,$skill,bin2hex(random_bytes(32))]);$id=(int)$pdo->lastInsertId();
+            $conclusion=researchBool($in['isConclusion']??false);
+            if ($conclusion) researchQuery($pdo,'INSERT INTO tblResearchDiscovery(idChallenge,title,description,idSkill,qrToken,isConclusion) VALUES (?,?,?,?,NULL,1)',[$challenge,$title,$html,$skill]);
+            else researchQuery($pdo,'INSERT INTO tblResearchDiscovery(idChallenge,title,description,idSkill,qrToken) VALUES (?,?,?,?,?)',[$challenge,$title,$html,$skill,bin2hex(random_bytes(32))]);$id=(int)$pdo->lastInsertId();
             for ($level=0;$level<=4;$level++) researchQuery($pdo,"INSERT INTO tblResearchRoute(idDiscovery,level,kind) VALUES (?,?,'general')",[$id,$level]);
             researchEnsureDefaultFeedback($pdo,$id);
             researchQuery($pdo,'UPDATE tblResearchDiscovery SET active=? WHERE id=?',[(int)researchBool($in['active']??true),$id]);
         }
+        if (isset($in['progressionMode'])) {
+            $mode=$in['progressionMode'];
+            if (!in_array($mode,['personal','universal'],true)) throw new AetherResearchException(422,'Ongeldige voortgang.');
+            $current=researchDiscovery($pdo,$id);
+            if (($current['progressionMode']??'personal')!==$mode) researchUnused($pdo,$id);
+            researchQuery($pdo,'UPDATE tblResearchDiscovery SET progressionMode=? WHERE id=?',[$mode,$id]);
+        }
         researchQuery($pdo,'DELETE FROM tblResearchBonus WHERE idDiscovery=?',[$id]);foreach ($bonus as $spec) researchQuery($pdo,'INSERT INTO tblResearchBonus(idDiscovery,idSpecialisation) VALUES (?,?)',[$id,$spec]);
+        researchValidateGraph($pdo);
     } elseif ($op==='route_save') {
         researchFields($in,['id','revision','idDiscovery','level','kind','idRequiredSpecialisation','priority','characterIds']);
         $d=researchDiscovery($pdo,researchInt($in['idDiscovery']??0));researchUnused($pdo,(int)$d['id']);
@@ -152,8 +171,41 @@ function researchAdminSave(PDO $pdo,array $user,string $op,array $in): array {
         researchQuery($pdo,'DELETE FROM tblResearchRouteCharacter WHERE idRoute=?',[$id]);foreach ($chars as $char) researchQuery($pdo,'INSERT INTO tblResearchRouteCharacter(idRoute,idCharacter) VALUES (?,?)',[$id,$char]);
         researchValidateVariants(researchRoutes($pdo,(int)$d['id']));
         researchQuery($pdo,'UPDATE tblResearchDiscovery SET active=0,revision=revision+1 WHERE id=?',[$d['id']]);
+    } elseif ($op==='step_delete') {
+        researchFields($in,['id','revision','previousRevision']);
+        $step=researchOne($pdo,'SELECT s.*,r.idDiscovery FROM tblResearchStep s JOIN tblResearchRoute r ON r.id=s.idRoute WHERE s.id=?',[$id])??throw new AetherResearchException(404,'Stap niet gevonden.');
+        researchRevision($step,$in);researchUnused($pdo,(int)$step['idDiscovery']);
+        $previous=researchOne($pdo,'SELECT * FROM tblResearchStep WHERE idRoute=? AND position<? ORDER BY position DESC LIMIT 1',[$step['idRoute'],$step['position']]);
+        if ($previous) researchRevision($previous,['revision'=>$in['previousRevision']??0]);
+        $removed=array_map('intval',researchQuery($pdo,'SELECT id FROM tblResearchStep WHERE idRoute=? AND position>=?',[$step['idRoute'],$step['position']])->fetchAll(PDO::FETCH_COLUMN));
+        $previousConditions=$previous?array_values(array_filter(json_decode($previous['conditionsJson'],true),static fn(array $c):bool=>!in_array($c['type'],['duration','absolute'],true))):[];
+        foreach (researchAll($pdo,'SELECT id,conditionsJson FROM tblResearchStep') as $other) {
+            if (in_array((int)$other['id'],$removed,true)) continue;
+            $conditions=$previous&&(int)$other['id']===(int)$previous['id']?$previousConditions:json_decode($other['conditionsJson'],true);
+            foreach ($conditions as $condition) {
+                $reference=$condition['type']==='step'?($condition['id']??0):($condition['type']==='duration'?($condition['stepId']??0):0);
+                if (in_array((int)$reference,$removed,true)) throw new AetherResearchException(422,'Een andere feedbackstap verwijst nog naar deze vervolgstap. Verwijder eerst die voorwaarde.');
+            }
+        }
+        if ($previous) {
+            researchQuery($pdo,'UPDATE tblResearchStep SET conditionsJson=?,revision=revision+1 WHERE id=?',[researchJson($previousConditions),$previous['id']]);
+            researchQuery($pdo,'DELETE FROM tblResearchTimer WHERE idStep=?',[$previous['id']]);
+        }
+        foreach ($removed as $removedId) {
+            researchQuery($pdo,'DELETE FROM tblResearchTimer WHERE idStep=?',[$removedId]);
+            researchQuery($pdo,'DELETE FROM tblResearchMedia WHERE idStep=?',[$removedId]);
+            researchQuery($pdo,'DELETE FROM tblResearchStep WHERE id=?',[$removedId]);
+        }
+        if (!$previous) {
+            $route=researchOne($pdo,'SELECT * FROM tblResearchRoute WHERE id=?',[$step['idRoute']]);
+            if ($route['kind']!=='general') {
+                researchQuery($pdo,'DELETE FROM tblResearchRouteCharacter WHERE idRoute=?',[$route['id']]);
+                researchQuery($pdo,'DELETE FROM tblResearchRoute WHERE id=?',[$route['id']]);
+            }
+            researchEnsureDefaultFeedback($pdo,(int)$step['idDiscovery']);
+        }
     } elseif ($op==='step_save') {
-        researchFields($in,['id','revision','idRoute','content','confirmationRequired','conditions','variant','followUp']);
+        researchFields($in,['id','revision','idRoute','content','confirmationRequired','conditions','variant','followUp','timing']);
         $route=researchOne($pdo,'SELECT * FROM tblResearchRoute WHERE id=?',[researchInt($in['idRoute']??0)])??throw new AetherResearchException(404,'Route niet gevonden.');$d=researchDiscovery($pdo,(int)$route['idDiscovery']);
         if (isset($in['variant'])) {
             if (!is_array($in['variant']) || $route['kind']==='general') throw new AetherResearchException(422,'Ongeldige feedbackvariant.');
@@ -163,12 +215,40 @@ function researchAdminSave(PDO $pdo,array $user,string $op,array $in): array {
         if ($id) {$step=researchOne($pdo,'SELECT * FROM tblResearchStep WHERE id=? AND idRoute=?',[$id,$route['id']])??throw new AetherResearchException(404,'Stap niet gevonden.');researchRevision($step,$in);}
         else {researchUnused($pdo,(int)$d['id']);$step=['idRoute'=>$route['id'],'position'=>(int)(researchOne($pdo,'SELECT MAX(position) AS p FROM tblResearchStep WHERE idRoute=?',[$route['id']])['p']??0)+1];}
         if ($id && researchStepHasFeedback($pdo,$step)!==researchStepHasFeedback($pdo,array_merge($step,['content'=>$html]))) researchUnused($pdo,(int)$d['id']);
-        $conditions=researchConditions($pdo,$d,$step,$in['conditions']??[]);$json=researchJson($conditions);
+        $conditions=researchConditions($pdo,$d,$step,$in['conditions']??[]);
+        foreach ($conditions as &$condition) if (($condition['target']??'visibility')==='visibility') unset($condition['target']);
+        unset($condition);$json=researchJson($conditions);
+        foreach ($conditions as $condition) if (($condition['target']??'visibility')==='completion' && !$confirm) throw new AetherResearchException(422,'Een tijdslot op de afrondknop vereist bevestiging.');
         if ($id) {
             if ((bool)$step['confirmationRequired']!==$confirm || researchJson(json_decode($step['conditionsJson'],true))!==$json) researchUnused($pdo,(int)$d['id']);
             researchQuery($pdo,'UPDATE tblResearchStep SET content=?,confirmationRequired=?,conditionsJson=?,revision=revision+1 WHERE id=?',[$html,(int)$confirm,$json,$id]);
         } else {researchQuery($pdo,'INSERT INTO tblResearchStep(idRoute,position,content,confirmationRequired,conditionsJson) VALUES (?,?,?,?,?)',[$route['id'],$step['position'],$html,(int)$confirm,$json]);$id=(int)$pdo->lastInsertId();}
         researchEnsureDefaultFeedback($pdo,(int)$d['id']);
+        if (isset($in['timing'])) {
+            $timing=$in['timing'];
+            if (!is_array($timing)) throw new AetherResearchException(422,'Ongeldige tijdinstelling.');
+            $type=$timing['type']??'none';
+            $follow=researchBool($in['followUp']??false);
+            if (!in_array($type,['none','duration','absolute'],true)) throw new AetherResearchException(422,'Kies Geen tijd, Timer of Vast tijdstip.');
+            if ($follow && $type==='none' && !$confirm) throw new AetherResearchException(422,'Vink Bevestiging nodig aan voor een vervolgstap zonder tijd.');
+            $current=researchOne($pdo,'SELECT * FROM tblResearchStep WHERE id=?',[$id]);
+            $combined=array_values(array_filter(json_decode($current['conditionsJson'],true),static fn(array $c):bool=>($c['target']??'')!=='transition'));
+            foreach ($combined as &$condition) unset($condition['utc']);
+            unset($condition);
+            if ($follow && $type!=='none') {
+                $condition=['type'=>$type,'target'=>'transition','showCountdown'=>researchBool($timing['showCountdown']??true)];
+                if ($type==='duration') $condition+=['seconds'=>researchInt($timing['seconds']??0,1,31536000),'scope'=>($d['progressionMode']??'personal')==='universal'?'shared':'character','discoveryId'=>(int)$d['id'],'stepId'=>$id,'action'=>'shown'];
+                else $condition['times']=$timing['times']??[];
+                $combined[]=$condition;
+            }
+            $updated=researchConditions($pdo,$d,$current,$combined);
+            foreach ($updated as &$condition) if (($condition['target']??'visibility')==='visibility') unset($condition['target']);
+            unset($condition);$updatedJson=researchJson($updated);
+            if ($updatedJson!==$current['conditionsJson']) {
+                researchUnused($pdo,(int)$d['id']);
+                researchQuery($pdo,'UPDATE tblResearchStep SET conditionsJson=? WHERE id=?',[$updatedJson,$id]);
+            }
+        }
         if (researchBool($in['followUp']??false)) {
             $position=(int)$step['position'];
             $next=researchOne($pdo,'SELECT id FROM tblResearchStep WHERE idRoute=? AND position>? ORDER BY position LIMIT 1',[$route['id'],$position]);

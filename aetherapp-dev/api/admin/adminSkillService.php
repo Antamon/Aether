@@ -46,9 +46,14 @@ function aetherAdminPreflightSaveSkill(PDO $pdo, array $data, bool $lock = false
     $existing = [];
     foreach (aetherAdminSkillSpecialisations($pdo, $id, $lock) as $row) $existing[(int)$row['id']] = $row;
     $seenIds = $seenNames = [];
+    $disciplineSkill=false;
+    foreach ($data['categoryIds'] as $typeId) if (normalizeAdminTextKey((string)$types[$typeId]['code'])==='discipline') $disciplineSkill=true;
     foreach ($data['specialisations'] as $spec) {
         $specId = $spec['idSkillSpecialisation']; $key = normalizeAdminTextKey($spec['name']);
-        if ($key === '' || isset($seenNames[$key]) || ($specId > 0 && (!isset($existing[$specId]) || isset($seenIds[$specId])))) {
+        $kind=$spec['kind']??($specId>0?($existing[$specId]['kind']??'specialisation'):($disciplineSkill?'discipline':'specialisation'));
+        if (!in_array($kind,['discipline','specialisation'],true) || ($specId===0 && $kind==='discipline' && !$disciplineSkill) || ($specId>0 && isset($existing[$specId]) && $kind!==$existing[$specId]['kind'])) throw new AdminSkillProblem(422,'Ongeldig type discipline of specialisatie.');
+        $key=$kind.':'.$key;
+        if ($key === $kind.':' || isset($seenNames[$key]) || ($specId > 0 && (!isset($existing[$specId]) || isset($seenIds[$specId])))) {
             throw new AdminSkillProblem(422, 'Ongeldige of dubbele specialisatie.');
         }
         $seenNames[$key] = true;
@@ -91,7 +96,7 @@ function aetherAdminSaveSkill(PDO $pdo, array $data, bool $manageTransaction = t
         $insertSpec = $pdo->prepare('INSERT INTO tblSkillSpecialisation (idSkill, name, kind) VALUES (:idSkill, :name, :kind)');
         foreach ($data['specialisations'] as $spec) {
             $specId = $spec['idSkillSpecialisation'];
-            $specKind = $specId > 0 ? (string) $existing[$specId]['kind'] : $kind;
+            $specKind = $specId > 0 ? (string) $existing[$specId]['kind'] : ($spec['kind']??$kind);
             if ($specId > 0) $updateSpec->execute(['idSkillSpecialisation' => $specId, 'idSkill' => $id, 'name' => $spec['name'], 'kind' => $specKind]);
             else $insertSpec->execute(['idSkill' => $id, 'name' => $spec['name'], 'kind' => $specKind]);
         }

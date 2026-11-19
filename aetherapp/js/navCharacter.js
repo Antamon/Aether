@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Navigation/header rendering for the character sheet
 
 function canEditCharacterNav(character) {
@@ -40,10 +41,10 @@ async function updateExperienceToTrait(character, delta) {
 }
 
 function statusLabelFromPoints(statusPoints) {
-    if (statusPoints <= 14) return "Average person";
-    if (statusPoints < 25) return "Influential";
+    if (statusPoints <= 14) return aetherT("Average person");
+    if (statusPoints < 25) return aetherT("Influential");
     if (statusPoints < 35) return "Elite";
-    return "Secret master";
+    return aetherT("Secret master");
 }
 
 function renderCharacterNav(isAdminView) {
@@ -229,8 +230,8 @@ function pageNav(userRole, character, activeTab = "sheet") {
     } else {
         renderCharacterNav(false);
         document.getElementById("nameParticipant").textContent = character.nameParticipant || "";
-        document.getElementById("type").textContent = character.type || "";
-        document.getElementById("state").textContent = character.state || "";
+        document.getElementById("type").textContent = aetherT(character.type || "");
+        document.getElementById("state").textContent = aetherT(character.state || "");
     }
 
     const lblExp = document.getElementById("lblExperiance");
@@ -258,7 +259,7 @@ function pageNav(userRole, character, activeTab = "sheet") {
     const statusPointInfo = document.getElementById("statusPointInfo");
     if (statusPointInfo) {
         if (canConvertToStatus) {
-            const tooltipText = `Omgezet uit EP: ${convertedExperience} / 6`;
+            const tooltipText = aetherT("Omgezet uit EP: {0} / 6",[convertedExperience]);
             statusPointInfo.setAttribute("title", tooltipText);
             statusPointInfo.setAttribute("data-bs-original-title", tooltipText);
             statusPointInfo.classList.remove("d-none");

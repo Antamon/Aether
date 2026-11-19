@@ -19,7 +19,7 @@ class Element {
     cloneNode() { return new Element(this.tag); }
     contains(node) { return this === node || this.children.some(child => child.contains(node)); }
     getBoundingClientRect() { return { bottom: 100, left: 0, width: 1000 }; }
-    querySelector(selector) { return find(this, node => selector.startsWith('.') && node.classes.has(selector.slice(1))); }
+    querySelector(selector) { return find(this, node => selector==='main.container.aether-page' ? node.tag==='main'&&node.classes.has('container')&&node.classes.has('aether-page') : selector.startsWith('.') && node.classes.has(selector.slice(1))); }
 }
 const find = (node, predicate) => predicate(node) ? node : node.children.map(child => find(child, predicate)).find(Boolean);
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -37,7 +37,7 @@ async function checkSidebar(role, page = 'characters') {
     if (['characters', 'static', 'admin'].includes(page)) {
         pageHeader = new Element('div'); pageHeader.className = 'aether-page-nav';
         const content = new Element('main');
-        if (page === 'admin') content.className = 'admin-page';
+        if (page === 'admin') content.className = 'container aether-page admin-page';
         else { pageHeader.id = 'pageNav'; content.id = 'sheetBody'; }
         content.getBoundingClientRect = () => contentBounds;
         body.append(pageHeader, content);

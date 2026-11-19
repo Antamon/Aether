@@ -1,3 +1,4 @@
+var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Eventpagina initialiseren na load
 window.addEventListener("load", () => {
     initEventPage();
@@ -59,7 +60,7 @@ async function generateEventList(idParticipant = 0) {
         if (request !== eventDetailsState.participationRequest) return;
         const select = document.getElementById("eventParticipantSelect");
         document.getElementById("titleParticipant").textContent = idParticipant
-            ? `Deelnames — ${select?.selectedOptions[0]?.textContent || "Deelnemer"}` : "Mijn deelnames";
+            ? aetherT("Deelnames — {0}",[select?.selectedOptions[0]?.textContent || "Deelnemer"]) : aetherT("Mijn deelnames");
 
         const eventList = document.getElementById("eventList");
         if (!eventList) {
@@ -176,7 +177,7 @@ async function generateEventList(idParticipant = 0) {
             } else {
                 // Gewone speler → tekst
                 if (value.participation === true) {
-                    divParticipation.textContent = "Yes";
+                    divParticipation.textContent = aetherT("Yes");
                 } else {
                     divParticipation.textContent = "";
                 }

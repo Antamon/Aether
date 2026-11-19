@@ -1,0 +1,404 @@
+[
+  [
+    "Event",
+    [
+      "actionsCharacter.js:259",
+      "diaryCharacter.js:198",
+      "economyCharacter.js:785",
+      "economyCharacter.js:1137",
+      "researchAdmin.js:32",
+      "researchCharacter.js:21",
+      "shareMarketClient.js:354"
+    ]
+  ],
+  [
+    "Discipline",
+    [
+      "adminFunctions.js:1029",
+      "adminFunctions.js:1134"
+    ]
+  ],
+  [
+    "Ties",
+    [
+      "backgroundCharacter.js:466"
+    ]
+  ],
+  [
+    "Tie portrait",
+    [
+      "backgroundCharacter.js:652"
+    ]
+  ],
+  [
+    "Count",
+    [
+      "companyFunctions.js:1321",
+      "companyFunctions.js:1338"
+    ]
+  ],
+  [
+    "Type",
+    [
+      "companyResearch.js:114",
+      "eventDetails.js:78"
+    ]
+  ],
+  [
+    "Draft",
+    [
+      "createCharacter.js:93",
+      "createCharacter.js:98",
+      "createCharacter.js:124"
+    ]
+  ],
+  [
+    "Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.",
+    [
+      "economyCharacter.js:387"
+    ]
+  ],
+  [
+    "Snapshots",
+    [
+      "economyCharacter.js:1119"
+    ]
+  ],
+  [
+    "Gossip",
+    [
+      "eventDetails.js:154"
+    ]
+  ],
+  [
+    "Gossip 1",
+    [
+      "eventDetails.js:158"
+    ]
+  ],
+  [
+    "Gossip 2",
+    [
+      "eventDetails.js:158"
+    ]
+  ],
+  [
+    "Gossip 3",
+    [
+      "eventDetails.js:158"
+    ]
+  ],
+  [
+    "Je vervalt in armoede en wordt lagere klasse.",
+    [
+      "formCharacter.js:217",
+      "formCharacter.js:377"
+    ]
+  ],
+  [
+    "Je woont inwonend bij een adellijke familie die wel status heeft, maar weinig echte rijkdom. Je beschikt meestal over een kleine kamer onder het dak of in een achtervleugel van het huis, met enkel het strikt noodzakelijke meubilair. Je eet degelijk maar eenvoudig, vaak na de familie en het hogere personeel. Privacy is beperkt: je kamer is van jou, maar klein, sober en duidelijk ondergeschikt aan de rest van het huis.",
+    [
+      "formCharacter.js:283"
+    ]
+  ],
+  [
+    "Je woont op een landgoed, in een herenhuis of klein kasteel waar personeel een vaste plaats heeft binnen het huishouden. Je hebt een eenvoudige maar nette eigen kamer in de dienstvertrekken, meestal met bed, waskom, kast en een stoel. Je maaltijden zijn degelijk en regelmatig, en je leeft comfortabeler dan de meeste arbeiders. Je privévertrek is bescheiden, maar veilig, verwarmd en duidelijk beter dan wat de lagere klasse zich gewoonlijk kan veroorloven.",
+    [
+      "formCharacter.js:287"
+    ]
+  ],
+  [
+    "Je dient in een groot adellijk huishouden waar orde, hiërarchie en comfort belangrijk zijn. Je beschikt over een nette personeelskamer in de bediendenvleugel, met voldoende ruimte voor je persoonlijke spullen en een degelijk bed. Bad- en wasvoorzieningen zijn meestal gedeeld met ander personeel, maar goed onderhouden. Je leeft in zekerheid en comfort, al blijft duidelijk dat zelfs je privéruimte deel uitmaakt van het grotere huishouden van je meester.",
+    [
+      "formCharacter.js:291"
+    ]
+  ],
+  [
+    "Je woont in een voornaam huis of stadspaleis waar het personeel talrijk is en de organisatie strak verloopt. Je hebt een verzorgde kamer in de personeelsvertrekken, mogelijk met een klein zitgedeelte of gedeelde salon voor het hogere dienstpersoneel. Je eet goed, bent degelijk gekleed en leeft in een omgeving van luxe, al geniet je er slechts indirect van. Je privévertrekken zijn comfortabel, stil en respectabel, maar altijd ondergeschikt aan de pracht van de familie zelf.",
+    [
+      "formCharacter.js:295"
+    ]
+  ],
+  [
+    "Je maakt deel uit van een enorm huishouden dat bijna als een kleine instelling functioneert. Je woont in ruime en goed onderhouden dienstvertrekken, vaak in een aparte personeelsvleugel of bijgebouw, met veel meer comfort dan de meeste gewone burgers ooit kennen. Hogere personeelsleden kunnen zelfs over meerdere kleine kamers beschikken, zoals een slaapvertrek en een privézitkamer of kantoorhoek. Je leeft materieel comfortabel en in grote veiligheid, maar je bestaan blijft volledig ingebed in de discipline en verwachtingen van een machtige dynastie.",
+    [
+      "formCharacter.js:299"
+    ]
+  ],
+  [
+    "Je woont in een groot herenhuis waar personeel deel uitmaakt van het normale huishouden. Je kamer ligt in de personeelsvertrekken en is degelijk, verzorgd en ruim genoeg om echt als privéruimte te voelen. Voor hoger dienstpersoneel is een iets grotere kamer of een klein eigen salonnetje niet ondenkbaar. Je leeft onder goede materiële omstandigheden, met voldoende comfort, regelmaat en een zekere trots die hoort bij dienst in een voornaam burgerlijk huis.",
+    [
+      "formCharacter.js:311"
+    ]
+  ],
+  [
+    "Je woont inwonend in een groot landhuis of statige stadswoning waar personeel overvloediger aanwezig is. Je beschikt over comfortabele dienstvertrekken, en afhankelijk van je functie kan dat meer zijn dan één eenvoudige kamer. Het hogere personeel heeft soms toegang tot een kleine privézitruimte, beter meubilair en meer rust dan lager personeel. Je leeft zeer behoorlijk, met veel meer comfort, veiligheid en status dan de meeste mensen uit de middenklasse.",
+    [
+      "formCharacter.js:315"
+    ]
+  ],
+  [
+    "Je woont in een uitzonderlijk luxueus huishouden waar zelfs de personeelsvertrekken ruim en verzorgd zijn. Afhankelijk van je rang binnen het personeel kan je kamer bijna de allure hebben van een kleine burgerwoning: een ruim slaapvertrek, goed meubilair en soms een aparte privéruimte om te zitten of administratie te doen. Je leeft in overvloed en orde, maar ook in een omgeving waar uiterlijk vertoon, discipline en representatie zeer belangrijk zijn. Je geniet van comfort dat voor de meeste mensen onbereikbaar is, al blijft het comfort volledig verbonden aan je dienstbaarheid.",
+    [
+      "formCharacter.js:318"
+    ]
+  ],
+  [
+    "Op dit moment ben je dakloos.",
+    [
+      "formCharacter.js:364"
+    ]
+  ],
+  [
+    "Content-Type",
+    [
+      "mainFunctions.js:24"
+    ]
+  ],
+  [
+    "Elite",
+    [
+      "navCharacter.js:46"
+    ]
+  ],
+  [
+    "Op iedere vervalsing van dit paspoort staat correctionele straf.",
+    [
+      "passportCharacter.js:982",
+      "passportCharacter.js:2062",
+      "passportCharacter.js:3016"
+    ]
+  ],
+  [
+    "Toute falsification de ce passeport est passible de sanctions correctionnelles.",
+    [
+      "passportCharacter.js:983",
+      "passportCharacter.js:2063",
+      "passportCharacter.js:3017"
+    ]
+  ],
+  [
+    "Any falsification of this passport is subject to criminal penalties.",
+    [
+      "passportCharacter.js:984",
+      "passportCharacter.js:2064",
+      "passportCharacter.js:3018"
+    ]
+  ],
+  [
+    "Zolang je nog groene ringen over hebt, ben je lichamelijk in goede conditie en is er niets aan de hand.",
+    [
+      "passportCharacter.js:2604"
+    ]
+  ],
+  [
+    "Ben je al je groene ringen kwijt, maar heb je nog rode ringen over, dan ben je gewond. Speel uit dat je pijn hebt. Laat je wonden verzorgen, ander raken ze geinfecteerd.",
+    [
+      "passportCharacter.js:2607"
+    ]
+  ],
+  [
+    "Wanneer je al je fysieke ringen kwijt bent, krijg je een kritieke fysieke verwonde. Dat kan bijvoorbeeld een gebroken been zijn, of een doorboorde long. Tot je medische zorgen krijgt, kan je alleen over de grond kruipen en kermen van de pijn.",
+    [
+      "passportCharacter.js:2608"
+    ]
+  ],
+  [
+    "Zolang je nog witte ringen over hebt, ben je mentaal in goede stabiel en is er niets aan de hand.",
+    [
+      "passportCharacter.js:2615"
+    ]
+  ],
+  [
+    "Ben je al je witte ringen kwijt, maar heb je nog gele ringen over, dan ben je gestresseerd. Je hebt last van psychotische waanbeelden en bent emotioneel onstabiel. Kalmeringsmiddelen voorgeschreven door een bekwaam psycholoog, kunnen je kalmeren.",
+    [
+      "passportCharacter.js:2618"
+    ]
+  ],
+  [
+    "Wanneer je al je mentale ringen kwijt bent, krijg je een kritiekementale aandoening. Dat kan bijvoorbeeld oncontroleerbare kleptomanische neigingen krijgen, of krijg je een schitzofrene aandoening. Tot je medische zorgen krijgt, zit je in een vast in een ernstige episode van je aandoening en ben je in onhandelbare paniek of helemaal in jezelf gekeerd.",
+    [
+      "passportCharacter.js:2619"
+    ]
+  ],
+  [
+    "Fysieke ringen verlies je doorgaans door terecht te komen in geweldadige omstandigheden. Slag en steekwapens doen doorgaans 1 punt schade per rake klap, vuurwapens veroorzaken 2 punten schade.",
+    [
+      "passportCharacter.js:2634"
+    ]
+  ],
+  [
+    "Mentale schade wordt veroorzaakt door stresvolle situaties. Dat kan een hevige ruzie zijn waarin je verwikkeld bent geraakt, of betrokken zijn in een gevecht. Dit soort situaties kost je doorgaans 1 mentale ring. Extreme toestanden, zoals marteling, moord of aanraking met het bovennatuurlijke, geven je 2 tot 3 stress.",
+    [
+      "passportCharacter.js:2635"
+    ]
+  ],
+  [
+    "Durations overlap: do not add them to calculate page load time.",
+    [
+      "performance.js:132"
+    ]
+  ],
+  [
+    "Operation completion does not include unrelated fire-and-forget requests.",
+    [
+      "performance.js:134"
+    ]
+  ],
+  [
+    "Zero resource sizes can mean caching or unavailable cross-origin timing data.",
+    [
+      "performance.js:136"
+    ]
+  ],
+  [
+    "Only the last 500 measurements per category are retained.",
+    [
+      "performance.js:137"
+    ]
+  ],
+  [
+    "Specialist",
+    [
+      "researchAdmin.js:24"
+    ]
+  ],
+  [
+    "No additional information",
+    [
+      "researchAdmin.js:91"
+    ]
+  ],
+  [
+    "Discoveries",
+    [
+      "researchAdmin.js:152"
+    ]
+  ],
+  [
+    "Variant",
+    [
+      "researchAdmin.js:191"
+    ]
+  ],
+  [
+    "Feedback",
+    [
+      "researchAdmin.js:204"
+    ]
+  ],
+  [
+    "Timer",
+    [
+      "researchAdmin.js:210"
+    ]
+  ],
+  [
+    "Challenge",
+    [
+      "researchAdmin.js:267"
+    ]
+  ],
+  [
+    "Discovery",
+    [
+      "researchAdmin.js:267",
+      "researchAdmin.js:271"
+    ]
+  ],
+  [
+    "Status",
+    [
+      "researchAdmin.js:267",
+      "researchAdmin.js:271"
+    ]
+  ],
+  [
+    "Event / challenge",
+    [
+      "researchAdmin.js:271"
+    ]
+  ],
+  [
+    "Scan QR-code",
+    [
+      "researchCharacter.js:28",
+      "researchCharacter.js:92"
+    ]
+  ],
+  [
+    "Het lettertype voor de QR-kaarten kon niet geladen worden.",
+    [
+      "researchQrPdf.js:6"
+    ]
+  ],
+  [
+    "Een titel of vaardigheidsnaam is te lang voor een QR-kaart. Verkort deze tekst en probeer opnieuw.",
+    [
+      "researchQrPdf.js:20"
+    ]
+  ],
+  [
+    "Deze challenge heeft geen gewone discoveries met een QR-code om af te drukken.",
+    [
+      "researchQrPdf.js:29"
+    ]
+  ],
+  [
+    "AetherQr.ttf",
+    [
+      "researchQrPdf.js:32",
+      "researchQrPdf.js:32"
+    ]
+  ],
+  [
+    "AetherQr",
+    [
+      "researchQrPdf.js:32",
+      "researchQrPdf.js:32"
+    ]
+  ],
+  [
+    "Onbekende vaardigheid",
+    [
+      "researchQrPdf.js:50"
+    ]
+  ],
+  [
+    "Home",
+    [
+      "shareInterface.js:404"
+    ]
+  ],
+  [
+    "End",
+    [
+      "shareInterface.js:404"
+    ]
+  ],
+  [
+    "Trait",
+    [
+      "traitsCharacter.js:583",
+      "traitsCharacter.js:639"
+    ]
+  ],
+  [
+    "Er is een nieuwe versie van Aether beschikbaar. ",
+    [
+      "updateManager.js:54"
+    ]
+  ],
+  [
+    "Vernieuwen",
+    [
+      "updateManager.js:59"
+    ]
+  ],
+  [
+    "Er is mogelijk niet-opgeslagen invoer. Toch vernieuwen?",
+    [
+      "updateManager.js:61"
+    ]
+  ]
+]
