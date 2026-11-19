@@ -15,6 +15,9 @@ async function aetherRequestJson(endpoint, options = {}) {
             ...headers
         }
     };
+    if (window.AetherContent && window.AetherI18n) {
+        fetchOptions.headers['X-Aether-Content-Language'] = window.AetherI18n.language;
+    }
 
     if (method.toUpperCase() !== "GET" && window.AETHER_CSRF_TOKEN) {
         fetchOptions.headers["X-CSRF-Token"] = window.AETHER_CSRF_TOKEN;
@@ -50,16 +53,22 @@ async function aetherRequestJson(endpoint, options = {}) {
         throw error;
     }
 
-    // Probeer JSON te parsen – als dat niet kan, geven we null terug
-    try {
-        const data = await response.json();
-        if (data && typeof data.csrfToken === "string") {
-            window.AETHER_CSRF_TOKEN = data.csrfToken;
-        }
-        return data;
-    } catch (e) {
-        return null;
+    let data;
+    try { data = await response.json(); }
+    catch {
+        throw Object.assign(new Error(aetherT('De server gaf geen geldig antwoord. Probeer de pagina opnieuw te laden.')), {status:502, code:'invalid_json'});
     }
+    if (data && Object.hasOwn(data, 'aetherPayload') && Array.isArray(data.aetherContentTranslations)) {
+        const envelope = data;
+        data = envelope.aetherPayload;
+        // Optional translation/UI failures must never turn a successful API response into a login failure.
+        try { window.AetherContent?.register(envelope.aetherContentTranslations); }
+        catch { console.warn('Aether translation display could not be updated.'); }
+        try { window.AetherTranslation?.consume(envelope); }
+        catch { console.warn('Aether translation controls could not be updated.'); }
+    }
+    if (data && typeof data.csrfToken === 'string') window.AETHER_CSRF_TOKEN = data.csrfToken;
+    return data;
 }
 
 // Deel alleen deze leesaanvragen binnen de huidige pagina. Nooit opslag op schijf.
@@ -116,18 +125,19 @@ function aetherGetCurrentUser() {
     if (window.AETHER_CURRENT_USER) return Promise.resolve(window.AETHER_CURRENT_USER);
     if (!aetherCurrentUserRequest) {
         aetherCurrentUserRequest = apiFetchJson("checkLogin.php").then((data) => {
-            if (data?.status !== "ok" || !data.user) {
+            if (data?.status !== "ok" || !data.user || typeof data.user !== 'object' || Array.isArray(data.user)) {
                 if (data?.status === "redirect") {
                     throw Object.assign(new Error(aetherT("Geen geldige sessie.")), { status: 401 });
                 }
                 throw Object.assign(new Error(aetherT("De server gaf geen geldig antwoord op de sessiecontrole.")), { status: 502 });
             }
             const user = { ...data.user, csrfToken: data.csrfToken };
-            if (window.AetherI18n?.initialize(user) === false) {
-                // The correct language must load before screens can start their work.
-                return new Promise(() => {});
-            }
+            try {
+                if (window.AetherI18n?.initialize(user) === false) return new Promise(() => {});
+            } catch { console.warn('Aether language display could not be initialized.'); }
             window.AETHER_CURRENT_USER = user;
+            try { window.AetherTranslation?.initialize(user); }
+            catch { console.warn('Aether translation controls could not be initialized.'); }
             return user;
         }).catch((error) => {
             aetherCurrentUserRequest = null;
@@ -220,6 +230,31 @@ function syncPrivilegedNavbar(user) {
     document.getElementById("navbarAdminItem")?.classList.toggle("d-none", !userHasPrivilegedRole(user));
 }
 
+// Redirect only after an explicit authentication denial; server/network failures remain recoverable.
+function aetherHandlePageLoadError(error) {
+    if (error?.status === 401) {
+        window.location.href = '../../../index.php';
+        return;
+    }
+    if (typeof document.createElement !== 'function') return;
+    let host = document.getElementById('aether-login-error');
+    if (!host) {
+        host = document.createElement('div');host.id = 'aether-login-error';
+        host.className = 'alert alert-danger';host.setAttribute('role', 'alert');
+        host.style.cssText = 'position:fixed;top:90px;left:5vw;right:5vw;z-index:1090;padding:1rem;max-width:65rem;margin:auto';
+        document.body.prepend(host);
+    }
+    host.replaceChildren();
+    const message = document.createElement('p');
+    message.textContent = aetherT('Aether kon de pagina niet volledig laden. Laad de pagina opnieuw zodra de verbinding hersteld is.');
+    host.append(message);
+    if (Number.isInteger(error?.status)) {
+        const code = document.createElement('p');code.className = 'small';code.textContent = 'HTTP ' + error.status;host.append(code);
+    }
+    const retry = document.createElement('button');retry.type = 'button';retry.className = 'action-button';
+    retry.textContent = aetherT('Pagina opnieuw laden');retry.addEventListener('click', () => window.location.reload());host.append(retry);
+}
+
 // Login-check bij laden van de pagina
 async function checkLoginOnLoad() {
     try {
@@ -227,14 +262,16 @@ async function checkLoginOnLoad() {
 
         const navbarName = document.getElementById("navbarName");
         if (navbarName) {
-            if (window.AetherI18n) window.AetherI18n.initialize(user);
-            else navbarName.textContent = aetherT("Welkom ") + user.displayName;
+            try {
+                if (window.AetherI18n) window.AetherI18n.initialize(user);
+                else navbarName.textContent = aetherT("Welkom ") + user.displayName;
+            } catch { navbarName.textContent = aetherT("Welkom ") + user.displayName; }
         }
 
         syncPrivilegedNavbar(user);
     } catch (error) {
         console.error("Fout bij sessiecontrole:", error);
-        window.location.href = "../../../index.php";
+        aetherHandlePageLoadError(error);
     }
 }
 

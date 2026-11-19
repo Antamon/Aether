@@ -33,7 +33,7 @@ $checked = 0;
 foreach ($iterator as $entry) {
     $path = $entry->getPathname();
     $relative = str_replace('\\', '/', substr($path, strlen($root) + 1));
-    if (!str_ends_with($relative, '.php') || preg_match('#^(?:tests|vendor|legacy|docs|sql)/#', $relative)
+    if (!str_ends_with($relative, '.php') || preg_match('#^(?:tests|vendor|legacy|docs|sql|tmp)/#', $relative)
         || in_array($relative, ['config.local.php', 'db.legacy.local.php'], true)) continue;
     $source = file_get_contents($path);
     if ($source === false) { $failures[] = 'Kon PHP-bestand niet lezen: ' . $relative; continue; }

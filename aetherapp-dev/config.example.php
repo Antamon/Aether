@@ -11,4 +11,15 @@ return [
         'password' => 'YOUR_DATABASE_PASSWORD',
     ],
     'application' => ['environment' => 'development'],
+    'translation' => [
+        'enabled' => false,
+        'googleApiKey' => 'YOUR_GOOGLE_CLOUD_TRANSLATION_API_KEY',
+        'monthlyCharacterLimit' => 500000,
+        'maxAutomaticCharacters' => 2000,
+        'budgetKey' => 'aether-google',
+        'usageTimeZone' => 'Europe/Brussels',
+        // When both websites use one Google project, point BOTH to the same usage database.
+        // null uses this application's database. Credentials stay server-side.
+        'usageDatabase' => null, // ['dsn'=>'mysql:host=HOST;dbname=DB;charset=utf8mb4','user'=>'USER','password'=>'PASSWORD']
+    ],
 ];

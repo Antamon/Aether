@@ -95,7 +95,7 @@ function getPassportPageCharacterName(character) {
 }
 
 function getPassportTextContent(value) {
-    return String(value ?? "");
+    return window.AetherContent?.label(String(value ?? "")) ?? String(value ?? "");
 }
 
 function normalizePassportPdfText(value) {

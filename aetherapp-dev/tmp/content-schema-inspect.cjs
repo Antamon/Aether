@@ -1,0 +1,1 @@
+const fs=require('fs');const s=JSON.parse(fs.readFileSync('tmp/translation-cost-schema.json'));for(const [n,t]of Object.entries(s).filter(([n])=>n.startsWith('tbl'))){const cols=t.columns.filter(c=>/char|text/.test(c.type));console.log(n+': '+cols.map(c=>c.name+'('+c.characters+')').join(', '));}

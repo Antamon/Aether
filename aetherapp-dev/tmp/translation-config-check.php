@@ -1,0 +1,1 @@
+<?php require 'api/shared/config.php'; $t=aetherLoadConfiguration()['translation']; echo json_encode(['configured'=>is_string($t['googleApiKey']??null)&&$t['googleApiKey']!=='','enabled'=>$t['enabled']??false]);

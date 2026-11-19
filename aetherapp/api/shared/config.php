@@ -54,13 +54,18 @@ function aetherLoadConfiguration(?string $file = null, ?array $environment = nul
     if (!is_string($appEnvironment) || !in_array($appEnvironment, ['development', 'test', 'production'], true)) {
         throw new AetherConfigurationException('Ongeldige applicatieconfiguratie.');
     }
-    return ['database'=>['dsn'=>$dsn,'user'=>$user,'password'=>$password], 'application'=>['environment'=>$appEnvironment]];
+    $translation = $values['translation'] ?? [];
+    if (!is_array($translation)) throw new AetherConfigurationException('Ongeldige vertaalconfiguratie.');
+    foreach (['enabled'=>'AETHER_TRANSLATION_ENABLED','googleApiKey'=>'AETHER_GOOGLE_TRANSLATION_API_KEY','monthlyCharacterLimit'=>'AETHER_TRANSLATION_MONTHLY_LIMIT','maxAutomaticCharacters'=>'AETHER_TRANSLATION_MAX_CHARACTERS','budgetKey'=>'AETHER_TRANSLATION_BUDGET_KEY'] as $key=>$envKey) {
+        if (array_key_exists($envKey,$environment)) $translation[$key]=$environment[$envKey];
+    }
+    return ['database'=>['dsn'=>$dsn,'user'=>$user,'password'=>$password], 'application'=>['environment'=>$appEnvironment], 'translation'=>$translation];
 }
 
 function aetherConfigurationEnvironment(): array
 {
     $result = [];
-    foreach (['AETHER_CONFIG_FILE','AETHER_DB_DSN','AETHER_DB_HOST','AETHER_DB_NAME','AETHER_DB_USER','AETHER_DB_PASSWORD','AETHER_APP_ENV'] as $key) {
+    foreach (['AETHER_CONFIG_FILE','AETHER_DB_DSN','AETHER_DB_HOST','AETHER_DB_NAME','AETHER_DB_USER','AETHER_DB_PASSWORD','AETHER_APP_ENV','AETHER_TRANSLATION_ENABLED','AETHER_GOOGLE_TRANSLATION_API_KEY','AETHER_TRANSLATION_MONTHLY_LIMIT','AETHER_TRANSLATION_MAX_CHARACTERS','AETHER_TRANSLATION_BUDGET_KEY'] as $key) {
         $value = getenv($key);
         if ($value !== false) $result[$key] = $value;
     }

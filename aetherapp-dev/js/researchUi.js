@@ -4,7 +4,7 @@ window.AetherResearch = (() => {
     const el = (tag, text = '', cls = '') => { const n = document.createElement(tag); n.className = cls; n.textContent = text; return n; };
     const button = (label, icon, action) => { const b = AetherActionButtons.button({label, icon}); b.addEventListener('click', action); return b; };
     const group = (...buttons) => AetherActionButtons.group(buttons);
-    const rich = html => { const n = el('div', '', 'research-rich'); n.innerHTML = html || ''; return n; }; // HTMLPurifier output only.
+    const rich = html => { const n = el('div', '', 'research-rich'); n.setAttribute('data-content-rendered','true'); if(window.AetherContent?.renderRich)window.AetherContent.renderRich(n,html);else n.innerHTML = html || ''; return n; }; // HTMLPurifier output only.
     const input = (value = '', type = 'text') => { const n = el('input', '', 'form-control'); n.type = type; n.value = value; return n; };
     const select = (items, value = 0, empty = null) => {
         const n = el('select', '', 'form-select');

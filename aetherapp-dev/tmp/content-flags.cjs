@@ -1,0 +1,1 @@
+const fs=require('fs'),path=require('path');console.log(JSON.parse(fs.readFileSync(path.join(process.env.TEMP,'aether-content-translation/content/quality-flags.json'))));

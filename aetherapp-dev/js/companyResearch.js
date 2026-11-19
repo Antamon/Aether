@@ -118,8 +118,10 @@ const aetherCompanyResearch = (() => {
                 fact(facts, aetherT("Beursgenoteerd"), Number(company.isShareListed) === 1 ? aetherT("Ja") : aetherT("Nee"));
                 content.append(facts);
                 const description = node('div', 'company-description-display');
+                description.setAttribute('data-content-rendered', 'true');
                 // The dedicated endpoint sanitizes this rich text with the company allowlist.
-                description.innerHTML = company.description || '';
+                if (globalThis.AetherContent?.renderRich) globalThis.AetherContent.renderRich(description, company.description);
+                else description.innerHTML = company.description || '';
                 content.append(description); panel.append(content); host.append(panel);
                 const research = node('section', 'mb-4');
                 const body = node('div');

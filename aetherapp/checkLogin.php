@@ -5,19 +5,17 @@ require_once __DIR__ . '/api/shared/session.php';
 aetherStartSession();
 header('Content-Type: application/json; charset=utf-8');
 
-require 'db.php';
-require_once 'sessionUserBootstrap.php';
+require_once __DIR__ . '/sessionUserBootstrap.php';
 require_once __DIR__ . '/api/auth/accessControl.php';
 
-// 1. Is er een Aether-sessie? Zo niet, probeer rechtstreeks uit WordPress te hydrateren.
+// Validate the WordPress/Aether identity before opening the Aether database.
+// Guests must return to Oneiros even when that database is unavailable.
 if (aetherEnsureSessionIdentity() <= 0) {
-    aetherHydrateSessionUserFromWordPress();
-}
-
-if (!isset($_SESSION['user']['id'])) {
     echo json_encode(['status' => 'redirect']);
     exit;
 }
+
+require __DIR__ . '/db.php';
 
 try {
     $user = aetherLoadAuthenticatedUser($pdo, true);

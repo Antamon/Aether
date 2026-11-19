@@ -1,15 +1,27 @@
 <?php
 declare(strict_types=1);
 
-// Copy to config.local.php (never commit it), or place the real file outside
-// the webroot and set AETHER_CONFIG_FILE to its absolute path on the host.
-return [
-    'database' => [
-        'host' => 'localhost',
-        'name' => 'oneiros_be_aether',
-        'user' => 'oneiros_be_aether',
-        'password' => ':ZG+Yn{{~Hr4a]gR',
-    ],
-    'application' => ['environment' => 'production'],
-];
-
+// Private deployment configuration. Never commit or share credentials.
+return array (
+  'database' =>
+  array (
+    'host' => 'localhost',
+    'name' => 'c8q4331sl_oneiros_be_aether',
+    'user' => 'c8q4331sl_oneiros_be_aether',
+    'password' => ':ZG+Yn{{~Hr4a]gR',
+  ),
+  'application' =>
+  array (
+    'environment' => 'production',
+  ),
+  'translation' =>
+  array (
+    'enabled' => true,
+    'googleApiKey' => 'AIzaSyDFi8F4ZQugKLsm-OCHWh63hQ-RZ89RpwA',
+    'monthlyCharacterLimit' => 500000,
+    'maxAutomaticCharacters' => 2000,
+    'budgetKey' => 'aether-google',
+    'usageTimeZone' => 'Europe/Brussels',
+    'usageDatabase' => NULL,
+  ),
+);

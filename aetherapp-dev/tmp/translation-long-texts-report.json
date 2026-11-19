@@ -1,0 +1,343 @@
+{
+  "topByVisibleText": [
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 129,
+      "field": "content",
+      "label": "Columbus Henry Eduard Porij — Persoonlijke achtergrond",
+      "rawCharacters": 16798,
+      "textCharacters": 14632,
+      "words": 2336,
+      "markupShare": 13
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 148,
+      "field": "content",
+      "label": "Jules D'Haeseleer — Persoonlijke achtergrond",
+      "rawCharacters": 16731,
+      "textCharacters": 14305,
+      "words": 2061,
+      "markupShare": 15
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 157,
+      "field": "content",
+      "label": "George Henri Lemaître — Kennis",
+      "rawCharacters": 14873,
+      "textCharacters": 14221,
+      "words": 2037,
+      "markupShare": 4
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 98,
+      "field": "content",
+      "label": "Alaric Von Harrow — Persoonlijke achtergrond",
+      "rawCharacters": 12019,
+      "textCharacters": 11619,
+      "words": 1815,
+      "markupShare": 3
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 26,
+      "field": "content",
+      "label": "Dubhghall McTavish — Persoonlijke achtergrond",
+      "rawCharacters": 8311,
+      "textCharacters": 8201,
+      "words": 1348,
+      "markupShare": 1
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 61,
+      "field": "content",
+      "label": "Amalia Betrescu — Persoonlijke achtergrond",
+      "rawCharacters": 8185,
+      "textCharacters": 8031,
+      "words": 1278,
+      "markupShare": 2
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 34,
+      "field": "content",
+      "label": "Brian Daniel o Connel — Persoonlijke achtergrond",
+      "rawCharacters": 8044,
+      "textCharacters": 7856,
+      "words": 1462,
+      "markupShare": 2
+    },
+    {
+      "group": "Dagboeken en roddels",
+      "table": "tblCharacterDiary",
+      "id": 47,
+      "field": "goals",
+      "label": "Rafaël De Ridder — Doelen (Cut!)",
+      "rawCharacters": 7685,
+      "textCharacters": 7277,
+      "words": 1066,
+      "markupShare": 5
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 39,
+      "field": "content",
+      "label": "Victor Eddington — Persoonlijke achtergrond",
+      "rawCharacters": 13368,
+      "textCharacters": 6585,
+      "words": 1019,
+      "markupShare": 51
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 52,
+      "field": "content",
+      "label": "Louis Auguste d'Agincourt — Kennis",
+      "rawCharacters": 14682,
+      "textCharacters": 6030,
+      "words": 922,
+      "markupShare": 59
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 41,
+      "field": "content",
+      "label": "Evangeline Wintervoorde — Persoonlijke achtergrond",
+      "rawCharacters": 54039,
+      "textCharacters": 6028,
+      "words": 962,
+      "markupShare": 89
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 50,
+      "field": "content",
+      "label": "Rafaël De Ridder — Kennis",
+      "rawCharacters": 14648,
+      "textCharacters": 5996,
+      "words": 922,
+      "markupShare": 59
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 45,
+      "field": "content",
+      "label": "Sauvage Célestine — Persoonlijke achtergrond",
+      "rawCharacters": 5782,
+      "textCharacters": 5573,
+      "words": 936,
+      "markupShare": 4
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 147,
+      "field": "content",
+      "label": "Pieter-Alexander van Edingen — Persoonlijke achtergrond",
+      "rawCharacters": 9465,
+      "textCharacters": 5447,
+      "words": 842,
+      "markupShare": 42
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 141,
+      "field": "content",
+      "label": "Edmund O'Dermott — Persoonlijke achtergrond",
+      "rawCharacters": 30775,
+      "textCharacters": 5317,
+      "words": 820,
+      "markupShare": 83
+    }
+  ],
+  "topByStoredLength": [
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 42,
+      "field": "content",
+      "label": "Evangeline Wintervoorde — Kennis",
+      "rawCharacters": 62559,
+      "textCharacters": 5060,
+      "words": 774,
+      "markupShare": 92
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 41,
+      "field": "content",
+      "label": "Evangeline Wintervoorde — Persoonlijke achtergrond",
+      "rawCharacters": 54039,
+      "textCharacters": 6028,
+      "words": 962,
+      "markupShare": 89
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 141,
+      "field": "content",
+      "label": "Edmund O'Dermott — Persoonlijke achtergrond",
+      "rawCharacters": 30775,
+      "textCharacters": 5317,
+      "words": 820,
+      "markupShare": 83
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 129,
+      "field": "content",
+      "label": "Columbus Henry Eduard Porij — Persoonlijke achtergrond",
+      "rawCharacters": 16798,
+      "textCharacters": 14632,
+      "words": 2336,
+      "markupShare": 13
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 148,
+      "field": "content",
+      "label": "Jules D'Haeseleer — Persoonlijke achtergrond",
+      "rawCharacters": 16731,
+      "textCharacters": 14305,
+      "words": 2061,
+      "markupShare": 15
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 157,
+      "field": "content",
+      "label": "George Henri Lemaître — Kennis",
+      "rawCharacters": 14873,
+      "textCharacters": 14221,
+      "words": 2037,
+      "markupShare": 4
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 52,
+      "field": "content",
+      "label": "Louis Auguste d'Agincourt — Kennis",
+      "rawCharacters": 14682,
+      "textCharacters": 6030,
+      "words": 922,
+      "markupShare": 59
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 50,
+      "field": "content",
+      "label": "Rafaël De Ridder — Kennis",
+      "rawCharacters": 14648,
+      "textCharacters": 5996,
+      "words": 922,
+      "markupShare": 59
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 47,
+      "field": "content",
+      "label": "Jean-Christophe de la Grevière — Persoonlijke achtergrond",
+      "rawCharacters": 14592,
+      "textCharacters": 4824,
+      "words": 783,
+      "markupShare": 67
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 39,
+      "field": "content",
+      "label": "Victor Eddington — Persoonlijke achtergrond",
+      "rawCharacters": 13368,
+      "textCharacters": 6585,
+      "words": 1019,
+      "markupShare": 51
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 98,
+      "field": "content",
+      "label": "Alaric Von Harrow — Persoonlijke achtergrond",
+      "rawCharacters": 12019,
+      "textCharacters": 11619,
+      "words": 1815,
+      "markupShare": 3
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 109,
+      "field": "content",
+      "label": "Martha Van Brusselaer — Persoonlijke achtergrond",
+      "rawCharacters": 9522,
+      "textCharacters": 4489,
+      "words": 771,
+      "markupShare": 53
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 147,
+      "field": "content",
+      "label": "Pieter-Alexander van Edingen — Persoonlijke achtergrond",
+      "rawCharacters": 9465,
+      "textCharacters": 5447,
+      "words": 842,
+      "markupShare": 42
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 26,
+      "field": "content",
+      "label": "Dubhghall McTavish — Persoonlijke achtergrond",
+      "rawCharacters": 8311,
+      "textCharacters": 8201,
+      "words": 1348,
+      "markupShare": 1
+    },
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "table": "tblCharacterSection",
+      "id": 61,
+      "field": "content",
+      "label": "Amalia Betrescu — Persoonlijke achtergrond",
+      "rawCharacters": 8185,
+      "textCharacters": 8031,
+      "words": 1278,
+      "markupShare": 2
+    }
+  ],
+  "totals": {
+    "records": 1629,
+    "textCharacters": 425039,
+    "storedCharacters": 646073,
+    "topFiveTextCharacters": 62978,
+    "topFiveStoredCharacters": 180902
+  }
+}

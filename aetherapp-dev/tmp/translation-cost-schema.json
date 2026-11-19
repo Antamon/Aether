@@ -1,0 +1,2689 @@
+{
+  "economie_bedrijf": {
+    "rows": 6,
+    "columns": [
+      {
+        "name": "naam",
+        "type": "varchar(50)",
+        "nonEmpty": 6,
+        "characters": 91,
+        "unique": 6
+      },
+      {
+        "name": "beschrijving",
+        "type": "text",
+        "nonEmpty": 4,
+        "characters": 1398,
+        "unique": 4
+      }
+    ]
+  },
+  "economie_bedrijfeigenschap": {
+    "rows": 7,
+    "columns": [
+      {
+        "name": "naam",
+        "type": "varchar(40)",
+        "nonEmpty": 7,
+        "characters": 100,
+        "unique": 7
+      },
+      {
+        "name": "beschrijving",
+        "type": "varchar(255)",
+        "nonEmpty": 7,
+        "characters": 1626,
+        "unique": 7
+      }
+    ]
+  },
+  "economie_linkbedrijfeigenschap": {
+    "rows": 29,
+    "columns": []
+  },
+  "economie_linkbedrijfmarkt": {
+    "rows": 2,
+    "columns": []
+  },
+  "economie_linkmarkteigenschap": {
+    "rows": 19,
+    "columns": []
+  },
+  "economie_markt": {
+    "rows": 7,
+    "columns": [
+      {
+        "name": "naam",
+        "type": "varchar(50)",
+        "nonEmpty": 7,
+        "characters": 139,
+        "unique": 7
+      },
+      {
+        "name": "beschrijving",
+        "type": "text",
+        "nonEmpty": 3,
+        "characters": 372,
+        "unique": 3
+      },
+      {
+        "name": "sector",
+        "type": "set('primair','secundair','tertiair','quartair')",
+        "nonEmpty": 7,
+        "characters": 56,
+        "unique": 4
+      },
+      {
+        "name": "domein",
+        "type": "set('lokaal','gemeentelijk','provinciaal','nationaal','internationaal','continentaal','globaal')",
+        "nonEmpty": 7,
+        "characters": 72,
+        "unique": 3
+      }
+    ]
+  },
+  "economie_markteigenschap": {
+    "rows": 6,
+    "columns": [
+      {
+        "name": "naam",
+        "type": "varchar(40)",
+        "nonEmpty": 6,
+        "characters": 57,
+        "unique": 6
+      },
+      {
+        "name": "beschrijving",
+        "type": "varchar(255)",
+        "nonEmpty": 6,
+        "characters": 715,
+        "unique": 6
+      },
+      {
+        "name": "4",
+        "type": "varchar(255)",
+        "nonEmpty": 6,
+        "characters": 805,
+        "unique": 6
+      },
+      {
+        "name": "9",
+        "type": "varchar(255)",
+        "nonEmpty": 6,
+        "characters": 922,
+        "unique": 6
+      },
+      {
+        "name": "14",
+        "type": "varchar(255)",
+        "nonEmpty": 6,
+        "characters": 716,
+        "unique": 6
+      },
+      {
+        "name": "19",
+        "type": "varchar(255)",
+        "nonEmpty": 6,
+        "characters": 840,
+        "unique": 6
+      },
+      {
+        "name": "20",
+        "type": "varchar(255)",
+        "nonEmpty": 6,
+        "characters": 777,
+        "unique": 6
+      }
+    ]
+  },
+  "economie_snapshot": {
+    "rows": 16,
+    "columns": [
+      {
+        "name": "naam",
+        "type": "varchar(255)",
+        "nonEmpty": 16,
+        "characters": 261,
+        "unique": 16
+      },
+      {
+        "name": "datum",
+        "type": "date",
+        "nonEmpty": 16,
+        "characters": 160,
+        "unique": 16
+      }
+    ]
+  },
+  "oneiros_accounts": {
+    "rows": 69,
+    "columns": [
+      {
+        "name": "username",
+        "type": "varchar(50)",
+        "nonEmpty": 69,
+        "characters": 867,
+        "unique": 68
+      },
+      {
+        "name": "password",
+        "type": "varchar(255)",
+        "nonEmpty": 69,
+        "characters": 4114,
+        "unique": 69
+      },
+      {
+        "name": "email",
+        "type": "varchar(100)",
+        "nonEmpty": 69,
+        "characters": 1517,
+        "unique": 68
+      },
+      {
+        "name": "playerid",
+        "type": "varchar(10)",
+        "nonEmpty": 69,
+        "characters": 345,
+        "unique": 68
+      }
+    ]
+  },
+  "oneiros_aether_data_NEW": {
+    "rows": 134,
+    "columns": [
+      {
+        "name": "PlayerId",
+        "type": "varchar(10)",
+        "nonEmpty": 134,
+        "characters": 670,
+        "unique": 114
+      },
+      {
+        "name": "RecordName",
+        "type": "varchar(6)",
+        "nonEmpty": 134,
+        "characters": 804,
+        "unique": 133
+      },
+      {
+        "name": "CharFName",
+        "type": "varchar(100)",
+        "nonEmpty": 134,
+        "characters": 1233,
+        "unique": 127
+      },
+      {
+        "name": "CharLName",
+        "type": "varchar(100)",
+        "nonEmpty": 134,
+        "characters": 1239,
+        "unique": 121
+      },
+      {
+        "name": "PlayerFName",
+        "type": "varchar(30)",
+        "nonEmpty": 134,
+        "characters": 683,
+        "unique": 99
+      },
+      {
+        "name": "PlayerLName",
+        "type": "varchar(30)",
+        "nonEmpty": 134,
+        "characters": 1090,
+        "unique": 109
+      },
+      {
+        "name": "Gender",
+        "type": "varchar(20)",
+        "nonEmpty": 134,
+        "characters": 610,
+        "unique": 2
+      },
+      {
+        "name": "Nationality",
+        "type": "varchar(30)",
+        "nonEmpty": 133,
+        "characters": 560,
+        "unique": 16
+      },
+      {
+        "name": "BirthDate",
+        "type": "varchar(20)",
+        "nonEmpty": 121,
+        "characters": 1138,
+        "unique": 113
+      },
+      {
+        "name": "BirthPlace",
+        "type": "varchar(50)",
+        "nonEmpty": 125,
+        "characters": 942,
+        "unique": 56
+      },
+      {
+        "name": "Profession",
+        "type": "varchar(30)",
+        "nonEmpty": 126,
+        "characters": 1517,
+        "unique": 93
+      },
+      {
+        "name": "Title",
+        "type": "varchar(30)",
+        "nonEmpty": 91,
+        "characters": 461,
+        "unique": 18
+      },
+      {
+        "name": "SocialStatus",
+        "type": "varchar(20)",
+        "nonEmpty": 133,
+        "characters": 811,
+        "unique": 4
+      },
+      {
+        "name": "RegNumber",
+        "type": "varchar(20)",
+        "nonEmpty": 133,
+        "characters": 989,
+        "unique": 133
+      },
+      {
+        "name": "Street",
+        "type": "varchar(50)",
+        "nonEmpty": 124,
+        "characters": 1801,
+        "unique": 71
+      },
+      {
+        "name": "HouseNumber",
+        "type": "varchar(10)",
+        "nonEmpty": 113,
+        "characters": 207,
+        "unique": 54
+      },
+      {
+        "name": "PostalCode",
+        "type": "varchar(10)",
+        "nonEmpty": 119,
+        "characters": 469,
+        "unique": 8
+      },
+      {
+        "name": "City",
+        "type": "varchar(50)",
+        "nonEmpty": 129,
+        "characters": 1129,
+        "unique": 14
+      },
+      {
+        "name": "Country",
+        "type": "varchar(50)",
+        "nonEmpty": 128,
+        "characters": 789,
+        "unique": 10
+      },
+      {
+        "name": "Cash",
+        "type": "varchar(20)",
+        "nonEmpty": 91,
+        "characters": 121,
+        "unique": 23
+      },
+      {
+        "name": "perBackground",
+        "type": "text",
+        "nonEmpty": 123,
+        "characters": 129397,
+        "unique": 48
+      },
+      {
+        "name": "Comment",
+        "type": "text",
+        "nonEmpty": 10,
+        "characters": 226,
+        "unique": 10
+      }
+    ]
+  },
+  "oneiros_aether_employment": {
+    "rows": 54,
+    "columns": [
+      {
+        "name": "Employer",
+        "type": "varchar(20)",
+        "nonEmpty": 54,
+        "characters": 267,
+        "unique": 25
+      },
+      {
+        "name": "Minion",
+        "type": "varchar(20)",
+        "nonEmpty": 54,
+        "characters": 268,
+        "unique": 52
+      },
+      {
+        "name": "Salary",
+        "type": "varchar(50)",
+        "nonEmpty": 42,
+        "characters": 85,
+        "unique": 15
+      }
+    ]
+  },
+  "oneiros_aether_event": {
+    "rows": 558,
+    "columns": [
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 558,
+        "characters": 2793,
+        "unique": 125
+      },
+      {
+        "name": "Event",
+        "type": "varchar(50)",
+        "nonEmpty": 558,
+        "characters": 6270,
+        "unique": 18
+      },
+      {
+        "name": "Function",
+        "type": "varchar(50)",
+        "nonEmpty": 540,
+        "characters": 3240,
+        "unique": 4
+      }
+    ]
+  },
+  "oneiros_aether_eventstatistics": {
+    "rows": 34,
+    "columns": [
+      {
+        "name": "UserId",
+        "type": "varchar(10)",
+        "nonEmpty": 34,
+        "characters": 170,
+        "unique": 34
+      },
+      {
+        "name": "CharId",
+        "type": "varchar(10)",
+        "nonEmpty": 34,
+        "characters": 170,
+        "unique": 34
+      },
+      {
+        "name": "Event",
+        "type": "varchar(20)",
+        "nonEmpty": 34,
+        "characters": 367,
+        "unique": 2
+      }
+    ]
+  },
+  "oneiros_aether_fintrans": {
+    "rows": 5,
+    "columns": [
+      {
+        "name": "FromChar",
+        "type": "varchar(50)",
+        "nonEmpty": 5,
+        "characters": 25,
+        "unique": 4
+      },
+      {
+        "name": "ToChar",
+        "type": "varchar(50)",
+        "nonEmpty": 5,
+        "characters": 17,
+        "unique": 4
+      },
+      {
+        "name": "Amount",
+        "type": "varchar(20)",
+        "nonEmpty": 5,
+        "characters": 26,
+        "unique": 4
+      },
+      {
+        "name": "Reason",
+        "type": "text",
+        "nonEmpty": 5,
+        "characters": 142,
+        "unique": 5
+      }
+    ]
+  },
+  "oneiros_aether_languages": {
+    "rows": 312,
+    "columns": [
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 312,
+        "characters": 1570,
+        "unique": 129
+      },
+      {
+        "name": "Language",
+        "type": "varchar(50)",
+        "nonEmpty": 312,
+        "characters": 2336,
+        "unique": 19
+      }
+    ]
+  },
+  "oneiros_aether_licence": {
+    "rows": 117,
+    "columns": [
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 117,
+        "characters": 587,
+        "unique": 92
+      },
+      {
+        "name": "LicId",
+        "type": "varchar(20)",
+        "nonEmpty": 117,
+        "characters": 585,
+        "unique": 13
+      }
+    ]
+  },
+  "oneiros_aether_partner": {
+    "rows": 11,
+    "columns": [
+      {
+        "name": "Partner1",
+        "type": "varchar(20)",
+        "nonEmpty": 11,
+        "characters": 55,
+        "unique": 11
+      },
+      {
+        "name": "Partner2",
+        "type": "varchar(20)",
+        "nonEmpty": 11,
+        "characters": 55,
+        "unique": 11
+      }
+    ]
+  },
+  "oneiros_aether_ref_economy": {
+    "rows": 6,
+    "columns": [
+      {
+        "name": "Name",
+        "type": "varchar(200)",
+        "nonEmpty": 6,
+        "characters": 42,
+        "unique": 6
+      },
+      {
+        "name": "Update",
+        "type": "timestamp(6)",
+        "nonEmpty": 6,
+        "characters": 156,
+        "unique": 4
+      }
+    ]
+  },
+  "oneiros_aether_ref_events": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "EventNumber",
+        "type": "varchar(20)",
+        "nonEmpty": 13,
+        "characters": 22,
+        "unique": 13
+      },
+      {
+        "name": "EventName",
+        "type": "varchar(50)",
+        "nonEmpty": 13,
+        "characters": 120,
+        "unique": 13
+      },
+      {
+        "name": "Event",
+        "type": "varchar(50)",
+        "nonEmpty": 13,
+        "characters": 159,
+        "unique": 13
+      }
+    ]
+  },
+  "oneiros_aether_ref_licence": {
+    "rows": 18,
+    "columns": [
+      {
+        "name": "LicId",
+        "type": "varchar(20)",
+        "nonEmpty": 18,
+        "characters": 90,
+        "unique": 18
+      },
+      {
+        "name": "Licence",
+        "type": "varchar(100)",
+        "nonEmpty": 18,
+        "characters": 316,
+        "unique": 18
+      }
+    ]
+  },
+  "oneiros_aether_ref_skills_desc": {
+    "rows": 34,
+    "columns": [
+      {
+        "name": "SkillName",
+        "type": "varchar(20)",
+        "nonEmpty": 34,
+        "characters": 331,
+        "unique": 34
+      },
+      {
+        "name": "SkillInitials",
+        "type": "varchar(20)",
+        "nonEmpty": 34,
+        "characters": 136,
+        "unique": 34
+      },
+      {
+        "name": "SkillDesc",
+        "type": "varchar(500)",
+        "nonEmpty": 34,
+        "characters": 8391,
+        "unique": 34
+      },
+      {
+        "name": "SkillType",
+        "type": "varchar(200)",
+        "nonEmpty": 27,
+        "characters": 542,
+        "unique": 12
+      }
+    ]
+  },
+  "oneiros_aether_ref_skills_NEW": {
+    "rows": 115,
+    "columns": [
+      {
+        "name": "Code",
+        "type": "varchar(10)",
+        "nonEmpty": 115,
+        "characters": 805,
+        "unique": 115
+      },
+      {
+        "name": "Name",
+        "type": "varchar(50)",
+        "nonEmpty": 115,
+        "characters": 1191,
+        "unique": 39
+      },
+      {
+        "name": "Description",
+        "type": "text",
+        "nonEmpty": 115,
+        "characters": 21252,
+        "unique": 113
+      },
+      {
+        "name": "Property",
+        "type": "varchar(100)",
+        "nonEmpty": 9,
+        "characters": 57,
+        "unique": 3
+      },
+      {
+        "name": "White",
+        "type": "varchar(10)",
+        "nonEmpty": 115,
+        "characters": 115,
+        "unique": 2
+      },
+      {
+        "name": "Green",
+        "type": "varchar(10)",
+        "nonEmpty": 115,
+        "characters": 115,
+        "unique": 1
+      },
+      {
+        "name": "Yellow",
+        "type": "varchar(10)",
+        "nonEmpty": 115,
+        "characters": 115,
+        "unique": 2
+      },
+      {
+        "name": "Red",
+        "type": "varchar(10)",
+        "nonEmpty": 115,
+        "characters": 115,
+        "unique": 2
+      },
+      {
+        "name": "Initials",
+        "type": "varchar(10)",
+        "nonEmpty": 115,
+        "characters": 460,
+        "unique": 39
+      }
+    ]
+  },
+  "oneiros_aether_ref_stock": {
+    "rows": 3,
+    "columns": [
+      {
+        "name": "StockId",
+        "type": "varchar(20)",
+        "nonEmpty": 3,
+        "characters": 18,
+        "unique": 3
+      },
+      {
+        "name": "StockName",
+        "type": "varchar(50)",
+        "nonEmpty": 3,
+        "characters": 57,
+        "unique": 3
+      },
+      {
+        "name": "Rate",
+        "type": "varchar(20)",
+        "nonEmpty": 3,
+        "characters": 3,
+        "unique": 1
+      }
+    ]
+  },
+  "oneiros_aether_ref_traits_NEW": {
+    "rows": 230,
+    "columns": [
+      {
+        "name": "TraitCode",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 1468,
+        "unique": 224
+      },
+      {
+        "name": "TraitName",
+        "type": "varchar(50)",
+        "nonEmpty": 230,
+        "characters": 3206,
+        "unique": 186
+      },
+      {
+        "name": "TraitDesc",
+        "type": "varchar(1500)",
+        "nonEmpty": 230,
+        "characters": 35628,
+        "unique": 196
+      },
+      {
+        "name": "TraitCategory",
+        "type": "varchar(50)",
+        "nonEmpty": 230,
+        "characters": 2274,
+        "unique": 26
+      },
+      {
+        "name": "TraitCost",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 230,
+        "unique": 8
+      },
+      {
+        "name": "Personnel",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 230,
+        "unique": 5
+      },
+      {
+        "name": "Class",
+        "type": "varchar(10)",
+        "nonEmpty": 230,
+        "characters": 230,
+        "unique": 5
+      },
+      {
+        "name": "RevenueType",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 238,
+        "unique": 5
+      },
+      {
+        "name": "Revenue",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 267,
+        "unique": 10
+      },
+      {
+        "name": "Base",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 555,
+        "unique": 75
+      },
+      {
+        "name": "Factor",
+        "type": "varchar(20)",
+        "nonEmpty": 230,
+        "characters": 543,
+        "unique": 13
+      }
+    ]
+  },
+  "oneiros_aether_shares": {
+    "rows": 3,
+    "columns": [
+      {
+        "name": "Company",
+        "type": "varchar(100)",
+        "nonEmpty": 3,
+        "characters": 33,
+        "unique": 3
+      },
+      {
+        "name": "Value",
+        "type": "varchar(50)",
+        "nonEmpty": 3,
+        "characters": 18,
+        "unique": 3
+      },
+      {
+        "name": "Rate",
+        "type": "varchar(10)",
+        "nonEmpty": 3,
+        "characters": 7,
+        "unique": 3
+      },
+      {
+        "name": "Date",
+        "type": "timestamp",
+        "nonEmpty": 3,
+        "characters": 57,
+        "unique": 2
+      }
+    ]
+  },
+  "oneiros_aether_skills": {
+    "rows": 440,
+    "columns": [
+      {
+        "name": "SkillId",
+        "type": "varchar(20)",
+        "nonEmpty": 5,
+        "characters": 25,
+        "unique": 5
+      },
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 440,
+        "characters": 2204,
+        "unique": 80
+      },
+      {
+        "name": "SkillCode",
+        "type": "varchar(20)",
+        "nonEmpty": 440,
+        "characters": 1760,
+        "unique": 38
+      },
+      {
+        "name": "SkillLevel",
+        "type": "varchar(20)",
+        "nonEmpty": 440,
+        "characters": 440,
+        "unique": 3
+      }
+    ]
+  },
+  "oneiros_aether_specialisms": {
+    "rows": 41,
+    "columns": [
+      {
+        "name": "SpecId",
+        "type": "varchar(20)",
+        "nonEmpty": 5,
+        "characters": 25,
+        "unique": 5
+      },
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 41,
+        "characters": 207,
+        "unique": 31
+      },
+      {
+        "name": "SkillCode",
+        "type": "varchar(20)",
+        "nonEmpty": 41,
+        "characters": 161,
+        "unique": 14
+      },
+      {
+        "name": "SpecDesc",
+        "type": "varchar(500)",
+        "nonEmpty": 41,
+        "characters": 505,
+        "unique": 36
+      }
+    ]
+  },
+  "oneiros_aether_stock": {
+    "rows": 8,
+    "columns": [
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 8,
+        "characters": 40,
+        "unique": 8
+      },
+      {
+        "name": "StockId",
+        "type": "varchar(20)",
+        "nonEmpty": 8,
+        "characters": 48,
+        "unique": 2
+      },
+      {
+        "name": "DateIn",
+        "type": "date",
+        "nonEmpty": 8,
+        "characters": 80,
+        "unique": 6
+      },
+      {
+        "name": "DateOut",
+        "type": "date",
+        "nonEmpty": 5,
+        "characters": 50,
+        "unique": 2
+      }
+    ]
+  },
+  "oneiros_aether_traits_NEW": {
+    "rows": 694,
+    "columns": [
+      {
+        "name": "UserId",
+        "type": "varchar(20)",
+        "nonEmpty": 694,
+        "characters": 3502,
+        "unique": 153
+      },
+      {
+        "name": "TraitCode",
+        "type": "varchar(20)",
+        "nonEmpty": 694,
+        "characters": 4987,
+        "unique": 221
+      },
+      {
+        "name": "TraitLevel",
+        "type": "varchar(20)",
+        "nonEmpty": 346,
+        "characters": 412,
+        "unique": 22
+      },
+      {
+        "name": "Special",
+        "type": "varchar(500)",
+        "nonEmpty": 82,
+        "characters": 1522,
+        "unique": 75
+      }
+    ]
+  },
+  "oneiros_aether_users": {
+    "rows": 116,
+    "columns": [
+      {
+        "name": "PlayerFName",
+        "type": "varchar(100)",
+        "nonEmpty": 116,
+        "characters": 581,
+        "unique": 101
+      },
+      {
+        "name": "PlayerLName",
+        "type": "varchar(100)",
+        "nonEmpty": 116,
+        "characters": 963,
+        "unique": 111
+      },
+      {
+        "name": "Status",
+        "type": "varchar(10)",
+        "nonEmpty": 116,
+        "characters": 116,
+        "unique": 1
+      },
+      {
+        "name": "PlayerId",
+        "type": "varchar(10)",
+        "nonEmpty": 116,
+        "characters": 580,
+        "unique": 116
+      },
+      {
+        "name": "Email",
+        "type": "varchar(100)",
+        "nonEmpty": 23,
+        "characters": 498,
+        "unique": 23
+      }
+    ]
+  },
+  "tblApiIdempotency": {
+    "rows": 506,
+    "columns": [
+      {
+        "name": "operation",
+        "type": "varchar(100)",
+        "nonEmpty": 506,
+        "characters": 10305,
+        "unique": 37
+      },
+      {
+        "name": "requestKey",
+        "type": "varchar(128)",
+        "nonEmpty": 506,
+        "characters": 18216,
+        "unique": 506
+      },
+      {
+        "name": "payloadHash",
+        "type": "char(64)",
+        "nonEmpty": 506,
+        "characters": 32384,
+        "unique": 436
+      },
+      {
+        "name": "status",
+        "type": "enum('processing','completed')",
+        "nonEmpty": 506,
+        "characters": 4554,
+        "unique": 1
+      },
+      {
+        "name": "responseJson",
+        "type": "mediumtext",
+        "nonEmpty": 506,
+        "characters": 3379672,
+        "unique": 363
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 506,
+        "characters": 9614,
+        "unique": 500
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 506,
+        "characters": 9614,
+        "unique": 487
+      },
+      {
+        "name": "expiresAt",
+        "type": "datetime",
+        "nonEmpty": 506,
+        "characters": 9614,
+        "unique": 500
+      }
+    ]
+  },
+  "tblCharacter": {
+    "rows": 83,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 83,
+        "characters": 1577,
+        "unique": 75
+      },
+      {
+        "name": "type",
+        "type": "set('player','extra')",
+        "nonEmpty": 83,
+        "characters": 475,
+        "unique": 2
+      },
+      {
+        "name": "state",
+        "type": "set('active','inactive','deceased','other','draft','approve')",
+        "nonEmpty": 83,
+        "characters": 460,
+        "unique": 3
+      },
+      {
+        "name": "firstName",
+        "type": "varchar(40)",
+        "nonEmpty": 83,
+        "characters": 729,
+        "unique": 81
+      },
+      {
+        "name": "lastName",
+        "type": "varchar(40)",
+        "nonEmpty": 82,
+        "characters": 782,
+        "unique": 82
+      },
+      {
+        "name": "class",
+        "type": "set('upper class','middle class','lower class','')",
+        "nonEmpty": 83,
+        "characters": 966,
+        "unique": 3
+      },
+      {
+        "name": "birthDate",
+        "type": "date",
+        "nonEmpty": 83,
+        "characters": 830,
+        "unique": 56
+      },
+      {
+        "name": "birthPlace",
+        "type": "varchar(40)",
+        "nonEmpty": 52,
+        "characters": 427,
+        "unique": 36
+      },
+      {
+        "name": "nationality",
+        "type": "varchar(40)",
+        "nonEmpty": 58,
+        "characters": 303,
+        "unique": 20
+      },
+      {
+        "name": "stateRegisterNumber",
+        "type": "varchar(8)",
+        "nonEmpty": 23,
+        "characters": 131,
+        "unique": 23
+      },
+      {
+        "name": "street",
+        "type": "varchar(30)",
+        "nonEmpty": 28,
+        "characters": 420,
+        "unique": 28
+      },
+      {
+        "name": "houseNumber",
+        "type": "varchar(11)",
+        "nonEmpty": 25,
+        "characters": 55,
+        "unique": 20
+      },
+      {
+        "name": "municipality",
+        "type": "varchar(30)",
+        "nonEmpty": 36,
+        "characters": 320,
+        "unique": 8
+      },
+      {
+        "name": "postalCode",
+        "type": "varchar(4)",
+        "nonEmpty": 33,
+        "characters": 130,
+        "unique": 10
+      },
+      {
+        "name": "title",
+        "type": "varchar(30)",
+        "nonEmpty": 55,
+        "characters": 383,
+        "unique": 40
+      },
+      {
+        "name": "maritalStatus",
+        "type": "set('Single','Married','Widowed','')",
+        "nonEmpty": 61,
+        "characters": 384,
+        "unique": 3
+      },
+      {
+        "name": "securitiesManagerType",
+        "type": "enum('self','bank','third')",
+        "nonEmpty": 83,
+        "characters": 332,
+        "unique": 1
+      }
+    ]
+  },
+  "tblCharacterBankTransaction": {
+    "rows": 0,
+    "columns": []
+  },
+  "tblCharacterCompanyResearch": {
+    "rows": 17,
+    "columns": [
+      {
+        "name": "updatedAt",
+        "type": "timestamp(6)",
+        "nonEmpty": 17,
+        "characters": 442,
+        "unique": 17
+      }
+    ]
+  },
+  "tblCharacterDiary": {
+    "rows": 79,
+    "columns": [
+      {
+        "name": "goals",
+        "type": "text",
+        "nonEmpty": 37,
+        "characters": 38459,
+        "unique": 37
+      },
+      {
+        "name": "achievements",
+        "type": "text",
+        "nonEmpty": 24,
+        "characters": 18557,
+        "unique": 23
+      },
+      {
+        "name": "gossip1",
+        "type": "text",
+        "nonEmpty": 45,
+        "characters": 8648,
+        "unique": 44
+      },
+      {
+        "name": "gossip2",
+        "type": "text",
+        "nonEmpty": 38,
+        "characters": 9202,
+        "unique": 37
+      },
+      {
+        "name": "gossip3",
+        "type": "text",
+        "nonEmpty": 37,
+        "characters": 10234,
+        "unique": 36
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 79,
+        "characters": 1501,
+        "unique": 79
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 79,
+        "characters": 1501,
+        "unique": 79
+      }
+    ]
+  },
+  "tblCharacterDiaryVisibility": {
+    "rows": 16,
+    "columns": [
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 16,
+        "characters": 304,
+        "unique": 13
+      }
+    ]
+  },
+  "tblCharacterEconomySnapshot": {
+    "rows": 5,
+    "columns": [
+      {
+        "name": "transactionDate",
+        "type": "date",
+        "nonEmpty": 5,
+        "characters": 50,
+        "unique": 2
+      },
+      {
+        "name": "securitiesManagerType",
+        "type": "enum('none','self','bank','third')",
+        "nonEmpty": 5,
+        "characters": 20,
+        "unique": 1
+      },
+      {
+        "name": "securitiesStatus",
+        "type": "enum('none','pending','approved')",
+        "nonEmpty": 5,
+        "characters": 27,
+        "unique": 3
+      },
+      {
+        "name": "securitiesApprovedAt",
+        "type": "datetime",
+        "nonEmpty": 1,
+        "characters": 19,
+        "unique": 1
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 5,
+        "characters": 95,
+        "unique": 5
+      }
+    ]
+  },
+  "tblCharacterEventGossipAttempt": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 13
+      }
+    ]
+  },
+  "tblCharacterEventGossipUnlock": {
+    "rows": 37,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 37,
+        "characters": 703,
+        "unique": 37
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 37,
+        "characters": 703,
+        "unique": 37
+      }
+    ]
+  },
+  "tblCharacterLanguage": {
+    "rows": 131,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 131,
+        "characters": 2489,
+        "unique": 131
+      }
+    ]
+  },
+  "tblCharacterSection": {
+    "rows": 100,
+    "columns": [
+      {
+        "name": "section",
+        "type": "enum('personal_background','knowledge','nature','demeanour')",
+        "nonEmpty": 100,
+        "characters": 1237,
+        "unique": 4
+      },
+      {
+        "name": "content",
+        "type": "text",
+        "nonEmpty": 98,
+        "characters": 434596,
+        "unique": 97
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 100,
+        "characters": 1900,
+        "unique": 100
+      }
+    ]
+  },
+  "tblCharacterSecuritiesTransaction": {
+    "rows": 4,
+    "columns": [
+      {
+        "name": "direction",
+        "type": "enum('deposit','manual_withdrawal')",
+        "nonEmpty": 4,
+        "characters": 38,
+        "unique": 2
+      },
+      {
+        "name": "transactionDate",
+        "type": "date",
+        "nonEmpty": 4,
+        "characters": 40,
+        "unique": 4
+      },
+      {
+        "name": "description",
+        "type": "varchar(255)",
+        "nonEmpty": 4,
+        "characters": 169,
+        "unique": 2
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 4
+      }
+    ]
+  },
+  "tblCharacterShareDraftBudget": {
+    "rows": 4,
+    "columns": [
+      {
+        "name": "closedAt",
+        "type": "datetime",
+        "nonEmpty": 1,
+        "characters": 19,
+        "unique": 1
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 4
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 4
+      }
+    ]
+  },
+  "tblCharacterShareStatus": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 4
+      }
+    ]
+  },
+  "tblCharacterSkillActionState": {
+    "rows": 2,
+    "columns": [
+      {
+        "name": "actionCode",
+        "type": "varchar(50)",
+        "nonEmpty": 2,
+        "characters": 6,
+        "unique": 1
+      },
+      {
+        "name": "stateCode",
+        "type": "varchar(50)",
+        "nonEmpty": 2,
+        "characters": 8,
+        "unique": 1
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 2,
+        "characters": 38,
+        "unique": 2
+      }
+    ]
+  },
+  "tblCharacterSkillActionUse": {
+    "rows": 36,
+    "columns": [
+      {
+        "name": "actionCode",
+        "type": "varchar(50)",
+        "nonEmpty": 36,
+        "characters": 108,
+        "unique": 1
+      },
+      {
+        "name": "actionSubtype",
+        "type": "varchar(50)",
+        "nonEmpty": 36,
+        "characters": 540,
+        "unique": 1
+      },
+      {
+        "name": "resultCode",
+        "type": "varchar(50)",
+        "nonEmpty": 36,
+        "characters": 277,
+        "unique": 10
+      },
+      {
+        "name": "resultTitle",
+        "type": "varchar(100)",
+        "nonEmpty": 36,
+        "characters": 540,
+        "unique": 1
+      },
+      {
+        "name": "resultText",
+        "type": "text",
+        "nonEmpty": 36,
+        "characters": 6258,
+        "unique": 10
+      },
+      {
+        "name": "stateBefore",
+        "type": "longtext",
+        "nonEmpty": 36,
+        "characters": 468,
+        "unique": 9
+      },
+      {
+        "name": "stateAfter",
+        "type": "longtext",
+        "nonEmpty": 36,
+        "characters": 468,
+        "unique": 9
+      },
+      {
+        "name": "metadata",
+        "type": "longtext",
+        "nonEmpty": 36,
+        "characters": 8479,
+        "unique": 20
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 36,
+        "characters": 684,
+        "unique": 36
+      }
+    ]
+  },
+  "tblCharacterSpecialisation": {
+    "rows": 56,
+    "columns": []
+  },
+  "tblCharacterTie": {
+    "rows": 124,
+    "columns": [
+      {
+        "name": "relationType",
+        "type": "enum('superior','dependent','landlord','household_staff','spouse','ally','adversary','person_of_interest')",
+        "nonEmpty": 124,
+        "characters": 1213,
+        "unique": 7
+      },
+      {
+        "name": "description",
+        "type": "varchar(255)",
+        "nonEmpty": 93,
+        "characters": 6411,
+        "unique": 93
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 124,
+        "characters": 2356,
+        "unique": 124
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 124,
+        "characters": 2356,
+        "unique": 124
+      }
+    ]
+  },
+  "tblCompany": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "companyName",
+        "type": "varchar(255)",
+        "nonEmpty": 13,
+        "characters": 154,
+        "unique": 13
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "nonEmpty": 2,
+        "characters": 3821,
+        "unique": 2
+      },
+      {
+        "name": "foundationDate",
+        "type": "date",
+        "nonEmpty": 13,
+        "characters": 130,
+        "unique": 11
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 13
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 8
+      }
+    ]
+  },
+  "tblCompanyAnonymousShares": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 7
+      }
+    ]
+  },
+  "tblCompanyFoundationSnapshot": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "foundationDate",
+        "type": "date",
+        "nonEmpty": 13,
+        "characters": 130,
+        "unique": 11
+      },
+      {
+        "name": "sourceCode",
+        "type": "varchar(20)",
+        "nonEmpty": 13,
+        "characters": 141,
+        "unique": 2
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 2
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 13,
+        "characters": 247,
+        "unique": 8
+      }
+    ]
+  },
+  "tblCompanyPersonnel": {
+    "rows": 4,
+    "columns": [
+      {
+        "name": "importance",
+        "type": "enum('Negligible','Low','Moderate','High','Critical')",
+        "nonEmpty": 4,
+        "characters": 32,
+        "unique": 3
+      },
+      {
+        "name": "functionDescription",
+        "type": "text",
+        "nonEmpty": 1,
+        "characters": 29,
+        "unique": 1
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 2
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 2
+      }
+    ]
+  },
+  "tblCompanyPersonnelSkill": {
+    "rows": 3,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 3,
+        "characters": 57,
+        "unique": 2
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 3,
+        "characters": 57,
+        "unique": 2
+      }
+    ]
+  },
+  "tblCompanyPersonnelSkillSpecialisation": {
+    "rows": 3,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 3,
+        "characters": 57,
+        "unique": 2
+      }
+    ]
+  },
+  "tblCompanyQuarter": {
+    "rows": 910,
+    "columns": [
+      {
+        "name": "updatedAt",
+        "type": "timestamp",
+        "nonEmpty": 910,
+        "characters": 17290,
+        "unique": 36
+      }
+    ]
+  },
+  "tblCompanyQuarterEvent": {
+    "rows": 17,
+    "columns": [
+      {
+        "name": "description",
+        "type": "text",
+        "nonEmpty": 17,
+        "characters": 8969,
+        "unique": 17
+      }
+    ]
+  },
+  "tblCompanyShareCompanyHolding": {
+    "rows": 1,
+    "columns": []
+  },
+  "tblCompanyShareCompanyTransaction": {
+    "rows": 1,
+    "columns": [
+      {
+        "name": "requestKey",
+        "type": "varchar(128)",
+        "nonEmpty": 1,
+        "characters": 36,
+        "unique": 1
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 1,
+        "characters": 19,
+        "unique": 1
+      }
+    ]
+  },
+  "tblCompanyShareHolding": {
+    "rows": 14,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 14,
+        "characters": 266,
+        "unique": 5
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 14,
+        "characters": 266,
+        "unique": 5
+      }
+    ]
+  },
+  "tblCompanyShareTransaction": {
+    "rows": 17,
+    "columns": [
+      {
+        "name": "operationCode",
+        "type": "varchar(64)",
+        "nonEmpty": 17,
+        "characters": 271,
+        "unique": 3
+      },
+      {
+        "name": "requestKey",
+        "type": "varchar(128)",
+        "nonEmpty": 17,
+        "characters": 612,
+        "unique": 17
+      },
+      {
+        "name": "detailsJson",
+        "type": "mediumtext",
+        "nonEmpty": 16,
+        "characters": 4993,
+        "unique": 15
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 17,
+        "characters": 323,
+        "unique": 17
+      }
+    ]
+  },
+  "tblCompanySnapshot": {
+    "rows": 12,
+    "columns": [
+      {
+        "name": "appliedAction",
+        "type": "varchar(32)",
+        "nonEmpty": 12,
+        "characters": 59,
+        "unique": 2
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 12,
+        "characters": 228,
+        "unique": 12
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 12,
+        "characters": 228,
+        "unique": 11
+      }
+    ]
+  },
+  "tblCompanySnapshotCompanyPayout": {
+    "rows": 0,
+    "columns": []
+  },
+  "tblCompanySnapshotPayout": {
+    "rows": 0,
+    "columns": []
+  },
+  "tblCompanyValueHistory": {
+    "rows": 65,
+    "columns": [
+      {
+        "name": "reasonCode",
+        "type": "varchar(64)",
+        "nonEmpty": 65,
+        "characters": 1248,
+        "unique": 13
+      },
+      {
+        "name": "detailsJson",
+        "type": "mediumtext",
+        "nonEmpty": 63,
+        "characters": 9641,
+        "unique": 53
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 65,
+        "characters": 1235,
+        "unique": 65
+      }
+    ]
+  },
+  "tblEvent": {
+    "rows": 19,
+    "columns": [
+      {
+        "name": "title",
+        "type": "varchar(50)",
+        "nonEmpty": 19,
+        "characters": 159,
+        "unique": 19
+      },
+      {
+        "name": "type",
+        "type": "set('weekend','mini')",
+        "nonEmpty": 19,
+        "characters": 121,
+        "unique": 2
+      },
+      {
+        "name": "description",
+        "type": "varchar(255)",
+        "nonEmpty": 5,
+        "characters": 517,
+        "unique": 5
+      },
+      {
+        "name": "venue",
+        "type": "varchar(50)",
+        "nonEmpty": 18,
+        "characters": 329,
+        "unique": 14
+      },
+      {
+        "name": "dateStart",
+        "type": "date",
+        "nonEmpty": 19,
+        "characters": 190,
+        "unique": 19
+      },
+      {
+        "name": "dateEnd",
+        "type": "date",
+        "nonEmpty": 19,
+        "characters": 190,
+        "unique": 19
+      }
+    ]
+  },
+  "tblLanguage": {
+    "rows": 18,
+    "columns": [
+      {
+        "name": "name",
+        "type": "varchar(120)",
+        "nonEmpty": 18,
+        "characters": 132,
+        "unique": 18
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 18,
+        "characters": 342,
+        "unique": 18
+      }
+    ]
+  },
+  "tblLegacyShareMigrationSource": {
+    "rows": 10,
+    "columns": [
+      {
+        "name": "shareClass",
+        "type": "char(1)",
+        "nonEmpty": 10,
+        "characters": 10,
+        "unique": 2
+      },
+      {
+        "name": "legacyTraitCreatedAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 10
+      },
+      {
+        "name": "legacyTraitUpdatedAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 10
+      },
+      {
+        "name": "legacyCompanyLinkCreatedAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 10
+      },
+      {
+        "name": "legacyCompanyLinkUpdatedAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 10
+      },
+      {
+        "name": "capturedAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 1
+      }
+    ]
+  },
+  "tblLegacyShareOrphanArchive": {
+    "rows": 14,
+    "columns": [
+      {
+        "name": "legacyTraitCreatedAt",
+        "type": "datetime",
+        "nonEmpty": 14,
+        "characters": 266,
+        "unique": 14
+      },
+      {
+        "name": "legacyTraitUpdatedAt",
+        "type": "datetime",
+        "nonEmpty": 14,
+        "characters": 266,
+        "unique": 14
+      },
+      {
+        "name": "legacyCompanyLinkCreatedAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 4
+      },
+      {
+        "name": "legacyCompanyLinkUpdatedAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 4
+      },
+      {
+        "name": "capturedAt",
+        "type": "datetime",
+        "nonEmpty": 14,
+        "characters": 266,
+        "unique": 1
+      }
+    ]
+  },
+  "tblLinkCharacterSkill": {
+    "rows": 449,
+    "columns": []
+  },
+  "tblLinkCharacterTrait": {
+    "rows": 297,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 297,
+        "characters": 5643,
+        "unique": 297
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 297,
+        "characters": 5643,
+        "unique": 297
+      }
+    ]
+  },
+  "tblLinkCharacterTraitCompany": {
+    "rows": 10,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 10
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 10,
+        "characters": 190,
+        "unique": 10
+      }
+    ]
+  },
+  "tblLinkEventCharacter": {
+    "rows": 101,
+    "columns": []
+  },
+  "tblLinkEventUser": {
+    "rows": 325,
+    "columns": []
+  },
+  "tblLinkSkillType": {
+    "rows": 97,
+    "columns": []
+  },
+  "tblResearchAction": {
+    "rows": 17,
+    "columns": [
+      {
+        "name": "actionCode",
+        "type": "varchar(32)",
+        "nonEmpty": 17,
+        "characters": 198,
+        "unique": 5
+      },
+      {
+        "name": "occurredAt",
+        "type": "datetime(6)",
+        "nonEmpty": 17,
+        "characters": 442,
+        "unique": 10
+      }
+    ]
+  },
+  "tblResearchAudit": {
+    "rows": 49,
+    "columns": [
+      {
+        "name": "actionCode",
+        "type": "varchar(50)",
+        "nonEmpty": 49,
+        "characters": 538,
+        "unique": 8
+      },
+      {
+        "name": "detailsJson",
+        "type": "mediumtext",
+        "nonEmpty": 49,
+        "characters": 10722,
+        "unique": 49
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime(6)",
+        "nonEmpty": 49,
+        "characters": 1274,
+        "unique": 49
+      }
+    ]
+  },
+  "tblResearchBonus": {
+    "rows": 2,
+    "columns": []
+  },
+  "tblResearchChallenge": {
+    "rows": 2,
+    "columns": [
+      {
+        "name": "title",
+        "type": "varchar(200)",
+        "nonEmpty": 2,
+        "characters": 50,
+        "unique": 2
+      },
+      {
+        "name": "description",
+        "type": "mediumtext",
+        "nonEmpty": 1,
+        "characters": 120,
+        "unique": 1
+      }
+    ]
+  },
+  "tblResearchChallengeEvent": {
+    "rows": 2,
+    "columns": []
+  },
+  "tblResearchDiscovery": {
+    "rows": 2,
+    "columns": [
+      {
+        "name": "title",
+        "type": "varchar(200)",
+        "nonEmpty": 2,
+        "characters": 23,
+        "unique": 2
+      },
+      {
+        "name": "description",
+        "type": "mediumtext",
+        "nonEmpty": 2,
+        "characters": 229,
+        "unique": 2
+      },
+      {
+        "name": "qrToken",
+        "type": "char(64)",
+        "nonEmpty": 2,
+        "characters": 128,
+        "unique": 2
+      },
+      {
+        "name": "progressionMode",
+        "type": "varchar(16)",
+        "nonEmpty": 2,
+        "characters": 16,
+        "unique": 1
+      }
+    ]
+  },
+  "tblResearchEvent": {
+    "rows": 19,
+    "columns": [
+      {
+        "name": "timeZone",
+        "type": "varchar(64)",
+        "nonEmpty": 19,
+        "characters": 285,
+        "unique": 1
+      }
+    ]
+  },
+  "tblResearchFound": {
+    "rows": 2,
+    "columns": [
+      {
+        "name": "foundAt",
+        "type": "datetime(6)",
+        "nonEmpty": 2,
+        "characters": 52,
+        "unique": 2
+      },
+      {
+        "name": "completedAt",
+        "type": "datetime(6)",
+        "nonEmpty": 2,
+        "characters": 52,
+        "unique": 2
+      }
+    ]
+  },
+  "tblResearchLock": {
+    "rows": 1,
+    "columns": []
+  },
+  "tblResearchMedia": {
+    "rows": 0,
+    "columns": []
+  },
+  "tblResearchRoute": {
+    "rows": 15,
+    "columns": [
+      {
+        "name": "kind",
+        "type": "varchar(24)",
+        "nonEmpty": 15,
+        "characters": 135,
+        "unique": 3
+      }
+    ]
+  },
+  "tblResearchRouteCharacter": {
+    "rows": 4,
+    "columns": []
+  },
+  "tblResearchSharedProgress": {
+    "rows": 0,
+    "columns": []
+  },
+  "tblResearchStep": {
+    "rows": 13,
+    "columns": [
+      {
+        "name": "content",
+        "type": "mediumtext",
+        "nonEmpty": 12,
+        "characters": 1597,
+        "unique": 10
+      },
+      {
+        "name": "conditionsJson",
+        "type": "mediumtext",
+        "nonEmpty": 13,
+        "characters": 26,
+        "unique": 1
+      }
+    ]
+  },
+  "tblResearchStepProgress": {
+    "rows": 5,
+    "columns": [
+      {
+        "name": "shownAt",
+        "type": "datetime(6)",
+        "nonEmpty": 5,
+        "characters": 130,
+        "unique": 5
+      },
+      {
+        "name": "completedAt",
+        "type": "datetime(6)",
+        "nonEmpty": 5,
+        "characters": 130,
+        "unique": 5
+      }
+    ]
+  },
+  "tblResearchTimer": {
+    "rows": 0,
+    "columns": []
+  },
+  "tblSchemaMigration": {
+    "rows": 25,
+    "columns": [
+      {
+        "name": "migrationCode",
+        "type": "varchar(120)",
+        "nonEmpty": 25,
+        "characters": 675,
+        "unique": 25
+      },
+      {
+        "name": "description",
+        "type": "varchar(255)",
+        "nonEmpty": 25,
+        "characters": 1353,
+        "unique": 25
+      },
+      {
+        "name": "appliedAt",
+        "type": "datetime",
+        "nonEmpty": 25,
+        "characters": 475,
+        "unique": 15
+      }
+    ]
+  },
+  "tblShareDomainCode": {
+    "rows": 4,
+    "columns": [
+      {
+        "name": "code",
+        "type": "varchar(80)",
+        "nonEmpty": 4,
+        "characters": 102,
+        "unique": 4
+      },
+      {
+        "name": "entityType",
+        "type": "enum('skill','skill_specialisation','trait')",
+        "nonEmpty": 4,
+        "characters": 35,
+        "unique": 3
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 4,
+        "characters": 76,
+        "unique": 2
+      }
+    ]
+  },
+  "tblShareOffer": {
+    "rows": 6,
+    "columns": [
+      {
+        "name": "sourceCode",
+        "type": "enum('search','shared_search','private_board','director_grant','holder_sale')",
+        "nonEmpty": 6,
+        "characters": 64,
+        "unique": 2
+      },
+      {
+        "name": "statusCode",
+        "type": "enum('open','filled','cancelled','expired')",
+        "nonEmpty": 6,
+        "characters": 29,
+        "unique": 2
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 6,
+        "characters": 114,
+        "unique": 6
+      },
+      {
+        "name": "updatedAt",
+        "type": "datetime",
+        "nonEmpty": 6,
+        "characters": 114,
+        "unique": 6
+      }
+    ]
+  },
+  "tblShareOfferRecipient": {
+    "rows": 6,
+    "columns": [
+      {
+        "name": "recipientKind",
+        "type": "enum('discoverer','shared','private')",
+        "nonEmpty": 6,
+        "characters": 48,
+        "unique": 2
+      },
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 6,
+        "characters": 114,
+        "unique": 6
+      }
+    ]
+  },
+  "tblShareSearch": {
+    "rows": 1,
+    "columns": [
+      {
+        "name": "createdAt",
+        "type": "datetime",
+        "nonEmpty": 1,
+        "characters": 19,
+        "unique": 1
+      },
+      {
+        "name": "lastCheckedAt",
+        "type": "datetime",
+        "nonEmpty": 1,
+        "characters": 19,
+        "unique": 1
+      }
+    ]
+  },
+  "tblShareSearchAssessment": {
+    "rows": 5,
+    "columns": [
+      {
+        "name": "assessedAt",
+        "type": "datetime",
+        "nonEmpty": 5,
+        "characters": 95,
+        "unique": 3
+      }
+    ]
+  },
+  "tblSkill": {
+    "rows": 60,
+    "columns": [
+      {
+        "name": "name",
+        "type": "varchar(30)",
+        "nonEmpty": 60,
+        "characters": 654,
+        "unique": 60
+      },
+      {
+        "name": "description",
+        "type": "varchar(1200)",
+        "nonEmpty": 60,
+        "characters": 15236,
+        "unique": 60
+      },
+      {
+        "name": "beginner",
+        "type": "varchar(1200)",
+        "nonEmpty": 60,
+        "characters": 8809,
+        "unique": 60
+      },
+      {
+        "name": "professional",
+        "type": "varchar(1200)",
+        "nonEmpty": 60,
+        "characters": 10364,
+        "unique": 58
+      },
+      {
+        "name": "master",
+        "type": "varchar(1200)",
+        "nonEmpty": 60,
+        "characters": 12065,
+        "unique": 60
+      },
+      {
+        "name": "visibility",
+        "type": "enum('public','secret')",
+        "nonEmpty": 60,
+        "characters": 360,
+        "unique": 2
+      }
+    ]
+  },
+  "tblSkillSpecialisation": {
+    "rows": 140,
+    "columns": [
+      {
+        "name": "name",
+        "type": "varchar(100)",
+        "nonEmpty": 140,
+        "characters": 1781,
+        "unique": 139
+      },
+      {
+        "name": "kind",
+        "type": "enum('discipline','specialisation')",
+        "nonEmpty": 140,
+        "characters": 1928,
+        "unique": 2
+      }
+    ]
+  },
+  "tblSkillType": {
+    "rows": 16,
+    "columns": [
+      {
+        "name": "code",
+        "type": "varchar(50)",
+        "nonEmpty": 16,
+        "characters": 158,
+        "unique": 16
+      },
+      {
+        "name": "name",
+        "type": "varchar(50)",
+        "nonEmpty": 16,
+        "characters": 158,
+        "unique": 16
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "nonEmpty": 11,
+        "characters": 949,
+        "unique": 11
+      }
+    ]
+  },
+  "tblTrait": {
+    "rows": 216,
+    "columns": [
+      {
+        "name": "name",
+        "type": "varchar(150)",
+        "nonEmpty": 216,
+        "characters": 3373,
+        "unique": 180
+      },
+      {
+        "name": "class",
+        "type": "enum('upper class','middle class','lower class','all')",
+        "nonEmpty": 216,
+        "characters": 2414,
+        "unique": 4
+      },
+      {
+        "name": "type",
+        "type": "enum('status','profession','quality')",
+        "nonEmpty": 216,
+        "characters": 1745,
+        "unique": 3
+      },
+      {
+        "name": "rankType",
+        "type": "enum('range_signed','range_positive','singular')",
+        "nonEmpty": 216,
+        "characters": 2544,
+        "unique": 3
+      },
+      {
+        "name": "traitGroup",
+        "type": "varchar(100)",
+        "nonEmpty": 216,
+        "characters": 2423,
+        "unique": 26
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "nonEmpty": 216,
+        "characters": 41666,
+        "unique": 94
+      }
+    ]
+  },
+  "tblTraitFlag": {
+    "rows": 11,
+    "columns": [
+      {
+        "name": "flagKey",
+        "type": "varchar(120)",
+        "nonEmpty": 11,
+        "characters": 198,
+        "unique": 5
+      }
+    ]
+  },
+  "tblTraitShareAllowedCompanyType": {
+    "rows": 20,
+    "columns": [
+      {
+        "name": "companyTypeKey",
+        "type": "varchar(64)",
+        "nonEmpty": 20,
+        "characters": 228,
+        "unique": 5
+      }
+    ]
+  },
+  "tblTraitShareDefinition": {
+    "rows": 20,
+    "columns": [
+      {
+        "name": "shareClass",
+        "type": "char(1)",
+        "nonEmpty": 20,
+        "characters": 20,
+        "unique": 2
+      },
+      {
+        "name": "displayUnit",
+        "type": "varchar(32)",
+        "nonEmpty": 20,
+        "characters": 200,
+        "unique": 1
+      }
+    ]
+  },
+  "tblTraitTrack": {
+    "rows": 2,
+    "columns": [
+      {
+        "name": "trackKey",
+        "type": "varchar(120)",
+        "nonEmpty": 2,
+        "characters": 42,
+        "unique": 2
+      },
+      {
+        "name": "label",
+        "type": "varchar(120)",
+        "nonEmpty": 2,
+        "characters": 22,
+        "unique": 2
+      },
+      {
+        "name": "sheetZone",
+        "type": "varchar(32)",
+        "nonEmpty": 2,
+        "characters": 8,
+        "unique": 1
+      },
+      {
+        "name": "leftModuleLabel",
+        "type": "varchar(120)",
+        "nonEmpty": 2,
+        "characters": 12,
+        "unique": 2
+      }
+    ]
+  },
+  "tblTraitTrackStep": {
+    "rows": 8,
+    "columns": []
+  },
+  "tblUser": {
+    "rows": 92,
+    "columns": [
+      {
+        "name": "username",
+        "type": "varchar(100)",
+        "nonEmpty": 92,
+        "characters": 875,
+        "unique": 92
+      },
+      {
+        "name": "firstName",
+        "type": "varchar(50)",
+        "nonEmpty": 89,
+        "characters": 452,
+        "unique": 75
+      },
+      {
+        "name": "lastName",
+        "type": "varchar(50)",
+        "nonEmpty": 89,
+        "characters": 749,
+        "unique": 84
+      },
+      {
+        "name": "role",
+        "type": "set('participant','director','administrator')",
+        "nonEmpty": 92,
+        "characters": 996,
+        "unique": 3
+      },
+      {
+        "name": "registration",
+        "type": "datetime",
+        "nonEmpty": 92,
+        "characters": 1748,
+        "unique": 91
+      }
+    ]
+  }
+}

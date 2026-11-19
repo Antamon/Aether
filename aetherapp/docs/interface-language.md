@@ -19,12 +19,11 @@ profielvoorkeur. Ze wijzigt het WordPress-profiel niet. Het wisselen van taal
 herlaadt de pagina op dezelfde URL, zodat ook bij aanvang samengestelde schermen
 de juiste taal gebruiken. Bewaar lopende bewerkingen daarom vóór het wisselen.
 
-De catalogus bevat alleen interfacecopy. Namen, evenementtitels, vaardigheden,
-eigenschappen, personageachtergronden, bedrijfsbeschrijvingen, onderzoeksteksten
-en andere ingevoerde spelinhoud worden niet automatisch vertaald. Dropdowns
-behouden hun oorspronkelijke `value`; alleen de vaste zichtbare labels worden
-vertaald. Er is geen vertaaldienst, databankmigratie of Node.js-runtime op de
-hosting nodig. Onbekende teksten vallen terug op hun oorspronkelijke tekst.
+De catalogus bevat alleen interfacecopy. Spelinhoud gebruikt de afzonderlijke
+voorziening uit [content-language.md](content-language.md), met dezelfde
+taalkeuze. Dropdowns en bewerkformulieren behouden hun oorspronkelijke waarden.
+Op de hosting blijft alleen PHP nodig. De optionele Google-koppeling staat beschreven
+in [google-translation.md](google-translation.md).
 
 ## Onderhoud
 

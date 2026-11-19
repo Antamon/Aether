@@ -46,7 +46,7 @@ const COMPANY_PROFITABILITY_RANGES = [
     {
         min: 2,
         max: 4,
-        message: "Goed boerend bedrijf. Duidelijk winstgevend met goede marges. Efficiente werking, stabiele vraag en ruimte voor investeringen of uitbreiding."
+        message: aetherT("Goed boerend bedrijf. Duidelijk winstgevend met goede marges. Efficiente werking, stabiele vraag en ruimte voor investeringen of uitbreiding.")
     },
     {
         min: 5,
@@ -312,7 +312,7 @@ async function initCompanyPage() {
         if (canManage && params.get("new") === "1") startCreatingCompany();
     } catch (err) {
         console.error("Fout bij initialiseren bedrijvenpagina:", err);
-        window.location.href = "index.html";
+        aetherHandlePageLoadError(err);
     }
 }
 
@@ -1849,7 +1849,7 @@ function renderCompanyPersonnel(company) {
         if (professionLabel) {
             const subtitle = document.createElement("p");
             subtitle.className = "company-personnel-entry-subtitle";
-            subtitle.textContent = professionLabel;
+            subtitle.textContent = aetherT(professionLabel);
             titleWrap.appendChild(subtitle);
         }
         if (entry?.isCompanyLeader) {

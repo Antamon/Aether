@@ -203,6 +203,10 @@
     "nl": "Een derde",
     "en": "A third party"
   },
+  "A thriving business. Clearly profitable, with healthy margins. Efficient operations, steady demand and room for investment or expansion.": {
+    "nl": "Goed boerend bedrijf. Duidelijk winstgevend met goede marges. Efficiente werking, stabiele vraag en ruimte voor investeringen of uitbreiding.",
+    "en": "A thriving business. Clearly profitable, with healthy margins. Efficient operations, steady demand and room for investment or expansion."
+  },
   "A title or skill name is too long for a QR card. Shorten it and try again.": {
     "nl": "Een titel of vaardigheidsnaam is te lang voor een QR-kaart. Verkort deze tekst en probeer opnieuw.",
     "en": "A title or skill name is too long for a QR card. Shorten it and try again."
@@ -468,6 +472,7 @@
   "Alleen administrators kunnen categorieën beheren.": "Only administrators can manage categories.",
   "Alleen admins en directors kunnen Onderzoek beheren.": "Only administrators and directors can manage Research.",
   "Alleen een actief personage kan aandelen verhandelen.": "Only an active character can trade shares.",
+  "Alleen lange teksten": "Long texts only",
   "Ally": {
     "nl": "Bondgenoot",
     "en": "Ally"
@@ -650,6 +655,7 @@
   "Bedrijfsgegevens": "Company details",
   "Bedrijfsgegevens opgeslagen.": "Company details saved.",
   "Bedrijfsinformatie laden…": "Loading company information…",
+  "Bedrijfsleider": "Company manager",
   "Bedrijfsleider · basisloon Fr {0}/maand · {1} statuspunten · personeelsvoorwaarde {2}": "Company manager · base salary Fr {0}/month · {1} status points · staff requirement {2}",
   "Bedrijfslogo": "Company logo",
   "Bedrijfslogo opgeslagen.": "Company logo saved.",
@@ -736,6 +742,7 @@
   "Bonus-specialisaties": "Bonus specialisations",
   "Bonus-specialisaties (optioneel)": "Bonus specialisations (optional)",
   "Bovenklasse": "Upper class",
+  "Brontaal": "Source language",
   "Bulleted list": {
     "nl": "Ongenummerde lijst",
     "en": "Bulleted list"
@@ -1029,6 +1036,10 @@
     "nl": "Kies een snapshot.",
     "en": "Choose a snapshot."
   },
+  "Choose a text": {
+    "nl": "Kies een tekst",
+    "en": "Choose a text"
+  },
   "Choose a trait": {
     "nl": "Kies een eigenschap",
     "en": "Choose a trait"
@@ -1249,6 +1260,10 @@
   "Company logo saved.": {
     "nl": "Bedrijfslogo opgeslagen.",
     "en": "Company logo saved."
+  },
+  "Company manager": {
+    "nl": "Bedrijfsleider",
+    "en": "Company manager"
   },
   "Company manager · base salary Fr {0}/month · {1} status points · staff requirement {2}": {
     "nl": "Bedrijfsleider · basisloon Fr {0}/maand · {1} statuspunten · personeelsvoorwaarde {2}",
@@ -1715,6 +1730,7 @@
   "De server gaf geen gesaniteerde diary terug.": "The server did not return a sanitised diary entry.",
   "De server gaf geen gesaniteerde rich text terug.": "The server did not return sanitised rich text.",
   "De verkoper bezit niet genoeg aandelen.": "The seller does not own enough shares.",
+  "De vertaling is ondertussen gewijzigd. Open de tekst opnieuw.": "The translation has changed. Reopen the text.",
   "De verwerkte afbeelding is groter dan 8 MB.": "The processed image exceeds 8 MB.",
   "De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst.": "The stock or offer changed. The data has been refreshed.",
   "De voorraad veranderde gelijktijdig. Probeer opnieuw.": "The stock changed during the operation. Try again.",
@@ -1822,6 +1838,7 @@
   "Deze poging leverde nog geen nieuwe of eerder vrijgespeelde roddels op.": "This attempt revealed no new or previously discovered rumours.",
   "Deze snapshot verwijderen en het bedrag terugboeken op de bankrekening?": "Delete this snapshot and reverse the amount on the bank account?",
   "Deze stap en eventuele volgende stappen worden verwijderd. De vorige stap krijgt geen vervolg meer; haar timers en datums worden gewist.": "This step and all following steps will be deleted. The previous step will have no follow-up; its timers and dates will be cleared.",
+  "Deze tekst is te lang voor automatische vertaling. Voer de vertaling handmatig in.": "This text is too long for automatic translation. Enter a translation manually.",
   "deze tie": "this relationship",
   "Deze verrichting verwijderen en het bedrag terugboeken?": "Delete this transaction and reverse the amount?",
   "Deze voorwaarden maken een cirkel tussen discoveries.": "These conditions create a circular dependency between discoveries.",
@@ -2072,6 +2089,10 @@
   "Enter a name for the new specialisation.": {
     "nl": "Vul een naam in voor de nieuwe specialisatie.",
     "en": "Enter a name for the new specialisation."
+  },
+  "Enter a translation.": {
+    "nl": "Vul een vertaling in.",
+    "en": "Enter a translation."
   },
   "Enter a valid amount to withdraw from the investment portfolio.": {
     "nl": "Geef een geldig bedrag op om uit de effectenportefeuille op te nemen.",
@@ -2425,6 +2446,7 @@
   "Geen snapshot beschikbaar.": "No snapshot available.",
   "Geen snapshots met vrije aandelen beschikbaar.": "No snapshots with available shares.",
   "Geen tekst beschikbaar.": "No text available.",
+  "Geen teksten beschikbaar op deze pagina.": "No texts available on this page.",
   "Geen tijd": "No timer",
   "Geen toegang tot de camera. Geef cameratoestemming of kies een foto van de QR-code.": "No camera access. Allow camera access or select a photo of the QR code.",
   "Geen toegang tot dit bedrijf.": "You do not have access to this company.",
@@ -2463,8 +2485,14 @@
     "nl": "Doelen",
     "en": "Goals"
   },
+  "Goed boerend bedrijf. Duidelijk winstgevend met goede marges. Efficiente werking, stabiele vraag en ruimte voor investeringen of uitbreiding.": "A thriving business. Clearly profitable, with healthy margins. Efficient operations, steady demand and room for investment or expansion.",
   "Goedgekeurd": "Approved",
   "Goedkeuren": "Approve",
+  "Google is nog niet ingesteld. Handmatig vertalen blijft mogelijk.": "Google is not configured yet. Manual translation remains available.",
+  "Google is not configured yet. Manual translation remains available.": {
+    "nl": "Google is nog niet ingesteld. Handmatig vertalen blijft mogelijk.",
+    "en": "Google is not configured yet. Manual translation remains available."
+  },
   "Gossip voor \"{0}\" is nog niet ingevuld. Alleen een admin of director kan de gossip van deze figurantenrol aanpassen.": "Rumours for \"{0}\" have not been entered yet. Only an administrator or director can edit this extra role's rumours.",
   "Grafiek": "Chart",
   "Grafiek bewerken": "Edit chart",
@@ -2482,6 +2510,7 @@
     "nl": "Gegroepeerd",
     "en": "Grouped"
   },
+  "Handmatig": "Manual",
   "Heading level 4": {
     "nl": "Kopniveau 4",
     "en": "Heading level 4"
@@ -2658,6 +2687,10 @@
     "nl": "Onvoldoende ervaringspunten voor een extra specialisatie.",
     "en": "Insufficient experience points for another specialisation."
   },
+  "Insufficient translation allowance": {
+    "nl": "Onvoldoende vertaaltegoed",
+    "en": "Insufficient translation allowance"
+  },
   "Intrekken": "Revoke",
   "Intrinsic portfolio value": {
     "nl": "Intrinsieke bezitswaarde",
@@ -2708,6 +2741,14 @@
   "Invalid times.": {
     "nl": "Ongeldige tijdstippen.",
     "en": "Invalid times."
+  },
+  "Invalid translation input.": {
+    "nl": "Ongeldige vertaalinvoer.",
+    "en": "Invalid translation input."
+  },
+  "Invalid translation operation.": {
+    "nl": "Ongeldige vertaalhandeling.",
+    "en": "Invalid translation operation."
   },
   "Investigating company…": {
     "nl": "Bedrijf onderzoeken…",
@@ -2822,6 +2863,7 @@
   "Kies een passende specialisatie.": "Choose an appropriate specialisation.",
   "Kies een personage": "Choose a character",
   "Kies een snapshot.": "Choose a snapshot.",
+  "Kies een tekst": "Choose a text",
   "Kies een vaardigheid": "Choose a skill",
   "Kies een vaardigheid om de gekoppelde personages te zien.": "Choose a skill to view linked characters.",
   "Kies een vaardigheid om specialisaties te beheren.": "Choose a skill to manage specialisations.",
@@ -3060,6 +3102,10 @@
   "Logo laden...": "Loading logo...",
   "Logo opladen": "Upload logo",
   "Logo verwijderen": "Remove logo",
+  "Long texts only": {
+    "nl": "Alleen lange teksten",
+    "en": "Long texts only"
+  },
   "Loonsverhoging": "Pay rise",
   "Loonsverhoging (%)": "Pay rise (%)",
   "Loonsverhoging gekoppeld bedrijf": "Linked company pay rise",
@@ -3105,6 +3151,10 @@
     "nl": "Vaardigheden beheren",
     "en": "Manage skills"
   },
+  "Manage translations": {
+    "nl": "Vertalingen beheren",
+    "en": "Manage translations"
+  },
   "Management": {
     "nl": "Beheer",
     "en": "Management"
@@ -3116,6 +3166,10 @@
   "Manager's skill level": {
     "nl": "Vaardigheidsniveau beheerder",
     "en": "Manager's skill level"
+  },
+  "Manual": {
+    "nl": "Handmatig",
+    "en": "Manual"
   },
   "Marital status": {
     "nl": "Burgelijke staat",
@@ -3629,6 +3683,10 @@
     "nl": "Geen tekst beschikbaar.",
     "en": "No text available."
   },
+  "No texts available on this page.": {
+    "nl": "Geen teksten beschikbaar op deze pagina.",
+    "en": "No texts available on this page."
+  },
   "No ties yet.": {
     "nl": "Nog geen relaties.",
     "en": "No ties yet."
@@ -3818,6 +3876,8 @@
   "Ongeldige invoer.": "Invalid input.",
   "Ongeldige of dubbele specialisatie.": "Invalid or duplicate specialisation.",
   "Ongeldige tijdstippen.": "Invalid times.",
+  "Ongeldige vertaalhandeling.": "Invalid translation operation.",
+  "Ongeldige vertaalinvoer.": "Invalid translation input.",
   "Ongeldige voortgang.": "Invalid progression mode.",
   "Ongeldige voorwaarde.": "Invalid condition.",
   "Ongeldige voorwaarden.": "Invalid conditions.",
@@ -3850,7 +3910,9 @@
   "Onverwacht veld: {0}.": "Unexpected field: {0}.",
   "Onverwachte invoervelden.": "Unexpected input fields.",
   "Onvoldoende ervaringspunten voor een extra specialisatie.": "Insufficient experience points for another specialisation.",
+  "Onvoldoende vertaaltegoed": "Insufficient translation allowance",
   "Onvoldoende vrije aandelen.": "Insufficient available shares.",
+  "Oorspronkelijke tekst": "Original text",
   "Op dit moment ben je dakloos.": "You are currently homeless.",
   "Opdracht bezig": "Task in progress",
   "Open character": {
@@ -3861,6 +3923,7 @@
     "nl": "Code openen",
     "en": "Open code"
   },
+  "Open de oorspronkelijke pagina opnieuw om deze tekst te vertalen.": "Reopen the original page to translate this text.",
   "Open or close {0}": {
     "nl": "{0} openen of sluiten",
     "en": "Open or close {0}"
@@ -3893,6 +3956,10 @@
   "Or select a photo": {
     "nl": "Of kies een foto",
     "en": "Or select a photo"
+  },
+  "Original text": {
+    "nl": "Oorspronkelijke tekst",
+    "en": "Original text"
   },
   "other": {
     "nl": "Anders",
@@ -4316,6 +4383,10 @@
   "Rendementbedrag": "Return amount",
   "Rendementen": "Returns",
   "Rendementspercentage": "Return percentage",
+  "Reopen the original page to translate this text.": {
+    "nl": "Open de oorspronkelijke pagina opnieuw om deze tekst te vertalen.",
+    "en": "Reopen the original page to translate this text."
+  },
   "Required level": {
     "nl": "Vereist niveau",
     "en": "Required level"
@@ -4494,6 +4565,10 @@
   "Search share market": {
     "nl": "Aandelenmarkt onderzoeken",
     "en": "Search share market"
+  },
+  "Search text": {
+    "nl": "Tekst zoeken",
+    "en": "Search text"
   },
   "Search the stock market": {
     "nl": "Aandelenmarkt doorzoeken",
@@ -4798,6 +4873,10 @@
     "nl": "Herkomst",
     "en": "Source"
   },
+  "Source language": {
+    "nl": "Brontaal",
+    "en": "Source language"
+  },
   "Spaarder": "Saver",
   "Speciaal": "Special",
   "Special": {
@@ -5019,10 +5098,16 @@
     "nl": "Opdracht bezig",
     "en": "Task in progress"
   },
+  "Tekst op deze pagina": "Text on this page",
+  "Tekst zoeken": "Search text",
   "Terug": "Back",
   "Text input with dropdown": {
     "nl": "Tekstveld met keuzelijst",
     "en": "Text input with dropdown"
+  },
+  "Text on this page": {
+    "nl": "Tekst op deze pagina",
+    "en": "Text on this page"
   },
   "The amount may contain at most {0} decimal places.": {
     "nl": "Het bedrag mag maximaal {0} decimalen bevatten.",
@@ -5164,6 +5249,10 @@
     "nl": "De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst.",
     "en": "The stock or offer changed. The data has been refreshed."
   },
+  "The translation has changed. Reopen the text.": {
+    "nl": "De vertaling is ondertussen gewijzigd. Open de tekst opnieuw.",
+    "en": "The translation has changed. Reopen the text."
+  },
   "There are no skills yet. Create a skill using the button above.": {
     "nl": "Er zijn nog geen vaardigheden. Maak bovenaan een nieuwe vaardigheid aan.",
     "en": "There are no skills yet. Create a skill using the button above."
@@ -5287,6 +5376,10 @@
   "This task cannot be completed yet.": {
     "nl": "Deze opdracht kan nog niet afgerond worden.",
     "en": "This task cannot be completed yet."
+  },
+  "This text is too long for automatic translation. Enter a translation manually.": {
+    "nl": "Deze tekst is te lang voor automatische vertaling. Voer de vertaling handmatig in.",
+    "en": "This text is too long for automatic translation. Enter a translation manually."
   },
   "This trait has changed. Reload it and try again.": {
     "nl": "Deze eigenschap werd intussen gewijzigd. Herlaad de eigenschap en probeer opnieuw.",
@@ -5439,6 +5532,30 @@
   "Transactions": {
     "nl": "Verrichtingen",
     "en": "Transactions"
+  },
+  "Translate into": {
+    "nl": "Vertalen naar",
+    "en": "Translate into"
+  },
+  "Translation": {
+    "nl": "Vertaling",
+    "en": "Translation"
+  },
+  "Translation allowance exhausted": {
+    "nl": "Vertaaltegoed op",
+    "en": "Translation allowance exhausted"
+  },
+  "Translation is temporarily unavailable. The original text is retained.": {
+    "nl": "Vertalen is tijdelijk niet beschikbaar. De oorspronkelijke tekst blijft behouden.",
+    "en": "Translation is temporarily unavailable. The original text is retained."
+  },
+  "Translation saved.": {
+    "nl": "Vertaling opgeslagen.",
+    "en": "Translation saved."
+  },
+  "Translation usage this month: {0} / {1} characters": {
+    "nl": "Vertaalgebruik deze maand: {0} / {1} tekens",
+    "en": "Translation usage this month: {0} / {1} characters"
   },
   "Try again": {
     "nl": "Opnieuw proberen",
@@ -5641,6 +5758,13 @@
   "Verrichting": "Transaction",
   "Verrichting —": "Transaction —",
   "Verrichtingen": "Transactions",
+  "Vertaalgebruik deze maand: {0} / {1} tekens": "Translation usage this month: {0} / {1} characters",
+  "Vertaaltegoed op": "Translation allowance exhausted",
+  "Vertalen is tijdelijk niet beschikbaar. De oorspronkelijke tekst blijft behouden.": "Translation is temporarily unavailable. The original text is retained.",
+  "Vertalen naar": "Translate into",
+  "Vertaling": "Translation",
+  "Vertaling opgeslagen.": "Translation saved.",
+  "Vertalingen beheren": "Manage translations",
   "Vertical": {
     "nl": "Verticaal",
     "en": "Vertical"
@@ -5745,6 +5869,7 @@
   "Vul een geldige datum en tijd in.": "Enter a valid date and time.",
   "Vul een naam in voor de nieuwe specialisatie.": "Enter a name for the new specialisation.",
   "Vul een naam in voor de nieuwe taal.": "Enter a name for the new language.",
+  "Vul een vertaling in.": "Enter a translation.",
   "Vul eerst de standaardfeedback van dit niveau in voordat je een variant toevoegt.": "Enter the default feedback for this level before adding a variant.",
   "Vul geldige dagen, uren, minuten en seconden in.": "Enter valid days, hours, minutes and seconds.",
   "Wacht op goedkeuring": "Awaiting approval",

@@ -92,6 +92,10 @@ function aetherLoadAuthenticatedUser(PDO $pdo, bool $provisionParticipant = fals
 
     $user['id'] = (int) $user['id'];
     $user['role'] = (string) $user['role'];
+    // Read routes may release their session lock before constructing the response.
+    // Create the receipt secret while that session is still writable.
+    if (empty($_SESSION['aetherTranslationSecret'])) $_SESSION['aetherTranslationSecret'] = bin2hex(random_bytes(32));
+    $GLOBALS['AETHER_AUTHENTICATED_USER'] = $user;
 
     return $user;
 }

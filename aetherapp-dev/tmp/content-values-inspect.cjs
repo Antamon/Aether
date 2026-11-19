@@ -1,0 +1,1 @@
+const tables=require('../tools/content-dump-reader.cjs');for(const [t,cs]of Object.entries({tblCharacter:['nationality','title'],tblTraitShareDefinition:['displayUnit']})){for(const c of cs)console.log(t+'.'+c+': '+JSON.stringify([...new Set(tables[t].records.map(r=>r[c]).filter(Boolean))]));}

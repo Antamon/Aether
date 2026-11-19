@@ -1,0 +1,87 @@
+{
+  "sourceExport": "c8q4331sl_oneiros_be_aether.sql",
+  "exportHash": "a0ace6ede4d7556ac9183defd4708236ce7124f092601f1c1e65507ed793e81c",
+  "populatedFields": 1687,
+  "uniqueSources": 1222,
+  "selection": {
+    "tblCharacter": [
+      "nationality"
+    ],
+    "tblCharacterSection": [
+      "content"
+    ],
+    "tblCharacterDiary": [
+      "goals",
+      "achievements",
+      "gossip1",
+      "gossip2",
+      "gossip3"
+    ],
+    "tblSkill": [
+      "name",
+      "description",
+      "beginner",
+      "professional",
+      "master"
+    ],
+    "tblSkillSpecialisation": [
+      "name"
+    ],
+    "tblSkillType": [
+      "name",
+      "description"
+    ],
+    "tblTrait": [
+      "name",
+      "description",
+      "traitGroup"
+    ],
+    "tblTraitTrack": [
+      "label",
+      "leftModuleLabel"
+    ],
+    "tblCharacterTie": [
+      "description"
+    ],
+    "tblCompany": [
+      "description"
+    ],
+    "tblCompanyPersonnel": [
+      "functionDescription"
+    ],
+    "tblCompanyQuarterEvent": [
+      "description"
+    ],
+    "tblResearchChallenge": [
+      "title",
+      "description"
+    ],
+    "tblResearchDiscovery": [
+      "title",
+      "description"
+    ],
+    "tblResearchStep": [
+      "content"
+    ],
+    "tblEvent": [
+      "description"
+    ],
+    "tblLanguage": [
+      "name"
+    ],
+    "tblCharacterSkillActionUse": [
+      "resultTitle",
+      "resultText"
+    ],
+    "tblCharacterSecuritiesTransaction": [
+      "description"
+    ]
+  },
+  "translatedOrOriginalSources": 1222,
+  "translationRows": 1370,
+  "provider": "offline-opus-mt",
+  "sourceLanguages": {
+    "nl": 997,
+    "en": 225
+  }
+}

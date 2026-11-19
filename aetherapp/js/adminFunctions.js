@@ -51,7 +51,7 @@ async function initAdminPage() {
         }
     } catch (err) {
         console.error("Fout bij initialiseren adminpagina:", err);
-        window.location.href = "index.html";
+        aetherHandlePageLoadError(err);
     }
 }
 

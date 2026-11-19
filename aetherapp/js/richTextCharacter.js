@@ -20,8 +20,10 @@ function renderCharacterRichText(element, sanitizedHtml, emptyText = aetherT("Ge
 
     element.classList.remove("text-muted");
     element.style.whiteSpace = "normal";
+    element.setAttribute('data-content-rendered', 'true');
     // Alleen server-side gesaniteerde rich text uit de character-API mag hier komen.
-    element.innerHTML = html;
+    if (window.AetherContent?.renderRich) window.AetherContent.renderRich(element, html);
+    else element.innerHTML = html;
 }
 
 function createCharacterRichTextEditor(initialHtml, options = {}) {

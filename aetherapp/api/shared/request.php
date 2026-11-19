@@ -25,11 +25,23 @@ function aetherReadJsonObject(): array
         aetherJsonError(400, 'Requestbody moet een JSON-object zijn.');
     }
 
+    aetherCaptureRequestTranslationChanges($input);
     return $input;
 }
 
 /** @return array<string, mixed> */
 function aetherReadFormFields(): array
 {
+    aetherCaptureRequestTranslationChanges($_POST);
     return $_POST;
+}
+
+/** Snapshot only allowlisted text saves; never start Google work while parsing a request. */
+function aetherCaptureRequestTranslationChanges(array $input): void
+{
+    if (!(($GLOBALS['pdo'] ?? null) instanceof PDO)) return;
+    try {
+        require_once __DIR__.'/translationChanges.php';
+        aetherCaptureTranslationSave($GLOBALS['pdo'], $input);
+    } catch (Throwable $error) { unset($GLOBALS['AETHER_TRANSLATION_SAVE']); }
 }

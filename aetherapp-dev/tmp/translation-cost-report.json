@@ -1,0 +1,76 @@
+{
+  "file": "c8q4331sl_oneiros_be_aether.sql",
+  "fileBytes": 5365375,
+  "tables": 106,
+  "totalRows": 7524,
+  "groups": [
+    {
+      "group": "Personageachtergronden en persoonlijkheid",
+      "rawCharacters": 434596,
+      "nonEmptyFields": 98,
+      "uniqueWithinGroupCharacters": 434592,
+      "uniqueWithinFieldCharacters": 434592
+    },
+    {
+      "group": "Dagboeken en roddels",
+      "rawCharacters": 85100,
+      "nonEmptyFields": 181,
+      "uniqueWithinGroupCharacters": 84727,
+      "uniqueWithinFieldCharacters": 84732
+    },
+    {
+      "group": "Vaardigheden en specialisaties",
+      "rawCharacters": 50016,
+      "nonEmptyFields": 467,
+      "uniqueWithinGroupCharacters": 49936,
+      "uniqueWithinFieldCharacters": 49936
+    },
+    {
+      "group": "Statuseigenschappen",
+      "rawCharacters": 47496,
+      "nonEmptyFields": 652,
+      "uniqueWithinGroupCharacters": 28149,
+      "uniqueWithinFieldCharacters": 28193
+    },
+    {
+      "group": "Relaties tussen personages",
+      "rawCharacters": 6411,
+      "nonEmptyFields": 93,
+      "uniqueWithinGroupCharacters": 6411,
+      "uniqueWithinFieldCharacters": 6411
+    },
+    {
+      "group": "Bedrijven en bedrijfsgebeurtenissen",
+      "rawCharacters": 12819,
+      "nonEmptyFields": 20,
+      "uniqueWithinGroupCharacters": 12819,
+      "uniqueWithinFieldCharacters": 12819
+    },
+    {
+      "group": "Onderzoek",
+      "rawCharacters": 2019,
+      "nonEmptyFields": 19,
+      "uniqueWithinGroupCharacters": 1799,
+      "uniqueWithinFieldCharacters": 1799
+    },
+    {
+      "group": "Overige spelteksten",
+      "rawCharacters": 7616,
+      "nonEmptyFields": 99,
+      "uniqueWithinGroupCharacters": 2701,
+      "uniqueWithinFieldCharacters": 2701
+    }
+  ],
+  "rawCharacters": 646073,
+  "uniqueCharacters": 615986,
+  "markupCharacters": 218335,
+  "charactersWithoutMarkup": 397651,
+  "rawPrices": {
+    "withUnusedMonthlyAllowanceUSD": 2.92146,
+    "withoutAllowanceUSD": 12.92146
+  },
+  "uniquePrices": {
+    "withUnusedMonthlyAllowanceUSD": 2.31972,
+    "withoutAllowanceUSD": 12.31972
+  }
+}

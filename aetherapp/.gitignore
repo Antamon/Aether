@@ -1,0 +1,5 @@
+﻿# Deployment-specific credentials and private recovery copies
+config.local.php
+db.legacy.local.php
+error_log
+*.log

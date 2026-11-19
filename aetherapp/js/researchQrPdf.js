@@ -38,7 +38,7 @@ window.AetherResearchQrPdf = (() => {
             const position=i%12,x=5.5+(position%3)*67,y=15.5+Math.floor(position/3)*67;
             doc.setFillColor(100,0,0);doc.rect(x,y,65,65,'F');
             doc.setFillColor(255);doc.roundedRect(x+2.5,y+2.5,60,60,4,4,'F');doc.setTextColor(0);
-            label(doc,d.title.toLocaleUpperCase('nl'),x+32.5,y+10,54,14,2);
+            label(doc,(window.AetherContent?.text(d.title) ?? d.title).toLocaleUpperCase(window.AetherI18n?.language || 'nl'),x+32.5,y+10,54,14,2);
             const qr=qrcode(0,'M');qr.addData(`aether-research:${d.qrToken}`);qr.make();
             const count=qr.getModuleCount(),module=42/(count+8),left=x+11.5+4*module,top=y+14.5+4*module;
             doc.setFillColor(0);
@@ -48,7 +48,7 @@ window.AetherResearchQrPdf = (() => {
                 doc.rect(left+start*module,top+row*module,(col-start+1)*module,module,'F');
             }
             const skill=skills.find(s=>Number(s.id)===Number(d.idSkill));
-            label(doc,(skill?.name||aetherT("Onbekende vaardigheid")).toLocaleUpperCase('nl'),x+32.5,y+58,43,12,1);
+            label(doc,(window.AetherContent?.text(skill?.name) || skill?.name || aetherT("Onbekende vaardigheid")).toLocaleUpperCase(window.AetherI18n?.language || 'nl'),x+32.5,y+58,43,12,1);
             if (timed) stopwatch(doc,x+57,y+57.5);
         });
         return doc;

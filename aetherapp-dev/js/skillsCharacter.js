@@ -212,11 +212,12 @@ function addSkillAccordionItem(skill, usedExperience, character) {
     headerBtn.setAttribute("aria-expanded", "false");
     headerBtn.setAttribute("aria-controls", "collapse" + skill.id);
 
-    let title = skill.name.charAt(0).toUpperCase() + skill.name.slice(1);
+    const visibleSkillName = window.AetherContent?.text(skill.name) ?? skill.name;
+    let title = visibleSkillName.charAt(0).toUpperCase() + visibleSkillName.slice(1);
 
     // discipline(s) achter de naam tussen haakjes
     if (disciplineSpecs.length > 0) {
-        const labels = disciplineSpecs.map(d => d.name).join(", ");
+        const labels = disciplineSpecs.map(d => window.AetherContent?.text(d.name) ?? d.name).join(", ");
         title += ` (${labels})`;
     }
 
@@ -424,7 +425,7 @@ function renderSkillsReadOnly(container, skills) {
         }
 
         // Niveau-label
-        let proficiency = "ongetraind";
+        let proficiency = aetherT("ongetraind");
         if (level === 1) proficiency = aetherT("Beginneling");
         if (level === 2) proficiency = aetherT("Deskundige");
         if (level === 3) proficiency = aetherT("Meester");
@@ -438,12 +439,13 @@ function renderSkillsReadOnly(container, skills) {
         const normalSpecs     = specialisations.filter(s => s.kind !== "discipline");
 
         // Titel: naam (+ discipline) - niveau
-        let title = skill.name
-            ? skill.name.charAt(0).toUpperCase() + skill.name.slice(1)
+        const visibleSkillName = window.AetherContent?.text(skill.name) ?? skill.name;
+        let title = visibleSkillName
+            ? visibleSkillName.charAt(0).toUpperCase() + visibleSkillName.slice(1)
             : aetherT("Onbekende vaardigheid");
 
         if (disciplineSpecs.length > 0) {
-            const labels = disciplineSpecs.map(d => d.name).join(", ");
+            const labels = disciplineSpecs.map(d => window.AetherContent?.text(d.name) ?? d.name).join(", ");
             title += ` (${labels})`;
         }
         title += ` - ${proficiency}`;

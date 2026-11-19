@@ -15,6 +15,9 @@ async function aetherRequestJson(endpoint, options = {}) {
             ...headers
         }
     };
+    if (window.AetherContent && window.AetherI18n) {
+        fetchOptions.headers['X-Aether-Content-Language'] = window.AetherI18n.language;
+    }
 
     if (method.toUpperCase() !== "GET" && window.AETHER_CSRF_TOKEN) {
         fetchOptions.headers["X-CSRF-Token"] = window.AETHER_CSRF_TOKEN;
@@ -52,7 +55,12 @@ async function aetherRequestJson(endpoint, options = {}) {
 
     // Probeer JSON te parsen – als dat niet kan, geven we null terug
     try {
-        const data = await response.json();
+        let data = await response.json();
+        if (window.AetherContent && data && Object.hasOwn(data, 'aetherPayload') && Array.isArray(data.aetherContentTranslations)) {
+            window.AetherContent.register(data.aetherContentTranslations);
+            window.AetherTranslation?.consume(data);
+            data = data.aetherPayload;
+        }
         if (data && typeof data.csrfToken === "string") {
             window.AETHER_CSRF_TOKEN = data.csrfToken;
         }
@@ -128,6 +136,7 @@ function aetherGetCurrentUser() {
                 return new Promise(() => {});
             }
             window.AETHER_CURRENT_USER = user;
+            window.AetherTranslation?.initialize(user);
             return user;
         }).catch((error) => {
             aetherCurrentUserRequest = null;
