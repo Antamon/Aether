@@ -25,7 +25,9 @@ async function aetherRequestJson(endpoint, options = {}) {
 
     if (body !== null) {
         fetchOptions.headers["Content-Type"] = "application/json";
-        fetchOptions.body = JSON.stringify(body);
+        const payload=method.toUpperCase()!=='GET'&&window.AetherContent?.prepareSave&&/^(?:api\/(?:characters|companies|events|admin)\/(?:save|update|new|add)|api\/admin\/traits\.php|api\/research\/http\.php)/.test(String(endpoint))
+            ? window.AetherContent.prepareSave(body) : body;
+        fetchOptions.body = JSON.stringify(payload);
     }
 
     const response = await fetch(endpoint, fetchOptions);

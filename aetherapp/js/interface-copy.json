@@ -474,6 +474,7 @@
   "Alle soorten": "All types",
   "Alle statussen": "All statuses",
   "Alleen administrator- en director-gebruikers kunnen een overschrijving uitvoeren.": "Only administrators and directors can make a bank transfer.",
+  "Alleen administrators en directors kunnen vertalingen aanpassen.": "Only administrators and directors can edit translations.",
   "Alleen administrators kunnen categorieën beheren.": "Only administrators can manage categories.",
   "Alleen admins en directors kunnen Onderzoek beheren.": "Only administrators and directors can manage Research.",
   "Alleen een actief personage kan aandelen verhandelen.": "Only an active character can trade shares.",
@@ -1731,9 +1732,11 @@
   "De gekozen specialisatie is niet beschikbaar voor deze vaardigheid.": "The selected specialisation is unavailable for this skill.",
   "De gekozen waarde wordt voor elk event vastgelegd en bewaard om je winst of verlies te bepalen. Maak een keuze ten laatste een maand voor aanvang van het event.": "The chosen value is recorded for each event to determine your profit or loss. Choose at least a month before the event starts.",
   "De kennis van bedrijfsgebeurtenissen is beschikbaar na migratie 0022.": "Company event knowledge is available after migration 0022.",
+  "De levensstijl van de nouveau riche die de luxe van de hoge adel benadert. Je woont in een uniek kasteel of paleis buiten de stad. Bij de woonst horen de omliggende velden en bossen. Je krijgt er een uitgebreide huishoudploeg bij, alsook boswachters om je domein veilig te houden. Uitgebreide diners en exuberante feestjes met belangrijke mensen, zijn de normale gang van zaken.": "You enjoy the lifestyle of the nouveau riche, approaching the luxury of the high nobility. You live in a distinctive castle or palace outside town, surrounded by fields and woods. You have an extensive household staff, as well as gamekeepers to keep your estate safe. Elaborate dinners and extravagant parties with important guests are a normal part of life.",
   "De lijst kon niet geladen worden. Sluit en open de tab om opnieuw te proberen.": "The list could not be loaded. Close and reopen the tab to try again.",
   "De naam van de vaardigheid is verplicht.": "Skill name is required.",
   "De oorspronkelijke aankoopprijs is niet geregistreerd. Het aantal en kwartaal kunnen worden aangepast zonder bankboeking.": "The original purchase price was not recorded. You can change the quantity and quarter without a bank entry.",
+  "De oorspronkelijke tekst is gewijzigd. Vernieuw de pagina en probeer opnieuw.": "The original text has changed. Reload the page and try again.",
   "De PDF-module is niet beschikbaar. Herlaad de pagina en probeer opnieuw.": "The PDF module is unavailable. Reload the page and try again.",
   "De PDF-module kon niet geladen worden. Herlaad de pagina en probeer opnieuw.": "The PDF module could not be loaded. Reload the page and try again.",
   "De server gaf geen geldig antwoord op de sessiecontrole.": "The server returned an invalid session response.",
@@ -1741,7 +1744,9 @@
   "De server gaf geen gesaniteerde diary terug.": "The server did not return a sanitised diary entry.",
   "De server gaf geen gesaniteerde rich text terug.": "The server did not return sanitised rich text.",
   "De verkoper bezit niet genoeg aandelen.": "The seller does not own enough shares.",
+  "De vertaling is gewijzigd. Vernieuw de pagina en probeer opnieuw.": "The translation has changed. Reload the page and try again.",
   "De vertaling is ondertussen gewijzigd. Open de tekst opnieuw.": "The translation has changed. Reopen the text.",
+  "De vertaling kon niet worden bewaard. Probeer opnieuw.": "The translation could not be saved. Please try again.",
   "De verwerkte afbeelding is groter dan 8 MB.": "The processed image exceeds 8 MB.",
   "De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst.": "The stock or offer changed. The data has been refreshed.",
   "De voorraad veranderde gelijktijdig. Probeer opnieuw.": "The stock changed during the operation. Try again.",
@@ -1851,8 +1856,10 @@
   "Deze stap en eventuele volgende stappen worden verwijderd. De vorige stap krijgt geen vervolg meer; haar timers en datums worden gewist.": "This step and all following steps will be deleted. The previous step will have no follow-up; its timers and dates will be cleared.",
   "Deze tekst is te lang voor automatische vertaling. Voer de vertaling handmatig in.": "This text is too long for automatic translation. Enter a translation manually.",
   "deze tie": "this relationship",
+  "Deze velden ondersteunen geen vertaalbewerking.": "These fields do not support translation editing.",
   "Deze verrichting verwijderen en het bedrag terugboeken?": "Delete this transaction and reverse the amount?",
   "Deze voorwaarden maken een cirkel tussen discoveries.": "These conditions create a circular dependency between discoveries.",
+  "Dezelfde tekst heeft verschillende vertalingen in dit formulier.": "The same text has conflicting translations in this form.",
   "Diary": {
     "nl": "Dagboek",
     "en": "Diary"
@@ -2753,6 +2760,10 @@
     "nl": "Ongeldige tijdstippen.",
     "en": "Invalid times."
   },
+  "Invalid translation edit.": {
+    "nl": "Ongeldige vertaalbewerking.",
+    "en": "Invalid translation edit."
+  },
   "Invalid translation input.": {
     "nl": "Ongeldige vertaalinvoer.",
     "en": "Invalid translation input."
@@ -2812,6 +2823,9 @@
   },
   "Ja": "Yes",
   "Jaar": "Year",
+  "Je behoort tot de comfortabele middenmoot van je klasse. Je woont in een comfortabele stadswoning met twee tot vier slaapkamers en een huishoudster. Je hebt een goed uitgebouwd professioneel netwerk en komt regelmatig in contact met invloedrijke mensen. Je moet voorzichtig zijn met je geld, maar je kan jezelf en je gezin af en toe verwennen met een luxe uitgave.": "You belong to the comfortable middle ranks of your class. You live in a comfortable townhouse with two to four bedrooms and a housekeeper. You have a well-established professional network and regularly meet influential people. You must be careful with your money, but you can occasionally treat yourself and your family to a luxury.",
+  "Je behoort tot de hogere middenklasse. Je woont in een riante stadswoning of landhuis met vele kamers, meerdere badkamers, salons en een grote tuin. Bij het huis hoort een ploeg van ongeveer 10 bedienden. Je exclusieve diners bij kaarslicht zijn gelegenheden waar reikhalzend naar wordt uitgekeken. Je persoonlijk vermogen wordt geschat tussen de 1 700 000Fr en de 15 000 000Fr.": "You belong to the upper middle class. You live in a spacious townhouse or country house with many rooms, several bathrooms, drawing rooms and a large garden. A staff of about ten servants attends the house. Your exclusive candlelit dinners are eagerly anticipated occasions. Your personal wealth is estimated at between Fr 1,700,000 and Fr 15,000,000.",
+  "Je behoort tot de verarmde middenklasse. Je huurt een klein appartement of kleine gezinswoning van een hospita in een minder goede wijk van de stad. Je maaltijden zijn sober en soms karig, je kleding een beetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont maar zelden sociale evenementen bij door geldgebrek.": "You belong to the impoverished middle class. You rent a small flat or family home from a landlady in a less desirable part of town. Your meals are simple and sometimes meagre, and your clothes are a little worn. You struggle to make ends meet at the end of the month. You rarely attend social events because you cannot afford them.",
   "Je bent geen bestuurslid van dit bedrijf.": "You are not a board member of this company.",
   "Je dient in een groot adellijk huishouden waar orde, hiërarchie en comfort belangrijk zijn. Je beschikt over een nette personeelskamer in de bediendenvleugel, met voldoende ruimte voor je persoonlijke spullen en een degelijk bed. Bad- en wasvoorzieningen zijn meestal gedeeld met ander personeel, maar goed onderhouden. Je leeft in zekerheid en comfort, al blijft duidelijk dat zelfs je privéruimte deel uitmaakt van het grotere huishouden van je meester.": "You serve in a large noble household where order, hierarchy and comfort matter. You have a tidy room in the servants' wing with a good bed and space for your belongings. Washing facilities are usually shared but well maintained. You live securely and comfortably, though even your private room belongs to your employer's household.",
   "Je effectenportefeuille stellen beleggingen in B-aandelen voor die verspreidt zijn over verschillende bedrijven en obligaties. Het is een stabiele manier om je inkomen te vergroten, maar je geld staat ook vast voor langere tijd.": "Your investment portfolio represents B-shares spread across companies and bonds. It is a stable way to increase your income, but your money is locked in for an extended period.",
@@ -2823,6 +2837,10 @@
   "Je kan niet meer geld overschrijven dan het beschikbare saldo op de rekening.": "You cannot transfer more than the available account balance.",
   "Je kan nog extra talen aankopen voor 2 EP.": "You can buy additional languages for 2 XP.",
   "Je koopt aan de marktprijs van de gekozen snapshot. Het aankoopbedrag wordt van je beschikbare startkapitaal afgetrokken.": "You buy at the selected snapshot's market price. The cost is deducted from your available starting capital.",
+  "Je leeft in armoede. Een eigendom is iets wat je nooit zal bereiken. Als je geluk hebt, kan je een schamel onderkomen huren waar je met het hele gezin woont. Hartig dagelijks voedsel is geen zekerheid, gezondheidszorg een onbereikbare droom. Je enige hoop op een comfortabel leven is als inwonend personeel bij een rijke werkgeven.": "You live in poverty. Owning property is beyond your reach. If you are lucky, you can rent a modest shelter for your entire family. A decent daily meal is not guaranteed, and healthcare is an unattainable dream. Your only hope of a comfortable life is as a live-in servant to a wealthy employer.",
+  "Je maakt deel uit van de gegoede middenklasse. Je woont in een mooi, groot herenhuis met 6 tot 8 slaapkamers, een huishoudster, een butler en een tuinman of klusjesman. Je bent belangrijk genoeg om regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen.": "You belong to the affluent middle class. You live in a fine, spacious townhouse with six to eight bedrooms, a housekeeper, a butler and a gardener or handyman. You are important enough to be regularly invited to occasions attended by prominent members of society.",
+  "Je maakt deel uit van de lagere middenklasse. Je woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de eenvoudige pleziertjes van het leven veroorloven. Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega's.": "You belong to the lower middle class. You live in a flat or small family home of your own in a good neighbourhood. You can afford the simple pleasures of life. Your social life consists of visits to popular theatres, circuses and museums, and activities with your colleagues.",
+  "Je maakt deel uit van de lagere middenklasse. Je woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de eenvoudige pleziertjes van het leven veroorloven. Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega’s.": "You belong to the lower middle class. You live in a flat or small family home of your own in a good neighbourhood. You can afford the simple pleasures of life. Your social life consists of visits to popular theatres, circuses and museums, and activities with your colleagues.",
   "Je maakt deel uit van een enorm huishouden dat bijna als een kleine instelling functioneert. Je woont in ruime en goed onderhouden dienstvertrekken, vaak in een aparte personeelsvleugel of bijgebouw, met veel meer comfort dan de meeste gewone burgers ooit kennen. Hogere personeelsleden kunnen zelfs over meerdere kleine kamers beschikken, zoals een slaapvertrek en een privézitkamer of kantoorhoek. Je leeft materieel comfortabel en in grote veiligheid, maar je bestaan blijft volledig ingebed in de discipline en verwachtingen van een machtige dynastie.": "You belong to a vast household that functions almost as an institution. You live in spacious, well-maintained servants' quarters, often in a separate wing or building, with more comfort than most people ever enjoy. Senior staff may have several rooms. Your life is comfortable and secure, but governed by the discipline and expectations of a powerful dynasty.",
   "Je vervalt in armoede en wordt lagere klasse.": "You fall into poverty and become lower class.",
   "Je woont in een groot herenhuis waar personeel deel uitmaakt van het normale huishouden. Je kamer ligt in de personeelsvertrekken en is degelijk, verzorgd en ruim genoeg om echt als privéruimte te voelen. Voor hoger dienstpersoneel is een iets grotere kamer of een klein eigen salonnetje niet ondenkbaar. Je leeft onder goede materiële omstandigheden, met voldoende comfort, regelmaat en een zekere trots die hoort bij dienst in een voornaam burgerlijk huis.": "You live in a large mansion where staff form part of everyday household life. Your room is sound, well kept and spacious enough to feel private. Senior staff may have a larger room or small sitting room. You enjoy comfort, routine and the pride of serving in a distinguished middle-class home.",
@@ -3887,6 +3905,7 @@
   "Ongeldige invoer.": "Invalid input.",
   "Ongeldige of dubbele specialisatie.": "Invalid or duplicate specialisation.",
   "Ongeldige tijdstippen.": "Invalid times.",
+  "Ongeldige vertaalbewerking.": "Invalid translation edit.",
   "Ongeldige vertaalhandeling.": "Invalid translation operation.",
   "Ongeldige vertaalinvoer.": "Invalid translation input.",
   "Ongeldige voortgang.": "Invalid progression mode.",
@@ -3896,6 +3915,10 @@
   "Ongetraind": "Untrained",
   "Ongetraind begint met “No additional information”. Lege hogere niveaus gebruiken de feedback van het dichtstbijzijnde ingevulde lagere niveau.": "Untrained starts with “No additional information”. Empty higher levels use the feedback from the nearest defined lower level.",
   "Ongetraind krijgt opnieuw de standaardtekst “No additional information”.": "Untrained will be reset to the default text “No additional information”.",
+  "Only administrators and directors can edit translations.": {
+    "nl": "Alleen administrators en directors kunnen vertalingen aanpassen.",
+    "en": "Only administrators and directors can edit translations."
+  },
   "Only administrators and directors can make a bank transfer.": {
     "nl": "Alleen administrator- en director-gebruikers kunnen een overschrijving uitvoeren.",
     "en": "Only administrators and directors can make a bank transfer."
@@ -5114,6 +5137,7 @@
     "nl": "Opdracht bezig",
     "en": "Task in progress"
   },
+  "Te veel vertalingen in één bewerking.": "Too many translations in one edit.",
   "Tekst op deze pagina": "Text on this page",
   "Tekst zoeken": "Search text",
   "Terug": "Back",
@@ -5197,6 +5221,10 @@
     "nl": "De oorspronkelijke aankoopprijs is niet geregistreerd. Het aantal en kwartaal kunnen worden aangepast zonder bankboeking.",
     "en": "The original purchase price was not recorded. You can change the quantity and quarter without a bank entry."
   },
+  "The original text has changed. Reload the page and try again.": {
+    "nl": "De oorspronkelijke tekst is gewijzigd. Vernieuw de pagina en probeer opnieuw.",
+    "en": "The original text has changed. Reload the page and try again."
+  },
   "The participant must confirm that the task has been completed.": {
     "nl": "De deelnemer moet aangeven dat de opdracht uitgevoerd is.",
     "en": "The participant must confirm that the task has been completed."
@@ -5220,6 +5248,10 @@
   "The recipient was not found or is inactive.": {
     "nl": "Ontvanger niet gevonden of niet actief.",
     "en": "The recipient was not found or is inactive."
+  },
+  "The same text has conflicting translations in this form.": {
+    "nl": "Dezelfde tekst heeft verschillende vertalingen in dit formulier.",
+    "en": "The same text has conflicting translations in this form."
   },
   "The selected specialisation is unavailable for this skill.": {
     "nl": "De gekozen specialisatie is niet beschikbaar voor deze vaardigheid.",
@@ -5269,6 +5301,14 @@
     "nl": "De voorraad of het aanbod is gewijzigd. De gegevens zijn ververst.",
     "en": "The stock or offer changed. The data has been refreshed."
   },
+  "The translation could not be saved. Please try again.": {
+    "nl": "De vertaling kon niet worden bewaard. Probeer opnieuw.",
+    "en": "The translation could not be saved. Please try again."
+  },
+  "The translation has changed. Reload the page and try again.": {
+    "nl": "De vertaling is gewijzigd. Vernieuw de pagina en probeer opnieuw.",
+    "en": "The translation has changed. Reload the page and try again."
+  },
   "The translation has changed. Reopen the text.": {
     "nl": "De vertaling is ondertussen gewijzigd. Open de tekst opnieuw.",
     "en": "The translation has changed. Reopen the text."
@@ -5284,6 +5324,10 @@
   "These conditions create a circular dependency between discoveries.": {
     "nl": "Deze voorwaarden maken een cirkel tussen discoveries.",
     "en": "These conditions create a circular dependency between discoveries."
+  },
+  "These fields do not support translation editing.": {
+    "nl": "Deze velden ondersteunen geen vertaalbewerking.",
+    "en": "These fields do not support translation editing."
   },
   "This attempt revealed no new or previously discovered rumours.": {
     "nl": "Deze poging leverde nog geen nieuwe of eerder vrijgespeelde roddels op.",
@@ -5480,6 +5524,10 @@
   "Toggle navigation": {
     "nl": "Navigatie openen of sluiten",
     "en": "Toggle navigation"
+  },
+  "Too many translations in one edit.": {
+    "nl": "Te veel vertalingen in één bewerking.",
+    "en": "Too many translations in one edit."
   },
   "Toon acties": "Show actions",
   "Toon portret van {0}": "Show portrait of {0}",
@@ -5997,6 +6045,26 @@
     "nl": "Je maakt deel uit van een enorm huishouden dat bijna als een kleine instelling functioneert. Je woont in ruime en goed onderhouden dienstvertrekken, vaak in een aparte personeelsvleugel of bijgebouw, met veel meer comfort dan de meeste gewone burgers ooit kennen. Hogere personeelsleden kunnen zelfs over meerdere kleine kamers beschikken, zoals een slaapvertrek en een privézitkamer of kantoorhoek. Je leeft materieel comfortabel en in grote veiligheid, maar je bestaan blijft volledig ingebed in de discipline en verwachtingen van een machtige dynastie.",
     "en": "You belong to a vast household that functions almost as an institution. You live in spacious, well-maintained servants' quarters, often in a separate wing or building, with more comfort than most people ever enjoy. Senior staff may have several rooms. Your life is comfortable and secure, but governed by the discipline and expectations of a powerful dynasty."
   },
+  "You belong to the affluent middle class. You live in a fine, spacious townhouse with six to eight bedrooms, a housekeeper, a butler and a gardener or handyman. You are important enough to be regularly invited to occasions attended by prominent members of society.": {
+    "nl": "Je maakt deel uit van de gegoede middenklasse. Je woont in een mooi, groot herenhuis met 6 tot 8 slaapkamers, een huishoudster, een butler en een tuinman of klusjesman. Je bent belangrijk genoeg om regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen.",
+    "en": "You belong to the affluent middle class. You live in a fine, spacious townhouse with six to eight bedrooms, a housekeeper, a butler and a gardener or handyman. You are important enough to be regularly invited to occasions attended by prominent members of society."
+  },
+  "You belong to the comfortable middle ranks of your class. You live in a comfortable townhouse with two to four bedrooms and a housekeeper. You have a well-established professional network and regularly meet influential people. You must be careful with your money, but you can occasionally treat yourself and your family to a luxury.": {
+    "nl": "Je behoort tot de comfortabele middenmoot van je klasse. Je woont in een comfortabele stadswoning met twee tot vier slaapkamers en een huishoudster. Je hebt een goed uitgebouwd professioneel netwerk en komt regelmatig in contact met invloedrijke mensen. Je moet voorzichtig zijn met je geld, maar je kan jezelf en je gezin af en toe verwennen met een luxe uitgave.",
+    "en": "You belong to the comfortable middle ranks of your class. You live in a comfortable townhouse with two to four bedrooms and a housekeeper. You have a well-established professional network and regularly meet influential people. You must be careful with your money, but you can occasionally treat yourself and your family to a luxury."
+  },
+  "You belong to the impoverished middle class. You rent a small flat or family home from a landlady in a less desirable part of town. Your meals are simple and sometimes meagre, and your clothes are a little worn. You struggle to make ends meet at the end of the month. You rarely attend social events because you cannot afford them.": {
+    "nl": "Je behoort tot de verarmde middenklasse. Je huurt een klein appartement of kleine gezinswoning van een hospita in een minder goede wijk van de stad. Je maaltijden zijn sober en soms karig, je kleding een beetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont maar zelden sociale evenementen bij door geldgebrek.",
+    "en": "You belong to the impoverished middle class. You rent a small flat or family home from a landlady in a less desirable part of town. Your meals are simple and sometimes meagre, and your clothes are a little worn. You struggle to make ends meet at the end of the month. You rarely attend social events because you cannot afford them."
+  },
+  "You belong to the lower middle class. You live in a flat or small family home of your own in a good neighbourhood. You can afford the simple pleasures of life. Your social life consists of visits to popular theatres, circuses and museums, and activities with your colleagues.": {
+    "nl": "Je maakt deel uit van de lagere middenklasse. Je woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de eenvoudige pleziertjes van het leven veroorloven. Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega’s.",
+    "en": "You belong to the lower middle class. You live in a flat or small family home of your own in a good neighbourhood. You can afford the simple pleasures of life. Your social life consists of visits to popular theatres, circuses and museums, and activities with your colleagues."
+  },
+  "You belong to the upper middle class. You live in a spacious townhouse or country house with many rooms, several bathrooms, drawing rooms and a large garden. A staff of about ten servants attends the house. Your exclusive candlelit dinners are eagerly anticipated occasions. Your personal wealth is estimated at between Fr 1,700,000 and Fr 15,000,000.": {
+    "nl": "Je behoort tot de hogere middenklasse. Je woont in een riante stadswoning of landhuis met vele kamers, meerdere badkamers, salons en een grote tuin. Bij het huis hoort een ploeg van ongeveer 10 bedienden. Je exclusieve diners bij kaarslicht zijn gelegenheden waar reikhalzend naar wordt uitgekeken. Je persoonlijk vermogen wordt geschat tussen de 1 700 000Fr en de 15 000 000Fr.",
+    "en": "You belong to the upper middle class. You live in a spacious townhouse or country house with many rooms, several bathrooms, drawing rooms and a large garden. A staff of about ten servants attends the house. Your exclusive candlelit dinners are eagerly anticipated occasions. Your personal wealth is estimated at between Fr 1,700,000 and Fr 15,000,000."
+  },
   "You buy at the selected snapshot's market price. The cost is deducted from your available starting capital.": {
     "nl": "Je koopt aan de marktprijs van de gekozen snapshot. Het aankoopbedrag wordt van je beschikbare startkapitaal afgetrokken.",
     "en": "You buy at the selected snapshot's market price. The cost is deducted from your available starting capital."
@@ -6049,6 +6117,10 @@
     "nl": "Je hebt geen rechten voor deze handeling.",
     "en": "You do not have permission to perform this action."
   },
+  "You enjoy the lifestyle of the nouveau riche, approaching the luxury of the high nobility. You live in a distinctive castle or palace outside town, surrounded by fields and woods. You have an extensive household staff, as well as gamekeepers to keep your estate safe. Elaborate dinners and extravagant parties with important guests are a normal part of life.": {
+    "nl": "De levensstijl van de nouveau riche die de luxe van de hoge adel benadert. Je woont in een uniek kasteel of paleis buiten de stad. Bij de woonst horen de omliggende velden en bossen. Je krijgt er een uitgebreide huishoudploeg bij, alsook boswachters om je domein veilig te houden. Uitgebreide diners en exuberante feestjes met belangrijke mensen, zijn de normale gang van zaken.",
+    "en": "You enjoy the lifestyle of the nouveau riche, approaching the luxury of the high nobility. You live in a distinctive castle or palace outside town, surrounded by fields and woods. You have an extensive household staff, as well as gamekeepers to keep your estate safe. Elaborate dinners and extravagant parties with important guests are a normal part of life."
+  },
   "You fall into poverty and become lower class.": {
     "nl": "Je vervalt in armoede en wordt lagere klasse.",
     "en": "You fall into poverty and become lower class."
@@ -6072,6 +6144,10 @@
   "You live in an exceptionally luxurious household where even staff quarters are spacious and well kept. Depending on your rank, your rooms may resemble a small home, with a large bedroom, good furniture and a private sitting or work area. You enjoy abundance and order in a setting that values appearances and discipline. Your extraordinary comfort remains entirely tied to your service.": {
     "nl": "Je woont in een uitzonderlijk luxueus huishouden waar zelfs de personeelsvertrekken ruim en verzorgd zijn. Afhankelijk van je rang binnen het personeel kan je kamer bijna de allure hebben van een kleine burgerwoning: een ruim slaapvertrek, goed meubilair en soms een aparte privéruimte om te zitten of administratie te doen. Je leeft in overvloed en orde, maar ook in een omgeving waar uiterlijk vertoon, discipline en representatie zeer belangrijk zijn. Je geniet van comfort dat voor de meeste mensen onbereikbaar is, al blijft het comfort volledig verbonden aan je dienstbaarheid.",
     "en": "You live in an exceptionally luxurious household where even staff quarters are spacious and well kept. Depending on your rank, your rooms may resemble a small home, with a large bedroom, good furniture and a private sitting or work area. You enjoy abundance and order in a setting that values appearances and discipline. Your extraordinary comfort remains entirely tied to your service."
+  },
+  "You live in poverty. Owning property is beyond your reach. If you are lucky, you can rent a modest shelter for your entire family. A decent daily meal is not guaranteed, and healthcare is an unattainable dream. Your only hope of a comfortable life is as a live-in servant to a wealthy employer.": {
+    "nl": "Je leeft in armoede. Een eigendom is iets wat je nooit zal bereiken. Als je geluk hebt, kan je een schamel onderkomen huren waar je met het hele gezin woont. Hartig dagelijks voedsel is geen zekerheid, gezondheidszorg een onbereikbare droom. Je enige hoop op een comfortabel leven is als inwonend personeel bij een rijke werkgeven.",
+    "en": "You live in poverty. Owning property is beyond your reach. If you are lucky, you can rent a modest shelter for your entire family. A decent daily meal is not guaranteed, and healthcare is an unattainable dream. Your only hope of a comfortable life is as a live-in servant to a wealthy employer."
   },
   "You live on an estate, in a mansion or small castle where staff have an established place. Your simple but tidy room usually has a bed, washbasin, cupboard and chair. Meals are regular and adequate. Your modest room is safe, heated and more comfortable than most workers can afford.": {
     "nl": "Je woont op een landgoed, in een herenhuis of klein kasteel waar personeel een vaste plaats heeft binnen het huishouden. Je hebt een eenvoudige maar nette eigen kamer in de dienstvertrekken, meestal met bed, waskom, kast en een stoel. Je maaltijden zijn degelijk en regelmatig, en je leeft comfortabeler dan de meeste arbeiders. Je privévertrek is bescheiden, maar veilig, verwarmd en duidelijk beter dan wat de lagere klasse zich gewoonlijk kan veroorloven.",

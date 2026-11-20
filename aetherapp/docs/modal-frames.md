@@ -10,7 +10,7 @@ Bestaande invoervelden, knoppen en eventhandlers blijven dezelfde DOM-elementen.
 De inhoud scrolt binnen het kader; op smalle of lage schermen wordt de decoratie kleiner.
 
 Upload bij deze wijziging beide nieuwe bestanden, de zes bijgewerkte HTML-pagina's,
-`VERSION` en de elf afbeeldingen in `images/` (`modalFrame*.png`,
+`VERSION` en de elf afbeeldingen in `img/` (`modalFrame*.png`,
 `modalTitleBar.png`, `paper.png` en `red.jpg`). Er is geen databankmigratie nodig.
 
 Controle: `node tests/modal_frame_test.cjs`.

@@ -14,3 +14,9 @@
 .aether-translation-source {font:inherit;white-space:pre-wrap;max-height:12rem;overflow:auto;margin:.5rem 0 1rem;border-bottom:1px solid #a3815355;padding-bottom:.75rem}
 .aether-translation-attribution {display:block;padding:.5rem 1rem;text-align:right;font-size:.7rem}
 .aether-translation-attribution a {color:var(--primary-brown,#503b25)}
+
+@media (max-width: 991.98px) {
+  .aether-top-bar > .container { position: relative; }
+  .aether-top-bar .aether-language-picker { position: static; }
+  .aether-top-bar .aether-language-menu { left: max(10px, env(safe-area-inset-left, 0px)); right: auto; }
+}

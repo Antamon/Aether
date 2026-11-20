@@ -57,7 +57,7 @@ const server=http.createServer((req,res)=>{
   await page.reload();await page.waitForSelector('.aether-language-picker');assert.equal(await page.locator('html').getAttribute('lang'),'nl','User override survives reload');
   profile={...profile,id:43,displayName:'Other user',interfaceLanguage:'en'};await page.reload();await page.waitForFunction(()=>document.documentElement.lang==='en'&&document.querySelector('#navbarName')?.textContent.includes('Other user'));
   assert.equal(await page.evaluate(()=>localStorage.getItem('aether:interface-language:42')),'nl','Preferences are isolated per user');
-  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>document.querySelector('.navbar-collapse').classList.add('show'));assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Language menu does not overflow on mobile');
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('.navbar-toggler, .navbar-collapse').count(),0,'Identity controls are directly available without a collapsed navbar');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Language menu does not overflow on mobile');
   await page.locator('.aether-language-picker summary').focus();await page.keyboard.press('Enter');assert(await page.getByRole('button',{name:'English',exact:true}).isVisible());await page.keyboard.press('Escape');assert(await page.getByRole('button',{name:'English',exact:true}).isHidden());
   assert.deepEqual(errors,[]);
   console.log('PASS: WordPress initial language, user-scoped override, seven entry pages, late templates, dynamic editor, unchanged content/API values, translated validation, keyboard and mobile language picker.');

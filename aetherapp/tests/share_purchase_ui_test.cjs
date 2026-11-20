@@ -469,7 +469,7 @@ async function checkAutomaticCompanyResearch(role='participant') {
     await checkAutomaticCompanyResearch();
     await checkAutomaticCompanyResearch('director');
     for (const page of ['index.html','admin.html','companies.html','eventParticipation.html','static.html','leaderPersonnel.html']) {
-        const nav = fs.readFileSync(page, 'utf8').match(/<nav\b[\s\S]*?<\/nav>/)[0];
+        const nav = fs.readFileSync(page, 'utf8').match(/<header\b[\s\S]*?<\/header>/)[0];
         assert(!/Personages|Evenementen|Bedrijven|Personeelsbeheer/.test(nav), `${page} only retains Admin and greeting`);
         assert(!nav.includes('navbarAdminItem') && nav.includes('navbarName'));
     }

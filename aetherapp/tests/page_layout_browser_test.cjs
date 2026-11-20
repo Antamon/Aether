@@ -1,6 +1,7 @@
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require('../tmp/feedback-browser/package');
-const root = path.resolve(__dirname, '..');
+const { chromium } = require(process.env.RESEARCH_PLAYWRIGHT||'../tmp/feedback-browser/package');
+const root = process.env.AETHER_TEST_ROOT||path.resolve(__dirname,'..');
+const assets=process.env.AETHER_TEST_ASSETS||root;
 const pages = ['index.html', 'admin.html', 'research.html'];
 function fixture(name) {
     return fs.readFileSync(path.join(root, name), 'utf8')
@@ -16,8 +17,10 @@ function fixture(name) {
 const server = http.createServer((req, res) => {
     const name = req.url.split('?')[0].slice(1);
     if (pages.includes(name)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(fixture(name)); }
-    const file = path.resolve(root, name);
+    let file = path.resolve(root, name);
     if (!file.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); }
+    if(name==='tmp/feedback-browser/bootstrap.min.css'&&process.env.AETHER_TEST_BOOTSTRAP)file=process.env.AETHER_TEST_BOOTSTRAP;
+    else if(!fs.existsSync(file))file=path.resolve(assets,name);
     try {
         res.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'application/octet-stream');
         res.end(fs.readFileSync(file));
@@ -51,7 +54,7 @@ const server = http.createServer((req, res) => {
             const reference=layouts[0];
             layouts.forEach((layout, index) => {
                 const context=`${pages[index]} at ${width}px`;
-                assert(Math.abs(layout.width-layout.standard)<1, `${context}: standard container width`);
+                assert(Math.abs(layout.width-(width<992?width:layout.standard))<1, `${context}: mobile viewport or standard desktop container width`);
                 for(const key of ['left','width','navLeft','navWidth']) assert(Math.abs(layout[key]-reference[key])<1, `${context}: ${key} matches character page`);
                 assert(Math.abs(layout.panelLeft-layout.navLeft)<1, `${context}: nav aligns with panels`);
                 assert(!layout.overflow, `${context}: no horizontal overflow: ${JSON.stringify(layout.overflowElements)}`);
@@ -62,6 +65,6 @@ const server = http.createServer((req, res) => {
         await tabs[0].waitForTimeout(60);
         await tabs[0].evaluate(() => document.getElementById('sheetBody').classList.remove('d-none'));
         await tabs[0].waitForFunction(() => document.getElementById('pageNav').style.getPropertyValue('--aether-page-nav-container-width') === '390px');
-        console.log('PASS: shared page width, panel/nav alignment, responsive resizing and loading visibility on character, skills/traits and research pages (390–1920px).');
+        console.log('PASS: mobile edge-to-edge width, standard desktop width, panel/nav alignment, responsive resizing and loading visibility on character, skills/traits and research pages (390–1920px).');
     } finally { await browser.close(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; server.close(); });

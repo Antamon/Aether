@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Background tab logic (personal background & knowledge)
 
@@ -617,7 +618,7 @@ async function renderTies(container, character) {
             selChar.appendChild(fallbackCharacterOption);
         }
         selChar.value = tie ? tie.idOtherCharacter : "";
-        descInput.value = tie ? (tie.description || "") : "";
+        aetherBindTranslatedInput(descInput,tie?(tie.description||''):'','description');
         updateTieTypeHelpText();
     }
 

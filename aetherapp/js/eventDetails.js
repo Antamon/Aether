@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const eventDetailsState = { events: [], selectedId: 0, request: 0, participationRequest: 0, modalRequest: 0, editing: false };
 const eventNode = (tag, className = "", text) => {
@@ -86,7 +87,7 @@ function renderEventDetails(data, edit = false) {
             else if (type !== "textarea") input.type = type;
             if (limit) input.maxLength = limit;
             if (key === "ep") { input.min = "0"; input.step = "1"; }
-            input.value = String(event[key] ?? ""); inputs[key] = input; label.append(input); fields.append(label);
+            if(['title','description'].includes(key))aetherBindTranslatedInput(input,event[key]??'',key);else input.value=String(event[key]??''); inputs[key]=input; label.append(input); fields.append(label);
         } else {
             const row = eventNode("div"); row.append(eventNode("strong", "d-block", title), eventNode("span", "event-detail-value", event[key] ?? "—")); fields.append(row);
         }

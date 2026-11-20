@@ -58,20 +58,27 @@ function aetherTranslationScopeValues(PDO $pdo,array $scope): array
     foreach($statement->fetchAll(PDO::FETCH_ASSOC) as $row)foreach($scope['fields'] as $field)if(is_string($row[$field]??null)&&trim($row[$field])!=='')$values[$field][hash('sha256',$row[$field])]=$row[$field];
     return $values;
 }
-function aetherCaptureTranslationSave(PDO $pdo,array $input): void
+function aetherCaptureTranslationSave(PDO $pdo,array $input): array
 {
     unset($GLOBALS['AETHER_TRANSLATION_SAVE']);
-    if (($_SERVER['REQUEST_METHOD']??'')!=='POST'||!is_array($GLOBALS['AETHER_AUTHENTICATED_USER']??null)) return;
+    $edits=$input['_aetherTranslationEdits']??[];unset($input['_aetherTranslationEdits']);
+    if(!is_array($edits)||!array_is_list($edits))throw new InvalidArgumentException('Ongeldige vertaalbewerking.');
+    if (($_SERVER['REQUEST_METHOD']??'')!=='POST'||!is_array($GLOBALS['AETHER_AUTHENTICATED_USER']??null)) return $input;
     $route=str_replace('\\','/',(string)($_SERVER['SCRIPT_NAME']??''));$position=strpos($route,'/api/');
-    if($position===false)return;$scopes=aetherTranslationSaveScopes(substr($route,$position+5),$input);if(!$scopes)return;
+    if($position===false)return $input;$scopes=aetherTranslationSaveScopes(substr($route,$position+5),$input);if(!$scopes){if($edits)throw new InvalidArgumentException('Deze velden ondersteunen geen vertaalbewerking.');return $input;}
     require_once __DIR__.'/translationService.php';
+    $language=(string)($_SERVER['HTTP_X_AETHER_CONTENT_LANGUAGE']??'');
+    if(!in_array($language,['nl','en'],true))$language='nl';
+    require_once __DIR__.'/translationInlineEdit.php';
+    $manual=aetherPrepareInlineTranslationEdits($pdo,$scopes,$input,$edits,$language,$GLOBALS['AETHER_AUTHENTICATED_USER']);
     $submitted=[];
     $walk=static function(array $values)use(&$walk,&$submitted):void{foreach($values as $field=>$value){if(is_array($value))$walk($value);elseif(is_string($value)&&trim($value)!=='')$submitted[(string)$field][aetherTranslationSaveCanonical($value)]=true;}};
     $walk($input);$captured=[];
     foreach($scopes as $scope){try{$scope['before']=aetherTranslationScopeValues($pdo,$scope);$captured[]=$scope;}catch(Throwable $e){/* Optional metadata must never block saving game data. */}}
     $language=(string)($_SERVER['HTTP_X_AETHER_CONTENT_LANGUAGE']??'');
     if(!in_array($language,['nl','en'],true))$language='nl';
-    $GLOBALS['AETHER_TRANSLATION_SAVE']=['scopes'=>$captured,'submitted'=>$submitted,'sourceLanguage'=>$language,'userId'=>(int)$GLOBALS['AETHER_AUTHENTICATED_USER']['id']];
+    $GLOBALS['AETHER_TRANSLATION_SAVE']=['scopes'=>$captured,'submitted'=>$submitted,'sourceLanguage'=>$language,'userId'=>(int)$GLOBALS['AETHER_AUTHENTICATED_USER']['id'],'manualEdits'=>$manual];
+    return $input;
 }
 /** Existing source-language metadata keeps editing a Dutch source in an English UI Dutch. */
 function aetherSavedTranslationLanguage(PDO $pdo,string $hash,array $previous,string $fallback): string
@@ -91,6 +98,7 @@ function aetherSavedTranslationChanges(PDO $pdo,mixed $result): array
 {
     $context=$GLOBALS['AETHER_TRANSLATION_SAVE']??null;unset($GLOBALS['AETHER_TRANSLATION_SAVE']);
     if(!$context||$pdo->inTransaction()||(int)($GLOBALS['AETHER_AUTHENTICATED_USER']['id']??0)!==$context['userId'])return [];
+    if(!empty($context['manualEdits'])) {require_once __DIR__.'/translationInlineEdit.php';aetherApplyInlineTranslationEdits($pdo,$context['manualEdits']);}
     $changes=[];
     foreach($context['scopes'] as $scope){
         if(($scope['params'][0]??null)===0&&!empty($scope['resultPath'])){

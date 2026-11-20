@@ -218,64 +218,30 @@ function getMiddleClassLivingStandardText(character) {
     }
 
     if (income <= 100) {
-        return `Je behoort tot de verarmde middenklasse. Je huurt
-een klein appartement of kleine gezinswoning van
-een hospita in een minder goede wijk van de stad. Je
-maaltijden zijn sober en soms karig, je kleding een
-beetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont
-maar zelden sociale evenementen bij door geldge-
-brek.`;
+        return aetherT("Je behoort tot de verarmde middenklasse. Je huurt een klein appartement of kleine gezinswoning van een hospita in een minder goede wijk van de stad. Je maaltijden zijn sober en soms karig, je kleding een beetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont maar zelden sociale evenementen bij door geldgebrek.");
     }
 
     if (income <= 200) {
-        return `Je maakt deel uit van de lagere middenklasse. Je
-woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de
-eenvoudige pleziertjes van het leven veroorloven.
-Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega’s.`;
+        return aetherT("Je maakt deel uit van de lagere middenklasse. Je woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de eenvoudige pleziertjes van het leven veroorloven. Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega’s.");
     }
 
     if (income <= 350) {
-        return `Je behoort tot de comfortabele middenmoot van
-je klasse. Je woont in een comfortabele stadswoning
-met twee tot vier slaapkamers en een huishoudster. Je
-hebt een goed uitgebouwd professioneel netwerk en
-komt regelmatig in contact met invloedrijke mensen.
-Je moet voorzichtig zijn met je geld, maar je kan
-jezelf en je gezin af en toe verwennen met een luxe
-uitgave.`;
+        return aetherT("Je behoort tot de comfortabele middenmoot van je klasse. Je woont in een comfortabele stadswoning met twee tot vier slaapkamers en een huishoudster. Je hebt een goed uitgebouwd professioneel netwerk en komt regelmatig in contact met invloedrijke mensen. Je moet voorzichtig zijn met je geld, maar je kan jezelf en je gezin af en toe verwennen met een luxe uitgave.");
     }
 
     if (income <= 1000) {
-        return `Je maakt deel uit van de gegoede middenklasse.
-Je woont in een mooi, groot herenhuis met 6 tot 8
-slaapkamers, een huishoudster, een butler en een
-tuinman of klusjesman. Je bent belangrijk genoeg
-om regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen.`;
+        return aetherT("Je maakt deel uit van de gegoede middenklasse. Je woont in een mooi, groot herenhuis met 6 tot 8 slaapkamers, een huishoudster, een butler en een tuinman of klusjesman. Je bent belangrijk genoeg om regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen.");
     }
 
     if (income <= 4000) {
-        return `Je behoort tot de hogere middenklasse. Je woont in
-een riante stadswoning of landhuis met vele kamers,
-meerdere badkamers, salons en een grote tuin. Bij
-het huis hoort een ploeg van ongeveer 10 bedienden.
-Je exclusieve diners bij kaarslicht zijn gelegenheden
-waar reikhalzend naar wordt uitgekeken. Je persoon-
-lijk vermogen wordt geschat tussen de 1 700 000Fr
-en de 15 000 000Fr.`;
+        return aetherT("Je behoort tot de hogere middenklasse. Je woont in een riante stadswoning of landhuis met vele kamers, meerdere badkamers, salons en een grote tuin. Bij het huis hoort een ploeg van ongeveer 10 bedienden. Je exclusieve diners bij kaarslicht zijn gelegenheden waar reikhalzend naar wordt uitgekeken. Je persoonlijk vermogen wordt geschat tussen de 1 700 000Fr en de 15 000 000Fr.");
     }
 
-    return `De levensstijl van de nouveau riche die de luxe van
-de hoge adel benadert. Je woont in een uniek kasteel
-of paleis buiten de stad. Bij de woonst horen de om-
-liggende velden en bossen. Je krijgt er een uitgebreide
-huishoudploeg bij, alsook boswachters om je domein
-veilig te houden. Uitgebreide diners en exuberante
-feestjes met belangrijke mensen, zijn de normale gang
-van zaken.`;
+    return aetherT("De levensstijl van de nouveau riche die de luxe van de hoge adel benadert. Je woont in een uniek kasteel of paleis buiten de stad. Bij de woonst horen de omliggende velden en bossen. Je krijgt er een uitgebreide huishoudploeg bij, alsook boswachters om je domein veilig te houden. Uitgebreide diners en exuberante feestjes met belangrijke mensen, zijn de normale gang van zaken.");
 }
 
 function getLowerClassLivingStandardText() {
-    return `Je leeft in armoede. Een eigendom is iets wat je nooit zal bereiken. Als je geluk hebt, kan je een schamel onderkomen huren waar je met het hele gezin woont. Hartig dagelijks voedsel is geen zekerheid, gezondheidszorg een onbereikbare droom. Je enige hoop op een comfortabel leven is als inwonend personeel bij een rijke werkgeven.`;
+    return aetherT("Je leeft in armoede. Een eigendom is iets wat je nooit zal bereiken. Als je geluk hebt, kan je een schamel onderkomen huren waar je met het hele gezin woont. Hartig dagelijks voedsel is geen zekerheid, gezondheidszorg een onbereikbare droom. Je enige hoop op een comfortabel leven is als inwonend personeel bij een rijke werkgeven.");
 }
 
 function getUpperClassHouseholdStaffLivingStandardText(tier) {
@@ -378,60 +344,26 @@ function getResolvedMiddleClassLivingStandardText(character) {
     }
 
     if (income <= 100) {
-        return `Je behoort tot de verarmde middenklasse. Je huurt
-een klein appartement of kleine gezinswoning van
-een hospita in een minder goede wijk van de stad. Je
-maaltijden zijn sober en soms karig, je kleding een
-beetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont
-maar zelden sociale evenementen bij door geldge-
-brek.`;
+        return aetherT("Je behoort tot de verarmde middenklasse. Je huurt een klein appartement of kleine gezinswoning van een hospita in een minder goede wijk van de stad. Je maaltijden zijn sober en soms karig, je kleding een beetje afstands. Je hebt moeite met de eindjes aan elkaar te knopen op het einde van de maand. Je woont maar zelden sociale evenementen bij door geldgebrek.");
     }
 
     if (income <= 200) {
-        return `Je maakt deel uit van de lagere middenklasse. Je
-woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de
-eenvoudige pleziertjes van het leven veroorloven.
-Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega's.`;
+        return aetherT("Je maakt deel uit van de lagere middenklasse. Je woont in een eigen appartement of kleine gezinswoning in een goede buurt van de stad. Je kan je de eenvoudige pleziertjes van het leven veroorloven. Je sociaal leven bestaat uit bezoekjes aan volkstheaters, circussen, musea en activiteiten met je collega's.");
     }
 
     if (income <= 350) {
-        return `Je behoort tot de comfortabele middenmoot van
-je klasse. Je woont in een comfortabele stadswoning
-met twee tot vier slaapkamers en een huishoudster. Je
-hebt een goed uitgebouwd professioneel netwerk en
-komt regelmatig in contact met invloedrijke mensen.
-Je moet voorzichtig zijn met je geld, maar je kan
-jezelf en je gezin af en toe verwennen met een luxe
-uitgave.`;
+        return aetherT("Je behoort tot de comfortabele middenmoot van je klasse. Je woont in een comfortabele stadswoning met twee tot vier slaapkamers en een huishoudster. Je hebt een goed uitgebouwd professioneel netwerk en komt regelmatig in contact met invloedrijke mensen. Je moet voorzichtig zijn met je geld, maar je kan jezelf en je gezin af en toe verwennen met een luxe uitgave.");
     }
 
     if (income <= 1000) {
-        return `Je maakt deel uit van de gegoede middenklasse.
-Je woont in een mooi, groot herenhuis met 6 tot 8
-slaapkamers, een huishoudster, een butler en een
-tuinman of klusjesman. Je bent belangrijk genoeg
-om regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen.`;
+        return aetherT("Je maakt deel uit van de gegoede middenklasse. Je woont in een mooi, groot herenhuis met 6 tot 8 slaapkamers, een huishoudster, een butler en een tuinman of klusjesman. Je bent belangrijk genoeg om regelmatig uitgenodigd te worden op aangelegenheden waar de prominenten uit de samenleving bijeen komen.");
     }
 
     if (income <= 4000) {
-        return `Je behoort tot de hogere middenklasse. Je woont in
-een riante stadswoning of landhuis met vele kamers,
-meerdere badkamers, salons en een grote tuin. Bij
-het huis hoort een ploeg van ongeveer 10 bedienden.
-Je exclusieve diners bij kaarslicht zijn gelegenheden
-waar reikhalzend naar wordt uitgekeken. Je persoon-
-lijk vermogen wordt geschat tussen de 1 700 000Fr
-en de 15 000 000Fr.`;
+        return aetherT("Je behoort tot de hogere middenklasse. Je woont in een riante stadswoning of landhuis met vele kamers, meerdere badkamers, salons en een grote tuin. Bij het huis hoort een ploeg van ongeveer 10 bedienden. Je exclusieve diners bij kaarslicht zijn gelegenheden waar reikhalzend naar wordt uitgekeken. Je persoonlijk vermogen wordt geschat tussen de 1 700 000Fr en de 15 000 000Fr.");
     }
 
-    return `De levensstijl van de nouveau riche die de luxe van
-de hoge adel benadert. Je woont in een uniek kasteel
-of paleis buiten de stad. Bij de woonst horen de om-
-liggende velden en bossen. Je krijgt er een uitgebreide
-huishoudploeg bij, alsook boswachters om je domein
-veilig te houden. Uitgebreide diners en exuberante
-feestjes met belangrijke mensen, zijn de normale gang
-van zaken.`;
+    return aetherT("De levensstijl van de nouveau riche die de luxe van de hoge adel benadert. Je woont in een uniek kasteel of paleis buiten de stad. Bij de woonst horen de omliggende velden en bossen. Je krijgt er een uitgebreide huishoudploeg bij, alsook boswachters om je domein veilig te houden. Uitgebreide diners en exuberante feestjes met belangrijke mensen, zijn de normale gang van zaken.");
 }
 
 function getCharacterLivingStandardText(character) {

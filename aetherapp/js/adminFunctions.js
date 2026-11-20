@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 let adminSkillBeforeDraft = null;
 let adminSkillEditing = false;
@@ -967,11 +968,11 @@ function populateAdminSkillForm(skill) {
     }
 
     if (idInput) idInput.value = Number(currentAdminSkill.idSkill || 0) > 0 ? String(currentAdminSkill.idSkill) : "";
-    if (nameInput) nameInput.value = currentAdminSkill.name || "";
-    if (descriptionInput) descriptionInput.value = currentAdminSkill.description || "";
-    if (beginnerInput) beginnerInput.value = currentAdminSkill.beginner || "";
-    if (professionalInput) professionalInput.value = currentAdminSkill.professional || "";
-    if (masterInput) masterInput.value = currentAdminSkill.master || "";
+    if (nameInput) aetherBindTranslatedInput(nameInput,currentAdminSkill.name||'',"name");
+    if (descriptionInput) aetherBindTranslatedInput(descriptionInput,currentAdminSkill.description||'',"description");
+    if (beginnerInput) aetherBindTranslatedInput(beginnerInput,currentAdminSkill.beginner||'',"beginner");
+    if (professionalInput) aetherBindTranslatedInput(professionalInput,currentAdminSkill.professional||'',"professional");
+    if (masterInput) aetherBindTranslatedInput(masterInput,currentAdminSkill.master||'',"master");
 
     renderAdminCategories(currentAdminSkill);
     renderAdminSpecialisations(currentAdminSkill);
@@ -1125,7 +1126,7 @@ function renderAdminSkillOptions(skill,kind,containerId) {
         input.type = "text";
         input.className = "form-control";
         input.maxLength = 100;
-        input.value = specialisation.name || "";
+        aetherBindTranslatedInput(input,specialisation.name||'','name');
         input.placeholder = kind==='discipline'?aetherT("Naam van de discipline"):aetherT("Naam van de specialisatie");
         input.dataset.adminSpecKey = String(specialisation.clientKey || "");
 
@@ -1497,7 +1498,7 @@ function renderAdminCategories(skill) {
             const nameInput = document.createElement("input");
             nameInput.type = "text";
             nameInput.className = "form-control form-control-sm admin-category-name-input";
-            nameInput.value = category.name || aetherT("Categorie #{0}",[category.idSkillType || 0]);
+            aetherBindTranslatedInput(nameInput,category.name||aetherT("Categorie #{0}",[category.idSkillType||0]),'name');
             nameInput.dataset.adminCategoryName = "true";
             nameInput.dataset.idSkillType = String(category.idSkillType || 0);
             toggleWrap.appendChild(nameInput);

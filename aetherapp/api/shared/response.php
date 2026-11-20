@@ -13,7 +13,10 @@ if (!function_exists('aetherJsonResponse')) {
             $changes = [];
             if (isset($GLOBALS['AETHER_TRANSLATION_SAVE'])) {
                 require_once __DIR__.'/translationChanges.php';
-                $changes = aetherSavedTranslationChanges($GLOBALS['pdo'], $data);
+                try { $changes = aetherSavedTranslationChanges($GLOBALS['pdo'], $data); }
+                catch (DomainException $error) { aetherJsonError(409,$error->getMessage()); }
+                catch (InvalidArgumentException $error) { aetherJsonError(422,$error->getMessage()); }
+                catch (Throwable $error) { aetherJsonError(503,'De vertaling kon niet worden bewaard. Probeer opnieuw.'); }
             }
             $data = aetherContentResponse($GLOBALS['pdo'], $data, $contentLanguage, $changes);
         }

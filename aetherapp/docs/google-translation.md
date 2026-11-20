@@ -148,3 +148,23 @@ Officiële documentatie:
 [attributie](https://docs.cloud.google.com/translate/attribution).
 De automatische vertaling van Aether wordt mogelijk gemaakt door Google Translate;
 automatische vertalingen kunnen fouten bevatten en vervangen de oorspronkelijke tekst niet.
+
+## Vertalingen corrigeren in gewone formulieren
+
+Administrators en directors kunnen ook de bestaande bewerkvelden gebruiken. Kies de taal
+van de te corrigeren vertaling en open het normale Edit-formulier. Tekstvakken en rich-textvelden
+tonen de bestaande vertaling. Opslaan bewaart alleen die handmatige vertaling wanneer het om
+een andere taal dan de bron gaat. De oorspronkelijke tekst blijft gelijk.
+
+Bijvoorbeeld: bron Engels Cut!, Nederlandse vertaling Snee!. Open het event in het Nederlands
+en wijzig de titel naar Cut!. De Engelse bron blijft Cut!; de Nederlandse vertaling wordt
+handmatig Cut!. Ook een vertaling die gelijk is aan de bron vernieuwt onmiddellijk de weergave.
+Deze correcties gebruiken geen Google-tegoed en worden niet door automatische vertalingen overschreven.
+
+Bewerk je in de brontaal, dan verandert de oorspronkelijke tekst en blijft de bestaande automatische
+vertaling-uitsluitend-na-opslag gelden. De bestaande rechten op vertaalbeheer blijven beperkt tot
+administrators/directors; gewone deelnemers krijgen hierdoor geen extra beheerrechten.
+
+De server valideert de bronhash, het veldpad, de onderliggende normale opslagrechten en de versie
+van de vertaling. Een verouderd formulier of gewijzigde bron vraagt om opnieuw laden. Vertalingen
+blijven gedeeld per identieke brontekst, zoals in de bestaande vertaalcache. Er is geen migratie nodig.

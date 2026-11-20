@@ -39,7 +39,7 @@ dialog.aether-modal-surface::backdrop { background: rgba(0, 0, 0, .5); }
   position: absolute;
   z-index: 0;
   inset: var(--top-rail) var(--right-rail) var(--bottom-rail) var(--left-rail);
-  background: #e8d2ac url('../images/paper.png') repeat;
+  background: #e8d2ac url('../img/paper.png') repeat;
   pointer-events: none;
 }
 .aether-modal-surface > .modal-header,
@@ -62,7 +62,7 @@ dialog.aether-modal-surface::backdrop { background: rgba(0, 0, 0, .5); }
   bottom: 0;
   left: calc(var(--left-rail) - var(--content-padding-x));
   right: calc(var(--right-rail) - var(--content-padding-x));
-  background: #640e0e url('../images/red.jpg') repeat center;
+  background: #640e0e url('../img/red.jpg') repeat center;
   pointer-events: none;
 }
 .aether-modal-surface .modal-title {
@@ -86,7 +86,7 @@ dialog.aether-modal-surface::backdrop { background: rgba(0, 0, 0, .5); }
   bottom: 0;
   height: var(--title-bar-height);
   transform: translateY(50%);
-  background: url('../images/modalTitleBar.png') no-repeat center;
+  background: url('../img/modalTitleBar.png') no-repeat center;
   background-size: max(100%, calc(var(--title-bar-height) * 2048 / 144)) var(--title-bar-height);
   pointer-events: none;
 }
@@ -151,8 +151,8 @@ dialog.aether-modal-surface > .modal-body > .button-group:last-child {
   background-repeat: repeat-x;
   background-size: auto 100%;
 }
-.aether-modal-frame-top { top: 0; background-image: url('../images/modalFrameMiddleTop.png'); }
-.aether-modal-frame-bottom { bottom: 0; background-image: url('../images/modalFrameMiddleBottom.png'); }
+.aether-modal-frame-top { top: 0; background-image: url('../img/modalFrameMiddleTop.png'); }
+.aether-modal-frame-bottom { bottom: 0; background-image: url('../img/modalFrameMiddleBottom.png'); }
 .aether-modal-frame-left,
 .aether-modal-frame-right {
   z-index: 1;
@@ -161,16 +161,16 @@ dialog.aether-modal-surface > .modal-body > .button-group:last-child {
   background-repeat: repeat-y;
   background-size: 100% auto;
 }
-.aether-modal-frame-left { left: 0; width: var(--left-rail); background-image: url('../images/modalFrameLeftMiddle.png'); }
-.aether-modal-frame-right { right: 0; width: var(--right-rail); background-image: url('../images/modalFrameRightMiddle.png'); }
+.aether-modal-frame-left { left: 0; width: var(--left-rail); background-image: url('../img/modalFrameLeftMiddle.png'); }
+.aether-modal-frame-right { right: 0; width: var(--right-rail); background-image: url('../img/modalFrameRightMiddle.png'); }
 .aether-modal-frame-top-left,
 .aether-modal-frame-top-right,
 .aether-modal-frame-bottom-left,
 .aether-modal-frame-bottom-right { width: var(--corner); height: var(--corner); background-size: 100% 100%; }
-.aether-modal-frame-top-left { top: 0; left: 0; background-image: url('../images/modalFrameLeftTop.png'); }
-.aether-modal-frame-top-right { top: 0; right: 0; background-image: url('../images/modalFrameRightTop.png'); }
-.aether-modal-frame-bottom-left { bottom: 0; left: 0; background-image: url('../images/modalFrameLeftBottom.png'); }
-.aether-modal-frame-bottom-right { bottom: 0; right: 0; background-image: url('../images/modalFrameRightBottom.png'); }
+.aether-modal-frame-top-left { top: 0; left: 0; background-image: url('../img/modalFrameLeftTop.png'); }
+.aether-modal-frame-top-right { top: 0; right: 0; background-image: url('../img/modalFrameRightTop.png'); }
+.aether-modal-frame-bottom-left { bottom: 0; left: 0; background-image: url('../img/modalFrameLeftBottom.png'); }
+.aether-modal-frame-bottom-right { bottom: 0; right: 0; background-image: url('../img/modalFrameRightBottom.png'); }
 
 .aether-modal-surface > .aether-modal-close {
   position: absolute;

@@ -240,25 +240,21 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   }
 }
 
-#navbarName{
-    color: var(--bs-navbar-brand-hover-color);
-}
+/* The identity host keeps its historical ID for the language/translation controls. */
+#navbarName { color: #fff; }
 
-.aether-top-nav {
-  /* Original artwork: 2560 × 280px, with its thin lower edge at about 100px. */
+.aether-top-bar {
+  /* Desktop artwork: 2560 x 280px; the thin lower edge is at about 100px. */
   --aether-topbar-height: 10.9375vw;
   --aether-topbar-edge: max(48px, 3.90625vw);
   position: relative;
   z-index: 1040;
   min-height: var(--aether-topbar-edge);
-  padding-block: 0;
-  /* De pagina start op dezelfde hoogte als de eerste sidebartab. */
-  margin-bottom: 50px !important;
-  background: transparent !important;
+  margin-bottom: 50px;
   isolation: isolate;
 }
 
-.aether-top-nav::before {
+.aether-top-bar::before {
   content: "";
   position: absolute;
   top: 0;
@@ -270,27 +266,21 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   z-index: -1;
 }
 
-.aether-top-nav > .container {
+.aether-top-bar > .container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   min-height: var(--aether-topbar-edge);
   padding-right: 26%;
 }
 
-/* Het nieuwe topbarbeeld bevat het logo al aan de rechterkant. */
-.aether-top-nav .navbar-brand {
+.aether-top-bar-home {
   position: absolute;
+  z-index: 1;
   top: 0;
   right: 0;
   width: 23%;
   height: var(--aether-topbar-edge);
-  margin: 0;
-}
-
-.aether-top-nav .navbar-brand img {
-  display: none;
-}
-
-.aether-top-nav .navbar-collapse {
-  flex-wrap: wrap;
 }
 
 /* The page header ends before the descending ornament at 75% of the artwork. */
@@ -312,25 +302,36 @@ input[type=text], input[type=date], input[type=number], textarea, select {
 }
 
 @media (max-width: 991.98px) {
-  .aether-top-nav {
-    margin-bottom: calc(max(0px, var(--aether-topbar-height) - var(--aether-topbar-edge)) + 12px) !important;
+  .aether-top-bar {
+    --aether-topbar-height: calc(100vw * 280 / 1080);
+    --aether-topbar-edge: var(--aether-topbar-height);
+    margin-bottom: 12px;
   }
+
+  .aether-top-bar::before { background-image: url("../img/topBarMobile.png"); }
+
+  .aether-top-bar > .container {
+    max-width: none;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 0 max(10px, env(safe-area-inset-right, 0px)) max(9px, .85vw) max(10px, env(safe-area-inset-left, 0px));
+  }
+
+  .aether-top-bar #navbarName {
+    justify-content: flex-start;
+    max-width: 100%;
+    min-width: 0;
+    font-size: clamp(12px, 2.7vw, 16px);
+    line-height: 1.25;
+    margin-bottom: 4vw;
+  }
+
+  .aether-top-bar-home { width: 47%; height: 80%; }
 
   .aether-page-nav {
     width: 100%;
     max-width: var(--aether-page-nav-container-width, 100%);
     margin-inline: auto;
-  }
-
-  .aether-top-nav .navbar-toggler {
-    margin-block: 12px;
-  }
-
-  .aether-top-nav .navbar-collapse.show,
-  .aether-top-nav .navbar-collapse.collapsing {
-    padding: 0.5rem 1rem;
-    background-color: var(--primary-red);
-    border-radius: 8px;
   }
 }
 
@@ -338,10 +339,10 @@ input[type=text], input[type=date], input[type=number], textarea, select {
   background: var(--primary-brown) url("../img/leather.jpg") repeat;
   --aether-sidebar-tab-height: 175px;
   position: fixed;
-  top: var(--aether-navbar-bottom, 0px);
+  top: var(--aether-topbar-bottom, 0px);
   left: 0;
   width: var(--aether-sidebar-width);
-  height: calc(100dvh - var(--aether-navbar-bottom, 0px));
+  height: calc(100dvh - var(--aether-topbar-bottom, 0px));
   z-index: 1030;
   transform: translateX(calc(-100% + 19px));
   transition: transform 0.3s ease-in-out;
@@ -1290,10 +1291,6 @@ summary.accordion-button::-webkit-details-marker { display: none; }
 
 .upper-class-traits .trait-group:last-child {
   margin-bottom: 0;
-}
-
-.navbar-brand img{
-  width: 10em;
 }
 
 .spec-group{
@@ -3224,3 +3221,161 @@ a.company-sidebar-card { text-decoration: none; }
     box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
 }
 .share-ui-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+
+/* On phones the page frames use the viewport and navigation rises from the bottom. */
+@media (max-width: 991.98px) {
+  :root {
+    --aether-mobile-dock-width: calc((100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * .95);
+    --aether-mobile-tab-size: calc((var(--aether-mobile-dock-width) - 3 * var(--aether-mobile-tab-gap)) / 4);
+    --aether-mobile-tab-gap: 4px;
+  }
+
+  body {
+    padding-bottom: calc(var(--aether-mobile-tab-size) + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+
+  .container.aether-page,
+  .container.aether-page-nav {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .aether-page-nav > .aether-page-nav-body {
+    padding-left: max(4px, env(safe-area-inset-left, 0px));
+    padding-right: max(4px, env(safe-area-inset-right, 0px));
+  }
+
+  .container.aether-page-nav > .nav-tabs {
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+  }
+
+  .aether-page > .row,
+  .aether-page .row:has(> .aether-panel),
+  .aether-page .row:has(> [class*="col-"] > .aether-panel),
+  .aether-page :is(#backgroundContent, #personalityContent, #diaryContent, #economyTabContent, #actionsTabContent, #passportTabContent) > .row {
+    --bs-gutter-x: 0;
+    margin-inline: 0;
+  }
+
+  .aether-page > .row > [class*="col-"]:not(.aether-panel),
+  .aether-page .row:has(> [class*="col-"] > .aether-panel) > [class*="col-"]:not(.aether-panel),
+  .aether-page :is(#backgroundContent, #personalityContent, #diaryContent, #economyTabContent, #actionsTabContent, #passportTabContent) > .row > [class*="col-"]:not(.aether-panel) {
+    padding-inline: 0;
+  }
+
+  .aether-page :is(#backgroundTab, #personalityTab, #diaryTab, #economyTab, #actionsTab, #passportTab) {
+    padding-inline: 0 !important;
+  }
+
+  .aether-page .aether-panel {
+    padding-left: max(35.5px, env(safe-area-inset-left, 0px));
+    padding-right: max(35.5px, env(safe-area-inset-right, 0px));
+  }
+
+  html.aether-mobile-navigation-open,
+  body.aether-mobile-navigation-open {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  .aether-sidebar-deck {
+    --aether-mobile-tab-count: 2;
+    --aether-mobile-panel-height: calc(var(--aether-mobile-viewport-height, 100dvh) - var(--aether-mobile-tab-size) - env(safe-area-inset-top, 0px));
+    top: calc(var(--aether-mobile-viewport-top, 0px) + var(--aether-mobile-tab-size) + env(safe-area-inset-top, 0px));
+    left: 0;
+    width: 100%;
+    height: var(--aether-mobile-panel-height);
+    z-index: 1045;
+    transform: translateY(calc(100% - env(safe-area-inset-bottom, 0px)));
+    transition: transform .28s ease-in-out;
+    pointer-events: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .aether-sidebar-deck.is-open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .aether-sidebar-deck > .aether-sidebar-gold-edge,
+  .aether-sidebar-tab-gold { display: none; }
+
+  .aether-sidebar-deck .aether-sidebar-panel {
+    width: 100%;
+    height: 100%;
+    box-shadow: none;
+    visibility: hidden;
+  }
+
+  .aether-sidebar-deck:not(.is-open) .aether-sidebar-panel.is-home { visibility: hidden; }
+  .aether-sidebar-deck .aether-sidebar-panel:is(.is-open, .is-closing) { visibility: visible; }
+
+  .aether-sidebar-deck .offcanvas-tab {
+    top: calc(-1 * var(--aether-mobile-tab-size));
+    left: calc(50% - (var(--aether-mobile-tab-count) * var(--aether-mobile-tab-size) + (var(--aether-mobile-tab-count) - 1) * var(--aether-mobile-tab-gap)) / 2 + var(--aether-mobile-tab-index, 0) * (var(--aether-mobile-tab-size) + var(--aether-mobile-tab-gap)));
+    width: var(--aether-mobile-tab-size);
+    height: var(--aether-mobile-tab-size);
+    transform: none;
+    pointer-events: auto;
+    transition: transform .28s ease-in-out;
+  }
+
+  .aether-sidebar-deck:is(.is-open, .is-closing) .offcanvas-tab:not(.is-active):not(.is-closing) {
+    transform: translateY(var(--aether-mobile-panel-height));
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .aether-sidebar-deck .offcanvas-tab:is(.is-active, .is-closing) { z-index: 5; }
+
+  .offcanvas-tab .tab-button {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 6px;
+    border: 0;
+    border-radius: 0;
+    background: var(--primary-brown) url("../img/leather.jpg") repeat;
+    transform: none;
+    filter: none;
+    box-shadow: none;
+  }
+
+  .offcanvas-tab .tab-button::before { display: none; }
+  .offcanvas-tab .tab-button:focus-visible { outline-offset: -3px; }
+
+  .aether-sidebar-tab-icon {
+    position: static;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+    filter: none;
+  }
+
+  .aether-sidebar-header {
+    flex-basis: 60px;
+    align-items: center;
+    padding: 8px 12px;
+  }
+
+  .aether-sidebar-header img { width: 32px; height: 26px; }
+  .aether-sidebar-title { font-size: 1.5rem; line-height: 1.25; }
+  .aether-sidebar-paper { width: 100%; margin: 0; }
+  .aether-sidebar-scroll { padding-left: max(27px, env(safe-area-inset-left, 0px)); padding-right: max(27px, env(safe-area-inset-right, 0px)); padding-bottom: calc(45px + env(safe-area-inset-bottom, 0px)); overscroll-behavior: contain; }
+  .aether-sidebar-scroll :is(#characterNames, .company-list) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 991.98px) and (prefers-reduced-motion: reduce) {
+  .aether-sidebar-deck,
+  .aether-sidebar-deck .offcanvas-tab { transition: none; }
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .aether-sidebar-scroll :is(#characterNames, .company-list) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

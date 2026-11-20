@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 (() => {
     "use strict";
@@ -432,7 +433,7 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
         const textCol = node("div", "col-12 col-md-7");
         const textLabel = node("label", "form-label", aetherT("Beschrijving"));
         const textInput = node("textarea", "form-control");
-        textInput.rows = 2; textInput.maxLength = 2000; textInput.value = item.description || "";
+        textInput.rows = 2; textInput.maxLength = 2000; aetherBindTranslatedInput(textInput,item.description||'','description');
         textLabel.appendChild(textInput); textCol.appendChild(textLabel);
         const scaleCol = node("div", "col-8 col-md-3");
         const scaleLabel = node("label", "form-label", aetherT("Zichtbaarheid (1–5)"));

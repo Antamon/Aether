@@ -27,7 +27,7 @@ async function check(role, companies) {
     };
     const requests = [];
     const context = {
-        document: {body, createElement: () => new Node(), querySelector: selector => selector === '.aether-top-nav' ? navbar : null,
+        document: {body, createElement: () => new Node(), querySelector: selector => selector === '.aether-top-bar' ? navbar : null,
             getElementById: id => all().find(node => node.id === id), addEventListener() {}},
         window: {location: {search: '?sidebar=admin'}, addEventListener() {}},
         URLSearchParams, console,

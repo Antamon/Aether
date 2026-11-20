@@ -37,13 +37,15 @@ function aetherContentResponse(PDO $pdo, mixed $data, string $language, array $s
                 $covered[$row['sourceHash']] = true;
                 $formats[$row['sourceHash']] = $row['format'];
                 $source = $sources[$row['sourceHash']] ?? null;
-                if ($source !== null && $row['translatedText'] !== $source) {
+                if ($source !== null) {
                     $text = (string)$row['translatedText'];
                     if ($row['format'] === 'html') {
                         require_once __DIR__ . '/richText.php';
                         $text = aetherSanitizeRichText($text, ['p','br','strong','em','u','ul','ol','li','h4','blockquote']);
                     }
-                    $translations[] = ['source' => $source, 'text' => $text, 'format' => $row['format'], 'provider'=>$row['provider']??''];
+                    $translations[] = ['source' => $source, 'text' => $text, 'format' => $row['format'], 'provider'=>$row['provider']??'',
+                        'sourceHash'=>$row['sourceHash'],'sourceLanguage'=>$row['sourceLanguage']??null,
+                        'version'=>hash('sha256',json_encode([$row['translatedText'],$row['sourceLanguage']??null,$row['format'],$row['status'],$row['provider']??''],JSON_THROW_ON_ERROR))];
                 }
             }
         }

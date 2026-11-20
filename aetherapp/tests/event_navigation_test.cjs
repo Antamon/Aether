@@ -45,7 +45,7 @@ async function checkSidebar(role, page = 'characters') {
     const windowListeners = {};
     const calls = [];
     const context = { console, URLSearchParams, window: { location: { search: '', href: '' }, addEventListener(name, handler) {windowListeners[name] = handler;} },
-        document: { body, createElement: tag => new Element(tag), querySelector: selector => selector === '.aether-top-nav' ? navbar : body.querySelector(selector),
+        document: { body, createElement: tag => new Element(tag), querySelector: selector => selector === '.aether-top-bar' ? navbar : body.querySelector(selector),
             getElementById: id => find(body, node => node.id === id), addEventListener() {} },
         aetherGetCurrentUser: async () => ({ role }), userHasPrivilegedRole: user => ['director', 'administrator'].includes(user.role),
         apiFetchJson: async url => { calls.push(url); return url.includes('getUserList')

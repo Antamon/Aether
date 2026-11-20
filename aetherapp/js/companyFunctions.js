@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 const COMPANY_STABILITY_RANGES = [
     {
@@ -205,7 +206,7 @@ function renderCompanyDetailsMode() {
         companyDescriptionRichEditor.editor.contentEditable = String(editing && !companyDetailsSaving);
         descriptionInput.classList.add("d-none");
     } else if (descriptionInput) {
-        if (editing) descriptionInput.value = companyDetailsDraft.description || "";
+        if (editing) aetherBindTranslatedInput(descriptionInput,companyDetailsDraft.description || "",'description');
         descriptionInput.classList.toggle("d-none", !editing);
     }
     if (descriptionInput) descriptionInput.disabled = !editing || companyDetailsSaving;
@@ -644,7 +645,7 @@ function populateCompanyForm(company) {
         if (formSubtitle) formSubtitle.textContent = aetherT("Vul de bedrijfsgegevens in en klik op Save.");
         if (idInput) idInput.value = "";
         if (nameInput) nameInput.value = company.companyName || "";
-        if (descriptionInput) descriptionInput.value = company.description || "";
+        if (descriptionInput) aetherBindTranslatedInput(descriptionInput,company.description || "",'description');
         if (foundationDateInput) foundationDateInput.value = company.foundationDate || getDefaultFoundationDate();
         if (valueInput) valueInput.textContent = formatCompanySnapshotCurrency(company.companyValue || 0);
         showSliders(company);
@@ -687,7 +688,7 @@ function populateCompanyForm(company) {
     if (formSubtitle) formSubtitle.textContent = aetherT("Algemene gegevens van dit bedrijf.");
     if (idInput) idInput.value = String(company.id || "");
     if (nameInput) nameInput.value = company.companyName || "";
-    if (descriptionInput) descriptionInput.value = company.description || "";
+    if (descriptionInput) aetherBindTranslatedInput(descriptionInput,company.description || "",'description');
     if (foundationDateInput) foundationDateInput.value = company.foundationDate || "";
     if (valueInput) valueInput.textContent = formatCompanySnapshotCurrency(company.displayCompanyValue ?? company.companyValue);
     showSliders(sortCompanySnapshotsByDate(company.snapshots).at(-1) || company.foundationSnapshot || company);
@@ -1952,7 +1953,7 @@ function renderCompanyPersonnel(company) {
         functionInput.className = "form-control";
         functionInput.rows = 3;
         functionInput.maxLength = 4000;
-        functionInput.value = String(entry?.functionDescription || "");
+        aetherBindTranslatedInput(functionInput,entry?.functionDescription||'','functionDescription');
         functionInput.dataset.companyPersonnelField = "functionDescription";
         functionInput.dataset.personnelIndex = String(entryIndex);
         functionCol.appendChild(functionInput);

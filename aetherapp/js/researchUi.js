@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 /* Shared Aether components for research. No server-side JavaScript runtime. */
 window.AetherResearch = (() => {
@@ -5,7 +6,7 @@ window.AetherResearch = (() => {
     const button = (label, icon, action) => { const b = AetherActionButtons.button({label, icon}); b.addEventListener('click', action); return b; };
     const group = (...buttons) => AetherActionButtons.group(buttons);
     const rich = html => { const n = el('div', '', 'research-rich'); n.setAttribute('data-content-rendered','true'); if(window.AetherContent?.renderRich)window.AetherContent.renderRich(n,html);else n.innerHTML = html || ''; return n; }; // HTMLPurifier output only.
-    const input = (value = '', type = 'text') => { const n = el('input', '', 'form-control'); n.type = type; n.value = value; return n; };
+    const input = (value = '', type = 'text') => { const n = el('input', '', 'form-control'); n.type = type;if(type==='text')aetherBindTranslatedInput(n,value);else n.value=value;return n; };
     const select = (items, value = 0, empty = null) => {
         const n = el('select', '', 'form-select');
         if (empty !== null) { const o = el('option', empty); o.value = ''; n.append(o); }

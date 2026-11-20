@@ -42,7 +42,8 @@ function createCharacterRichTextEditor(initialHtml, options = {}) {
     editor.spellcheck = true;
     editor.style.minHeight = options.minHeight || "140px";
     // De initiële inhoud komt uit dezelfde server-side gesaniteerde API-responses.
-    editor.innerHTML = String(initialHtml || "");
+    if(options.translate!==false&&window.AetherContent?.bindEditor)window.AetherContent.bindEditor(editor,initialHtml,options.field??null);
+    else editor.innerHTML = String(initialHtml || "");
 
     const selectionIsInsideEditor = () => {
         const selection = document.getSelection();
@@ -94,7 +95,8 @@ function createCharacterRichTextEditor(initialHtml, options = {}) {
         editor,
         getHtml: () => editor.innerHTML.trim(),
         setHtml: html => {
-            editor.innerHTML = String(html || "");
+            if(options.translate!==false&&window.AetherContent?.bindEditor)window.AetherContent.bindEditor(editor,html,options.field??null);
+            else editor.innerHTML = String(html || "");
         }
     };
 }

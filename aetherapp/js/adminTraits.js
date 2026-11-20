@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 /* Trait administration inside the existing admin page. */
 (()=>{
@@ -40,7 +41,7 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
         const actions=header(true),form=el('form'),fields=el('fieldset'),controls={};form.append(fields);root.append(form);
         if(isNew){root.querySelector('h1').textContent=aetherT("Nieuwe eigenschap");const draft=el('option',aetherT("Nieuwe eigenschap"));draft.value='__draft__';select.append(draft);select.value='__draft__';}
         function input(name,title,type='text',values=null){let control;if(values){control=el('select','','form-select');for(const [value,title] of Object.entries(values)){const o=el('option',title);o.value=value;control.append(o);}}else{control=el(type==='textarea'?'textarea':'input','',type==='checkbox'?'form-check-input':'form-control');if(type!=='textarea')control.type=type;else control.rows=5;}
-            if(type==='checkbox')control.checked=!!Number(trait[name]);else control.value=trait[name]??'';
+            if(type==='checkbox')control.checked=!!Number(trait[name]);else if(['name','description','traitGroup'].includes(name))aetherBindTranslatedInput(control,trait[name]??'',name);else control.value=trait[name]??'';
             controls[name]=control;fields.append(label(title,control));return control;}
         input('name',aetherT("Naam")).required=true;controls.name.maxLength=150;
         input('type',aetherT("Categorie"),'text',types);input('class',aetherT("Klasse"),'text',classes);input('traitGroup',aetherT("Groep")).maxLength=100;input('rankType',aetherT("Rangtype"),'text',ranks);

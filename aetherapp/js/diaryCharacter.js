@@ -1,3 +1,4 @@
+var aetherBindTranslatedInput = globalThis.aetherBindTranslatedInput || ((node,value)=>{node.value=String(value??'');return node;});
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // Diary tab logic
 
@@ -228,7 +229,7 @@ function renderDiaryEntry(entry, rights, character, openGossip = false) {
         const ta = document.createElement("textarea");
         ta.dataset.gossip = g.key;
         ta.className = "form-control form-control-sm d-none";
-        ta.value = entry[g.key] || "";
+        aetherBindTranslatedInput(ta,entry[g.key]||'',g.key);
         gossipInputs[g.key] = { view, input: ta };
         col.appendChild(lbl);
         col.appendChild(view);
@@ -282,7 +283,7 @@ function renderDiaryEntry(entry, rights, character, openGossip = false) {
         goalsSection.edit.setHtml(entry.goals || "");
         achievementsSection.edit.setHtml(entry.achievements || "");
         Object.entries(gossipInputs).forEach(([key, obj]) => {
-            obj.input.value = entry[key] || "";
+            aetherBindTranslatedInput(obj.input,entry[key]||'',key);
         });
         exitEditMode();
     });

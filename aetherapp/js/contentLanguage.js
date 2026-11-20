@@ -2,6 +2,39 @@
 (() => {
     'use strict';
     const plain = new Map(), html = new Map(), sources = new WeakMap(), richNodes = new Map(), providers = new Map();
+    const editions=new Map(),bindings=new Set();
+    const canCorrect=()=>['administrator','director'].includes(window.AETHER_CURRENT_USER?.role);
+    function editable(source) {
+        const entry=editions.get(String(source??''));
+        return canCorrect()&&entry&&entry.sourceLanguage!==window.AetherI18n?.language ? entry : null;
+    }
+    function bindInput(node,source,field=null) {
+        for(const b of bindings)if(b.node===node)bindings.delete(b);
+        const entry=editable(source);node.value=entry?entry.text:String(source??'');
+        if(entry)bindings.add({node,entry,field,read:()=>node.value});
+        return node;
+    }
+    function bindEditor(node,source,field=null) {
+        for(const b of bindings)if(b.node===node)bindings.delete(b);
+        const entry=editable(source);node.innerHTML=entry?entry.text:String(source??'');
+        if(entry)bindings.add({node,entry,field,read:()=>node.innerHTML.trim()});
+    }
+    function prepareSave(body) {
+        if(!body||typeof body!=='object'||Array.isArray(body)||!canCorrect())return body;
+        for(const binding of bindings)if(!binding.node.isConnected)bindings.delete(binding);
+        const edits=[];
+        function walk(value,path=[]) {
+            if(value&&typeof value==='object'){for(const[key,child]of Object.entries(value))walk(child,[...path,key]);return;}
+            if(typeof value!=='string')return;
+            const candidates=[...bindings].filter(b=>(!b.field||b.field===path.at(-1))&&String(b.read()).trim()===value.trim()&&b.entry.targetLanguage===window.AetherI18n?.language);
+            const unique=new Map(candidates.map(b=>[b.entry.sourceHash+':'+b.entry.version,b.entry]));
+            if(unique.size>1)throw new Error(window.aetherT('Dezelfde tekst heeft verschillende vertalingen in dit formulier.'));
+            const entry=unique.values().next().value;
+            if(entry)edits.push({path,sourceHash:entry.sourceHash,version:entry.version});
+        }
+        walk(body);
+        return edits.length?{...body,_aetherTranslationEdits:edits}:body;
+    }
     const excluded = 'script,style,textarea,input,[contenteditable],[data-content-source],[data-content-rendered],[data-i18n]';
     let scheduled = false;
     function text(value) {
@@ -56,6 +89,7 @@
             if (typeof entry.source !== 'string' || typeof entry.text !== 'string') continue;
             (entry.format === 'html' ? html : plain).set(entry.source, entry.text);
             providers.set(entry.source, entry.provider || '');
+            if(entry.sourceHash&&entry.version&&['nl','en'].includes(entry.sourceLanguage))editions.set(entry.source,{...entry,targetLanguage:window.AetherI18n?.language});
         }
         for (const [node, source] of richNodes) {
             if (!node.isConnected) {richNodes.delete(node);continue;}
@@ -77,8 +111,9 @@
         const note=document.createElement('small'),link=document.createElement('a');note.className='aether-translation-attribution';note.setAttribute('data-content-source','true');
         link.href='https://translate.google.com/';link.target='_blank';link.rel='noopener';link.textContent='Powered by Google Translate';note.append(link);panel.append(note);
     }
-    function clear() {plain.clear(); html.clear();}
-    window.AetherContent = {text, label, rich, renderRich, register, apply, clear};
+    function clear() {plain.clear(); html.clear(); editions.clear();bindings.clear();}
+    window.AetherContent = {text, label, rich, renderRich, register, apply, clear,bindInput,bindEditor,prepareSave};
+    window.aetherBindTranslatedInput=bindInput;
     const observer = new MutationObserver(records => {
         if (records.some(record => record.type === 'characterData' || record.addedNodes.length)) schedule();
     });

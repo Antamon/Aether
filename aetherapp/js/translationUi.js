@@ -101,7 +101,7 @@
             try {
                 const data=await post('read',chosen,{target:target.value});if(sequence!==loading)return;
                 sourceLanguage.value=data.sourceLanguage;version=data.version;
-                if(chosen.format==='html') {editor=createCharacterRichTextEditor(data.text);editorHost.append(editor.wrapper);}
+                if(chosen.format==='html') {editor=createCharacterRichTextEditor(data.text,{translate:false});editorHost.append(editor.wrapper);}
                 else {const input=el('textarea','','form-control');input.rows=10;input.value=data.text;input.setAttribute('aria-label',t('Vertaling'));editorHost.append(input);editor={getHtml:()=>input.value};}
                 save.disabled=false;
             }catch(e){if(sequence===loading){error.textContent=e.message;error.hidden=false;}}

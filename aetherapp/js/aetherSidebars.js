@@ -1,8 +1,8 @@
 var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+)\}/g, (match, index) => values[index] === undefined ? match : String(values[index])));
 // The four navigation tabs share one sidebar layout and one open panel at a time.
 (() => {
-    const navbar = document.querySelector(".aether-top-nav");
-    if (!navbar) return;
+    const topbar = document.querySelector(".aether-top-bar");
+    if (!topbar) return;
 
     const sidebars = [
         { key: "characters", title: aetherT("Characters"), icon: "tabPersonages.svg", page: "index.html", panelId: "offcanvasScrolling", tabId: "offcanvasTabToggle", templateId: "characterSidebarContent" },
@@ -14,6 +14,8 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
     const panels = new Map();
     const loadedLists = new Set();
     let activeKey = null;
+    const backgroundInert = new Map();
+    const isMobile = () => Boolean(window.matchMedia?.('(max-width: 991.98px)')?.matches);
     const deck = document.createElement("div");
     deck.className = "aether-sidebar-deck";
     deck.id = "aetherSidebarDeck";
@@ -335,19 +337,56 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
         });
     }
 
+    function syncMobileTabs() {
+        let count=0;
+        for(const {tabHost} of panels.values())if(!tabHost.classList.contains('d-none'))tabHost.style.setProperty('--aether-mobile-tab-index',String(count++));
+        deck.style.setProperty('--aether-mobile-tab-count',String(Math.max(1,count)));
+    }
+
+    function syncMobileState() {
+        const mobileOpen=isMobile()&&activeKey!==null;
+        document.body.classList.toggle('aether-mobile-navigation-open',mobileOpen);
+        document.documentElement?.classList?.toggle('aether-mobile-navigation-open',mobileOpen);
+        if(mobileOpen) {
+            deck.setAttribute('role','dialog');deck.setAttribute('aria-modal','true');
+            deck.setAttribute('aria-labelledby',panels.get(activeKey).panel.getAttribute('aria-labelledby'));
+            if(typeof document.querySelectorAll==='function')for(const node of document.querySelectorAll('body > *')) {
+                if(node===deck||['SCRIPT','STYLE','TEMPLATE','LINK'].includes(node.tagName))continue;
+                if(!backgroundInert.has(node))backgroundInert.set(node,node.inert);
+                node.inert=true;
+            }
+        } else {
+            deck.removeAttribute?.('role');deck.removeAttribute?.('aria-modal');deck.removeAttribute?.('aria-labelledby');
+            for(const [node,inert]of backgroundInert)node.inert=inert;
+            backgroundInert.clear();
+        }
+        for(const [key,{tab,tabHost}]of panels){tabHost.inert=mobileOpen&&key!==activeKey;tab.tabIndex=mobileOpen&&key!==activeKey?-1:0;if(isMobile())tab.setAttribute('aria-haspopup','dialog');else tab.removeAttribute?.('aria-haspopup');}
+        const viewport=mobileOpen?window.visualViewport:null;
+        if(window.innerHeight)deck.style.setProperty('--aether-mobile-viewport-height',String(viewport?.height||window.innerHeight)+'px');
+        deck.style.setProperty('--aether-mobile-viewport-top',String(viewport?.offsetTop||0)+'px');
+    }
+
     function setOpen(key) {
         if (key && !allowedKeys.has(key)) key = null;
+        const previousKey=activeKey;
+        const closing=isMobile()&&previousKey!==null&&key===null&&!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
         activeKey = key;
+        deck.classList.toggle('is-closing',closing);
         deck.classList.toggle("is-open", key !== null);
         for (const [sidebarKey, { panel, tab, tabHost }] of panels) {
             const open = sidebarKey === key;
             panel.classList.toggle("is-open", open);
+            panel.classList.toggle('is-closing',closing&&sidebarKey===previousKey);
+            tabHost.classList.toggle('is-closing',closing&&sidebarKey===previousKey);
             panel.inert = !open;
             panel.setAttribute("aria-hidden", String(!open));
             tab.setAttribute("aria-expanded", String(open));
             tabHost.classList.toggle("is-active", open);
             if (!open && panel.contains(document.activeElement)) tab.focus();
         }
+        syncMobileTabs();syncMobileState();
+        if(closing)window.setTimeout(()=>{if(activeKey===null){deck.classList.remove('is-closing');for(const {panel,tabHost}of panels.values()){panel.classList.remove('is-closing');tabHost.classList.remove('is-closing');}}},320);
+        if(isMobile()&&key)panels.get(key).tab.focus({preventScroll:true});
         const navTrigger = document.getElementById("characterSidebarNavTrigger");
         if (navTrigger) navTrigger.setAttribute("aria-expanded", String(key === "characters"));
     }
@@ -356,16 +395,17 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
         return document.getElementById("sheetBody") || document.querySelector("main.container.aether-page");
     }
 
-    function positionBelowNavbar() {
-        const bottom = Math.max(0, navbar.getBoundingClientRect().bottom);
-        deck.style.setProperty("--aether-navbar-bottom", `${bottom}px`);
+    function positionBelowHeader() {
+        syncMobileState();
+        const bottom = Math.max(0, topbar.getBoundingClientRect().bottom);
+        deck.style.setProperty("--aether-topbar-bottom", `${bottom}px`);
         // All page headers use the character sheet's width and stop before the
         // descending topbar ornament. Anchor to the content container while loading.
         const pageNav = document.getElementById("pageNav") || document.querySelector(".aether-page-nav");
         const sheet = pageContentContainer();
         if (pageNav && sheet) {
             const bounds = sheet.getBoundingClientRect();
-            const artwork = navbar.getBoundingClientRect();
+            const artwork = topbar.getBoundingClientRect();
             const availableWidth = artwork.left + artwork.width * 0.75 - bounds.left - 16;
             pageNav.style.setProperty("--aether-page-nav-left", `${bounds.left}px`);
             pageNav.style.setProperty("--aether-page-nav-width", `${Math.max(0, availableWidth)}px`);
@@ -393,6 +433,7 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
                 }
             }
             for (const key of ["admin", "companies"]) panels.get(key).tabHost.classList.toggle("d-none", !allowedKeys.has(key));
+            syncMobileTabs();syncMobileState();
             if (activeKey && !allowedKeys.has(activeKey)) setOpen(null);
         } catch (error) { console.error("Sidebarrechten laden mislukt:", error); setOpen(null); }
     })();
@@ -401,6 +442,7 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
     edge.setAttribute("aria-hidden", "true");
     deck.prepend(edge);
     document.body.append(deck);
+    syncMobileTabs();
     const navTrigger = document.getElementById("characterSidebarNavTrigger");
     if (navTrigger) {
         navTrigger.addEventListener("click", (event) => {
@@ -411,13 +453,22 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
         });
     }
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && activeKey !== null) setOpen(null);
+        if (event.key === "Escape" && activeKey !== null) {event.preventDefault();setOpen(null);return;}
+        if(event.key!=='Tab'||!isMobile()||activeKey===null)return;
+        const focusable=[...deck.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]')]
+            .filter(node=>!node.closest('[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden');
+        const first=focusable[0],last=focusable.at(-1);
+        if(!first)return;
+        if(event.shiftKey&&(document.activeElement===first||!deck.contains(document.activeElement))){event.preventDefault();last.focus();}
+        else if(!event.shiftKey&&(document.activeElement===last||!deck.contains(document.activeElement))){event.preventDefault();first.focus();}
     });
-    window.addEventListener("resize", positionBelowNavbar);
-    window.addEventListener("scroll", positionBelowNavbar, { passive: true });
+    window.addEventListener("resize", positionBelowHeader);
+    window.addEventListener("scroll", positionBelowHeader, { passive: true });
+    window.visualViewport?.addEventListener('resize',positionBelowHeader);
+    window.visualViewport?.addEventListener('scroll',positionBelowHeader);
     if (typeof ResizeObserver !== "undefined") {
-        const layoutObserver = new ResizeObserver(positionBelowNavbar);
-        layoutObserver.observe(navbar);
+        const layoutObserver = new ResizeObserver(positionBelowHeader);
+        layoutObserver.observe(topbar);
         const content = pageContentContainer();
         if (content) layoutObserver.observe(content);
     }
@@ -426,7 +477,7 @@ var aetherT = globalThis.aetherT || ((text, values = []) => text.replace(/\{(\d+
     window.closeCompanySidebar = () => { if (activeKey === "companies") setOpen(null); };
     window.closeEventSidebar = () => { if (activeKey === "events") setOpen(null); };
     window.closeAdminSidebar = () => { if (activeKey === "admin") setOpen(null); };
-    positionBelowNavbar();
+    positionBelowHeader();
     const requested = new URLSearchParams(window.location.search).get("sidebar");
     const selectingCompany = new URLSearchParams(window.location.search).has("company")
         || new URLSearchParams(window.location.search).has("new");
